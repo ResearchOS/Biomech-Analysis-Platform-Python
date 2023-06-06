@@ -7,11 +7,15 @@ from sendEmails import sendEmail
 from csvDB import loadDB, getUserInfo, addToDatabase
 import credentials
 
-def handleLogin(loginDlg):
-    # 1. Get the username and password from the user
-    username = loginDlg.username.text()
+def handleLogin(username, password, db_filename=None):
+    # 1. Check if the username exists
+    users = getUserInfo(username, "Username", db_filename)
 
-def forgotPassword():
+    # 2. Check if the password exists
+
+    # 3. If both exist and are on the same row, then login
+
+def forgotPassword(loginInfoPath=None):
     # 1. Prompt the user for an email
     emailDlg = QInputDialog()
     emailDlg.setInputMode(QInputDialog.TextInput)
@@ -33,13 +37,14 @@ def forgotPassword():
         invalidEmailDlg.setText("Invalid Email")        
         invalidEmailDlg.exec()       
         emailDlg.close()
-        forgotPassword() # Restart the process   
+        forgotPassword() # Restart the process
+        return   
 
     # 2. Send the user an email with the username & password associated with that email        
     sender_email = "mtillman14@gmail.com" # For now, use my email
     
-    # Fix this later    
-    users = getUserInfo(colName=receiver_email)
+    ### Fix this later ###
+    users = getUserInfo(colName=receiver_email, dbPath=loginInfoPath)
     idx = [i for i, x in enumerate(users) if x == receiver_email]
     username = users[idx]
     password = users[idx]
@@ -55,3 +60,14 @@ def forgotPassword():
 
 def handleSignup():
     pass
+    # 1. Open a new window to prompt the user for their username, password, and email
+
+    # 2. Check if the username already exists
+
+    # 3. If it does not exist, add the user to the database
+
+    # 4. If it does exist, tell the user to pick a different username, or click the "Forgot Password" button
+
+    # 5. If the user clicks the "Forgot Password" button, call the forgotPassword() method
+
+    # 6. If the user clicks the "Cancel" button, close the window and reopen the login window
