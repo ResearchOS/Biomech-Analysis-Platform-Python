@@ -7,13 +7,18 @@ from sendEmails import sendEmail
 from csvDB import loadDB, getUserInfo, addToDatabase
 import credentials
 
-def handleLogin(username, password, db_filename=None):
+def handleLogin(self, username, password, db_filename=None):
     # 1. Check if the username exists
     users = getUserInfo(username, "Username", db_filename)
 
     # 2. Check if the password exists
 
     # 3. If both exist and are on the same row, then login
+
+    # 4. If the username and password combination does not exist, tell the user to try again or sign up
+    self.loginWindow.close()
+    exec(self.next_window_filename)
+
 
 def forgotPassword(loginInfoPath=None):
     # 1. Prompt the user for an email
