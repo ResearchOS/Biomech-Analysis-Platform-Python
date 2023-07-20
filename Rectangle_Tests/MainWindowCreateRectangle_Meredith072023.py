@@ -17,7 +17,6 @@ class MainWindow(QMainWindow):
 
         self.button = QPushButton("Create New Function")
         self.button.setFixedSize(150, 40)
-        self.button.setDisabled(True)  # Initially disable the button
         self.button.clicked.connect(self.add_rectangle)
 
         self.button2 = QPushButton("Add New Row")
@@ -41,9 +40,11 @@ class MainWindow(QMainWindow):
         self.central_widget.setLayout(self.layout)
         self.setCentralWidget(self.central_widget)
 
-        self.add_row()  # Initially add a row
+        self.add_row()
 
     def add_rectangle(self):
+        a = dir(self)
+        print(a)
         self.count += 1
 
         rect_widget = QPushButton()
@@ -56,15 +57,14 @@ class MainWindow(QMainWindow):
         rect_widget.setObjectName("rectangle_widget")
 
         self.frame_layout.addWidget(rect_widget)
-    
+        
     def add_row(self):
         self.countt += 1
 
         self.frame = QFrame(self.scroll_widget)
         self.frame_layout = QHBoxLayout(self.frame)
+        self.add_rectangle()
         self.scroll_layout.addWidget(self.frame)
-
-        self.button.setEnabled(True)  # Enable the "Create New Function" button
 
 
 if __name__ == "__main__":
@@ -72,4 +72,3 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     app.exec()
-
