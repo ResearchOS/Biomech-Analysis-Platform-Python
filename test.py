@@ -1,5 +1,1 @@
-
-x = 1
-y = 2
-
-print(x)
+from PySide6 import QtCore, QtWidgets
