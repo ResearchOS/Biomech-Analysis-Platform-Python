@@ -28,7 +28,7 @@ class DBManager():
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
                         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (dataset_id) REFERENCES datasets(id)
-                       )""")
+                        )""")
 
         # Visits table
         cursor.execute("""CREATE TABLE IF NOT EXISTS visits (
@@ -39,7 +39,7 @@ class DBManager():
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
                         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (subject_id) REFERENCES subjects(id)
-                       )""")
+                        )""")
 
         # Trials table
         cursor.execute("""CREATE TABLE IF NOT EXISTS trials (
@@ -50,12 +50,13 @@ class DBManager():
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
                         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (visit_id) REFERENCES visits(id)
-                       )"""
-        )
+                        )""")
 
-        # Phases table
+        # Phases table. Needs another two tables to say what the human-readable name of the phase is.
+        # Table 1: phase_id (unique to the trial), phase_name_id
+        # Table 2: phase_name_id, phase_name
         cursor.execute("""CREATE TABLE IF NOT EXISTS phases (
-                        id INTEGER PRIMARY KEY,    
+                        id INTEGER PRIMARY KEY,
                         trial_id INTEGER NOT NULL,                     
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
@@ -64,6 +65,23 @@ class DBManager():
                         FOREIGN KEY (trial_id) REFERENCES trials(id)
                        )""")
         
+        # Phase name ids table. Connects phases to trials.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS phase_name_ids (
+                        phase_trial_id INTEGER PRIMARY KEY,
+                        trial_id INTEGER NOT NULL,
+                        phase_id TEXT NOT NULL DEFAULT 'Untitled',
+                        FOREIGN KEY (phase_id) REFERENCES phase_names(id)
+                        )""")
+        
+        # Phase name values table. Connects phase ID's to human-readable names (independent of trial)
+        # E.g.: phase_id = 1, phase_name = 'turn phase heel strike'
+        # TODO: Maybe also connect this to a phase-generating group or function?
+        cursor.execute("""CREATE TABLE IF NOT EXISTS phase_names (
+                        phase_id INTEGER,
+                        phase_name TEXT NOT NULL DEFAULT 'Untitled',
+                        FOREIGN KEY (phase_name_id) REFERENCES phase_name_ids(id)
+                        )""")
+        
         # List of all variables
         cursor.execute("""CREATE TABLE IF NOT EXISTS variables (
                         id INTEGER PRIMARY KEY, 
@@ -71,7 +89,7 @@ class DBManager():
                         description TEXT, 
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
                         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-                       )""")
+                        )""")
         
         # Subject data
         cursor.execute("""CREATE TABLE IF NOT EXISTS subject_data (
@@ -80,18 +98,8 @@ class DBManager():
                         value TEXT,
                         FOREIGN KEY (subject_id) REFERENCES subjects(id),                         
                         FOREIGN KEY (var_id) REFERENCES variables(id)                        
-                       )""")
-
-        # Trial data. For all non-scalar data, the file_path field will be used to store the path to the file.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS trial_phase_data (
-                        trial_phase_id INTEGER NOT NULL,
-                        var_id INTEGER NOT NULL,
-                        file_path TEXT NOT NULL DEFAULT 'NULL',
-                        scalar_data TEXT NOT NULL DEFAULT 'NULL',
-                        FOREIGN KEY (trial_phase_id) REFERENCES trial_phase_id(id),                 
-                        FOREIGN KEY (var_id) REFERENCES variables(id)
-                       )""")
-
+                        )""")
+        
         # Visit data
         cursor.execute("""CREATE TABLE IF NOT EXISTS visit_data (
                         visit_id INTEGER NOT NULL,
@@ -99,16 +107,28 @@ class DBManager():
                         value TEXT,
                         FOREIGN KEY (visit_id) REFERENCES visits(id),                        
                         FOREIGN KEY (var_id) REFERENCES variables(id)                      
-                       )""")
-        
-        # Trial_phase_id
-        cursor.execute("""CREATE TABLE IF NOT EXISTS trial_phase_id (
-                        id INTEGER PRIMARY KEY,
-                        trial_id INTEGER NOT NULL,
+                        )""")
+
+        # Phase-level data. This is for all non-final processed data, especially non-scalar data.
+        # NOTE: The phase_id is unique to each trial, so no need to reference a trial_id here.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS trial_phase_data (
                         phase_id INTEGER NOT NULL,
-                        FOREIGN KEY (trial_id) REFERENCES trials(id),    
-                        FOREIGN KEY (phase_id) REFERENCES phases(id)                  
-                       )""")
+                        var_id INTEGER NOT NULL,
+                        file_path TEXT NOT NULL DEFAULT 'NULL',
+                        FOREIGN KEY (trial_id) REFERENCES trial_id(id),                 
+                        FOREIGN KEY (var_id) REFERENCES variables(id),
+                        PRIMARY KEY (trial_id, phase_id, var_id)
+                        )""")
+        
+        # Trial & phase data. This is for all final processed, scalar data.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS trial_phase_data_processed (
+                        phase_id INTEGER NOT NULL,
+                        var_id INTEGER NOT NULL,
+                        scalar_data TEXT,
+                        FOREIGN KEY (trial_id) REFERENCES trial_id(id),                 
+                        FOREIGN KEY (var_id) REFERENCES variables(id),
+                        PRIMARY KEY (trial_id, phase_id, var_id)
+                        )""")        
         
 if __name__ == '__main__':
     db = DBManager()
