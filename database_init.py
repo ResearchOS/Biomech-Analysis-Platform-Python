@@ -6,6 +6,7 @@ class DBManager():
     def __init__(self):        
         self.conn = sqlite3.connect('database.db')
         self.create_database()
+        self.conn.commit()
 
     def create_triggers(self):
         cursor = self.conn.cursor()
@@ -61,7 +62,7 @@ class DBManager():
 
 
     def create_database(self):
-        """Create the data database and all of its tables."""        
+        """Create the data database and all of its tables."""
         cursor = self.conn.cursor()
         # Datasets table
         cursor.execute("""CREATE TABLE IF NOT EXISTS datasets (
