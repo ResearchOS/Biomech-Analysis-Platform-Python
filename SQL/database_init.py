@@ -77,11 +77,11 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS subjects (
                         id INTEGER PRIMARY KEY AUTOINCREMENT, 
                         dataset_id INTEGER NOT NULL, 
-                        codename TEXT NOT NULL DEFAULT 'Untitled', 
+                        name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
                         created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
                         updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (dataset_id) REFERENCES datasets(id)
+                        FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE
                         )""")
 
         # Visits table
@@ -92,7 +92,7 @@ class DBInitializer():
                         description TEXT, 
                         created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
                         updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (subject_id) REFERENCES subjects(id)
+                        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
                         )""")
 
         # Trials table
@@ -103,10 +103,10 @@ class DBInitializer():
                         description TEXT, 
                         created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
                         updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (visit_id) REFERENCES visits(id)
+                        FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE
                         )""")
 
-        # Phases table. The start and end indices are stored as variables, even if generated manually.
+        # Phases table. Phases are a many to many relationship with trials.
         cursor.execute("""CREATE TABLE IF NOT EXISTS phases (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         phase_name TEXT NOT NULL DEFAULT 'Untitled',
@@ -114,11 +114,11 @@ class DBInitializer():
                         end_idx_var TEXT NOT NULL,
                         created_at INTEGER DEFAULT CURRENT_TIMESTAMP,
                         updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (start_idx_var) REFERENCES variables(id),
-                        FOREIGN KEY (end_idx_var) REFERENCES variables(id)                        
+                        FOREIGN KEY (start_idx_var) REFERENCES variables(id) ON DELETE CASCADE,
+                        FOREIGN KEY (end_idx_var) REFERENCES variables(id) ON DELETE CASCADE                       
                         )""")
         
-        # List of all variables
+        # Variables table. Variables are a many to many relationship with phases.
         cursor.execute("""CREATE TABLE IF NOT EXISTS variables (
                         id INTEGER PRIMARY KEY AUTOINCREMENT, 
                         name TEXT NOT NULL DEFAULT 'Untitled', 
@@ -127,9 +127,9 @@ class DBInitializer():
                         updated_at INTEGER DEFAULT CURRENT_TIMESTAMP
                         )""")
         
-        # List of all subvariables
+        # Subvariables table. Subvariables are a many to many relationship with variables.
         cursor.execute("""CREATE TABLE IF NOT EXISTS subvariables (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,,                      
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,                    
                         subvar_index TEXT NOT NULL DEFAULT 'Untitled',
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
                         updated_at TEXT DEFAULT CURRENT_TIMESTAMP                     
@@ -140,8 +140,8 @@ class DBInitializer():
                         dataset_id INTEGER NOT NULL,
                         var_id INTEGER NOT NULL,
                         value TEXT,
-                        FOREIGN KEY (dataset_id) REFERENCES datasets(id),                        
-                        FOREIGN KEY (var_id) REFERENCES variables(id)                        
+                        FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE,                        
+                        FOREIGN KEY (var_id) REFERENCES variables(id) ON DELETE CASCADE                      
                         )""")
         
         # Subject data
@@ -149,8 +149,8 @@ class DBInitializer():
                         subject_id INTEGER NOT NULL,
                         var_id INTEGER NOT NULL,
                         value TEXT,
-                        FOREIGN KEY (subject_id) REFERENCES subjects(id),                         
-                        FOREIGN KEY (var_id) REFERENCES variables(id)                        
+                        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,                       
+                        FOREIGN KEY (var_id) REFERENCES variables(id) ON DELETE CASCADE                     
                         )""")
         
         # Visit data
@@ -158,11 +158,11 @@ class DBInitializer():
                         visit_id INTEGER NOT NULL,
                         var_id INTEGER NOT NULL,
                         value TEXT,
-                        FOREIGN KEY (visit_id) REFERENCES visits(id),                        
-                        FOREIGN KEY (var_id) REFERENCES variables(id)                      
+                        FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE CASCADE,                        
+                        FOREIGN KEY (var_id) REFERENCES variables(id) ON DELETE CASCADE                   
                         )""")
 
-        # Phase-level data. 
+        # Phase-level data.
         # TODO: Wrap every call to INSERT/UPDATE records in this table with a "Check constraint" to ensure that exactly one of "file_path" OR "scalar_data" is null.
         # TODO: Also check constraint that subvar_id should only be not NULL if scalar_data is not NULL. Otherwise, all subvars just go into the file.
         # If phase_id is NULL, then the data is for the trial as a whole.
@@ -174,10 +174,10 @@ class DBInitializer():
                         subvar_id INTEGER NOT NULL,
                         file_path TEXT,
                         scalar_data TEXT,
-                        FOREIGN KEY (trial_id) REFERENCES trials(id),                 
-                        FOREIGN KEY (phase_id) REFERENCES phases(id),
-                        FOREIGN KEY (var_id) REFERENCES variables(id),
-                        FOREIGN KEY (subvar_id) REFERENCES subvariables(id),
+                        FOREIGN KEY (trial_id) REFERENCES trials(id) ON DELETE CASCADE,                 
+                        FOREIGN KEY (phase_id) REFERENCES phases(id) ON DELETE CASCADE,
+                        FOREIGN KEY (var_id) REFERENCES variables(id) ON DELETE CASCADE,
+                        FOREIGN KEY (subvar_id) REFERENCES subvariables(id) ON DELETE CASCADE,
                         PRIMARY KEY (trial_id, phase_id, var_id, subvar_id)
                         )""")
 
