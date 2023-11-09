@@ -66,7 +66,7 @@ class DBInitializer():
         cursor = self.conn.cursor()
         # Datasets table
         cursor.execute("""CREATE TABLE IF NOT EXISTS datasets (
-                        id INTEGER PRIMARY KEY, 
+                        id INTEGER PRIMARY KEY AUTOINCREMENT, 
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
                         created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
@@ -75,7 +75,7 @@ class DBInitializer():
 
         # Subjects table
         cursor.execute("""CREATE TABLE IF NOT EXISTS subjects (
-                        id INTEGER PRIMARY KEY, 
+                        id INTEGER PRIMARY KEY AUTOINCREMENT, 
                         dataset_id INTEGER NOT NULL, 
                         codename TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
@@ -86,7 +86,7 @@ class DBInitializer():
 
         # Visits table
         cursor.execute("""CREATE TABLE IF NOT EXISTS visits (
-                        id INTEGER PRIMARY KEY,   
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,   
                         subject_id INTEGER NOT NULL,                      
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
@@ -97,7 +97,7 @@ class DBInitializer():
 
         # Trials table
         cursor.execute("""CREATE TABLE IF NOT EXISTS trials (
-                        id INTEGER PRIMARY KEY,   
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,   
                         visit_id INTEGER NOT NULL,                      
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
@@ -108,7 +108,7 @@ class DBInitializer():
 
         # Phases table. The start and end indices are stored as variables, even if generated manually.
         cursor.execute("""CREATE TABLE IF NOT EXISTS phases (
-                        id INTEGER PRIMARY KEY,
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
                         phase_name TEXT NOT NULL DEFAULT 'Untitled',
                         start_idx_var TEXT NOT NULL,
                         end_idx_var TEXT NOT NULL,
@@ -118,22 +118,9 @@ class DBInitializer():
                         FOREIGN KEY (end_idx_var) REFERENCES variables(id)                        
                         )""")
         
-        # Trials -> phases table. If there is no phase for that trial (using the whole trial), then phase_id is NULL.
-        # NOTE: If a phase is created manually, that data will still be stored to a variable.
-        # So, I can treat all phases as though they were created by algorithms because all end results are still in variables.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS trial_phases (
-                        trial_phase_id INTEGER PRIMARY KEY,
-                        trial_id INTEGER NOT NULL,
-                        phase_id INTEGER,
-                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP,
-                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (trial_id) REFERENCES trials(id),
-                        FOREIGN KEY (phase_id) REFERENCES phases(id)
-                        )""")
-        
         # List of all variables
         cursor.execute("""CREATE TABLE IF NOT EXISTS variables (
-                        id INTEGER PRIMARY KEY, 
+                        id INTEGER PRIMARY KEY AUTOINCREMENT, 
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
                         created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
@@ -142,11 +129,18 @@ class DBInitializer():
         
         # List of all subvariables
         cursor.execute("""CREATE TABLE IF NOT EXISTS subvariables (
-                        var_subvar_id INTEGER PRIMARY KEY,    
-                        var_id INTEGER NOT NULL,                     
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,,                      
                         subvar_index TEXT NOT NULL DEFAULT 'Untitled',
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
-                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP                     
+                        )""")
+        
+        # Dataset data
+        cursor.execute("""CREATE TABLE IF NOT EXISTS dataset_data (
+                        dataset_id INTEGER NOT NULL,
+                        var_id INTEGER NOT NULL,
+                        value TEXT,
+                        FOREIGN KEY (dataset_id) REFERENCES datasets(id),                        
                         FOREIGN KEY (var_id) REFERENCES variables(id)                        
                         )""")
         
@@ -170,14 +164,21 @@ class DBInitializer():
 
         # Phase-level data. 
         # TODO: Wrap every call to INSERT/UPDATE records in this table with a "Check constraint" to ensure that exactly one of "file_path" OR "scalar_data" is null.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS phase_data (
-                        trial_phase_id INTEGER NOT NULL,
-                        var_subvar_id INTEGER NOT NULL,
-                        file_path TEXT NOT NULL DEFAULT 'NULL',
+        # TODO: Also check constraint that subvar_id should only be not NULL if scalar_data is not NULL. Otherwise, all subvars just go into the file.
+        # If phase_id is NULL, then the data is for the trial as a whole.
+        # If subvar_id is NULL, then the data is for the variable as a whole.        
+        cursor.execute("""CREATE TABLE IF NOT EXISTS phase_data (                        
+                        trial_id INTEGER NOT NULL,
+                        phase_id INTEGER NOT NULL,
+                        var_id INTEGER NOT NULL,
+                        subvar_id INTEGER NOT NULL,
+                        file_path TEXT,
                         scalar_data TEXT,
-                        FOREIGN KEY (trial_phase_id) REFERENCES trial_phases(trial_phase_id),                 
-                        FOREIGN KEY (var_subvar_id) REFERENCES subvariables(id),
-                        PRIMARY KEY (trial_phase_id, var_subvar_id)
+                        FOREIGN KEY (trial_id) REFERENCES trials(id),                 
+                        FOREIGN KEY (phase_id) REFERENCES phases(id),
+                        FOREIGN KEY (var_id) REFERENCES variables(id),
+                        FOREIGN KEY (subvar_id) REFERENCES subvariables(id),
+                        PRIMARY KEY (trial_id, phase_id, var_id, subvar_id)
                         )""")
 
         self.create_triggers()   

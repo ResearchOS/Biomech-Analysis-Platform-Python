@@ -11,6 +11,10 @@ class DataObject(Protocol):
     def __init__(self, conn: sqlite3.Connection) -> None:
         """Initialize the data object."""
         self.conn = conn
+
+    def get_info(self) -> dict:
+        """Returns the information of the data object."""
+        raise NotImplementedError
     
     def input_to_list(self, input: any) -> list:
         """Returns whether the object is a list."""
@@ -70,7 +74,7 @@ class DataObject(Protocol):
         sql = f"SELECT {parent_column} FROM {table_name} WHERE {child_column} = {id} AND {parent_column} = {parent_id}"
         cursor = self.conn.cursor()
         cursor.execute(sql)
-        return cursor.rowcount > 0
+        return len(cursor.fetchall()) > 0
     
     def get_all_children(self, id: str, table_name: str, parent_column: str, child_column: str) -> list[str]:
         """Get all children of the parent object type.
@@ -85,4 +89,4 @@ class DataObject(Protocol):
         sql = f"SELECT {child_column} FROM {table_name} WHERE {parent_column} = {id} AND {child_column} = {child_id}"
         cursor = self.conn.cursor()
         cursor.execute(sql)
-        return cursor.rowcount > 0
+        return len(cursor.fetchall()) > 0
