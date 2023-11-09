@@ -2,9 +2,9 @@
 
 import sqlite3
 
-class DBManager():
+class DBInitializer():
     def __init__(self):        
-        self.conn = sqlite3.connect('database.db')
+        self.conn = sqlite3.connect('./SQL/database.db')
         self.create_database()
         self.conn.commit()
 
@@ -69,8 +69,8 @@ class DBManager():
                         id INTEGER PRIMARY KEY, 
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
-                        created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
-                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
+                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP
                         )""")
 
         # Subjects table
@@ -79,8 +79,8 @@ class DBManager():
                         dataset_id INTEGER NOT NULL, 
                         codename TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
-                        created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
-                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
+                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (dataset_id) REFERENCES datasets(id)
                         )""")
 
@@ -90,8 +90,8 @@ class DBManager():
                         subject_id INTEGER NOT NULL,                      
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
-                        created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
-                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
+                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (subject_id) REFERENCES subjects(id)
                         )""")
 
@@ -101,8 +101,8 @@ class DBManager():
                         visit_id INTEGER NOT NULL,                      
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
-                        created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
-                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
+                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (visit_id) REFERENCES visits(id)
                         )""")
 
@@ -112,6 +112,8 @@ class DBManager():
                         phase_name TEXT NOT NULL DEFAULT 'Untitled',
                         start_idx_var TEXT NOT NULL,
                         end_idx_var TEXT NOT NULL,
+                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP,
+                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (start_idx_var) REFERENCES variables(id),
                         FOREIGN KEY (end_idx_var) REFERENCES variables(id)                        
                         )""")
@@ -123,17 +125,29 @@ class DBManager():
                         trial_phase_id INTEGER PRIMARY KEY,
                         trial_id INTEGER NOT NULL,
                         phase_id INTEGER,
+                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP,
+                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (trial_id) REFERENCES trials(id),
                         FOREIGN KEY (phase_id) REFERENCES phases(id)
-                        )""")     
+                        )""")
         
         # List of all variables
         cursor.execute("""CREATE TABLE IF NOT EXISTS variables (
                         id INTEGER PRIMARY KEY, 
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
+                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
+                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP
+                        )""")
+        
+        # List of all subvariables
+        cursor.execute("""CREATE TABLE IF NOT EXISTS subvariables (
+                        var_subvar_id INTEGER PRIMARY KEY,    
+                        var_id INTEGER NOT NULL,                     
+                        subvar_index TEXT NOT NULL DEFAULT 'Untitled',
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
-                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (var_id) REFERENCES variables(id)                        
                         )""")
         
         # Subject data
@@ -154,28 +168,20 @@ class DBManager():
                         FOREIGN KEY (var_id) REFERENCES variables(id)                      
                         )""")
 
-        # Phase-level data. This is for all non-final processed data, especially non-scalar data.
-        # NOTE: The phase_id is unique to each trial, so no need to reference a trial_id here.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS trial_phase_data_files (
+        # Phase-level data. 
+        # TODO: Wrap every call to INSERT/UPDATE records in this table with a "Check constraint" to ensure that exactly one of "file_path" OR "scalar_data" is null.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS phase_data (
                         trial_phase_id INTEGER NOT NULL,
-                        var_id INTEGER NOT NULL,
+                        var_subvar_id INTEGER NOT NULL,
                         file_path TEXT NOT NULL DEFAULT 'NULL',
-                        FOREIGN KEY (trial_phase_id) REFERENCES trial_phases(trial_phase_id),                 
-                        FOREIGN KEY (var_id) REFERENCES variables(id),
-                        PRIMARY KEY (trial_phase_id), var_id)
-                        )""")
-        
-        # Trial & phase data. This is for all final processed, scalar data.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS trial_phase_data_scalar (
-                        trial_phase_id INTEGER NOT NULL,
-                        var_id INTEGER NOT NULL,
                         scalar_data TEXT,
                         FOREIGN KEY (trial_phase_id) REFERENCES trial_phases(trial_phase_id),                 
-                        FOREIGN KEY (var_id) REFERENCES variables(id),
-                        PRIMARY KEY (trial_phase_id, var_id)
+                        FOREIGN KEY (var_subvar_id) REFERENCES subvariables(id),
+                        PRIMARY KEY (trial_phase_id, var_subvar_id)
                         )""")
 
         self.create_triggers()   
         
 if __name__ == '__main__':
-    db = DBManager()
+    db = DBInitializer()
+    
