@@ -3,12 +3,13 @@
 from data_object import DataObject
 from dataclasses import dataclass
 
+from trial import Trial
+from variable import Variable
+
 @dataclass
 class Phase(DataObject):
     """The phase object. Independent of the trial object."""
-    trial_phase_id: str
-    phase_id: str
-    trial_id: str
+    id: str
 
     def get_all_trials(self) -> list[str]:
         """Get all trials that have this phase."""
@@ -23,12 +24,20 @@ class Phase(DataObject):
             return True
         return False
 
-    def get_all_vars(self) -> list[str]:
-        """Returns all variables of the phase."""
-        table_name = "phase_variable_id"
+    def get_all_vars(self, trial_id: list[str]) -> list[Variable]:
+        """Returns all variables of the phase. If trial_id not specified, returns it across all trials."""
+        trial_id = self.input_to_list(trial_id)
+        table_name = "phase_data"
         parent_name = "phase_id"
         child_name = "variable_id"
-        super().get_all_children(self.phase_id, table_name, parent_name, child_name)
+        all_trials = super().get_all_children(self.id, table_name, parent_name, child_name)
+        # Convert the output to a list of Trials
+        vars_in_trials = []
+        for trial in all_trials:
+            curr_trial = Trial(trial)
+            if curr_trial.id in trial_id:
+                vars_in_trials.append(trial)
+        return vars_in_trials
 
     def is_var(self, var_id: str) -> bool:
         """Returns whether the phase contains the variable."""
