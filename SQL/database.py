@@ -4,16 +4,23 @@ from sqlalchemy.orm import relationship, declarative_base, Session, registry
 Base = declarative_base()
 
 # Define the association tables for many-to-many relationships
-phase_data = Table('phase_data', Base.metadata,
-    Column('id', Integer, primary_key=True),
-    Column('file_path', String),
-    Column('scalar_data', String),
-    Column('trial_id', Integer, ForeignKey('trials.id')),
-    Column('phase_id', Integer, ForeignKey('phases.id')),
-    Column('var_id', Integer, ForeignKey('variables.id')),
-    Column('subvar_id', Integer, ForeignKey('subvariables.id')),
-    UniqueConstraint('trial_id', 'phase_id', 'var_id', 'subvar_id', name='phase_data_unique_constraint')
-)
+# 'phasedata' = Table(''phasedata'', Base.metadata,
+#     Column('id', Integer, primary_key=True),
+#     Column('file_path', String),
+#     Column('scalar_data', String),
+#     Column('trial_id', Integer, ForeignKey('trials.id')),
+#     Column('phase_id', Integer, ForeignKey('phases.id')),
+#     Column('var_id', Integer, ForeignKey('variables.id')),
+#     Column('subvar_id', Integer, ForeignKey('subvariables.id')),
+#     UniqueConstraint('trial_id', 'phase_id', 'var_id', 'subvar_id', name=''phasedata'_unique_constraint')
+# )
+
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    email = Column(String)
+    password = Column(String)
 
 class Dataset(Base):
     __tablename__ = 'datasets'
@@ -50,36 +57,47 @@ class Trial(Base):
     name = Column(String)
     uuid = Column(String)
     visit = relationship('Visit', back_populates='trials') # Child
-    phases = relationship('Phase', secondary = phase_data, back_populates = 'trials', viewonly=True) # Parent
+    phases = relationship('Phase', secondary = 'phasedata', back_populates = 'trials', viewonly=True) # Parent
 
 class Phase(Base):
     __tablename__ = 'phases'
     id = Column(Integer, primary_key=True)
     name = Column(String)
     uuid = Column(String)
-    trials = relationship('Trial', secondary = phase_data, back_populates='phases') # Child
-    variables = relationship('Variable', secondary = phase_data, back_populates='phases', viewonly=True) # Parent
+    trials = relationship('Trial', secondary = 'phasedata', back_populates='phases') # Child
+    variables = relationship('Variable', secondary = 'phasedata', back_populates='phases', viewonly=True) # Parent
 
 class Variable(Base):
     __tablename__ = 'variables'
     id = Column(Integer, primary_key=True)
     name = Column(String)
     uuid = Column(String)
-    phases = relationship('Phase', secondary = phase_data, back_populates='variables', viewonly=True) # Child
-    subvariables = relationship('Subvariable', secondary = phase_data, back_populates='variables', viewonly=True) # Parent
+    phases = relationship('Phase', secondary = 'phasedata', back_populates='variables', viewonly=True) # Child
+    subvariables = relationship('Subvariable', secondary = 'phasedata', back_populates='variables', viewonly=True) # Parent
 
 class Subvariable(Base):
     __tablename__ = 'subvariables'
     id = Column(Integer, primary_key=True)
     name = Column(String)
     uuid = Column(String)
-    variables = relationship('Variable', secondary = phase_data, back_populates='subvariables', viewonly=True) # Child
+    variables = relationship('Variable', secondary = 'phasedata', back_populates='subvariables', viewonly=True) # Child
+
+class PhaseData(Base):
+    __tablename__ = 'phase_data'
+    id = Column(Integer, primary_key=True)
+    file_path = Column(String)
+    scalar_data = Column(String)
+    trial_id = Column(Integer, ForeignKey('trials.id'))
+    phase_id = Column(Integer, ForeignKey('phases.id'))
+    var_id = Column(Integer, ForeignKey('variables.id'))
+    subvar_id = Column(Integer, ForeignKey('subvariables.id'))
+    trial = relationship('Trial', back_populates='phasedata') # Child
+    phase = relationship('Phase', back_populates='phasedata') # Child
+    variable = relationship('Variable', back_populates='phasedata') # Child
+    subvariable = relationship('Subvariable', back_populates='phasedata') # Child
 
 if __name__=="__main__":
-    engine = create_engine('sqlite:///database.db', echo=True)  # Use your actual database URL
-    Base.metadata.create_all(engine)    
-    session = Session(engine)
-
-    d = Dataset(id=1, name='test')
-    s = Subject(id=1, name='test', dataset_id=d.id)
-    session.commit()
+    pass
+    # engine = create_engine('sqlite:///database.db', echo=True)  # Use your actual database URL
+    # Base.metadata.create_all(engine)    
+    # session = Session(engine)
