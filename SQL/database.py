@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table, UniqueConstraint
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Table, UniqueConstraint, Engine
 from sqlalchemy.orm import relationship, declarative_base, Session, registry
 
 Base = declarative_base()
@@ -82,5 +82,10 @@ class Subvariable(Base):
     uuid = Column(String)
     variables = relationship('Variable', secondary = phase_data, back_populates='subvariables', viewonly=True) # Child
 
+def db_init(db_file: str = 'test_database.db') -> Engine:
+    engine = create_engine(f'sqlite:///{db_file}', echo=True)
+    Base.metadata.create_all(engine)
+    return engine
+
 if __name__=="__main__":
-    pass
+    db_init()
