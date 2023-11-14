@@ -1,19 +1,35 @@
 """The abstract base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage.""" 
 
-import sqlite3
-from typing import Protocol
+import sqlite3, datetime
+from abc import ABC, abstractmethod
 
-class DataObject(Protocol):
+class DataObject():
     """The abstract base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage."""
 
     conn: sqlite3.Connection
 
-    def __init__(self, conn: sqlite3.Connection) -> None:
+    def __init__(self, conn: sqlite3.Connection, id: str = None) -> None:
         """Initialize the data object."""
         self.conn = conn
+        self.created_at = self.current_timestamp()
+        self.updated_at = self.current_timestamp()
+        if id is None:
+            self.new()
+        else:
+            self.get(id=id)
 
-    def get_info(self) -> dict:
-        """Returns the information of the data object."""
+    def new(self):
+        """Create a new data object."""
+        self.create_id()
+        self.insert()
+
+    def create_id(self) -> None:
+        """Create the id for the data object."""
+        raise NotImplementedError
+    
+    def parse_id(self, id: str) -> str:
+        """Parse the id for the data object.
+        Returns the ID's type, abstract ID, and concrete ID."""
         raise NotImplementedError
     
     def input_to_list(self, input: any) -> list:
@@ -90,3 +106,7 @@ class DataObject(Protocol):
         cursor = self.conn.cursor()
         cursor.execute(sql)
         return len(cursor.fetchall()) > 0
+    
+    def current_timestamp(self):
+        """Return the current timestamp."""
+        return datetime.datetime.now()

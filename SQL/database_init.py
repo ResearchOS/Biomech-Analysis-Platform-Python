@@ -2,6 +2,20 @@
 
 import sqlite3
 
+table_names = [
+    'datasets',
+    'subjects',
+    'visits',
+    'trials',
+    'phases',
+    'variables',
+    'subvariables',
+    'dataset_data',
+    'subject_data',
+    'visit_data',
+    'phase_data'
+]
+
 class DBInitializer():
     def __init__(self):        
         self.conn = sqlite3.connect('./SQL/database.db')
@@ -10,56 +24,15 @@ class DBInitializer():
 
     def create_triggers(self):
         cursor = self.conn.cursor()
-        # Datasets table
-        try:
-            cursor.execute("""CREATE TRIGGER update_timestamp_datasets
-                        AFTER UPDATE OF name, description ON datasets
-                        BEGIN 
-                            UPDATE datasets SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-                        END;""")
-        except sqlite3.OperationalError:
-            pass
-        
-        # Subjects table
-        try:
-            cursor.execute("""CREATE TRIGGER update_timestamp_subjects
-                        AFTER UPDATE OF codename, description ON subjects
-                        BEGIN 
-                            UPDATE subjects SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-                        END;""")
-        except sqlite3.OperationalError:
-            pass
-        
-        # Visits table
-        try:
-            cursor.execute("""CREATE TRIGGER update_timestamp_visits
-                            AFTER UPDATE OF name, description ON visits
+        for table in table_names:
+            try:
+                cursor.execute("""CREATE TRIGGER update_timestamp_""" + table + """
+                            AFTER UPDATE OF name, description ON """ + table + """
                             BEGIN 
-                                UPDATE visits SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+                                UPDATE """ + table + """ SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
                             END;""")
-        except sqlite3.OperationalError:
-            pass
-        
-        # Trials table
-        try:
-            cursor.execute("""CREATE TRIGGER update_timestamp_trials
-                            AFTER UPDATE OF name, description ON trials
-                            BEGIN 
-                                UPDATE trials SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-                            END;""")
-        except sqlite3.OperationalError:
-            pass
-        
-        # Phases table
-        try:
-            cursor.execute("""CREATE TRIGGER update_timestamp_phases
-                            AFTER UPDATE OF name, description ON phases
-                            BEGIN 
-                                UPDATE phases SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-                            END;""")
-        except sqlite3.OperationalError:
-            pass
-
+            except sqlite3.OperationalError:
+                pass
 
     def create_database(self):
         """Create the data database and all of its tables."""

@@ -1,4 +1,4 @@
-from SQL.database import db_init, User, Dataset, Subject, Visit, Trial, Phase, Variable, Subvariable, phase_data
+from SQL.database_alchemy import db_init, User, Dataset, Subject, Visit, Trial, Phase, Variable, Subvariable, phase_data
 from SQL.database_init import DBInitializer
 
 import os
@@ -20,7 +20,7 @@ class TestDatabase(TestCase):
 
     def teardown_class(self):        
         pass
-        # os.remove(self.db_file)
+        os.remove(self.db_file)
 
     def test_db_exists(self):
         os.path.isfile(self.db_file)
