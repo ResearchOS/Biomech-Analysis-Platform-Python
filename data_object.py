@@ -6,13 +6,17 @@ from sqlite3 import Row
 from typing import Union, Type
 import weakref
 
+db_file: str = 'tests/test_database.db'
+# db_file: str = 'database.db'
+
 class DataObject():
     """The abstract base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage.
     All private attributes are prefixed with an underscore and are not included in the database.
     All public attributes are included in the database."""
 
+    db_file: str = db_file
     _instances = weakref.WeakValueDictionary()
-    _conn = sqlite3.connect('./SQL/database.db')
+    _conn = sqlite3.connect(db_file)
     _conn.row_factory = Row # Return rows as dictionaries.
 
     def __new__(cls, uuid, *args, **kwargs):
@@ -29,41 +33,42 @@ class DataObject():
         2. Select/set to default the rest of the object's attributes
         3. Insert/update the object in the database."""        
         # If the UUID was specified, ignore everything else and load the data object from the database.
-        tmp_kwargs = kwargs.copy()
-        if len(args) > 0 or (len(kwargs) == 1 and 'uuid' in kwargs):  
-            if len(args) > 0:
+        if (len(args)>0 and 'uuid' in kwargs):
+            raise ValueError("UUID cannot be specified as both a positional argument and a keyword argument.")
+        
+        if len(args)>1:
+            raise ValueError("Only one positional argument can be specified: the UUID.")
+        
+        if len(args) > 0:
                 uuid = args[0]              
-            else:
-                uuid = kwargs['uuid']
+        elif 'uuid' in kwargs:
+            uuid = kwargs['uuid']
+        else:
+            uuid = None
+
+        # Loading from the database if UUID.
+        if uuid:
             try:
                 assert self.is_uuid(uuid)
             except AssertionError:
-                raise ValueError("Only a valid UUID can be specified as a positional argument.")
-            try:
-                assert len(args) <= 1
-            except AssertionError:
-                raise ValueError("UUID is the only allowed positional argument.")
-            self.uuid = uuid # The UUID of the data object.                   
-            self._get() # The attributes of the data object.
-
-            # Allow updating attributes in the constructor if any kwargs provided.
-            for kwarg in kwargs:
-                setattr(self, kwarg, kwargs[kwarg])
-            if 'uuid' in kwargs:
-                del tmp_kwargs['uuid']
-            if len(tmp_kwargs) > 0:
-                self.update() # Update all attributes in the database.
-            if uuid in self._instances:
-                return
+                raise ValueError("Must specify a valid UUID.")
+            self.uuid = uuid # The UUID of the data object.
+            in_db = self._get() # The attributes of the data object.
         
-        # If the UUID was not specified, create a new data object.
-        if not hasattr(self, 'uuid'):
-            self.create_id()
-        self._set_defaults()
-        # Allow updating attributes in the constructor if any kwargs provided.
+        if not uuid or not in_db:
+            if not uuid:
+                self.create_id()
+            assert(hasattr(self, 'uuid') and self.is_uuid(self.uuid))
+            self._set_defaults()
+            self.insert()
+
+        # Allow updating attributes here in the constructor if any kwargs provided.
+        if 'uuid' in kwargs:
+            del kwargs['uuid']
         for kwarg in kwargs:
             setattr(self, kwarg, kwargs[kwarg])
-        self.insert()
+        if len(kwargs) > 0:
+            self.update()
         return
     
     def _set_defaults(self) -> None:
@@ -103,10 +108,6 @@ class DataObject():
             return input
         return [i for i in input]
     
-    def _register(self, id: str) -> None:
-        """Register the data object in the database."""
-        raise NotImplementedError
-    
     def insert(self) -> None:
         """Insert one record into the database."""
         cursor = self._conn.cursor()
@@ -131,7 +132,7 @@ class DataObject():
         return keys
     
     #TODO: Change the cursor to return with RowFactory so I can use keys to index into it.
-    def _get(self) -> None:
+    def _get(self) -> bool:
         """Get one record from the database."""
         if not self.is_uuid(self.uuid):
             raise ValueError("UUID must be specified.")
@@ -141,9 +142,15 @@ class DataObject():
         cursor.execute(sql)
         # rows = cursor.fetchall()
         # Add the public attributes to the object.
+        in_db = False
         for row in cursor:
+            in_db = True
             for key in row.keys():
-                setattr(self, key, row[key])
+                if key in ["created_at", "updated_at"]:
+                    setattr(self, key, datetime.datetime.strptime(row[key], '%Y-%m-%d %H:%M:%S.%f'))
+                else:
+                    setattr(self, key, row[key])
+        return in_db
 
     def update(self) -> None:
         """Update all attributes of a record in the database."""        

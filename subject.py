@@ -30,6 +30,8 @@ class Subject(DataObject):
     def dataset(self):
         """Return the dataset."""
         from dataset import Dataset
+        if not self.dataset_uuid:
+            return None
         return Dataset(self.dataset_uuid)
     
     @dataset.setter

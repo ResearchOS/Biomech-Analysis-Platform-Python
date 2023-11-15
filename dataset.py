@@ -19,20 +19,20 @@ class Dataset(DataObject):
         if hasattr(self, "uuid"):
             return
         super().__init__(*args, **kwargs)
-        self._subjects = self._get_all_children(self.uuid, "dataset_uuid", "subjects")        
+        self._subjects_list = self._get_all_children(self.uuid, "dataset_uuid", "subjects")        
 
     @property
     def subjects(self) -> list[DataObject]:
         """Return all subjects."""
         from subject import Subject
-        return [Subject(uuid) for uuid in self._subjects]
+        return [Subject(uuid) for uuid in self._subjects_list]
     
     @subjects.setter
     def subjects(self, values: list[Union[str, DataObject]] = None) -> None:
         """Set subjects. Can provide either a list of subject UUIDs or a list of subject objects."""
         from subject import Subject
         self._check_type(values, [str, Subject])
-        self._subjects = self._to_uuids(values)
+        self._subjects_list = self._to_uuids(values)
 
     def remove_subject(self, subject: Union[str, DataObject]) -> None:
         """Remove a subject from the dataset."""

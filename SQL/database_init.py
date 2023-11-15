@@ -20,13 +20,13 @@ data_table_names = [
 ]
 
 class DBInitializer():
-    def __init__(self):        
-        self.conn = sqlite3.connect('./SQL/database.db')
+    def __init__(self, db_file: str = './SQL/database.db'):        
+        self._conn = sqlite3.connect(db_file)
         self.create_database()
-        self.conn.commit()
+        self._conn.commit()
 
     def create_triggers(self):
-        cursor = self.conn.cursor()
+        cursor = self._conn.cursor()
         for table in object_table_names:
             try:
                 cursor.execute("""CREATE TRIGGER update_timestamp_""" + table + """
@@ -39,7 +39,7 @@ class DBInitializer():
 
     def create_database(self):
         """Create the data database and all of its tables."""
-        cursor = self.conn.cursor()
+        cursor = self._conn.cursor()
         # Datasets table
         cursor.execute("""CREATE TABLE IF NOT EXISTS datasets (
                         uuid TEXT PRIMARY KEY, 
