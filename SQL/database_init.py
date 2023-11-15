@@ -52,7 +52,7 @@ class DBInitializer():
         # Subjects table
         cursor.execute("""CREATE TABLE IF NOT EXISTS subjects (
                         uuid TEXT PRIMARY KEY, 
-                        dataset_uuid TEXT NOT NULL, 
+                        dataset_uuid TEXT, 
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
                         created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
