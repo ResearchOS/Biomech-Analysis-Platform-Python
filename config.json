@@ -1,0 +1,10 @@
+{
+    "Abbreviations": {
+        "Dataset": "DS",
+        "Subject": "SB",
+        "Visit": "VT",
+        "Phase": "PH",
+        "Variable": "VR",
+        "Subvariable": "SV"
+    }
+}
