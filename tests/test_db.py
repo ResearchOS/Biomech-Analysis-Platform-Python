@@ -44,6 +44,46 @@ class TestDatabase(TestCase):
         self.assertTrue(s1.uuid == "SB1")
         self.check_common_attrs(s1)
 
+    def test_create_visit(self):
+        from visit import Visit
+        v1 = Visit(uuid = "V1")
+        v1_1 = Visit(uuid = "V1")
+        self.assertTrue(v1 is v1_1)
+        self.assertTrue(v1.uuid == "V1")
+        self.check_common_attrs(v1)
+
+    def test_create_phase(self):
+        from phase import Phase
+        p1 = Phase(uuid = "P1")
+        p1_1 = Phase(uuid = "P1")
+        self.assertTrue(p1 is p1_1)
+        self.assertTrue(p1.uuid == "P1")
+        self.check_common_attrs(p1)
+
+    def test_create_trial(self):
+        from trial import Trial
+        t1 = Trial(uuid = "T1")
+        t1_1 = Trial(uuid = "T1")
+        self.assertTrue(t1 is t1_1)
+        self.assertTrue(t1.uuid == "T1")
+        self.check_common_attrs(t1)
+
+    def test_create_variable(self):
+        from variable import Variable
+        v1 = Variable(uuid = "V1")
+        v1_1 = Variable(uuid = "V1")
+        self.assertTrue(v1 is v1_1)
+        self.assertTrue(v1.uuid == "V1")
+        self.check_common_attrs(v1)
+
+    def test_create_subvariable(self):
+        from subvariable import Subvariable
+        sv1 = Subvariable(uuid = "SV1")
+        sv1_1 = Subvariable(uuid = "SV1")
+        self.assertTrue(sv1 is sv1_1)
+        self.assertTrue(sv1.uuid == "SV1")
+        self.check_common_attrs(sv1)
+
 if __name__=="__main__":
     td = TestDatabase()
     td.setup_class()
