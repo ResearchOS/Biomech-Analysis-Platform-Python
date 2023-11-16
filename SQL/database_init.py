@@ -44,9 +44,9 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS datasets (
                         uuid TEXT PRIMARY KEY, 
                         name TEXT NOT NULL DEFAULT 'Untitled', 
-                        description TEXT, 
-                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
-                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP
+                        description TEXT,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
                         )""")
 
         # Subjects table
@@ -55,8 +55,8 @@ class DBInitializer():
                         dataset_uuid TEXT, 
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
-                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
-                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (dataset_uuid) REFERENCES datasets(uuid) ON DELETE CASCADE
                         )""")
 
@@ -66,8 +66,8 @@ class DBInitializer():
                         subject_uuid TEXT NOT NULL,                      
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
-                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
-                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (subject_uuid) REFERENCES subjects(uuid) ON DELETE CASCADE
                         )""")
 
@@ -77,19 +77,20 @@ class DBInitializer():
                         visit_uuid TEXT NOT NULL,                      
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
-                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
-                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (visit_uuid) REFERENCES visits(uuid) ON DELETE CASCADE
                         )""")
 
         # Phases table. Phases are a many to many relationship with trials.
         cursor.execute("""CREATE TABLE IF NOT EXISTS phases (
                         uuid TEXT PRIMARY KEY,
-                        phase_name TEXT NOT NULL DEFAULT 'Untitled',
-                        start_uuid_var TEXT NOT NULL,
-                        end_uuid_var TEXT NOT NULL,
-                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP,
-                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP,
+                        name TEXT NOT NULL DEFAULT 'Untitled',
+                        description TEXT,
+                        start_uuid_var TEXT,
+                        end_uuid_var TEXT,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (start_uuid_var) REFERENCES variables(uuid) ON DELETE CASCADE,
                         FOREIGN KEY (end_uuid_var) REFERENCES variables(uuid) ON DELETE CASCADE                       
                         )""")
@@ -99,13 +100,15 @@ class DBInitializer():
                         uuid TEXT PRIMARY KEY, 
                         name TEXT NOT NULL DEFAULT 'Untitled', 
                         description TEXT, 
-                        created_at INTEGER DEFAULT CURRENT_TIMESTAMP, 
-                        updated_at INTEGER DEFAULT CURRENT_TIMESTAMP
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
                         )""")
         
         # Subvariables table. Subvariables are a many to many relationship with variables.
         cursor.execute("""CREATE TABLE IF NOT EXISTS subvariables (
-                        uuid TEXT PRIMARY KEY,                    
+                        uuid TEXT PRIMARY KEY,    
+                        name TEXT NOT NULL DEFAULT 'Untitled',  
+                        description TEXT,              
                         subvar_index TEXT NOT NULL DEFAULT 'Untitled',
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
                         updated_at TEXT DEFAULT CURRENT_TIMESTAMP                     

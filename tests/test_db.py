@@ -1,5 +1,5 @@
 from SQL.database_init import DBInitializer
-from data_object import DataObject
+from objects.data_object import DataObject
 
 
 import os
@@ -29,7 +29,7 @@ class TestDatabase(TestCase):
         self.assertTrue(hasattr(obj, "updated_at") and isinstance(obj.updated_at, datetime))
 
     def test_create_dataset(self):   
-        from dataset import Dataset     
+        from objects.dataset import Dataset     
         ds1 = Dataset(uuid = "DS1")
         ds1_1 = Dataset(uuid = "DS1")
         self.assertTrue(ds1 is ds1_1) # Check that the same object is returned.
@@ -37,7 +37,7 @@ class TestDatabase(TestCase):
         self.check_common_attrs(ds1)
 
     def test_create_subject(self):
-        from subject import Subject
+        from objects.subject import Subject
         s1 = Subject(uuid = "SB1")
         s1_1 = Subject(uuid = "SB1")
         self.assertTrue(s1 is s1_1)
@@ -45,39 +45,41 @@ class TestDatabase(TestCase):
         self.check_common_attrs(s1)
 
     def test_create_visit(self):
-        from visit import Visit
-        v1 = Visit(uuid = "V1")
-        v1_1 = Visit(uuid = "V1")
+        from objects.visit import Visit
+        v1 = Visit(uuid = "VT1")
+        v1_1 = Visit(uuid = "VT1")
         self.assertTrue(v1 is v1_1)
         self.assertTrue(v1.uuid == "V1")
         self.check_common_attrs(v1)
 
-    def test_create_phase(self):
-        from phase import Phase
-        p1 = Phase(uuid = "P1")
-        p1_1 = Phase(uuid = "P1")
-        self.assertTrue(p1 is p1_1)
-        self.assertTrue(p1.uuid == "P1")
-        self.check_common_attrs(p1)
-
     def test_create_trial(self):
-        from trial import Trial
-        t1 = Trial(uuid = "T1")
-        t1_1 = Trial(uuid = "T1")
+        from objects.trial import Trial
+        t1 = Trial(uuid = "TR1")
+        t1_1 = Trial(uuid = "TR1")
         self.assertTrue(t1 is t1_1)
         self.assertTrue(t1.uuid == "T1")
         self.check_common_attrs(t1)
 
+    def test_create_phase(self):
+        from objects.phase import Phase
+        from objects.trial import Trial
+        t1 = Trial(uuid = "TR1")
+        p1 = Phase(uuid = "PH1", trial = t1)
+        p1_1 = Phase(uuid = "PH1")
+        self.assertTrue(p1 is p1_1)
+        self.assertTrue(p1.uuid == "P1")
+        self.check_common_attrs(p1)
+
     def test_create_variable(self):
-        from variable import Variable
-        v1 = Variable(uuid = "V1")
-        v1_1 = Variable(uuid = "V1")
+        from objects.variable import Variable
+        v1 = Variable(uuid = "VR1")
+        v1_1 = Variable(uuid = "VR1")
         self.assertTrue(v1 is v1_1)
         self.assertTrue(v1.uuid == "V1")
         self.check_common_attrs(v1)
 
     def test_create_subvariable(self):
-        from subvariable import Subvariable
+        from objects.subvariable import Subvariable
         sv1 = Subvariable(uuid = "SV1")
         sv1_1 = Subvariable(uuid = "SV1")
         self.assertTrue(sv1 is sv1_1)
@@ -90,5 +92,10 @@ if __name__=="__main__":
     td.test_db_exists()
     td.test_create_dataset()
     td.test_create_subject()
+    td.test_create_visit()
+    td.test_create_phase()
+    td.test_create_trial()
+    td.test_create_variable()
+    td.test_create_subvariable()
     td.teardown_class()
         

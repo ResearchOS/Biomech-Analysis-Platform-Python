@@ -120,8 +120,11 @@ class DataObject():
             cursor.execute(sql)
             self._conn.commit()
         except sqlite3.IntegrityError as e:
-            if e.sqlite_errorcode != 1555:
-                raise e
+            if e.sqlite_errorcode == 1555:
+                return
+            elif e.sqlite_errorcode == 1299:
+                self.missing_parent_error()
+                return
 
     def _get_public_keys(self) -> list[str]:
         """Return all public keys of the current object."""        

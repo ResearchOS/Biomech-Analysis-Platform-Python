@@ -1,4 +1,4 @@
-from data_object import DataObject
+from objects.data_object import DataObject
 from typing import Union
 
 class Subvariable(DataObject):
@@ -24,3 +24,7 @@ class Subvariable(DataObject):
         self._check_type(value, [str, Variable])
         self._variable = value.uuid
         self.update()
+
+    def missing_parent_error(self) -> None:
+        """Raise an error if the parent is missing."""
+        raise AttributeError("Cannot create a subvariable without a variable.")

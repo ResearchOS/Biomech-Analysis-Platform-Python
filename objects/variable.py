@@ -1,4 +1,4 @@
-from data_object import DataObject
+from objects.data_object import DataObject
 from typing import Union
 
 class Variable(DataObject):
@@ -51,3 +51,7 @@ class Variable(DataObject):
         self._check_type(subvariable, [str, Subvariable])
         self._subvariables.append(subvariable.uuid)
         self.update()
+
+    def missing_parent_error(self) -> None:
+        """Raise an error if the parent is missing."""
+        pass

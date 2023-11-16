@@ -1,7 +1,6 @@
-from data_object import DataObject
+from objects.data_object import DataObject
 from SQL.database_init import DBInitializer
 from typing import Union
-from subject import Subject
 
 from json import load 
 
@@ -49,6 +48,7 @@ class Dataset(DataObject):
         self.update()
 
 if __name__=="__main__":
+    from objects.subject import Subject
     db = DBInitializer()
     
     d1 = Dataset("DS1")
