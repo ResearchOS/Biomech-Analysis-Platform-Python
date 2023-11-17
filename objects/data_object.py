@@ -28,10 +28,25 @@ class DataObject():
             return instance
 
     def __init__(self, *args, **kwargs) -> None:
-        """Initialize the data object. This has 3 parts, regardless of INSERT or UPDDATE or SELECT:
-        1. Set the object's UUID.
+        """Initialize the data object, either loading or creating one.
+        Case 1. UUID specified as a positional argument. No other arguments allowed.
+        Case 2. ID specified as a positional argument (get the latest version)
+        Case 3. UUID specified as a keyword argument.
+        Case 4. ID specified as a keyword argument.
+        Case 5. No args or UUID/ID kwargs provided.
+        Case 6. ID specified as a positional or keyword argument and UUID specified as a keyword argument (specific version of object).
+
+        Bad cases:
+        Case 1. ID in args and kwargs
+        Case 2. UUID in args and kwargs
+        Case 3. More than one positional argument.        
+
+        1. Set the object's UUID and ID.
         2. Select/set to default the rest of the object's attributes
-        3. Insert/update the object in the database."""        
+        3. Insert the object in the database."""      
+
+        uuid, id = self._get_uuid_and_id(args, kwargs) # Also return Boolean for whether we are loading or creating the object.
+
         # If the UUID was specified, ignore everything else and load the data object from the database.
         if (len(args)>0 and 'uuid' in kwargs):
             raise ValueError("UUID cannot be specified as both a positional argument and a keyword argument.")
@@ -40,7 +55,7 @@ class DataObject():
             raise ValueError("Only one positional argument can be specified: the UUID.")
         
         if len(args) > 0:
-                uuid = args[0]              
+            uuid = args[0]              
         elif 'uuid' in kwargs:
             uuid = kwargs['uuid']
         else:
@@ -71,6 +86,36 @@ class DataObject():
             self.update()
         return
     
+    def _get_uuid_and_id(self, args: tuple, kwargs: dict) -> tuple:
+        """Get the UUID and ID from the arguments."""
+        uuid = None
+        id = None
+        if len(args) > 1:
+            raise ValueError("Only one positional argument can be specified: the UUID or ID.")
+        if len(args) > 0:
+            if self.is_uuid(args[0]):
+                uuid = args[0]
+                # Load the ID from the database.
+                cursor = self._conn.cursor()
+                cursor.execute(f"SELECT id FROM {self._table_name} WHERE uuid = '{uuid}'")
+                row = cursor.fetchone()
+                if row:
+                    id = row[0]
+
+            elif self.is_id(args[0]):
+                id = args[0]
+            else:
+                raise ValueError("Must specify a valid UUID or ID.")        
+        
+        if 'id' in kwargs:
+            id = kwargs['id']
+        if 'uuid' in kwargs:
+            uuid = kwargs['uuid']
+        if not uuid and not id:
+            uuid = self.create_uuid()
+            id = self.create_id()
+        return uuid, id
+    
     def _set_defaults(self) -> None:
         """Set the default attributes of the data object."""
         self.name = "Untitled"
@@ -80,26 +125,38 @@ class DataObject():
         self.updated_at = time
         # self.tags = []
 
-    def is_uuid(self, id: str, prefix: str = None) -> bool:
+    def is_uuid(self, id: str) -> bool:
         """Check if the provided ID is a UUID."""
-        if not isinstance(id, str):
+        import uuid
+        try:
+            _tmp_id = uuid.uuid4(id)
+            return True
+        except ValueError:
             return False
-        
-        if prefix is None:
-            prefix = self._uuid_prefix
-        
-        if not id.startswith(prefix):
-            return False
-
-        return True
     
+    def create_uuid(self) -> None:
+        """Create the id for the data object."""
+        import uuid
+        self.uuid = uuid.uuid4() # For testing dataset creation.
+        return self.uuid
+
+    def is_id(self, id: str) -> bool:
+        """Check if the provided ID is a valid ID."""
+        raise NotImplementedError
+
     def create_id(self) -> None:
         """Create the id for the data object."""
-        self.uuid = "DS1" # For testing dataset creation.        
+        if not hasattr(self, "_uuid_prefix"):
+            raise NotImplementedError        
+        
+        self.id = self._uuid_prefix + "1"
+        return self.id
     
     def parse_id(self, id: str) -> str:
         """Parse the id for the data object.
         Returns the ID's type, abstract ID, and concrete ID."""
+        if not hasattr(self, "_uuid_prefix"):
+            raise NotImplementedError
         raise NotImplementedError
     
     def _input_to_list(self, input: any) -> list:
