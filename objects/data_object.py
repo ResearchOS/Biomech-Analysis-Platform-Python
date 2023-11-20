@@ -315,6 +315,7 @@ def _is_id(id: str) -> bool:
     
 def _get_uuid_and_id(table_name: str, prefix: str, args: tuple, kwargs: dict) -> tuple:
         """Get the UUID and ID from the arguments."""
+        from datetime import datetime
         uuid = None
         id = None
 
@@ -335,13 +336,17 @@ def _get_uuid_and_id(table_name: str, prefix: str, args: tuple, kwargs: dict) ->
             uuid = _create_uuid(table_name)
             id = _create_id(table_name, prefix)
         elif id:
-            sql = f'SELECT uuid FROM {table_name} WHERE id = "{id}"'
+            sql = f'SELECT uuid, timestamp FROM {table_name} WHERE id = "{id}"'
             cursor = DataObject._conn.cursor()
             cursor.execute(sql)
             rows = cursor.fetchall()
-            try:
-                uuid = rows[-1]['uuid']
-            except:
+            max_timestamp = datetime.fromisoformat("0001-01-01 00:00:00.000000")
+            for row in rows:                
+                timestamp = datetime.fromisoformat(row['timestamp'])
+                if timestamp > max_timestamp:
+                    max_timestamp = timestamp
+                    uuid = row['uuid']
+            if not uuid:
                 uuid = _create_uuid(table_name)
         elif uuid:
             sql = f'SELECT id FROM {table_name} WHERE uuid = "{uuid}"'
