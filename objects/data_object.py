@@ -163,7 +163,7 @@ class DataObject():
         for row in cursor:
             in_db = True
             for key in row.keys():
-                if key in ["created_at", "updated_at"]:
+                if key in ["timestamp"]:
                     setattr(self, key, datetime.datetime.strptime(row[key], '%Y-%m-%d %H:%M:%S.%f'))
                 else:
                     setattr(self, key, row[key])

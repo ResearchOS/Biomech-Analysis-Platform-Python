@@ -12,7 +12,7 @@ class Dataset(DataObject):
 
     def __init__(self, *args, **kwargs):
         # Check if the object already exists.
-        if self in Dataset._instances:
+        if self in [instance for instance in DataObject._instances]:
             return
         super().__init__(*args, **kwargs)
         self._subjects = self._get_all_children(self.uuid, "dataset_uuid", "subjects")        
