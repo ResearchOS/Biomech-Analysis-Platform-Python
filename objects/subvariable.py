@@ -4,7 +4,7 @@ from typing import Union
 class Subvariable(DataObject):
     """Subvariable class."""
 
-    _uuid_prefix: str = "SV"
+    _id_prefix: str = "SV"
     _table_name: str = "subvariables"
 
     def __init__(self, *args, **kwargs):

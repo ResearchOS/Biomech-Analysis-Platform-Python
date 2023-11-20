@@ -3,7 +3,7 @@ from typing import Union
 
 class Visit(DataObject):
 
-    _uuid_prefix: str = "VT"
+    _id_prefix: str = "VT"
     _table_name: str = "visits"
 
     def __init__(self, *args, **kwargs):

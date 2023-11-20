@@ -4,7 +4,7 @@ from typing import Union
 class Phase(DataObject):
     """Phase class."""
 
-    _uuid_prefix: str = "PH"
+    _id_prefix: str = "PH"
     _table_name: str = "phases"
 
     def __init__(self, *args, **kwargs):

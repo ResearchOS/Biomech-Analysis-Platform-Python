@@ -4,7 +4,7 @@ from typing import Union
 class Subject(DataObject):
     """Subject class."""
 
-    _uuid_prefix: str = "SB"
+    _id_prefix: str = "SB"
     _table_name: str = "subjects"
 
     def __init__(self, *args, **kwargs):

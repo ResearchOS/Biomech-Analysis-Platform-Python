@@ -3,7 +3,7 @@ from typing import Union
 
 class Trial(DataObject):
 
-    _uuid_prefix: str = "TR"
+    _id_prefix: str = "TR"
     _table_name: str = "trials"
 
     def __new__(cls, uuid, *args, **kwargs):

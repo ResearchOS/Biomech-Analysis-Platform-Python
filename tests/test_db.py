@@ -1,5 +1,6 @@
 from SQL.database_init import DBInitializer
 from objects.data_object import DataObject
+from objects.data_object import _create_uuid   
 
 
 import os
@@ -25,23 +26,24 @@ class TestDatabase(TestCase):
     def check_common_attrs(self, obj: DataObject):        
         self.assertTrue(obj.name == "Untitled")
         self.assertTrue(obj.description == "Description here.")
-        self.assertTrue(hasattr(obj, "created_at") and isinstance(obj.created_at, datetime))
-        self.assertTrue(hasattr(obj, "updated_at") and isinstance(obj.updated_at, datetime))
+        self.assertTrue(hasattr(obj, "timestamp"))
+        datetime.fromisoformat(obj.timestamp)
 
     def test_create_dataset(self):   
-        from objects.dataset import Dataset     
-        ds1 = Dataset(uuid = "DS1")
-        ds1_1 = Dataset(uuid = "DS1")
+        from objects.dataset import Dataset          
+        ds1 = Dataset(_db_file = db_file)
+        ds1_1 = Dataset(ds1.uuid)
+        ds1_2 = Dataset(uuid = ds1.uuid)
         self.assertTrue(ds1 is ds1_1) # Check that the same object is returned.
-        self.assertTrue(ds1.uuid == "DS1")
         self.check_common_attrs(ds1)
 
     def test_create_subject(self):
         from objects.subject import Subject
-        s1 = Subject(uuid = "SB1")
-        s1_1 = Subject(uuid = "SB1")
-        self.assertTrue(s1 is s1_1)
-        self.assertTrue(s1.uuid == "SB1")
+        uuid1 = _create_uuid("subjects")
+        s1 = Subject()
+        s1_1 = Subject(s1.uuid)
+        s1_2 = Subject(uuid = s1.uuid)
+        self.assertTrue(s1 is s1_1 and s1 is s1_2)        
         self.check_common_attrs(s1)
 
     def test_create_visit(self):

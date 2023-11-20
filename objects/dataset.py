@@ -4,15 +4,15 @@ from typing import Union
 
 class Dataset(DataObject):
 
-    _uuid_prefix: str = "DS"
+    _id_prefix: str = "DS"
     _table_name: str = "datasets"
 
-    def __new__(cls, uuid, *args, **kwargs):
-        return super().__new__(cls, uuid)
+    def __new__(cls, *args, **kwargs):
+        return super().__new__(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         # Check if the object already exists.
-        if hasattr(self, "uuid"):
+        if self in Dataset._instances:
             return
         super().__init__(*args, **kwargs)
         self._subjects = self._get_all_children(self.uuid, "dataset_uuid", "subjects")        

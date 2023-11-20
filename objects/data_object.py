@@ -6,29 +6,36 @@ from sqlite3 import Row
 from typing import Union, Type
 import weakref
 
-db_file: str = 'tests/test_database.db'
-# db_file: str = 'database.db'
+db_file_test: str = 'tests/test_database.db'
+db_file_production: str = 'database.db'
+
+abstract_id_len = 6
+instance_id_len = 3
 
 class DataObject():
     """The abstract base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage.
     All private attributes are prefixed with an underscore and are not included in the database.
     All public attributes are included in the database."""
 
-    db_file: str = db_file
+    _db_file: str = db_file_test
     _instances = weakref.WeakValueDictionary()
-    _conn = sqlite3.connect(db_file)
+    _conn = sqlite3.connect(_db_file)
     _conn.row_factory = Row # Return rows as dictionaries.
 
-    def __new__(cls, uuid, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):
+        """Create a new data object. If the object already exists, return the existing object."""
+        uuid, id = _get_uuid_and_id(cls._table_name, cls._id_prefix, args, kwargs)
         if uuid in cls._instances:
             return cls._instances[uuid]
         else:
             instance = super(DataObject, cls).__new__(cls)
             cls._instances[uuid] = instance
+            instance.uuid = uuid
+            instance.id = id
             return instance
 
     def __init__(self, *args, **kwargs) -> None:
-        """Initialize the data object, either loading or creating one.
+        """Initialize the data object, whether loading or creating one.
         Case 1. UUID specified as a positional argument. No other arguments allowed.
         Case 2. ID specified as a positional argument (get the latest version)
         Case 3. UUID specified as a keyword argument.
@@ -44,120 +51,70 @@ class DataObject():
         1. Set the object's UUID and ID.
         2. Select/set to default the rest of the object's attributes
         3. Insert the object in the database."""      
-
-        uuid, id = self._get_uuid_and_id(args, kwargs) # Also return Boolean for whether we are loading or creating the object.
-
-        # If the UUID was specified, ignore everything else and load the data object from the database.
-        if (len(args)>0 and 'uuid' in kwargs):
-            raise ValueError("UUID cannot be specified as both a positional argument and a keyword argument.")
         
-        if len(args)>1:
-            raise ValueError("Only one positional argument can be specified: the UUID.")
-        
-        if len(args) > 0:
-            uuid = args[0]              
-        elif 'uuid' in kwargs:
-            uuid = kwargs['uuid']
-        else:
-            uuid = None
+        in_db = self._get() # The attributes of the data object. Also return Boolean for whether we are loading or creating the object.
 
-        # Loading from the database if UUID.
-        if uuid:
-            try:
-                assert self.is_uuid(uuid)
-            except AssertionError:
-                raise ValueError("Must specify a valid UUID.")
-            self.uuid = uuid # The UUID of the data object.
-            in_db = self._get() # The attributes of the data object.
-        
-        if not uuid or not in_db:
-            if not uuid:
-                self.create_id()
-            assert(hasattr(self, 'uuid') and self.is_uuid(self.uuid))
-            self._set_defaults()
-            self.insert()
-
-        # Allow updating attributes here in the constructor if any kwargs provided.
         if 'uuid' in kwargs:
             del kwargs['uuid']
+
+        # If the object is not in the database, set the defaults and insert it.
+        if not in_db:
+            self._set_defaults()
+            # If no kwargs provided, insert the object. Check for kwargs is so it doesn't get double inserted after update() if kwargs provided.
+            if len(kwargs) == 0:                
+                self.insert()
+
+        # Allow updating attributes here in the constructor if any kwargs provided.
         for kwarg in kwargs:
             setattr(self, kwarg, kwargs[kwarg])
         if len(kwargs) > 0:
             self.update()
-        return
-    
-    def _get_uuid_and_id(self, args: tuple, kwargs: dict) -> tuple:
-        """Get the UUID and ID from the arguments."""
-        uuid = None
-        id = None
-        if len(args) > 1:
-            raise ValueError("Only one positional argument can be specified: the UUID or ID.")
-        if len(args) > 0:
-            if self.is_uuid(args[0]):
-                uuid = args[0]
-                # Load the ID from the database.
-                cursor = self._conn.cursor()
-                cursor.execute(f"SELECT id FROM {self._table_name} WHERE uuid = '{uuid}'")
-                row = cursor.fetchone()
-                if row:
-                    id = row[0]
 
-            elif self.is_id(args[0]):
-                id = args[0]
-            else:
-                raise ValueError("Must specify a valid UUID or ID.")        
-        
-        if 'id' in kwargs:
-            id = kwargs['id']
-        if 'uuid' in kwargs:
-            uuid = kwargs['uuid']
-        if not uuid and not id:
-            uuid = self.create_uuid()
-            id = self.create_id()
-        return uuid, id
+    def _get_uuid_and_id(self, args: tuple, kwargs: dict) -> None:
+        """Get the UUID and ID from the arguments."""
+        uuid, id = _get_uuid_and_id(self._table_name, self._id_prefix, args, kwargs)
+        self.uuid = uuid
+        self.id = id
     
     def _set_defaults(self) -> None:
         """Set the default attributes of the data object."""
         self.name = "Untitled"
         self.description = "Description here."
         time = self._current_timestamp()
-        self.created_at = time
-        self.updated_at = time
-        # self.tags = []
+        self.timestamp = time
 
-    def is_uuid(self, id: str) -> bool:
-        """Check if the provided ID is a UUID."""
-        import uuid
-        try:
-            _tmp_id = uuid.uuid4(id)
-            return True
-        except ValueError:
-            return False
+    def is_uuid(self, uuid: str) -> bool:
+        """Check if the provided ID is a UUID."""        
+        if uuid is None:
+            uuid = self.id
+        return _is_uuid(uuid)
     
     def create_uuid(self) -> None:
         """Create the id for the data object."""
-        import uuid
-        self.uuid = uuid.uuid4() # For testing dataset creation.
-        return self.uuid
+        self.uuid = _create_uuid()
 
     def is_id(self, id: str) -> bool:
         """Check if the provided ID is a valid ID."""
+        if id is None:
+            self.id = id
         raise NotImplementedError
 
     def create_id(self) -> None:
         """Create the id for the data object."""
-        if not hasattr(self, "_uuid_prefix"):
-            raise NotImplementedError        
-        
-        self.id = self._uuid_prefix + "1"
-        return self.id
-    
+        self.id = _create_id(self._id_prefix, self._table_name)
+        prefix, abstract, instance = self.parse_id(self.id)        
+        if not prefix == self._id_prefix:
+            raise ValueError(f"ID prefix {prefix} does not match object's prefix: {self._id_prefix}.")
+        self.abstract_id = abstract
+        self.instance_id = instance
+
     def parse_id(self, id: str) -> str:
         """Parse the id for the data object.
         Returns the ID's type, abstract ID, and concrete ID."""
-        if not hasattr(self, "_uuid_prefix"):
-            raise NotImplementedError
-        raise NotImplementedError
+        prefix = self.id.split("_")[0][:2]
+        abstract_id = self.id.split("_")[0][2:]
+        instance_id = self.id.split("_")[1]
+        return prefix, abstract_id, instance_id
     
     def _input_to_list(self, input: any) -> list:
         """Returns whether the object is a list."""
@@ -195,7 +152,7 @@ class DataObject():
     def _get(self) -> bool:
         """Get one record from the database."""
         if not self.is_uuid(self.uuid):
-            raise ValueError("UUID must be specified.")
+            raise ValueError("UUID must be specified in the proper format.")
         
         cursor = self._conn.cursor()        
         sql = f'SELECT * FROM {self._table_name} WHERE uuid = "{self.uuid}"'
@@ -213,18 +170,9 @@ class DataObject():
         return in_db
 
     def update(self) -> None:
-        """Update all attributes of a record in the database."""        
-        cursor = self._conn.cursor()   
-        keys_list = self._get_public_keys()                        
-        keys = ', '.join(keys_list)
-        values = []
-        for key in keys_list:
-            values.append(str(getattr(self, key)))
-        values = '", "'.join(values)
-        values = '"' + values + '"' # Surround the values with quotes.
-        sql = f"UPDATE {self._table_name} SET ({keys}) VALUES ({values}) WHERE id = {self.uuid}"
-        cursor.execute(sql)
-        self._conn.commit()
+        """Update all attributes of a record in the database.
+        Actually performs an insert with new UUID (same ID), following Type 2 slowly changing dimension practice."""        
+        self.insert()
 
     def delete(self) -> None:
         """Delete a record from the database."""
@@ -313,3 +261,98 @@ class DataObject():
     def _current_timestamp(self):
         """Return the current timestamp."""
         return datetime.datetime.now()
+    
+def _create_id(table_name: str, prefix: str, abstract: str = None, instance: str = None) -> str:
+    """Create the id for the data object."""
+    import random
+    is_unique = False
+    while not is_unique:
+        if not abstract:
+            abstract_new = str(hex(random.randrange(0, 16**abstract_id_len))[2:]).upper()
+            abstract_new = "0" * (abstract_id_len-len(abstract_new)) + abstract_new
+        else:
+            abstract_new = abstract
+
+        if not instance:
+            instance_new = str(hex(random.randrange(0, 16**instance_id_len))[2:]).upper()
+            instance_new = "0" * (instance_id_len-len(instance_new)) + instance_new
+        else:
+            instance_new = instance
+
+        id = prefix + abstract_new + "_" + instance_new
+        cursor = DataObject._conn.cursor()
+        sql = f'SELECT id FROM {table_name} WHERE id = "{id}"'
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            is_unique = True
+    return id
+
+def _create_uuid(table_name: str) -> str:
+    """Create the uuid for the data object."""
+    import uuid
+    is_unique = False
+    while not is_unique:
+        uuid_out = str(uuid.uuid4()) # For testing dataset creation.
+        cursor = DataObject._conn.cursor()
+        sql = f'SELECT uuid FROM {table_name} WHERE uuid = "{uuid_out}"'
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            is_unique = True
+    return uuid_out
+
+def _is_uuid(uuid: str) -> bool:
+    """Check if the provided ID is a UUID."""
+    import re
+    uuid_pattern = re.compile(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$', re.IGNORECASE)
+    return bool(uuid_pattern.match(str(uuid)))
+
+def _is_id(id: str) -> bool:
+    """Check if the provided ID is a valid ID."""
+    return True
+    
+def _get_uuid_and_id(table_name: str, prefix: str, args: tuple, kwargs: dict) -> tuple:
+        """Get the UUID and ID from the arguments."""
+        uuid = None
+        id = None
+
+        if len(args) > 1:
+            raise ValueError("Only one positional argument allowed.")
+        if len(args) == 1:
+            if _is_uuid(args[0]):
+                uuid = args[0]
+            elif _is_id(args[0]):
+                id = args[0]
+            else:
+                raise ValueError("Positional argument must be a UUID or ID.")
+        if 'uuid' in kwargs:
+            uuid = kwargs['uuid']
+        if 'id' in kwargs:
+            id = kwargs['id']
+        if not uuid and not id:
+            uuid = _create_uuid(table_name)
+            id = _create_id(table_name, prefix)
+        elif id:
+            sql = f'SELECT uuid FROM {table_name} WHERE id = "{id}"'
+            cursor = DataObject._conn.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            try:
+                uuid = rows[-1]['uuid']
+            except:
+                uuid = _create_uuid(table_name)
+        elif uuid:
+            sql = f'SELECT id FROM {table_name} WHERE uuid = "{uuid}"'
+            cursor = DataObject._conn.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            if len(rows) > 1:
+                raise ValueError(f"Expected <=1 row, got {len(rows)}.")
+            try:
+                id = rows[0]['id']
+            except:
+                id = _create_id(table_name, prefix) # If the object doesn't exist, create it.
+
+        return uuid, id
