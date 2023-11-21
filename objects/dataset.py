@@ -15,8 +15,8 @@ class Dataset(DataObject):
         if self.uuid in DataObject._instances:
             return
         super().__init__(*args, **kwargs)
-        self._subjects = self._get_all_children(self.uuid, "dataset_uuid", "subjects")        
-
+        self._subjects = self._get_all_children(self.uuid, "dataset_uuid", "subjects")
+        
     @property
     def subjects(self) -> list[DataObject]:
         """Return all subjects."""

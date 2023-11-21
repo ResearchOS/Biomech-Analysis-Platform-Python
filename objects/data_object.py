@@ -19,19 +19,21 @@ class DataObject():
 
     _db_file: str = db_file_test
     _instances = weakref.WeakValueDictionary()
+    _instances_count = {}
     _conn = sqlite3.connect(_db_file)
     _conn.row_factory = Row # Return rows as dictionaries.
 
     def __new__(cls, *args, **kwargs):
         """Create a new data object. If the object already exists, return the existing object."""
-        uuid, id = _get_uuid_and_id(cls._table_name, cls._id_prefix, args, kwargs)
-        if uuid in cls._instances:
-            return cls._instances[uuid]
+        uuid, object_id = _get_uuid_and_id(cls._table_name, cls._id_prefix, args, kwargs)
+        if object_id in cls._instances:
+            cls._instances_count[object_id] += 1
+            return cls._instances[object_id]
         else:
             instance = super(DataObject, cls).__new__(cls)
-            cls._instances[uuid] = instance
-            instance.uuid = uuid
-            instance.id = id
+            cls._instances[object_id] = instance
+            cls._instances_count[object_id] = 1
+            instance.id = object_id
             return instance
 
     def __init__(self, *args, **kwargs) -> None:
@@ -54,8 +56,8 @@ class DataObject():
         
         in_db = self._get() # The attributes of the data object. Also return Boolean for whether we are loading or creating the object.
 
-        if 'uuid' in kwargs:
-            del kwargs['uuid']
+        if 'id' in kwargs:
+            del kwargs['id']
 
         # If the object is not in the database, set the defaults and insert it.
         if not in_db:
@@ -69,6 +71,16 @@ class DataObject():
             setattr(self, kwarg, kwargs[kwarg])
         if len(kwargs) > 0:
             self.update()
+
+    def __del__(self) -> None:
+        """Delete the object from the database."""
+        if self.id not in self._instances:
+            raise ValueError("Object not in instances.")
+        self._instances_count[self.id] -= 1
+        if self._instances_count[self.id] == 0:
+            del self._instances[self.id]
+            del self._instances_count[self.id]
+            
 
     def _get_uuid_and_id(self, args: tuple, kwargs: dict) -> None:
         """Get the UUID and ID from the arguments."""
