@@ -64,7 +64,11 @@ class DBInitializer():
                        FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE
                         )""")
 
+        # Data table??
+        """Contains all data of all types, and a reference to which object it is derived from/is the child of."""
 
+        # Runs table??
+        """Lists all runs of each processing step."""
 
 
         # # Datasets table
