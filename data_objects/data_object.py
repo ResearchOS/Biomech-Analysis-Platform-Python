@@ -6,7 +6,7 @@ from sqlite3 import Row
 from typing import Union, Type
 import weakref
 
-from research_objects import ResearchObject
+from research_object import ResearchObject
 
 db_file_test: str = 'tests/test_database.db'
 db_file_production: str = 'database.db'

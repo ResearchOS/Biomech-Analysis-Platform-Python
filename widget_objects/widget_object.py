@@ -1,6 +1,6 @@
-from research_objects import ResearchObject
 
-class WidgetObject(ResearchObject):
+
+class WidgetObject():
     """Parent class for visualizing all research objects."""
     def __init__():
         pass
