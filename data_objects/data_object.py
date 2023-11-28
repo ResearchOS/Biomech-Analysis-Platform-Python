@@ -6,13 +6,15 @@ from sqlite3 import Row
 from typing import Union, Type
 import weakref
 
+from research_objects import ResearchObject
+
 db_file_test: str = 'tests/test_database.db'
 db_file_production: str = 'database.db'
 
 abstract_id_len = 6
 instance_id_len = 3
 
-class DataObject():
+class DataObject(ResearchObject):
     """The abstract base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage.
     All private attributes are prefixed with an underscore and are not included in the database.
     All public attributes are included in the database."""

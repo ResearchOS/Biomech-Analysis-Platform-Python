@@ -1,4 +1,4 @@
-from objects.data_object import DataObject
+from data_objects.data_object import DataObject
 from SQL.database_init import DBInitializer
 from typing import Union
 

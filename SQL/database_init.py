@@ -40,6 +40,12 @@ class DBInitializer():
     def create_database(self):
         """Create the data database and all of its tables."""
         cursor = self._conn.cursor()
+        # Objects table
+        cursor.execute("""CREATE TABLE IF NOT EXISTS objects (
+                       object_id TEXT PRIMARY KEY,
+                       date_created TEXT DEFAULT CURRENT_TIMESTAMP
+                      )""")
+
         # Transactions table
         cursor.execute("""CREATE TABLE IF NOT EXISTS transactions (
                        transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,6 +53,7 @@ class DBInitializer():
                        attr_id INTEGER NOT NULL DEFAULT 0,
                        attr_value TEXT,
                        FOREIGN KEY (attr_id) REFERENCES attributes(attr_id) ON DELETE CASCADE
+                       FOREIGN KEY (object_id) REFERENCES objects(object_id) ON DELETE CASCADE
                        )""")
 
         # Attributes table

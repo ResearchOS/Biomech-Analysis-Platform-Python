@@ -1,4 +1,4 @@
-from objects.data_object import DataObject
+from data_objects.data_object import DataObject
 from typing import Union
 
 class Visit(DataObject):

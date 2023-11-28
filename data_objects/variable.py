@@ -1,4 +1,4 @@
-from objects.data_object import DataObject
+from data_objects.data_object import DataObject
 from typing import Union
 
 class Variable(DataObject):
@@ -9,7 +9,6 @@ class Variable(DataObject):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._subvariables = self._get_all_children(self.uuid, "variable_uuid", "subvariables")
         self._phases = self._get_all_parents(self.uuid, "variable_uuid", "phase_uuid", "phase_variables")
 
     @property
