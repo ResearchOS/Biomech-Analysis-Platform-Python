@@ -3,7 +3,7 @@
 import sqlite3, datetime
 from sqlite3 import Row
 
-from typing import Union, Type
+from typing import Union, Type, Any
 import weakref
 
 from research_object import ResearchObject
@@ -11,19 +11,27 @@ from research_object import ResearchObject
 db_file_test: str = 'tests/test_database.db'
 db_file_production: str = 'database.db'
 
-abstract_id_len = 6
-instance_id_len = 3
+
 
 class DataObject(ResearchObject):
     """The abstract base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage.
     All private attributes are prefixed with an underscore and are not included in the database.
     All public attributes are included in the database."""
 
+    table_name: str = "DataObjects"
     _db_file: str = db_file_test
     _instances = weakref.WeakValueDictionary()
     _instances_count = {}
     _conn = sqlite3.connect(_db_file)
     _conn.row_factory = Row # Return rows as dictionaries.
+
+    def __setattr__(self, __name: str, __value: Any) -> None:
+        super().__setattr__(__name, __value)        
+        if __name == "id":
+            return
+        
+        # Create the object in the database.
+        pass
 
     def __new__(cls, *args, **kwargs):
         """Create a new data object. If the object already exists, return the existing object."""
@@ -38,7 +46,7 @@ class DataObject(ResearchObject):
             instance.id = object_id
             return instance
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, name: str) -> None:
         """Initialize the data object, whether loading or creating one.
         Case 1. UUID specified as a positional argument. No other arguments allowed.
         Case 2. ID specified as a positional argument (get the latest version)
@@ -54,7 +62,8 @@ class DataObject(ResearchObject):
 
         1. Set the object's UUID and ID.
         2. Select/set to default the rest of the object's attributes
-        3. Insert the object in the database."""      
+        3. Insert the object in the database."""    
+        super().__init__(name = name)  
         
         in_db = self._get() # The attributes of the data object. Also return Boolean for whether we are loading or creating the object.
 

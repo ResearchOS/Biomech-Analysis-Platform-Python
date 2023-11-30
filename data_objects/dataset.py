@@ -44,10 +44,18 @@ class Dataset(DataObject):
         self._subjects.append(subject.uuid)
         self.update()
 
+    def get_current():
+        """Get the current dataset."""
+        pass
+
+    def set_current():
+        """Set this dataset as the "current"."""
+        pass
+
 if __name__=="__main__":
-    from objects.subject import Subject
-    from objects.trial import Trial
-    from objects.phase import Phase
+    from data_objects.subject import Subject
+    from data_objects.trial import Trial
+    from data_objects.phase import Phase
     db = DBInitializer()
     
     d1 = Dataset("DS1")

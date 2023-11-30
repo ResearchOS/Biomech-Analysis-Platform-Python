@@ -1,11 +1,42 @@
-<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="641px" height="701px" viewBox="-0.5 -0.5 641 701" content="&lt;mxfile&gt;&lt;diagram id=&quot;Hqdow82CbryWfg_VpLOb&quot; name=&quot;Page-1&quot;&gt;7VrbcpswEP0aZtwHz9hgO+1jsHN56WUmnfaRkUEGdQSiQvjSr+8KJC7GTpNJImw3L7Y4CPawWu3RCixnHm/vOEqjzyzA1LJHwdZyFpZtf3LG8CuBXQmMZ6NJiYScBAqrgQfyBytwpNCcBDhrdRSMUUHSNuizJMG+aGGIc7Zpd1sx2raaohB3gAcf0S76kwQiKtGP01GN32MSRtryeKTOxEh3VkAWoYBtGpBzYzlzzpgoW/F2jql0nvZLed3tkbMVMY4T8ZQL7PKCNaK5ejbLnlG41E0lO7FTjzz7nUtKbox4SBLLuR6l2+pwKFgK0KSABN6KIaIklL18oIE5oPUdoBWq/8LOUgPfOUFUo8B4ud8TsHQfi7ikqQNE2xgfN/ecx6J4JarnOnRLV/o6QpmMxWtoU5IJa+p+k5A1XTxG/NV5rElGREnjR9E0Y3wIt/JymI9eyvGKbEsGmeDGHl6FEX9KuFyG4TrsBh/6DLxi7D2SEOF5wMR4tB+zabes2WvMBYHkfV0mpUWRrVyVohalOZdBrxUtUvGKQIp03BVLhJKesa2Ob1FMqFSte0zXWN5V5iARU9mpsi0N4u3RjDyu8jwIJGYxFnwHXdQFMy1yWhy1VGxqpQHBLLGooTK2o0Ck1C2s7l0LADSUBhzWA+d09GCBBPq6/CX1+4xEoTknjM4In2MkcOAhYT4FS/t5GvRqP0Ex7scyLEX9nnyey3lbWR4NIAYC+GcJ3ZnNxzr6lrt+PCFQ2F6DSQKGV2B56gnmyVlQMnGhJDnVNNUctWL5plcSpgcOhDFTDBqx3CQz7zT+h/UdSTJYRehR+cIS3EM21+YPSrGJxEoxkOjGxQvdAWclmfbvY4IeYnGAxat45dlcErx5Ky5nMT2GxeRIcyGTrUz2A5TsmmVQn8QgUDxEqVcu9/fLs8YgGa3RSKYIDVrLhXlVl3jdgPqXeL2R4/yI0AAonY7nCkZdxxVw/37zc14MoCAxzgSKU+04mb4laJBLsQsEk5IVAzVoLcSePZxnXcPbV+0afujoreFGEW9rrFnET3S1/5IifnI6RfxDfnYVfGODqV1SlNuqhosKmMcow6JWeXnwvrV7qYbr0NtTQMPB1+PWror4Zu1xNObPWiXGTlslzO70Tk9HJPbfV52JRAj5wrItEeU7TMMSkSmNLYh0BfddIi7LcB16exJhOPh6lAgV8Rf5/s+5MqgKcFh/a1Kcu6u/2HFu/gI=&lt;/diagram&gt;&lt;/mxfile&gt;">
-    <defs/>
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="2166px" height="1191px" viewBox="-0.5 -0.5 2166 1191" content="&lt;mxfile&gt;&lt;diagram id=&quot;Hqdow82CbryWfg_VpLOb&quot; name=&quot;Page-1&quot;&gt;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&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs>
+        <clipPath id="mx-clip-1364-51-252-144-0">
+            <rect x="1364" y="51" width="252" height="144"/>
+        </clipPath>
+        <clipPath id="mx-clip-1364-203-252-350-0">
+            <rect x="1364" y="203" width="252" height="350"/>
+        </clipPath>
+        <clipPath id="mx-clip-1374-631-372-26-0">
+            <rect x="1374" y="631" width="372" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-1374-665-372-160-0">
+            <rect x="1374" y="665" width="372" height="160"/>
+        </clipPath>
+        <clipPath id="mx-clip-1014-611-262-64-0">
+            <rect x="1014" y="611" width="262" height="64"/>
+        </clipPath>
+        <clipPath id="mx-clip-1014-683-262-26-0">
+            <rect x="1014" y="683" width="262" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-4-231-262-64-0">
+            <rect x="4" y="231" width="262" height="64"/>
+        </clipPath>
+        <clipPath id="mx-clip-4-303-262-26-0">
+            <rect x="4" y="303" width="262" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-394-31-152-26-0">
+            <rect x="394" y="31" width="152" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-394-65-152-26-0">
+            <rect x="394" y="65" width="152" height="26"/>
+        </clipPath>
+    </defs>
     <g>
-        <rect x="480" y="470" width="160" height="230" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" pointer-events="all"/>
+        <rect x="1545" y="960" width="160" height="230" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" pointer-events="all"/>
         <g transform="translate(-0.5 -0.5)">
             <switch>
                 <foreignObject pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility" style="overflow: visible; text-align: left;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 162px; height: 230px; padding-top: 470px; margin-left: 480px;">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 162px; height: 230px; padding-top: 960px; margin-left: 1545px;">
                         <div data-drawio-colors="color: rgb(0, 0, 0); " style="box-sizing: border-box; font-size: 0px; text-align: left; width: 160px; height: 230px; overflow: hidden;">
                             <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: all; width: 100%; height: 100%; white-space: nowrap;">
                                 <p style="margin:0px;margin-top:4px;text-align:center;">
@@ -42,88 +73,31 @@
                         </div>
                     </div>
                 </foreignObject>
-                <text x="480" y="482" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
+                <text x="1545" y="972" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
                     Trial...
                 </text>
             </switch>
         </g>
-        <rect x="140" y="0" width="250" height="420" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" pointer-events="all"/>
+        <rect x="1915" y="570" width="250" height="200" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" pointer-events="all"/>
         <g transform="translate(-0.5 -0.5)">
             <switch>
                 <foreignObject pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility" style="overflow: visible; text-align: left;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 252px; height: 420px; padding-top: 0px; margin-left: 140px;">
-                        <div data-drawio-colors="color: rgb(0, 0, 0); " style="box-sizing: border-box; font-size: 0px; text-align: left; width: 250px; height: 420px; overflow: hidden;">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 252px; height: 200px; padding-top: 570px; margin-left: 1915px;">
+                        <div data-drawio-colors="color: rgb(0, 0, 0); " style="box-sizing: border-box; font-size: 0px; text-align: left; width: 250px; height: 200px; overflow: hidden;">
                             <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: all; width: 100%; height: 100%; white-space: nowrap;">
                                 <p style="margin:0px;margin-top:4px;text-align:center;">
                                     <b>
-                                        DataObject
+                                        DataObject(ResearchObject)
                                     </b>
                                 </p>
-                                <hr size="1"/>
                                 <p style="margin:0px;margin-left:4px;">
-                                    - __init__
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + created_at: str
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + updated_at: str
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + name: str
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + desc: str
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + uuid: str (read only)
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + created_by: str
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + tags: list[str]
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + up_to_date: Bool
-                                </p>
-                                <hr size="1"/>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + create_uuid(): str
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + parse_uuid(id: str): str, str, str
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    <br/>
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + insert(): None
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + update(): DataObject
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    + delete(id: str): None
-                                </p>
-                                <p style="margin: 0px 0px 0px 4px;">
-                                    - get(id: str): DataObject
-                                </p>
-                                <p style="margin: 0px 0px 0px 4px;">
-                                    - new(id: str): DataObject
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    <br/>
-                                </p>
-                                <p style="margin:0px;margin-left:4px;">
-                                    - input_to_list(any): list
                                     <br/>
                                 </p>
                                 <p style="margin:0px;margin-left:4px;">
                                     - get_all_parents(): list[DataObject]
                                 </p>
                                 <p style="margin:0px;margin-left:4px;">
-                                    - is_parent(id: str, parent_id: str): Bool
+                                    - is_parent_of(parent_id: str): Bool
                                 </p>
                                 <p style="margin:0px;margin-left:4px;">
                                     - get_all_children(): list[DataObject]
@@ -132,25 +106,26 @@
                                     - is_child(id: str, child_id: str): Bool
                                 </p>
                                 <p style="margin:0px;margin-left:4px;">
-                                    - current_timestamp(): datetime
+                                    - new(): DataObject
+                                    <br/>
                                 </p>
                                 <p style="margin:0px;margin-left:4px;">
-                                    - uuid_to_object(list[str]): list[DataObject]
+                                    - load(): DataObject
                                 </p>
                             </div>
                         </div>
                     </div>
                 </foreignObject>
-                <text x="140" y="12" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
-                    DataObject...
+                <text x="1915" y="582" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
+                    DataObject(ResearchObject)...
                 </text>
             </switch>
         </g>
-        <rect x="0" y="470" width="160" height="230" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" pointer-events="all"/>
+        <rect x="1065" y="960" width="160" height="230" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" pointer-events="all"/>
         <g transform="translate(-0.5 -0.5)">
             <switch>
                 <foreignObject pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility" style="overflow: visible; text-align: left;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 162px; height: 230px; padding-top: 470px; margin-left: 0px;">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 162px; height: 230px; padding-top: 960px; margin-left: 1065px;">
                         <div data-drawio-colors="color: rgb(0, 0, 0); " style="box-sizing: border-box; font-size: 0px; text-align: left; width: 160px; height: 230px; overflow: hidden;">
                             <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: all; width: 100%; height: 100%; white-space: nowrap;">
                                 <p style="margin:0px;margin-top:4px;text-align:center;">
@@ -187,16 +162,16 @@
                         </div>
                     </div>
                 </foreignObject>
-                <text x="0" y="482" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
+                <text x="1065" y="972" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
                     Subject...
                 </text>
             </switch>
         </g>
-        <rect x="240" y="470" width="160" height="230" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" pointer-events="all"/>
+        <rect x="1305" y="960" width="160" height="230" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" pointer-events="all"/>
         <g transform="translate(-0.5 -0.5)">
             <switch>
                 <foreignObject pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility" style="overflow: visible; text-align: left;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 162px; height: 230px; padding-top: 470px; margin-left: 240px;">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 162px; height: 230px; padding-top: 960px; margin-left: 1305px;">
                         <div data-drawio-colors="color: rgb(0, 0, 0); " style="box-sizing: border-box; font-size: 0px; text-align: left; width: 160px; height: 230px; overflow: hidden;">
                             <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: all; width: 100%; height: 100%; white-space: nowrap;">
                                 <p style="margin:0px;margin-top:4px;text-align:center;">
@@ -233,10 +208,206 @@
                         </div>
                     </div>
                 </foreignObject>
-                <text x="240" y="482" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
+                <text x="1305" y="972" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
                     Visit...
                 </text>
             </switch>
+        </g>
+        <path d="M 1548.48 548 L 1558.62 593.78" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="stroke"/>
+        <path d="M 1559.76 598.91 L 1554.83 592.83 L 1558.62 593.78 L 1561.66 591.32 Z" fill="rgb(0, 0, 0)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 1620 351.6 L 2034.35 567.06" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="stroke"/>
+        <path d="M 2039.01 569.48 L 2031.18 569.36 L 2034.35 567.06 L 2034.41 563.15 Z" fill="rgb(0, 0, 0)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 1360 395.54 L 1149.83 575.85" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" stroke-dasharray="8 8" pointer-events="stroke"/>
+        <path d="M 1145.85 579.27 L 1148.88 572.06 L 1149.83 575.85 L 1153.44 577.37 Z" fill="rgb(0, 0, 0)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 1360 46 L 1360 20 L 1620 20 L 1620 46" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 1360 46 L 1360 548 L 1620 548 L 1620 46" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 1360 46 L 1620 46" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" font-weight="bold" pointer-events="none" text-anchor="middle" font-size="12px">
+            <text x="1489.5" y="37.5">
+                ResearchObject
+            </text>
+        </g>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-1364-51-252-144-0)" font-size="12px">
+            <text x="1365.5" y="63.5">
+                + created_at: str
+            </text>
+            <text x="1365.5" y="77.5">
+                + updated_at: str
+            </text>
+            <text x="1365.5" y="91.5">
+                + name: str
+            </text>
+            <text x="1365.5" y="105.5">
+                + desc: str
+            </text>
+            <text x="1365.5" y="119.5">
+                + id: str (read only)
+            </text>
+            <text x="1365.5" y="133.5">
+                + created_by: str
+            </text>
+            <text x="1365.5" y="147.5">
+                + tags: list[str]
+            </text>
+            <text x="1365.5" y="161.5">
+                + up_to_date: Bool
+            </text>
+        </g>
+        <path d="M 1360 194 L 1620 194" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-1364-203-252-350-0)" font-size="12px">
+            <text x="1365.5" y="215.5">
+                - __init__()
+            </text>
+            <text x="1365.5" y="243.5">
+                + create_id(): str
+            </text>
+            <text x="1365.5" y="257.5">
+                + parse_id(id: str): str, str, str
+            </text>
+            <text x="1365.5" y="271.5">
+                + insert(): None
+            </text>
+            <text x="1365.5" y="285.5">
+                + delete(id: str): None
+            </text>
+            <text x="1365.5" y="299.5">
+                - __setattr__():
+            </text>
+            <text x="1365.5" y="313.5">
+                - load(id: str): DataObject
+            </text>
+            <text x="1365.5" y="327.5">
+                - current_timestamp(): datetime
+            </text>
+            <text x="1365.5" y="341.5">
+                - uuid_to_object(list[str]): list[ResearchObject]
+            </text>
+            <text x="1365.5" y="355.5">
+                - input_to_list(any): list
+            </text>
+            <text x="1365.5" y="383.5">
+                - new(): Abstract
+            </text>
+        </g>
+        <path d="M 1377.4 820 L 1150.45 956.71" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 1145.96 959.42 L 1150.15 952.81 L 1150.45 956.71 L 1153.76 958.81 Z" fill="rgb(0, 0, 0)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 1483 820 L 1388.65 954.78" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 1385.64 959.08 L 1386.79 951.34 L 1388.65 954.78 L 1392.52 955.36 Z" fill="rgb(0, 0, 0)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 1588.6 820 L 1623.4 953.84" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 1624.72 958.92 L 1619.57 953.02 L 1623.4 953.84 L 1626.34 951.26 Z" fill="rgb(0, 0, 0)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 1370 626 L 1370 600 L 1750 600 L 1750 626" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 1370 626 L 1370 820 L 1750 820 L 1750 626" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 1370 626 L 1750 626" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" font-weight="bold" pointer-events="none" text-anchor="middle" font-size="12px">
+            <text x="1559.5" y="617.5">
+                PipelineObject(ResearchObject)
+            </text>
+        </g>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-1374-631-372-26-0)" font-size="12px">
+            <text x="1375.5" y="643.5">
+                + field: type
+            </text>
+        </g>
+        <path d="M 1370 656 L 1750 656" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-1374-665-372-160-0)" font-size="12px">
+            <text x="1375.5" y="677.5">
+                + show_neighborhood():
+            </text>
+            <text x="1375.5" y="691.5">
+                + get_upstream(): nx.MultiDiGraph
+            </text>
+            <text x="1375.5" y="705.5">
+                + get_downstream(): nx.MultiDiGraph
+            </text>
+            <text x="1375.5" y="719.5">
+                + copy_in_same_analysis(): PipelineObject
+            </text>
+            <text x="1375.5" y="733.5">
+                + copy_to_new_analysis(): PipelineObject
+            </text>
+            <text x="1375.5" y="747.5">
+                + get_current_analysis(): Analysis
+            </text>
+            <text x="1375.5" y="761.5">
+                + get_current_project(): Project
+            </text>
+            <text x="1375.5" y="775.5">
+                + get_current_group(): ProcessGroup
+            </text>
+            <text x="1375.5" y="789.5">
+                - get_current_container(container_class: str/class): PipelineObject
+            </text>
+        </g>
+        <path d="M 1010 606 L 1010 580 L 1280 580 L 1280 606" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 1010 606 L 1010 704 L 1280 704 L 1280 606" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 1010 606 L 1280 606" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" font-weight="bold" pointer-events="none" text-anchor="middle" font-size="12px">
+            <text x="1144.5" y="597.5">
+                ROState
+            </text>
+        </g>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-1014-611-262-64-0)" font-size="12px">
+            <text x="1015.5" y="623.5">
+                + id: str
+            </text>
+            <text x="1015.5" y="637.5">
+                + action_id: str
+            </text>
+            <text x="1015.5" y="651.5">
+                + research_objs: dict(ResearchObject)
+            </text>
+        </g>
+        <path d="M 1010 674 L 1280 674" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-1014-683-262-26-0)" font-size="12px">
+            <text x="1015.5" y="695.5">
+                + set_state():
+            </text>
+        </g>
+        <path d="M 0 226 L 0 200 L 270 200 L 270 226" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 0 226 L 0 324 L 270 324 L 270 226" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 0 226 L 270 226" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" font-weight="bold" pointer-events="none" text-anchor="middle" font-size="12px">
+            <text x="134.5" y="217.5">
+                WState
+            </text>
+        </g>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-4-231-262-64-0)" font-size="12px">
+            <text x="5.5" y="243.5">
+                + id: str
+            </text>
+            <text x="5.5" y="257.5">
+                +action_id: str
+            </text>
+            <text x="5.5" y="271.5">
+                + widgets: dict(WidgetObject)
+            </text>
+        </g>
+        <path d="M 0 294 L 270 294" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-4-303-262-26-0)" font-size="12px">
+            <text x="5.5" y="315.5">
+                + set_state()
+            </text>
+        </g>
+        <path d="M 466.96 87.66 L 141.03 197.96" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 136.06 199.64 L 141.57 194.08 L 141.03 197.96 L 143.81 200.71 Z" fill="rgb(0, 0, 0)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 390 26 L 390 0 L 550 0 L 550 26" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 390 26 L 390 86 L 550 86 L 550 26" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 390 26 L 550 26" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" font-weight="bold" pointer-events="none" text-anchor="middle" font-size="12px">
+            <text x="469.5" y="17.5">
+                WidgetObject
+            </text>
+        </g>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-394-31-152-26-0)" font-size="12px">
+            <text x="395.5" y="43.5">
+                + field: type
+            </text>
+        </g>
+        <path d="M 390 56 L 550 56" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-394-65-152-26-0)" font-size="12px">
+            <text x="395.5" y="77.5">
+                + visualize():
+            </text>
         </g>
     </g>
     <switch>

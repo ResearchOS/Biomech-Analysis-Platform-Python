@@ -5,8 +5,7 @@ from objects.subject import Subject
 from objects.visit import Visit
 from objects.trial import Trial
 from objects.phase import Phase
-from objects.variable import Variable
-from objects.subvariable import Subvariable
+from variable import Variable
 
 # Create a dataset (which is a collection of subjects)
 dataset = Dataset.new()
