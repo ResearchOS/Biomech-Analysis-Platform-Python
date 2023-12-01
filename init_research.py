@@ -14,4 +14,7 @@ def init_research(path: str = None):
     if database_path not in sys.path:
         sys.path.append(database_path)
 
-    DBInit(path)
+    DBInit(database_path)
+
+if __name__ == "__main__":
+    init_research()
