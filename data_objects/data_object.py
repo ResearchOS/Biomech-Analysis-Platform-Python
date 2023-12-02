@@ -18,7 +18,6 @@ class DataObject(ResearchObject):
     All private attributes are prefixed with an underscore and are not included in the database.
     All public attributes are included in the database."""
 
-    table_name: str = "DataObjects"
     _db_file: str = db_file_test
     _instances = weakref.WeakValueDictionary()
     _instances_count = {}

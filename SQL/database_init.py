@@ -15,7 +15,7 @@ class DBInitializer():
         """Initialize the values in the database."""
         # Current User
         default_user_object_id = "US000000_000"
-        user = User.load(default_user_object_id)
+        user = User.new(default_user_object_id)
     
 
     def create_database(self):
@@ -70,7 +70,8 @@ class DBInitializer():
                         FOREIGN KEY (attr_id) REFERENCES attributes(attr_id) ON DELETE CASCADE,
                         FOREIGN KEY (object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (child_of) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id, object_id, attr_id)                        
                         )""")
         
         # Data objects data values. Lists all data values for all data objects.

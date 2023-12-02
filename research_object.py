@@ -15,25 +15,27 @@ class ResearchObject():
     def __init__(self, name: str) -> None:
         self.id = self.create_id()
         self.name = name
+        self.deleted = False
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         """Set the attributes of a research object in memory and in the SQL database."""
-        
-        # Open an action if there is not one open currently.        
-        action = Action.open(name = "Test") # Open an action.
         self.__dict__[__name] = __value
+
+        # if __name[0] == "_":
+        #     return # Don't log private attributes.
+        
+        # Open an action if there is not one open currently. Gets the open action if it is already open.
+        action = Action.open(name = "Test")
+        
         table_name = "research_objects"
-        cursor = Action.conn.cursor()
-        current_action_id = Action.get_open()
+        cursor = Action.conn.cursor()        
         # Create the object in the database, in the table that contains only the complete list of object ID's.        
         if __name == "id":                        
             sqlquery = f"INSERT INTO {table_name} (object_id) VALUES ('{self.id}')"            
             cursor.execute(sqlquery)
-            __name = "deleted"
-            __value = False
-
-        sqlquery = f"INSERT INTO research_object_transactions (action_id, object_id, attr_id, attr_value) VALUES ('{current_action_id}', '{self.id}', '{ResearchObject._get_attr_id(__name)}', '{__value}')"
-        cursor.execute(sqlquery)
+        else:
+            sqlquery = f"INSERT INTO research_object_transactions (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name)}', '{__value}')"
+            cursor.execute(sqlquery)
         Action.conn.commit()   
         action.close() # Close the action, if possible.     
 
@@ -94,14 +96,14 @@ class ResearchObject():
                 instance_new = "0" * (instance_id_len-len(instance_new)) + instance_new
             else:
                 instance_new = instance
-
+ 
             id = self.prefix + abstract_new + "_" + instance_new
             cursor = Action.conn.cursor()
             sql = f'SELECT id FROM {table_name} WHERE id = "{id}"'
-            # cursor.execute(sql)
-            # rows = cursor.fetchall()
-            # if len(rows) == 0:
-            is_unique = True
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            if len(rows) == 0:
+                is_unique = True
         return id
     
     @abstractmethod
@@ -112,8 +114,7 @@ class ResearchObject():
         result = cursor.execute(sqlquery).fetchall()
         if len(result) == 0:
             raise ValueError("No object with that ID exists.")
-        curr_obj_action_ids = [row[0] for row in result]
-        # Get the list of unique attr_id        
+        curr_obj_action_ids = [row[0] for row in result]    
         attrs = {}
         # Order the action ID's for this object by timestamp, descending.        
         sqlquery = "SELECT action_id, timestamp_closed FROM actions WHERE action_id IN ({}) ORDER BY timestamp_closed DESC".format(','.join(['%s' for _ in result]))
@@ -132,6 +133,7 @@ class ResearchObject():
             attr_name = ResearchObject._get_attr_name(attr_id)
             attrs[attr_name] = attr_value
         
+        attrs["id"] = id
         research_object = cls(name = attrs["name"])
         research_object.__dict__.update(attrs)
         return research_object
