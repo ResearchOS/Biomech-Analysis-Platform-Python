@@ -1,21 +1,24 @@
 from abc import abstractmethod
 from typing import Any
 
+from research_object import ResearchObject
 from pipeline_objects.pipeline_object import PipelineObject
 from pipeline_objects.analysis import Analysis
 from action import Action
 
 class Project(PipelineObject):
 
-    prefix = "PJ"
-
-    # def __init__(self, name: str):        
-    #     super().__init__(name = name)        
+    prefix = "PJ"    
 
     @abstractmethod
     def new(name: str):
         pj = Project(name = name)
         return pj
+    
+    @abstractmethod
+    def load(id: str) -> "Project":
+        cls = Project
+        ResearchObject.load(id = id, cls = cls)
 
     @abstractmethod
     def new_current(name: str):
