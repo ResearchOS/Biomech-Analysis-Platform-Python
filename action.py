@@ -4,6 +4,9 @@ import sqlite3
 from abc import abstractmethod
 import uuid
 
+db_file_test: str = 'tests/test_database.db'
+db_file_production: str = 'SQL/database.db'
+
 def get_current_user_object_id() -> str:
     """Get the ID of the current user."""
     cursor = Action.conn.cursor()
@@ -24,8 +27,9 @@ def set_current_user_object_id(user_object_id: str) -> None:
 
 class Action():    
 
+    _db_file: str = db_file_production
     # Create a connection to the SQL database.  
-    conn = sqlite3.connect("./SQL/database.db")
+    conn = sqlite3.connect(_db_file)
     
     def __init__(self, name: str = None, closeable: bool = True, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp_opened: datetime.datetime = None, timestamp_closed: datetime.datetime = None):   
         if not id:
