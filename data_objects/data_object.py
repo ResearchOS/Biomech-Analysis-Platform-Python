@@ -19,8 +19,7 @@ class DataObject(ResearchObject):
     All public attributes are included in the database."""
 
     _db_file: str = db_file_test
-    _instances = weakref.WeakValueDictionary()
-    _instances_count = {}
+    
     _conn = sqlite3.connect(_db_file)
     _conn.row_factory = Row # Return rows as dictionaries.
 
@@ -31,65 +30,6 @@ class DataObject(ResearchObject):
         
         # Create the object in the database.
         pass
-
-    def __new__(cls, *args, **kwargs):
-        """Create a new data object. If the object already exists, return the existing object."""
-        uuid, object_id = _get_uuid_and_id(cls._table_name, cls._id_prefix, args, kwargs)
-        if object_id in cls._instances:
-            cls._instances_count[object_id] += 1
-            return cls._instances[object_id]
-        else:
-            instance = super(DataObject, cls).__new__(cls)
-            cls._instances[object_id] = instance
-            cls._instances_count[object_id] = 1
-            instance.id = object_id
-            return instance
-
-    def __init__(self, name: str) -> None:
-        """Initialize the data object, whether loading or creating one.
-        Case 1. UUID specified as a positional argument. No other arguments allowed.
-        Case 2. ID specified as a positional argument (get the latest version)
-        Case 3. UUID specified as a keyword argument.
-        Case 4. ID specified as a keyword argument.
-        Case 5. No args or UUID/ID kwargs provided.
-        Case 6. ID specified as a positional or keyword argument and UUID specified as a keyword argument (specific version of object).
-
-        Bad cases:
-        Case 1. ID in args and kwargs
-        Case 2. UUID in args and kwargs
-        Case 3. More than one positional argument.        
-
-        1. Set the object's UUID and ID.
-        2. Select/set to default the rest of the object's attributes
-        3. Insert the object in the database."""    
-        super().__init__(name = name)  
-        
-        in_db = self._get() # The attributes of the data object. Also return Boolean for whether we are loading or creating the object.
-
-        if 'id' in kwargs:
-            del kwargs['id']
-
-        # If the object is not in the database, set the defaults and insert it.
-        if not in_db:
-            self._set_defaults()
-            # If no kwargs provided, insert the object. Check for kwargs is so it doesn't get double inserted after update() if kwargs provided.
-            if len(kwargs) == 0:                
-                self.insert()
-
-        # Allow updating attributes here in the constructor if any kwargs provided.
-        for kwarg in kwargs:
-            setattr(self, kwarg, kwargs[kwarg])
-        if len(kwargs) > 0:
-            self.update()
-
-    def __del__(self) -> None:
-        """Delete the object from the database."""
-        if self.id not in self._instances:
-            raise ValueError("Object not in instances.")
-        self._instances_count[self.id] -= 1
-        if self._instances_count[self.id] == 0:
-            del self._instances[self.id]
-            del self._instances_count[self.id]
             
 
     def _get_uuid_and_id(self, args: tuple, kwargs: dict) -> None:
@@ -97,13 +37,6 @@ class DataObject(ResearchObject):
         uuid, id = _get_uuid_and_id(self._table_name, self._id_prefix, args, kwargs)
         self.uuid = uuid
         self.id = id
-    
-    def _set_defaults(self) -> None:
-        """Set the default attributes of the data object."""
-        self.name = "Untitled"
-        self.description = "Description here."
-        time = self._current_timestamp()
-        self.timestamp = time
 
     def is_uuid(self, uuid: str) -> bool:
         """Check if the provided ID is a UUID."""        
@@ -115,12 +48,6 @@ class DataObject(ResearchObject):
         """Create the id for the data object."""
         self.uuid = _create_uuid()
 
-    def is_id(self, id: str) -> bool:
-        """Check if the provided ID is a valid ID."""
-        if id is None:
-            self.id = id
-        raise NotImplementedError
-
     def create_id(self) -> None:
         """Create the id for the data object."""
         self.id = _create_id(self._id_prefix, self._table_name)
@@ -129,38 +56,6 @@ class DataObject(ResearchObject):
             raise ValueError(f"ID prefix {prefix} does not match object's prefix: {self._id_prefix}.")
         self.abstract_id = abstract
         self.instance_id = instance
-
-    def parse_id(self, id: str) -> str:
-        """Parse the id for the data object.
-        Returns the ID's type, abstract ID, and concrete ID."""
-        prefix = self.id.split("_")[0][:2]
-        abstract_id = self.id.split("_")[0][2:]
-        instance_id = self.id.split("_")[1]
-        return prefix, abstract_id, instance_id
-    
-    def _input_to_list(self, input: any) -> list:
-        """Returns whether the object is a list."""
-        if isinstance(input, list):
-            return input
-        return [i for i in input]
-    
-    def insert(self) -> None:
-        """Insert one record into the database."""
-        cursor = self._conn.cursor()
-        keys_list = self._get_public_keys()
-        keys = ', '.join(keys_list)
-        values = [str(getattr(self, key)) for key in keys_list]
-        values = '"' + '", "'.join(values) + '"' # Surround the values with quotes.
-        sql = f"INSERT INTO {self._table_name} ({keys}) VALUES ({values})"
-        try:
-            cursor.execute(sql)
-            self._conn.commit()
-        except sqlite3.IntegrityError as e:
-            if e.sqlite_errorcode == 1555:
-                return
-            elif e.sqlite_errorcode == 1299:
-                self.missing_parent_error()
-                return
 
     def _get_public_keys(self) -> list[str]:
         """Return all public keys of the current object."""        

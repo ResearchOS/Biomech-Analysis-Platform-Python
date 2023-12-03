@@ -54,7 +54,7 @@ class Action():
         self.closeable = closeable
         self.user_object_id = user_object_id
 
-    def redo(self) -> None:
+    def execute(self) -> None:
         """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
         # Create a new action, where "redo_of" is set to self.id.
         action = Action(name = self.name, closeable = True, redo_of = self.id)
@@ -79,12 +79,21 @@ class Action():
         Action.conn.commit()
         action.close()
 
+    def redo(self) -> None:
+        """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
+        # Create a new action, where "redo_of" is set to self.id.
+        next_action = Action.get_next(id = self.id)
+        if next_action is None:
+            return
+        next_action.execute()
 
-    def undo(self):
+    def undo(self) -> None:
         """Undo the action, causing the current state of the referenced widgets and research objects to be the state of the previous Action."""
         # Log the action to the database.
-        prev_action = Action.get_most_recent(id = self.id)
-        prev_action.redo()
+        prev_action = Action.previous(id = self.id)
+        if prev_action is None:
+            return
+        prev_action.execute()
 
     def _get_rows_of_action(action_id: str, table_name: str) -> list:
         """Get the rows of a table that were created by an action."""
@@ -111,7 +120,7 @@ class Action():
         return Action(name = name, id = id, user_object_id = user_object_id, timestamp_opened = timestamp_opened, timestamp_closed = timestamp_closed, redo_of = redo_of)
 
     @abstractmethod
-    def get_most_recent(id: str = None, current_time: datetime.datetime = None) -> "Action":
+    def previous(id: str = None, current_time: datetime.datetime = None) -> "Action":
         """Get the ID and all contents of the most recently performed action."""
         cursor = Action.conn.cursor()
         if not current_time:
@@ -120,6 +129,22 @@ class Action():
             action = Action.load(id = id)
             current_time = action.timestamp_opened
         sqlquery = f"SELECT action_id FROM actions WHERE timestamp_opened <= '{str(current_time)}' ORDER BY timestamp DESC LIMIT 1"
+        result = cursor.execute(sqlquery).fetchone()
+        if result is None:
+            return None
+        id = result[0]
+        return Action.load(id = id)
+    
+    @abstractmethod
+    def get_next(id: str = None, current_time: datetime.datetime = None) -> "Action":
+        """Get the ID and all contents of the next action."""
+        cursor = Action.conn.cursor()
+        if not current_time:
+            current_time = datetime.datetime.utcnow()        
+        if id:
+            action = Action.load(id = id)
+            current_time = action.timestamp_opened
+        sqlquery = f"SELECT action_id FROM actions WHERE timestamp_opened >= '{str(current_time)}' ORDER BY timestamp ASC LIMIT 1"
         result = cursor.execute(sqlquery).fetchone()
         if result is None:
             return None
@@ -140,12 +165,12 @@ class Action():
         return True
 
     @abstractmethod
-    def open(name: str, closeable: bool = False) -> "Action":
+    def open(name: str) -> "Action":
         """Creates a new action and logs it to the database, opening it for use. All operations performed after this will be logged to this action until it is closed."""
         if Action.is_open():
-            return Action.get_open(closeable = closeable)
+            return Action.get_open(closeable = False)
         
-        action = Action(name = name, closeable = closeable)
+        action = Action(name = name, closeable = True)
         action.log() # Puts the action in the database.
         return action
     

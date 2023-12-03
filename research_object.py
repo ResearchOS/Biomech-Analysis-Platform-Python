@@ -1,7 +1,12 @@
 from typing import Any, Type
+import re
+from abc import abstractmethod
+
 from action import Action
 
-from abc import abstractmethod
+
+
+import weakref
 
 abstract_id_len = 6
 instance_id_len = 3
@@ -11,9 +16,35 @@ class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
 
     prefix = "RO" # Testing only
+    _instances = weakref.WeakValueDictionary()
+    _instances_count = {}
 
-    def __init__(self, name: str) -> None:
-        self.id = self.create_id()
+    def __new__(cls, *args, **kwargs):
+        """Create a new data object. If the object already exists, return the existing object."""
+        object_id = kwargs.get("id", None)
+        if object_id in ResearchObject._instances:
+            ResearchObject._instances_count[object_id] += 1
+            return ResearchObject._instances[object_id]
+        else:
+            instance = super(ResearchObject, cls).__new__(cls)
+            ResearchObject._instances[object_id] = instance
+            ResearchObject._instances_count[object_id] = 1
+            instance.id = object_id
+            return instance
+        
+    def __del__(self) -> None:
+        """Delete the object from memory."""
+        if self.id not in ResearchObject._instances:
+            raise ValueError("Object not in instances.")
+        ResearchObject._instances_count[self.id] -= 1
+        if ResearchObject._instances_count[self.id] == 0:
+            del ResearchObject._instances[self.id]
+            del ResearchObject._instances_count[self.id]
+
+    def __init__(self, name: str, id: str = None) -> None:
+        if not id:
+            id = self.create_id()
+            self.id = id
         self.name = name
         self.deleted = False
 
@@ -21,10 +52,10 @@ class ResearchObject():
         """Set the attributes of a research object in memory and in the SQL database."""
         self.__dict__[__name] = __value
 
-        # if __name[0] == "_":
-        #     return # Don't log private attributes.
+        if __name[0] == "_":
+            return # Don't log private attributes.
         
-        # Open an action if there is not one open currently. Gets the open action if it is already open.
+        # Open an action if there is not one open currently. Returns the open action if it is already open.
         action = Action.open(name = "Test")
         
         table_name = "research_objects"
@@ -39,7 +70,10 @@ class ResearchObject():
         Action.conn.commit()   
         action.close() # Close the action, if possible.     
 
-    
+    ###############################################################################################################################
+    #################################################### end of dunder methods ####################################################
+    ###############################################################################################################################
+
     @abstractmethod
     def _get_attr_id(self, attr_name: str) -> int:
         """Get the ID of an attribute. If it does not exist, create it."""
@@ -68,6 +102,10 @@ class ResearchObject():
         if len(rows) == 0:
             raise Exception("No attribute with that ID exists.")
         return rows[0][0]
+    
+    ###############################################################################################################################
+    #################################################### end of abstract methods ##################################################
+    ###############################################################################################################################
 
     def _prefix_to_table_name(self) -> str:
         """Convert a prefix to a table name."""
@@ -107,8 +145,12 @@ class ResearchObject():
         return id
     
     @abstractmethod
-    def load(id: str, cls: Type) -> "ResearchObject":
+    def load(id: str, cls: Type, action_id: str = None) -> "ResearchObject":
+        """Load the current state of a research object from the database. If an action_id is specified, load the state of the object after that action."""
         cursor = Action.conn.cursor()
+        if not action_id:
+            action = Action.previous() # With no arguments, gets the "current"/most recent action.
+            action_id = action.id
 
         sqlquery = f"SELECT action_id, attr_id, attr_value, child_of FROM research_object_attributes WHERE object_id = '{id}'"
         result = cursor.execute(sqlquery).fetchall()
@@ -142,6 +184,33 @@ class ResearchObject():
     def new(self, name: str, cls: Type) -> "ResearchObject":
         research_object = cls(name = name)
         return research_object
+    
+    def is_id(self, id: str) -> bool:
+        """Check if the given ID is a valid ID for this research object."""        
+        pattern = "^[a-zA-Z0-9]{10}_[a-zA-Z0-9]{3}$"
+        if not re.match(pattern, id):
+            return False
+        return True
+    
+    def parse_id(self, id: str) -> tuple:
+        """Parse an ID into its prefix, abstract, and instance parts."""
+        if not self.is_id(id):
+            raise ValueError("Invalid ID.")
+        abstract = id[2:2+abstract_id_len]
+        instance = id[-instance_id_len:]
+        return (self.prefix, abstract, instance)
+    
+    def save(self):
+        """Save the research object to the database."""
+        raise NotImplementedError("Save not implemented.")
+    
+    def _get_public_keys(self) -> list[str]:
+        """Return all public keys of the current object."""        
+        keys = []
+        for key in vars(self).keys():
+            if not key.startswith('_'):
+                keys.append(key)
+        return keys
 
 
     
