@@ -1,15 +1,14 @@
 from typing import Any, Type
 import re
 from abc import abstractmethod
-
-from action import Action
-
-
-
+import datetime
 import weakref
 
-abstract_id_len = 6
-instance_id_len = 3
+from action import Action
+from config import ProdConfig
+
+abstract_id_len = ProdConfig.abstract_id_len
+instance_id_len = ProdConfig.instance_id_len
 
 
 class ResearchObject():
@@ -62,11 +61,10 @@ class ResearchObject():
         cursor = Action.conn.cursor()        
         # Create the object in the database, in the table that contains only the complete list of object ID's.        
         if __name == "id":                        
-            sqlquery = f"INSERT INTO {table_name} (object_id) VALUES ('{self.id}')"            
-            cursor.execute(sqlquery)
+            sqlquery = f"INSERT INTO {table_name} (object_id) VALUES ('{self.id}')"                        
         else:
             sqlquery = f"INSERT INTO research_object_transactions (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name)}', '{__value}')"
-            cursor.execute(sqlquery)
+        cursor.execute(sqlquery)
         Action.conn.commit()   
         action.close() # Close the action, if possible.     
 
@@ -75,37 +73,43 @@ class ResearchObject():
     ###############################################################################################################################
 
     @abstractmethod
-    def load(id: str, cls: Type, action_id: str = None) -> "ResearchObject":
+    def load(obj_id: str, cls: Type, action_id: str = None) -> "ResearchObject":
         """Load the current state of a research object from the database. If an action_id is specified, load the state of the object after that action."""
+        # 1. Get the current action if not provided.
         cursor = Action.conn.cursor()
+        timestamp = datetime.datetime.utcnow()
         if not action_id:
             action = Action.previous() # With no arguments, gets the "current"/most recent action.
             action_id = action.id
+            timestamp = action.timestamp_closed
 
-        sqlquery = f"SELECT action_id, attr_id, attr_value, child_of FROM research_object_attributes WHERE object_id = '{id}'"
-        result = cursor.execute(sqlquery).fetchall()
-        if len(result) == 0:
+        # 2. Get the action ID's for this object that were closed before the action_id.
+        sqlquery = f"SELECT action_id, attr_id, attr_value, child_of FROM research_object_attributes WHERE object_id = '{obj_id}'"
+        attr_result = cursor.execute(sqlquery).fetchall()
+        if len(attr_result) == 0:
             raise ValueError("No object with that ID exists.")
-        curr_obj_action_ids = [row[0] for row in result]    
+        curr_obj_action_ids = [row[0] for row in attr_result]    
         attrs = {}
-        # Order the action ID's for this object by timestamp, descending.        
-        sqlquery = "SELECT action_id, timestamp_closed FROM actions WHERE action_id IN ({}) ORDER BY timestamp_closed DESC".format(','.join(['%s' for _ in result]))
+        # Get the action ID's for this object by timestamp, descending.        
+        sqlquery = "SELECT action_id, timestamp_closed FROM actions WHERE action_id IN ({}) ORDER BY timestamp_closed DESC".format(','.join(['%s' for _ in curr_obj_action_ids]))
         action_ids_in_time_order = cursor.execute(sqlquery).fetchall()
-        # Put the curr_obj_action_ids in time order, descending.
-        curr_obj_action_ids_sorted = [obj for obj in action_ids_in_time_order if obj in curr_obj_action_ids]
+        action_ids_in_time_order = [row[0] for row in action_ids_in_time_order]        
         used_attr_ids = []
-        for curr_obj_action_id in curr_obj_action_ids_sorted:
+        num_attrs = len(list(set(action_ids_in_time_order))) # Get the number of unique action ID's.
+        for index, curr_obj_action_id in enumerate(action_ids_in_time_order):
             index = curr_obj_action_ids.index(curr_obj_action_id)
-            attr_id = result[index][1]
+            attr_id = attr_result[index][1]
             if attr_id in used_attr_ids:
                 continue
             used_attr_ids.append(attr_id)
-            attr_value = result[index][2]
-            child_of = result[index][3]
+            if len(used_attr_ids) == num_attrs:
+                break
+            attr_value = attr_result[index][2]
+            # child_of = attr_result[index][3]
             attr_name = ResearchObject._get_attr_name(attr_id)
             attrs[attr_name] = attr_value
         
-        attrs["id"] = id
+        attrs["id"] = obj_id
         research_object = cls(name = attrs["name"])
         research_object.__dict__.update(attrs)
         return research_object
@@ -143,21 +147,6 @@ class ResearchObject():
         if len(rows) == 0:
             raise Exception("No attribute with that ID exists.")
         return rows[0][0]
-    
-    @abstractmethod
-    def _create_uuid() -> str:
-        """Create the action_id (as uuid.uuid4()) for the action."""
-        import uuid
-        is_unique = False
-        cursor = Action.conn.cursor()
-        while not is_unique:
-            uuid_out = str(uuid.uuid4()) # For testing dataset creation.            
-            sql = f'SELECT action_id FROM actions WHERE action_id = "{uuid_out}"'
-            cursor.execute(sql)
-            rows = cursor.fetchall()
-            if len(rows) == 0:
-                is_unique = True
-        return uuid_out
     
     ###############################################################################################################################
     #################################################### end of abstract methods ##################################################
@@ -262,7 +251,7 @@ class ResearchObject():
     
     def is_id(self, id: str) -> bool:
         """Check if the given ID is a valid ID for this research object."""        
-        pattern = "^[a-zA-Z0-9]{10}_[a-zA-Z0-9]{3}$"
+        pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{10}_[a-fA-F0-9]{3}$"
         if not re.match(pattern, id):
             return False
         return True
@@ -283,20 +272,8 @@ class ResearchObject():
                 keys.append(key)
         return keys
     
-    def _is_action_id(self, uuid: str) -> bool:
-        """Check if a string is a valid UUID."""
-        import uuid as uuid_module
-        try:
-            uuid_module.UUID(uuid)
-        except ValueError:
-            return False
-        return True    
-
-
-    
 if __name__=="__main__":
-    # ro = ResearchObject(name = "Test")
-    # ro.a = 1
+    a = Action.load(id = "AC000000_000")
 
     from pipeline_objects.project import Project
     pj = Project.load(id = 1)

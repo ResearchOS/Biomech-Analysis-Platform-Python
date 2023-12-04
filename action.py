@@ -4,8 +4,7 @@ import sqlite3
 from abc import abstractmethod
 import uuid
 
-db_file_test: str = 'tests/test_database.db'
-db_file_production: str = 'SQL/database.db'
+from config import ProdConfig
 
 def get_current_user_object_id() -> str:
     """Get the ID of the current user."""
@@ -27,14 +26,14 @@ def set_current_user_object_id(user_object_id: str) -> None:
 
 class Action():    
 
-    _db_file: str = db_file_production
+    _db_file: str = ProdConfig.db_file
     # Create a connection to the SQL database.  
     conn = sqlite3.connect(_db_file)
     
     def __init__(self, name: str = None, closeable: bool = True, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp_opened: datetime.datetime = None, timestamp_closed: datetime.datetime = None):   
         if not id:
             # Creating a new action.
-            id = str(uuid.uuid4()) # Making a new action.
+            id = Action._create_uuid() # Making a new action.
             if not timestamp_opened:
                 timestamp_opened = datetime.datetime.utcnow()
             if not user_object_id:
@@ -43,12 +42,13 @@ class Action():
             # Loading an existing action.
             sqlquery = f"SELECT * FROM actions WHERE action_id = '{id}'"
             result = Action.conn.cursor().execute(sqlquery).fetchone()
-            name = result[1]
-            user_object_id = result[2]
-            name =  result[3]
-            timestamp_opened = result[4]
-            timestamp_closed = result[5]
-            redo_of = result[6]
+            if result is None:
+                raise AssertionError(f"Action {id} does not exist.")
+            user_object_id = result[1]
+            name = result[2]                        
+            timestamp_opened = result[3]
+            timestamp_closed = result[4]
+            redo_of = result[5]
 
         self.id = id
         self.name = name
@@ -57,6 +57,31 @@ class Action():
         self.redo_of = redo_of       
         self.closeable = closeable
         self.user_object_id = user_object_id
+
+    @abstractmethod
+    def _create_uuid() -> str:
+        """Create the action_id (as uuid.uuid4()) for the action."""
+        import uuid
+        is_unique = False
+        cursor = Action.conn.cursor()
+        while not is_unique:
+            uuid_out = str(uuid.uuid4()) # For testing dataset creation.            
+            sql = f'SELECT action_id FROM actions WHERE action_id = "{uuid_out}"'
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            if len(rows) == 0:
+                is_unique = True
+        return uuid_out
+    
+    @abstractmethod
+    def _is_action_id(uuid: str) -> bool:
+        """Check if a string is a valid UUID."""
+        import uuid as uuid_module
+        try:
+            uuid_module.UUID(str(uuid))
+        except ValueError:
+            return False
+        return True    
 
     def execute(self) -> None:
         """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
@@ -107,21 +132,8 @@ class Action():
 
     @abstractmethod
     def load(id: str = None):
-        """Load an action from file given a timestamp or id."""
-        cursor = Action.conn.cursor()
-
-        sqlquery = f"SELECT * FROM actions WHERE id = '{id}'"
-        result = cursor.execute(sqlquery).fetchone()
-        if len(result) == 0:
-            raise ValueError("No action with that ID exists.")
-        id = result[0]
-        user_object_id = result[1]
-        name =  result[2]
-        timestamp_opened = result[3]
-        timestamp_closed = result[4]
-        redo_of = result[5]
-                    
-        return Action(name = name, id = id, user_object_id = user_object_id, timestamp_opened = timestamp_opened, timestamp_closed = timestamp_closed, redo_of = redo_of)
+        """Load an action from file given a timestamp or id."""        
+        return Action(id = id)
 
     @abstractmethod
     def previous(id: str = None, current_time: datetime.datetime = None) -> "Action":
