@@ -27,11 +27,11 @@ class ResearchObject():
         if object_id in ResearchObject._instances:
             ResearchObject._instances_count[object_id] += 1
             return ResearchObject._instances[object_id]
-        else:
+        else: # Create a new object.
             instance = super(ResearchObject, cls).__new__(cls)
             ResearchObject._instances[object_id] = instance
             ResearchObject._instances_count[object_id] = 1
-            instance.id = object_id
+            instance.__dict__['id'] = object_id            
             return instance
         
     def __del__(self) -> None:
@@ -44,20 +44,29 @@ class ResearchObject():
             del ResearchObject._instances_count[self.id]
 
     def __init__(self, name: str, id: str = None, _stack_limit: int = 2) -> None:
-        print(traceback.format_stack(limit = _stack_limit))
+        """"""
         if not id:
-            if not self.id:
-                id = self.create_id()
-                self.__dict__["id"] = id                
-            else:
-                id = self.id
-        if not id and not self.id:
+            id = self.id
+        try:
+            # Create the object in the database.
+            cursor = Action.conn.cursor()
+            sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
+            cursor.execute(sqlquery)
+            Action.conn.commit()
+        except Exception as e:
+            print(e)
+        print(traceback.format_stack(limit = _stack_limit))
+        if "name" not in self.__dict__:
             self.name = name
+        if "deleted" not in self.__dict__:
             self.deleted = False
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         """Set the attributes of a research object in memory and in the SQL database."""
         self.__dict__[__name] = __value
+
+        if __name == "id": 
+            raise ValueError("Cannot change the ID of a research object.")
 
         if __name[0] == "_":
             return # Don't log private attributes.
@@ -68,12 +77,9 @@ class ResearchObject():
         table_name = "research_objects"
         cursor = Action.conn.cursor()        
         # Create the object in the database, in the table that contains only the complete list of object ID's.        
-        if __name == "id":                        
-            sqlquery = f"INSERT INTO {table_name} (object_id) VALUES ('{self.id}')"                        
-        else:
-            sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name)}', '{__value}')"
+        sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name)}', '{__value}')"
         cursor.execute(sqlquery)
-        Action.conn.commit()   
+        Action.conn.commit()
         action.close() # Close the action, if possible.     
 
     ###############################################################################################################################
@@ -140,28 +146,30 @@ class ResearchObject():
         if len(attr_result) == 0:
             raise ValueError("No object with that ID exists.")
         curr_obj_action_ids = [row[0] for row in attr_result]
+        curr_obj_attr_ids = [row[1] for row in attr_result]
         attrs = {}
         # Get the action ID's for this object by timestamp, descending.        
-        sqlquery = "SELECT action_id, timestamp_closed FROM actions WHERE action_id IN ({}) ORDER BY timestamp_closed DESC".format(','.join(['%s' for _ in curr_obj_action_ids]))
+        curr_obj_action_ids_str = ",".join([f"'{action_id}'" for action_id in curr_obj_action_ids])
+        sqlquery = f"SELECT action_id, timestamp_closed FROM actions WHERE action_id IN ({curr_obj_action_ids_str}) ORDER BY timestamp_closed DESC"
         action_ids_in_time_order = cursor.execute(sqlquery).fetchall()
         action_ids_in_time_order = [row[0] for row in action_ids_in_time_order]        
         used_attr_ids = []
-        num_attrs = len(list(set(action_ids_in_time_order))) # Get the number of unique action ID's.
+        num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
         for index, curr_obj_action_id in enumerate(action_ids_in_time_order):
-            index = curr_obj_action_ids.index(curr_obj_action_id)
+            # index = curr_obj_action_ids.index(curr_obj_action_id)
             attr_id = attr_result[index][1]
             if attr_id in used_attr_ids:
                 continue
-            used_attr_ids.append(attr_id)
-            if len(used_attr_ids) == num_attrs:
-                break
+            used_attr_ids.append(attr_id)            
             attr_value = attr_result[index][2]
             # child_of = attr_result[index][3]
             attr_name = ResearchObject._get_attr_name(attr_id)
             attrs[attr_name] = attr_value
+            if len(used_attr_ids) == num_attrs:
+                break
         
         attrs["id"] = id
-        research_object = cls(name = attrs["name"])
+        research_object = cls(name = attrs["name"], id = id)
         research_object.__dict__.update(attrs)
         return research_object
 
@@ -189,7 +197,7 @@ class ResearchObject():
         return rows[0][0]   
     
     @abstractmethod
-    def _get_attr_name(self, attr_id: int) -> str:
+    def _get_attr_name(attr_id: int) -> str:
         """Get the name of an attribute."""
         cursor = Action.conn.cursor()
         sqlquery = f"SELECT attr_name FROM Attributes WHERE attr_id = '{attr_id}'"
