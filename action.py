@@ -35,9 +35,16 @@ class Action():
             timestamp_opened = datetime.datetime.utcnow()
         if not user_object_id:
             user_object_id = get_current_user_object_id()
+        # Load the action from the database if an open action exists, otherwise create a new action.
         if not id:
-            # Creating a new action.
-            id = Action._create_uuid() # Making a new action.        
+            if Action.is_open():
+                open_action = Action.get_open()
+                for key in open_action.__dict__.keys():
+                    self[key] = open_action[key]
+                return
+            else:
+                # Creating a new action.
+                id = Action._create_uuid() # Making a new action.        
         else:
             # Loading an existing action.
             sqlquery = f"SELECT * FROM actions WHERE action_id = '{id}'"

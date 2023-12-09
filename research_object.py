@@ -44,9 +44,10 @@ class ResearchObject():
             del ResearchObject._instances_count[self.id]
 
     def __init__(self, name: str, id: str = None, _stack_limit: int = 2) -> None:
-        """"""
+        """"""        
         if not id:
             id = self.id
+        action = Action.open(name = "created object " + id)
         try:
             # Create the object in the database.
             cursor = Action.conn.cursor()
@@ -60,6 +61,7 @@ class ResearchObject():
             self.name = name
         if "deleted" not in self.__dict__:
             self.deleted = False
+        action.close() # Close the action, if possible.
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         """Set the attributes of a research object in memory and in the SQL database."""
@@ -155,20 +157,22 @@ class ResearchObject():
         action_ids_in_time_order = [row[0] for row in action_ids_in_time_order]        
         used_attr_ids = []
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
-        for index, curr_obj_action_id in enumerate(action_ids_in_time_order):
-            # index = curr_obj_action_ids.index(curr_obj_action_id)
+        attrs["id"] = id
+        attrs["child_of"] = None
+        for index, curr_obj_action_id in enumerate(action_ids_in_time_order):            
             attr_id = attr_result[index][1]
             if attr_id in used_attr_ids:
                 continue
             used_attr_ids.append(attr_id)            
             attr_value = attr_result[index][2]
-            # child_of = attr_result[index][3]
+            child_of = attr_result[index][3]
+
             attr_name = ResearchObject._get_attr_name(attr_id)
             attrs[attr_name] = attr_value
             if len(used_attr_ids) == num_attrs:
                 break
         
-        attrs["id"] = id
+        
         research_object = cls(name = attrs["name"], id = id)
         research_object.__dict__.update(attrs)
         return research_object
