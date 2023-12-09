@@ -3,6 +3,7 @@ import re
 from abc import abstractmethod
 import datetime
 import weakref
+import traceback
 
 from action import Action
 from config import ProdConfig
@@ -21,6 +22,8 @@ class ResearchObject():
     def __new__(cls, *args, **kwargs):
         """Create a new data object. If the object already exists, return the existing object."""
         object_id = kwargs.get("id", None)
+        if object_id is None:
+            object_id = cls.create_id(cls)
         if object_id in ResearchObject._instances:
             ResearchObject._instances_count[object_id] += 1
             return ResearchObject._instances[object_id]
@@ -40,12 +43,17 @@ class ResearchObject():
             del ResearchObject._instances[self.id]
             del ResearchObject._instances_count[self.id]
 
-    def __init__(self, name: str, id: str = None) -> None:
+    def __init__(self, name: str, id: str = None, _stack_limit: int = 2) -> None:
+        print(traceback.format_stack(limit = _stack_limit))
         if not id:
-            id = self.create_id()
-            self.id = id
-        self.name = name
-        self.deleted = False
+            if not self.id:
+                id = self.create_id()
+                self.__dict__["id"] = id                
+            else:
+                id = self.id
+        if not id and not self.id:
+            self.name = name
+            self.deleted = False
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         """Set the attributes of a research object in memory and in the SQL database."""
@@ -55,7 +63,7 @@ class ResearchObject():
             return # Don't log private attributes.
         
         # Open an action if there is not one open currently. Returns the open action if it is already open.
-        action = Action.open(name = "Test")
+        action = Action.open(name = "attribute_changed")
         
         table_name = "research_objects"
         cursor = Action.conn.cursor()        
@@ -63,7 +71,7 @@ class ResearchObject():
         if __name == "id":                        
             sqlquery = f"INSERT INTO {table_name} (object_id) VALUES ('{self.id}')"                        
         else:
-            sqlquery = f"INSERT INTO research_object_transactions (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name)}', '{__value}')"
+            sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name)}', '{__value}')"
         cursor.execute(sqlquery)
         Action.conn.commit()   
         action.close() # Close the action, if possible.     
@@ -73,7 +81,50 @@ class ResearchObject():
     ###############################################################################################################################
 
     @abstractmethod
-    def load(obj_id: str, cls: Type, action_id: str = None) -> "ResearchObject":
+    def create_id(cls, abstract: str = None, instance: str = None) -> str:
+        """Create a unique ID for the research object."""
+        import random
+        table_name = "research_objects"
+        is_unique = False
+        while not is_unique:
+            if not abstract:
+                abstract_new = str(hex(random.randrange(0, 16**abstract_id_len))[2:]).upper()
+                abstract_new = "0" * (abstract_id_len-len(abstract_new)) + abstract_new
+            else:
+                abstract_new = abstract
+
+            if not instance:
+                instance_new = str(hex(random.randrange(0, 16**instance_id_len))[2:]).upper()
+                instance_new = "0" * (instance_id_len-len(instance_new)) + instance_new
+            else:
+                instance_new = instance
+ 
+            id = cls.prefix + abstract_new + "_" + instance_new
+            cursor = Action.conn.cursor()
+            sql = f'SELECT object_id FROM {table_name} WHERE object_id = "{id}"'
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            if len(rows) == 0:
+                is_unique = True
+        return id  
+    
+    @abstractmethod
+    def _prefix_to_table_name(cls) -> str:
+        """Convert a prefix to a table name."""
+        prefix = cls.prefix
+        if prefix in ["PJ", "AN", "LG", "PG", "PR", "ST", "VW"]:
+            return "PipelineObjects"
+        elif prefix in ["DS", "SJ", "TR", "PH"]:
+            return "DataObjects"
+        elif prefix in ["VR"]:
+            raise NotImplementedError("Which table do Variables go in?") 
+        elif prefix in ["RO"]:
+            return "research_objects"
+        else:
+            raise ValueError("Invalid prefix.")
+
+    @abstractmethod
+    def load(id: str, cls: Type, action_id: str = None) -> "ResearchObject":
         """Load the current state of a research object from the database. If an action_id is specified, load the state of the object after that action."""
         # 1. Get the current action if not provided.
         cursor = Action.conn.cursor()
@@ -84,11 +135,11 @@ class ResearchObject():
             timestamp = action.timestamp_closed
 
         # 2. Get the action ID's for this object that were closed before the action_id.
-        sqlquery = f"SELECT action_id, attr_id, attr_value, child_of FROM research_object_attributes WHERE object_id = '{obj_id}'"
+        sqlquery = f"SELECT action_id, attr_id, attr_value, child_of FROM research_object_attributes WHERE object_id = '{id}'"
         attr_result = cursor.execute(sqlquery).fetchall()
         if len(attr_result) == 0:
             raise ValueError("No object with that ID exists.")
-        curr_obj_action_ids = [row[0] for row in attr_result]    
+        curr_obj_action_ids = [row[0] for row in attr_result]
         attrs = {}
         # Get the action ID's for this object by timestamp, descending.        
         sqlquery = "SELECT action_id, timestamp_closed FROM actions WHERE action_id IN ({}) ORDER BY timestamp_closed DESC".format(','.join(['%s' for _ in curr_obj_action_ids]))
@@ -109,7 +160,7 @@ class ResearchObject():
             attr_name = ResearchObject._get_attr_name(attr_id)
             attrs[attr_name] = attr_value
         
-        attrs["id"] = obj_id
+        attrs["id"] = id
         research_object = cls(name = attrs["name"])
         research_object.__dict__.update(attrs)
         return research_object
@@ -120,16 +171,16 @@ class ResearchObject():
         return research_object
 
     @abstractmethod
-    def _get_attr_id(self, attr_name: str) -> int:
+    def _get_attr_id(attr_name: str) -> int:
         """Get the ID of an attribute. If it does not exist, create it."""
         cursor = Action.conn.cursor()
-        sqlquery = f"SELECT attr_id FROM Attributes WHERE name = '{attr_name}'"
+        sqlquery = f"SELECT attr_id FROM Attributes WHERE attr_name = '{attr_name}'"
         cursor.execute(sqlquery)
         rows = cursor.fetchall()
         if len(rows) == 0:
-            sqlquery = f"INSERT INTO Attributes (name) VALUES ('{attr_name}')"
+            sqlquery = f"INSERT INTO Attributes (attr_name) VALUES ('{attr_name}')"
             cursor.execute(sqlquery)
-            sqlquery = f"SELECT attr_id FROM Attributes WHERE name = '{attr_name}'"
+            sqlquery = f"SELECT attr_id FROM Attributes WHERE attr_name = '{attr_name}'"
             cursor.execute(sqlquery)            
             rows = cursor.fetchall()
             if len(rows) > 1:
@@ -141,12 +192,20 @@ class ResearchObject():
     def _get_attr_name(self, attr_id: int) -> str:
         """Get the name of an attribute."""
         cursor = Action.conn.cursor()
-        sqlquery = f"SELECT name FROM Attributes WHERE attr_id = '{attr_id}'"
+        sqlquery = f"SELECT attr_name FROM Attributes WHERE attr_id = '{attr_id}'"
         cursor.execute(sqlquery)
         rows = cursor.fetchall()
         if len(rows) == 0:
             raise Exception("No attribute with that ID exists.")
         return rows[0][0]
+    
+    @abstractmethod
+    def is_id(id: str) -> bool:
+        """Check if the given ID is a valid ID for this research object."""        
+        pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
+        if not re.match(pattern, id):
+            return False
+        return True
     
     ###############################################################################################################################
     #################################################### end of abstract methods ##################################################
@@ -210,55 +269,11 @@ class ResearchObject():
     
     ###############################################################################################################################
     #################################################### end of parentage methods #################################################
-    ###############################################################################################################################
-
-    def _prefix_to_table_name(self) -> str:
-        """Convert a prefix to a table name."""
-        prefix = self.prefix
-        if prefix in ["PJ", "AN", "LG", "PG", "PR", "ST", "VW"]:
-            return "PipelineObjects"
-        elif prefix in ["DS", "SJ", "TR", "PH"]:
-            return "DataObjects"
-        elif prefix in ["VR"]:
-            raise NotImplementedError("Which table do Variables go in?")
-
-    def create_id(self, abstract: str = None, instance: str = None) -> str:
-        """Create a unique ID for the research object."""
-        import random
-        table_name = self._prefix_to_table_name()
-        is_unique = False
-        while not is_unique:
-            if not abstract:
-                abstract_new = str(hex(random.randrange(0, 16**abstract_id_len))[2:]).upper()
-                abstract_new = "0" * (abstract_id_len-len(abstract_new)) + abstract_new
-            else:
-                abstract_new = abstract
-
-            if not instance:
-                instance_new = str(hex(random.randrange(0, 16**instance_id_len))[2:]).upper()
-                instance_new = "0" * (instance_id_len-len(instance_new)) + instance_new
-            else:
-                instance_new = instance
- 
-            id = self.prefix + abstract_new + "_" + instance_new
-            cursor = Action.conn.cursor()
-            sql = f'SELECT id FROM {table_name} WHERE id = "{id}"'
-            cursor.execute(sql)
-            rows = cursor.fetchall()
-            if len(rows) == 0:
-                is_unique = True
-        return id    
-    
-    def is_id(self, id: str) -> bool:
-        """Check if the given ID is a valid ID for this research object."""        
-        pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{10}_[a-fA-F0-9]{3}$"
-        if not re.match(pattern, id):
-            return False
-        return True
+    ############################################################################################################################### 
     
     def parse_id(self, id: str) -> tuple:
         """Parse an ID into its prefix, abstract, and instance parts."""
-        if not self.is_id(id):
+        if not ResearchObject.is_id(id):
             raise ValueError("Invalid ID.")
         abstract = id[2:2+abstract_id_len]
         instance = id[-instance_id_len:]
@@ -273,9 +288,8 @@ class ResearchObject():
         return keys
     
 if __name__=="__main__":
-    a = Action.load(id = "AC000000_000")
-
     from pipeline_objects.project import Project
-    pj = Project.load(id = 1)
+    pj1 = Project(name = "Test")
+    pj2 = Project.load(id = pj1.id)
     pj = Project.new_current(name = "Test")
     print(pj)

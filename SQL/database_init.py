@@ -9,13 +9,18 @@ class DBInitializer():
         self.create_database()
         self._conn.commit()
         self.init_values()
+        self._conn.commit()
         self._conn.close()
 
     def init_values(self):
         """Initialize the values in the database."""
         # Current User
         default_user_object_id = "US000000_000"
-        user = User.new(default_user_object_id)
+        sqlquery = f"INSERT INTO current_user (current_user_object_id) VALUES ('{default_user_object_id}')"
+        cursor = self._conn.cursor()
+        cursor.execute(sqlquery)
+        self._conn.commit()
+        user = User(id = default_user_object_id, name = "Default User")        
     
 
     def create_database(self):
@@ -104,7 +109,8 @@ class DBInitializer():
                         level7_value TEXT,
                         level8_value TEXT,
                         level9_value TEXT,
-                        FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE                        
+                        FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
         
         # Data address schemas. Lists all data address schemas for all data.

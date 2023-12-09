@@ -31,13 +31,13 @@ class Action():
     conn = sqlite3.connect(_db_file)
     
     def __init__(self, name: str = None, closeable: bool = True, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp_opened: datetime.datetime = None, timestamp_closed: datetime.datetime = None):   
+        if not timestamp_opened:
+            timestamp_opened = datetime.datetime.utcnow()
+        if not user_object_id:
+            user_object_id = get_current_user_object_id()
         if not id:
             # Creating a new action.
-            id = Action._create_uuid() # Making a new action.
-            if not timestamp_opened:
-                timestamp_opened = datetime.datetime.utcnow()
-            if not user_object_id:
-                user_object_id = get_current_user_object_id()
+            id = Action._create_uuid() # Making a new action.        
         else:
             # Loading an existing action.
             sqlquery = f"SELECT * FROM actions WHERE action_id = '{id}'"
@@ -57,6 +57,10 @@ class Action():
         self.redo_of = redo_of       
         self.closeable = closeable
         self.user_object_id = user_object_id
+
+    ###############################################################################################################################
+    #################################################### end of dunder methods ####################################################
+    ###############################################################################################################################
 
     @abstractmethod
     def _create_uuid() -> str:
@@ -82,59 +86,21 @@ class Action():
         except ValueError:
             return False
         return True    
-
-    def execute(self) -> None:
-        """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
-        # Create a new action, where "redo_of" is set to self.id.
-        action = Action(name = self.name, closeable = True, redo_of = self.id)
-        action.log() # Opens the action.
+    
+    @abstractmethod
+    def set_current_action(action: "Action") -> None:
+        """Set the current action."""        
         cursor = Action.conn.cursor()
-        table_names = ["data_values", "research_object_attributes", "data_address_schemas", "data_addresses"]
-        column_labels_list = [["action_id", "address_id", "schema_id", "VR_id", "PR_id", "scalar_value"], 
-                         ["action_id", "object_id", "attr_id", "attr_value", "child_of"],
-                         ["schema_id", "level_name", "level_index", "action_id", "dataset_id"],
-                         ["address_id", "schema_id", "level0", "level1", "level2", "level3", "level4", "level5", "level6", "level7", "level8", "level9", "action_id"]]
-        for idx, table_name in enumerate(table_names):
-            labels = column_labels_list[idx]
-            rows = Action._get_rows_of_action(action_id = self.id, table_name = table_name)
-            labels_formatted = ", ".join(labels)
-            action_id_index = labels.index("action_id")
-            for row in rows:                
-                row[action_id_index] = action.id # Update the action_id to the new action.
-                row_formatted = ", ".join(row)
-                sqlquery = f"INSERT INTO {table_name} ({labels_formatted}) VALUES ({row_formatted})"
-                cursor.execute(sqlquery, row)
-        
+        setting_name = 'current_action_id'
+        sqlquery = f"INSERT INTO settings (user_object_id, setting_name, setting_value) VALUES ('{action.user_object_id}', '{setting_name}', '{action.id}')"
+        cursor.execute(sqlquery)
         Action.conn.commit()
-        action.close()
-
-    def redo(self) -> None:
-        """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
-        # Create a new action, where "redo_of" is set to self.id.
-        next_action = Action.get_next(id = self.id)
-        if next_action is None:
-            return
-        next_action.execute()
-
-    def undo(self) -> None:
-        """Undo the action, causing the current state of the referenced widgets and research objects to be the state of the previous Action."""
-        # Log the action to the database.
-        prev_action = Action.previous(id = self.id)
-        if prev_action is None:
-            return
-        prev_action.execute()
-
-    def _get_rows_of_action(action_id: str, table_name: str) -> list:
-        """Get the rows of a table that were created by an action."""
-        cursor = Action.conn.cursor()
-        sqlquery = f"SELECT * FROM {table_name} WHERE action_id = '{action_id}'"
-        return cursor.execute(sqlquery).fetchall()
 
     @abstractmethod
     def load(id: str = None):
         """Load an action from file given a timestamp or id."""        
         return Action(id = id)
-
+    
     @abstractmethod
     def previous(id: str = None, current_time: datetime.datetime = None) -> "Action":
         """Get the ID and all contents of the most recently performed action."""
@@ -144,7 +110,7 @@ class Action():
         if id:
             action = Action.load(id = id)
             current_time = action.timestamp_opened
-        sqlquery = f"SELECT action_id FROM actions WHERE timestamp_opened <= '{str(current_time)}' ORDER BY timestamp DESC LIMIT 1"
+        sqlquery = f"SELECT action_id FROM actions WHERE timestamp_opened <= '{str(current_time)}' ORDER BY timestamp_opened DESC LIMIT 1"
         result = cursor.execute(sqlquery).fetchone()
         if result is None:
             return None
@@ -188,10 +154,77 @@ class Action():
         
         action = Action(name = name, closeable = True)
         action.log() # Puts the action in the database.
+        Action.set_current_action(action = action)
         return action
     
+    @abstractmethod
+    def get_open(closeable: bool = True) -> "Action":
+        """Return the open action."""
+        cursor = Action.conn.cursor()
+        sqlquery = "SELECT id FROM actions WHERE timestamp IS NULL"
+        result = cursor.execute(sqlquery).fetchone()
+        if len(result) == 0:
+            return None
+        id = result[0]
+        return Action.load(id = id)
+    
+    ###############################################################################################################################
+    #################################################### end of abstract methods ##################################################
+    ###############################################################################################################################
+
+    def execute(self) -> None:
+        """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
+        # Create a new action, where "redo_of" is set to self.id.
+        action = Action(name = self.name, closeable = True, redo_of = self.id)
+        action.open() # Opens the action.
+        cursor = Action.conn.cursor()
+        table_names = ["data_values", "research_object_attributes", "data_address_schemas", "data_addresses"]
+        column_labels_list = [["action_id", "address_id", "schema_id", "VR_id", "PR_id", "scalar_value"], 
+                         ["action_id", "object_id", "attr_id", "attr_value", "child_of"],
+                         ["schema_id", "level_name", "level_index", "action_id", "dataset_id"],
+                         ["address_id", "schema_id", "level0", "level1", "level2", "level3", "level4", "level5", "level6", "level7", "level8", "level9", "action_id"]]
+        for idx, table_name in enumerate(table_names):
+            labels = column_labels_list[idx]
+            rows = Action._get_rows_of_action(action_id = self.id, table_name = table_name)
+            labels_formatted = ", ".join(labels)
+            action_id_index = labels.index("action_id")
+            for row in rows:                
+                row[action_id_index] = action.id # Update the action_id to the new action.
+                row_formatted = ", ".join(row)
+                sqlquery = f"INSERT INTO {table_name} ({labels_formatted}) VALUES ({row_formatted})"
+                cursor.execute(sqlquery, row)
+        
+        Action.conn.commit()
+        action.close()
+
+    def redo(self) -> None:
+        """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
+        # Create a new action, where "redo_of" is set to self.id.
+        #TODO: This should be callable from anywhere, not just from self. Needs to reference the current_action_id for that user.
+        next_action = Action.get_next(id = self.id)
+        if next_action is None:
+            return
+        Action.set_current_action(action = next_action)
+        next_action.execute()
+
+    def undo(self) -> None:
+        """Undo the action, causing the current state of the referenced widgets and research objects to be the state of the previous Action."""
+        # Log the action to the database.
+        #TODO: This should be callable from anywhere, not just from self. Needs to reference the current_action_id for that user.
+        prev_action = Action.previous(id = self.id)
+        if prev_action is None:
+            return
+        Action.set_current_action(action = prev_action)
+        prev_action.execute()    
+
+    def _get_rows_of_action(action_id: str, table_name: str) -> list:
+        """Get the rows of a table that were created by an action."""
+        cursor = Action.conn.cursor()
+        sqlquery = f"SELECT * FROM {table_name} WHERE action_id = '{action_id}'"
+        return cursor.execute(sqlquery).fetchall()    
+    
     def log(self):
-        """Log the action to the database."""
+        """Log the action to the database."""        
         Action.conn.cursor().execute("INSERT INTO actions (action_id, user_object_id, name, timestamp_opened, timestamp_closed, redo_of) VALUES (?, ?, ?, ?, ?, ?)", (self.id, self.user_object_id, self.name, self.timestamp_opened, self.timestamp_closed, self.redo_of))        
         Action.conn.commit()
     
@@ -204,23 +237,8 @@ class Action():
         self.timestamp_closed = datetime.datetime.utcnow()
         sqlquery = f"UPDATE actions SET timestamp_closed = '{str(self.timestamp_closed)}' WHERE action_id = '{self.id}'"
         cursor.execute(sqlquery)
+        Action.conn.commit()    
 
-        # Set the current action as the one that is being redone.
-        sqlquery = f"INSERT INTO settings (user_object_id, setting_name, setting_value) VALUES ('{self.user_object_id}', {ResearchObject._get_attr_id('current_action_id')}, '{self.id}')"
-        cursor.execute(sqlquery)
-        Action.conn.commit()
-
-    @abstractmethod
-    def get_open(closeable: bool = True) -> "Action":
-        """Return the open action."""
-        cursor = Action.conn.cursor()
-        sqlquery = "SELECT id FROM actions WHERE timestamp IS NULL"
-        result = cursor.execute(sqlquery).fetchone()
-        if len(result) == 0:
-            return None
-        id = result[0]
-        return Action.load(id = id)
-
-if __name__=="__main__":
+if __name__=="__main__":    
     action = Action("Test Action")
     action.close()
