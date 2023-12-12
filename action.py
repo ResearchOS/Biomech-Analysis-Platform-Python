@@ -36,14 +36,17 @@ class Action():
         if not user_object_id:
             user_object_id = get_current_user_object_id()
         # Load the action from the database if an open action exists, otherwise create a new action.
+        is_open = Action.is_open()
         if not id:
-            if Action.is_open():
+            if is_open:
+                closeable = False
                 open_action = Action.get_open()
                 for key in open_action.__dict__.keys():
                     self[key] = open_action[key]
                 return
             else:
                 # Creating a new action.
+                closeable = True
                 id = Action._create_uuid() # Making a new action.        
         else:
             # Loading an existing action.
@@ -56,6 +59,9 @@ class Action():
             timestamp_opened = result[3]
             timestamp_closed = result[4]
             redo_of = result[5]
+            closeable = True
+            if is_open:
+                closeable = False
 
         self.id = id
         self.name = name
@@ -165,7 +171,7 @@ class Action():
         return action
     
     @abstractmethod
-    def get_open(closeable: bool = True) -> "Action":
+    def get_open(closeable: bool = False) -> "Action":
         """Return the open action."""
         cursor = Action.conn.cursor()
         sqlquery = "SELECT id FROM actions WHERE timestamp IS NULL"
