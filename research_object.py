@@ -8,9 +8,12 @@ import traceback
 from action import Action
 from config import ProdConfig
 
+import matlab.engine
+
 abstract_id_len = ProdConfig.abstract_id_len
 instance_id_len = ProdConfig.instance_id_len
 
+eng = matlab.engine.start_matlab()
 
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
