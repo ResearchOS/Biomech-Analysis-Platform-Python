@@ -25,6 +25,7 @@ class Project(PipelineObject):
         an = Analysis.new_current(name = pj.name + "_Default")
         pj.set_current_analysis(an.id)
         action.close()
+        return pj
 
     def set_current_analysis(self, id: str) -> None:
         """Set an analysis as the current one for the project."""

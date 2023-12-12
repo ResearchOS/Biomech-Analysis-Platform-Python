@@ -42,7 +42,7 @@ class Action():
                 closeable = False
                 open_action = Action.get_open()
                 for key in open_action.__dict__.keys():
-                    self[key] = open_action[key]
+                    setattr(self, key, getattr(open_action, key))
                 return
             else:
                 # Creating a new action.
@@ -70,6 +70,9 @@ class Action():
         self.redo_of = redo_of       
         self.closeable = closeable
         self.user_object_id = user_object_id
+
+        if not is_open:
+            self.log()
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
@@ -150,7 +153,7 @@ class Action():
     def is_open() -> bool:
         """Return True if there is an open action, False otherwise."""
         cursor = Action.conn.cursor()
-        sqlquery = "SELECT action_id FROM actions WHERE timestamp_closed = NULL"
+        sqlquery = "SELECT action_id FROM actions WHERE timestamp_closed IS NULL"
         result = cursor.execute(sqlquery).fetchone()
         if result is None or len(result) == 0:
             return False
@@ -174,7 +177,7 @@ class Action():
     def get_open(closeable: bool = False) -> "Action":
         """Return the open action."""
         cursor = Action.conn.cursor()
-        sqlquery = "SELECT id FROM actions WHERE timestamp IS NULL"
+        sqlquery = "SELECT action_id FROM actions WHERE timestamp_closed IS NULL"
         result = cursor.execute(sqlquery).fetchone()
         if len(result) == 0:
             return None

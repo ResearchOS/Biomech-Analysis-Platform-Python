@@ -1,7 +1,8 @@
 from pipeline_objects.pipeline_object import PipelineObject
 from research_object import ResearchObject
+from pipeline_objects.logsheet import Logsheet
+
 from action import Action
-from logsheet import Logsheet
 
 class Analysis(PipelineObject):
 
@@ -9,9 +10,9 @@ class Analysis(PipelineObject):
 
     def new(name: str):
         action = Action(name = "New Analysis " + name)
-        pj = Analysis(name = name)
+        an = Analysis(name = name)
         action.close()
-        return pj
+        return an
     
     def new_current(name: str):
         action = Action.open(name = "New Current Analysis " + name)

@@ -36,8 +36,9 @@ class ResearchObject():
         
     def __del__(self) -> None:
         """Delete the object from memory."""
-        if self.id not in ResearchObject._instances:
-            raise ValueError("Object not in instances.")
+        print("Deleting" + self.id)
+        # if self.id not in ResearchObject._instances:
+        #     raise ValueError("Object not in instances.")
         ResearchObject._instances_count[self.id] -= 1
         if ResearchObject._instances_count[self.id] == 0:
             del ResearchObject._instances[self.id]
@@ -56,7 +57,7 @@ class ResearchObject():
             Action.conn.commit()
         except Exception as e:
             print(e)
-        print(traceback.format_stack(limit = _stack_limit))
+        # print(traceback.format_stack(limit = _stack_limit))
         if "name" not in self.__dict__:
             self.name = name
         if "deleted" not in self.__dict__:
@@ -301,7 +302,9 @@ class ResearchObject():
     
 if __name__=="__main__":
     from pipeline_objects.project import Project
-    pj1 = Project(name = "Test")
-    pj2 = Project.load(id = pj1.id)
+    # pj1 = Project(name = "Test")
+    # pj2 = Project.load(id = pj1.id)
+    print(ResearchObject._instances)
     pj = Project.new_current(name = "Test")
+    print(ResearchObject._instances)
     print(pj)
