@@ -1,0 +1,12 @@
+version: 0.0.0
+
+build:
+  os: linux
+  tools:
+    python: "3.12"
+
+configuration: docs/source/conf.py
+
+python:
+  install:
+    - requirements: docs/requirements.txt
