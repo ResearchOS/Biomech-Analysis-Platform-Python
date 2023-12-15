@@ -17,6 +17,7 @@ requires-python = ">=3.11"
 authors = [
     {name = "Mitchell Tillman", email = "mtillman14@gmail.com"},
 ]
+# dynamic = ["version", "description"]
 description = "Operating system for scientific research."
 readme = "README.md"
 classifiers = [
@@ -39,3 +40,8 @@ classifiers = [
 [project.urls]
 Documentation = "https://test.com/testme"
 Repository = "https://github.com"
+
+[project.optional-dependencies]
+doc = [
+    "sphinx~=4.2.0"
+]
