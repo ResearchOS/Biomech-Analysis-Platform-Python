@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "**.md"
+      - "docs/**.md"
       - "mkdocs.yml"
   workflow_dispatch:
   
@@ -13,10 +13,10 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
       - run: pip install --upgrade pip && pip install mkdocs mkdocs-gen-files
       - run: pip install mkdocs-material
       - run: pip install mkdocstrings
