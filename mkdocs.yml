@@ -1,0 +1,26 @@
+site_name: ResearchOS
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.bottom
+    - navigation.instant
+    - navigation.sidebar
+    - navigation.next_prev
+    - navigation.edit_url
+    - navigation.search
+    - navigation.scrollspy
+    - navigation.toc
+    - navigation.meta
+    - navigation.breadcrumbs
+    - navigation.favicon
+    - navigation.logo
+    - navigation.hide_on_scroll
+    - navigation.sticky
+    - navigation.fullscreen
+
+plugins:
+  - search
+  - mkdocstrings
