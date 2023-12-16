@@ -1,6 +1,6 @@
 # Welcome to ResearchOS
 
-This is the documentation for [ResearchOS](https://github.com/biomechOS/Biomech-Analysis-Platform-Python)
+This is the documentation for [ResearchOS](https://github.com/ResearchOS/ResearchOS)
 
 ## Commands
 
