@@ -1,1 +1,1 @@
-Documentation found at ResearchOS's [mkdocs page hosted on GitHub pages](https://biomechos.github.io/ResearchOS/)
+Documentation found at ResearchOS's [mkdocs page hosted on GitHub pages](https://researchos.github.io/ResearchOS/)
