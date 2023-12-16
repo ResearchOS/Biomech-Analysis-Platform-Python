@@ -1,0 +1,1 @@
+Documentation found at ResearchOS's [mkdocs page hosted on GitHub pages](https://biomechos.github.io/Biomech-Analysis-Platform-Python/)
