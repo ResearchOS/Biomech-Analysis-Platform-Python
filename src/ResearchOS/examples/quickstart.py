@@ -70,9 +70,11 @@ pr.set_level(Trial)
 # c. Add the process to the current analysis.
 an.add_pr(pr)
 
-# d. Add input and output aarguments to the process.
-pr.set_inputs("VR000000_000")
-pr.set_outputs("VR000000_001")
+# d. Add input and output arguments to the process.
+vr0 = Variable(id = "VR000000_000")
+vr1 = Variable(id = "VR000000_001")
+pr.set_inputs(vr0)
+pr.set_outputs(vr1)
 
 # e. Set the subset of data for this pr to operate over.
 pr.set_subset(sb.id)
@@ -89,3 +91,26 @@ data = vr.get_data(subset = sb.id) # Get all values of this variable from all le
 # 9. Plot the data using standard tools.
 import matplotlib.pyplot as plt
 plt.plot(data) 
+
+# 10. Create another process with using the output of the first process as input.
+# a. Create the process.
+pr = Process(name = "Test2")
+
+# b. Set the level of the process. Must be a data object.
+pr.set_level(Trial)
+
+# c. Add the process to the current analysis.
+an.add_pr(pr)
+
+# d. Add input and output arguments to the process.
+pr.set_inputs(vr1)
+vr2 = Variable(id = "VR000000_002")
+pr.set_outputs(vr2)
+
+# e. Set the subset of data for this pr to operate over.
+pr.set_subset(sb.id)
+
+# f. Run the process. Outputs are saved to the SQL database.
+pr.run()
+
+# Repeat any of the data access or plotting steps above to access the data from this process.
