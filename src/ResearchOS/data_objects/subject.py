@@ -6,6 +6,7 @@ class Subject(DataObject):
 
     _id_prefix: str = "SB"
     _table_name: str = "subjects"
+    logsheet_header_type: str = "str"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

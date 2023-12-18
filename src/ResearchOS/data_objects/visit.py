@@ -5,6 +5,7 @@ class Visit(DataObject):
 
     _id_prefix: str = "VT"
     _table_name: str = "visits"
+    logsheet_header_type: int = 0
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
