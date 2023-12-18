@@ -17,6 +17,14 @@ class ResearchObject():
     prefix = "RO" # Testing only
     _instances = weakref.WeakValueDictionary()
     _instances_count = {}
+    
+    def __hash__(self):
+        return hash(self.id)
+    
+    def __eq__(self, other):
+        if isinstance(other, ResearchObject):
+            return self.id == other.id
+        return NotImplemented
 
     def __new__(cls, *args, **kwargs):
         """Create a new data object. If the object already exists, return the existing object."""
