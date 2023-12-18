@@ -10,8 +10,8 @@ from ResearchOS.data_objects.trial import Trial
 from ResearchOS.variable import Variable
 
 # The way I want the imports to work:
-import ResearchOS as ros
-pj = ros.Project
+# import ResearchOS as ros
+# pj = ros.Project
 
 # 1. Create a new ResearchOS project, and make it the current project.
 # This will also create a new Dataset, Analysis, and Logsheet object.
