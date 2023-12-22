@@ -5,8 +5,8 @@ import datetime
 import weakref
 import traceback
 
-from action import Action
-from config import ProdConfig
+from src.ResearchOS.action import Action
+from src.ResearchOS.config import ProdConfig
 
 abstract_id_len = ProdConfig.abstract_id_len
 instance_id_len = ProdConfig.instance_id_len
@@ -27,7 +27,7 @@ class ResearchObject():
         return NotImplemented
 
     def __new__(cls, *args, **kwargs):
-        """Create a new data object. If the object already exists, return the existing object."""
+        """Create a new research object. If the object already exists, return the existing object."""
         object_id = kwargs.get("id", None)
         if object_id is None:
             object_id = cls.create_id(cls)
@@ -41,21 +41,21 @@ class ResearchObject():
             instance.__dict__['id'] = object_id            
             return instance
         
-    def __del__(self) -> None:
-        """Delete the object from memory."""
-        print("Deleting" + self.id)
-        # if self.id not in ResearchObject._instances:
-        #     raise ValueError("Object not in instances.")
-        ResearchObject._instances_count[self.id] -= 1
-        if ResearchObject._instances_count[self.id] == 0:
-            del ResearchObject._instances[self.id]
-            del ResearchObject._instances_count[self.id]
+    # def __del__(self) -> None:
+    #     """Delete the object from memory."""
+    #     print("Deleting" + self.id)
+    #     # if self.id not in ResearchObject._instances:
+    #     #     raise ValueError("Object not in instances.")
+    #     ResearchObject._instances_count[self.id] -= 1
+    #     if ResearchObject._instances_count[self.id] == 0:
+    #         del ResearchObject._instances[self.id]
+    #         del ResearchObject._instances_count[self.id]
 
     def __init__(self, name: str, id: str = None, _stack_limit: int = 2) -> None:
         """"""        
         if not id:
             id = self.id
-        action = Action.open(name = "created object " + id)
+        action = Action.open(name = "object creation")
         try:
             # Create the object in the database.
             cursor = Action.conn.cursor()

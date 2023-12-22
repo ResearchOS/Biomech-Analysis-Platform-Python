@@ -4,7 +4,7 @@ import sqlite3
 from abc import abstractmethod
 import uuid
 
-from config import ProdConfig
+from src.ResearchOS.config import ProdConfig
 
 def get_current_user_object_id() -> str:
     """Get the ID of the current user."""
@@ -246,7 +246,7 @@ class Action():
     
     def close(self):
         """Closeable only if called from inside the same method that opened it."""
-        from research_object import ResearchObject
+        from src.ResearchOS.research_object import ResearchObject
         if not self.closeable:
             return
         cursor = Action.conn.cursor()

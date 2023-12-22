@@ -22,7 +22,7 @@ class GeneralConfig():
     #         ]
 
 class ProdConfig(GeneralConfig):
-    db_file = 'SQL/database.db'
+    db_file = 'src/ResearchOS/SQL/database.db'
 
 class DevConfig(GeneralConfig):
     # When would I use this one?

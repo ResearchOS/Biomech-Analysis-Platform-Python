@@ -1,8 +1,8 @@
-from pipeline_objects.pipeline_object import PipelineObject
-from research_object import ResearchObject
-from pipeline_objects.logsheet import Logsheet
+from src.ResearchOS.pipeline_objects.pipeline_object import PipelineObject
+from src.ResearchOS.research_object import ResearchObject
+from src.ResearchOS.pipeline_objects.logsheet import Logsheet
 
-from action import Action
+from src.ResearchOS.action import Action
 
 class Analysis(PipelineObject):
 
