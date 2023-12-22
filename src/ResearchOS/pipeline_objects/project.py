@@ -1,11 +1,11 @@
 from abc import abstractmethod
 from typing import Any, Type
 
-from research_object import ResearchObject
-from pipeline_objects.pipeline_object import PipelineObject
-from pipeline_objects.analysis import Analysis
-from data_objects.dataset import Dataset
-from action import Action
+from src.ResearchOS.research_object import ResearchObject
+from src.ResearchOS.pipeline_objects.pipeline_object import PipelineObject
+from src.ResearchOS.pipeline_objects.analysis import Analysis
+from src.ResearchOS.data_objects.dataset import Dataset
+from src.ResearchOS.action import Action
 
 class Project(PipelineObject):
 

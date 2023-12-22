@@ -1,5 +1,5 @@
-from pipeline_objects.pipeline_object import PipelineObject
-from action import Action
+from src.ResearchOS.pipeline_objects.pipeline_object import PipelineObject
+from src.ResearchOS.action import Action
 
 class Logsheet(PipelineObject):
 

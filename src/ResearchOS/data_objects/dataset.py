@@ -1,5 +1,5 @@
-from data_objects.data_object import DataObject
-from SQL.database_init import DBInitializer
+from src.ResearchOS.data_objects.data_object import DataObject
+from src.ResearchOS.SQL.database_init import DBInitializer
 from typing import Union
 
 class Dataset(DataObject):

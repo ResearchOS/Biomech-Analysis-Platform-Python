@@ -1,6 +1,6 @@
 """Initialize a database to handle all of the data for the application."""
 
-from user import User
+from src.ResearchOS.user import User
 import sqlite3
 
 class DBInitializer():
