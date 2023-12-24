@@ -1,10 +1,10 @@
 """Initialize a database to handle all of the data for the application."""
 
-from src.ResearchOS.user import User
+from ResearchOS import User
 import sqlite3
 
 class DBInitializer():
-    def __init__(self, db_file: str = './SQL/database.db'):        
+    def __init__(self, db_file: str = 'src/ResearchOS/SQL/database.db'):        
         self._conn = sqlite3.connect(db_file)
         self.create_database()
         self._conn.commit()

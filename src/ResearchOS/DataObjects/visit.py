@@ -1,11 +1,20 @@
-from data_objects.data_object import DataObject
+from ResearchOS.DataObjects import DataObject
 from typing import Union
+
+from datetime import datetime
+
+import numpy as np
 
 class Visit(DataObject):
 
     _id_prefix: str = "VT"
     _table_name: str = "visits"
     logsheet_header_type: int = 0
+
+    def check_valid_attrs(self):
+        if type(self.date) is not datetime:
+            raise ValueError
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -1,4 +1,4 @@
-from pipeline_objects.pipeline_object import PipelineObject
+from ResearchOS import PipelineObject
 
 class Process(PipelineObject):
 

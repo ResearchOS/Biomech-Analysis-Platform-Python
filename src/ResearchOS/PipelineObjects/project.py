@@ -1,15 +1,19 @@
 from abc import abstractmethod
 from typing import Any, Type
 
-from src.ResearchOS.research_object import ResearchObject
-from src.ResearchOS.pipeline_objects.pipeline_object import PipelineObject
-from src.ResearchOS.pipeline_objects.analysis import Analysis
-from src.ResearchOS.data_objects.dataset import Dataset
-from src.ResearchOS.action import Action
+from ResearchOS import ResearchObject
+from ResearchOS.PipelineObjects import PipelineObject
+from ResearchOS.PipelineObjects import Analysis
+from ResearchOS.DataObjects import Dataset
+from ResearchOS import Action
 
 class Project(PipelineObject):
 
-    prefix = "PJ"    
+    prefix = "PJ"       
+
+    def check_valid_attrs(self):
+        if not self.is_id(self.current_analysis_id):
+            raise ValueError        
 
     @abstractmethod
     def new(name: str) -> "Project":

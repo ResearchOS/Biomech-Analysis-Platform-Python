@@ -1,13 +1,15 @@
-from ResearchOS.pipeline_objects.project import Project
-from ResearchOS.pipeline_objects.analysis import Analysis
-from ResearchOS.pipeline_objects.logsheet import Logsheet
-from ResearchOS.pipeline_objects.subset import Subset
-from ResearchOS.pipeline_objects.process import Process
-from ResearchOS.data_objects.dataset import Dataset
-from ResearchOS.data_objects.subject import Subject
-from ResearchOS.data_objects.visit import Visit
-from ResearchOS.data_objects.trial import Trial
-from ResearchOS.variable import Variable
+from ResearchOS.PipelineObjects import Project, Analysis, Logsheet, Subset, Process
+from ResearchOS.DataObjects import Dataset, Subject, Visit, Trial
+from ResearchOS import Variable, User
+
+class Quickstart():
+    "Testing"
+    def __init__():
+        "Testing"
+        pass
+
+    def method1():
+        "Testing"
 
 # The way I want the imports to work:
 # import ResearchOS as ros

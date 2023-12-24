@@ -1,12 +1,15 @@
-from src.ResearchOS.pipeline_objects.pipeline_object import PipelineObject
-from src.ResearchOS.research_object import ResearchObject
-from src.ResearchOS.pipeline_objects.logsheet import Logsheet
-
-from src.ResearchOS.action import Action
+from ResearchOS.PipelineObjects import PipelineObject
+from ResearchOS import ResearchObject
+from ResearchOS.PipelineObjects import Logsheet
+from ResearchOS import Action
 
 class Analysis(PipelineObject):
 
     prefix = "AN"    
+
+    def check_valid_attrs(self):
+        if not self.is_id(self.current_logsheet_id):
+            raise ValueError  
 
     def new(name: str):
         action = Action(name = "New Analysis " + name)
