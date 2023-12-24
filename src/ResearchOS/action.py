@@ -245,8 +245,7 @@ class Action():
         Action.conn.commit()
     
     def close(self):
-        """Closeable only if called from inside the same method that opened it."""
-        from src.ResearchOS.research_object import ResearchObject
+        """Closeable only if called from inside the same method that opened it."""        
         if not self.closeable:
             return
         cursor = Action.conn.cursor()

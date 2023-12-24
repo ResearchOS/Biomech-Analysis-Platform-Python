@@ -1,5 +1,5 @@
-from pipeline_objects.process import Process
-from data_objects.dataset import Dataset
+from PipelineObjects.process import Process
+from DataObjects.dataset import Dataset
 
 dataset = Dataset.get_current()
 subject = dataset.subjects(name = "S1")

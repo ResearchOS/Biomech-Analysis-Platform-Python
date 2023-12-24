@@ -1,4 +1,4 @@
-from src.ResearchOS.research_object import ResearchObject
+from ResearchOS import ResearchObject
 from typing import Any
 
 class PipelineObject(ResearchObject):

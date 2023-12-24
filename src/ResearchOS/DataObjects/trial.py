@@ -1,4 +1,4 @@
-from data_objects.data_object import DataObject
+from ResearchOS.DataObjects import DataObject
 from typing import Union
 
 class Trial(DataObject):

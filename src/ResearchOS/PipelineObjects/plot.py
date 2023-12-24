@@ -1,4 +1,4 @@
-from pipeline_objects.pipeline_object import PipelineObject
+from ResearchOS.PipelineObjects import PipelineObject
 
 class Plot(PipelineObject):
     

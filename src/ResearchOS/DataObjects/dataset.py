@@ -1,5 +1,5 @@
-from src.ResearchOS.data_objects.data_object import DataObject
-from src.ResearchOS.SQL.database_init import DBInitializer
+from ResearchOS import DataObject
+from ResearchOS import DBInitializer
 from typing import Union
 
 class Dataset(DataObject):
@@ -53,9 +53,9 @@ class Dataset(DataObject):
         pass
 
 if __name__=="__main__":
-    from data_objects.subject import Subject
-    from data_objects.trial import Trial
-    from data_objects.phase import Phase
+    from DataObjects.subject import Subject
+    from DataObjects.trial import Trial
+    from DataObjects.phase import Phase
     db = DBInitializer()
     
     d1 = Dataset("DS1")

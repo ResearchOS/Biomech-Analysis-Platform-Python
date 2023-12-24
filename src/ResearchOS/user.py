@@ -1,7 +1,7 @@
-from src.ResearchOS.data_objects.data_object import DataObject
-from src.ResearchOS.pipeline_objects.pipeline_object import PipelineObject
-from src.ResearchOS.research_object import ResearchObject
-from src.ResearchOS.action import Action
+from ResearchOS.DataObjects import DataObject
+from ResearchOS.PipelineObjects import PipelineObject
+from ResearchOS import ResearchObject
+from ResearchOS import Action
 
 from abc import abstractmethod
 

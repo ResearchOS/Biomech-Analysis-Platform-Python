@@ -1,13 +1,15 @@
-from SQL.database_init import DBInitializer
-from objects.data_object import DataObject
-from objects.data_object import _create_uuid   
+from ResearchOS import DBInitializer
+from ResearchOS.DataObjects import DataObject
+from ResearchOS import ResearchObject
+from ResearchOS.PipelineObjects import Project
+from src.ResearchOS.config import TestConfig
 
 
 import os
 from unittest import TestCase
 from datetime import datetime
 
-db_file = 'tests/test_database.db'
+db_file = TestConfig.db_file
 
 class TestDatabase(TestCase):
 
@@ -15,13 +17,20 @@ class TestDatabase(TestCase):
 
     def setup_class(self):
         db = DBInitializer(db_file)
-        DataObject.db_file = db_file
+        ResearchObject.db_file = db_file
 
     def teardown_class(self):
         os.remove(self.db_file)
 
     def test_db_exists(self):
         self.assertTrue(os.path.isfile(self.db_file))
+
+    def test_obj_exists_after_creation(self):
+        pj = Project()
+        pass
+
+    def test_attrs_are_valid_on_creation(self):
+        pass
 
     def check_common_attrs(self, obj: DataObject):        
         self.assertTrue(obj.name == "Untitled")

@@ -2,7 +2,7 @@
 
 # To run Quick Start after installing:
 ```
-researchos-quickstart
+> researchos-quickstart
 ```
 
 That will do the following:

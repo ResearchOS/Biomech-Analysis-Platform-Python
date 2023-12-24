@@ -5,7 +5,7 @@ import datetime
 import weakref
 import traceback
 
-from src.ResearchOS.action import Action
+from ResearchOS import Action
 from src.ResearchOS.config import ProdConfig
 
 abstract_id_len = ProdConfig.abstract_id_len
@@ -308,7 +308,7 @@ class ResearchObject():
         return keys
     
 if __name__=="__main__":
-    from pipeline_objects.project import Project
+    from PipelineObjects.project import Project
     # pj1 = Project(name = "Test")
     # pj2 = Project.load(id = pj1.id)
     print(ResearchObject._instances)
