@@ -1,6 +1,6 @@
 from ResearchOS.PipelineObjects import Project, Analysis, Logsheet, Subset, Process
-from ResearchOS.DataObjects import Dataset, Subject, Visit, Trial
-from ResearchOS import Variable, User
+from DataObjects import Dataset, Subject, Visit, Trial
+# from ..ResearchOS import Variable, User
 
 class Quickstart():
     "Testing"

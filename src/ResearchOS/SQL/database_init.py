@@ -1,6 +1,12 @@
 """Initialize a database to handle all of the data for the application."""
 
-from ResearchOS import User
+import os, sys
+PROJECT_ROOT = os.path.abspath(os.path.join(
+                  os.path.dirname(__file__), 
+                  os.pardir)
+)
+sys.path.append(PROJECT_ROOT)
+
 import sqlite3
 
 class DBInitializer():
@@ -14,6 +20,7 @@ class DBInitializer():
 
     def init_values(self):
         """Initialize the values in the database."""
+        from ResearchOS import User
         # Current User
         default_user_object_id = "US000000_000"
         sqlquery = f"INSERT INTO current_user (current_user_object_id) VALUES ('{default_user_object_id}')"
