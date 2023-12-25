@@ -1,4 +1,4 @@
-from ResearchOS import DataObject
+from DataObjects import DataObject
 from ResearchOS import DBInitializer
 from typing import Union
 
