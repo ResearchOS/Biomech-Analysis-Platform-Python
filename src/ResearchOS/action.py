@@ -4,7 +4,7 @@ import sqlite3
 from abc import abstractmethod
 import uuid
 
-from src.ResearchOS.config import ProdConfig
+from ResearchOS import ProdConfig
 
 def get_current_user_object_id() -> str:
     """Get the ID of the current user."""
