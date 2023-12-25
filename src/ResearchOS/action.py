@@ -4,7 +4,14 @@ import sqlite3
 from abc import abstractmethod
 import uuid
 
-from ResearchOS import ProdConfig
+# import os, sys
+# PROJECT_ROOT = os.path.abspath(os.path.join(
+#                   os.path.dirname(__file__), 
+#                   os.pardir)
+# )
+# sys.path.append(PROJECT_ROOT)
+
+from config import ProdConfig
 
 def get_current_user_object_id() -> str:
     """Get the ID of the current user."""
@@ -53,6 +60,7 @@ class Action():
         self.timestamp = timestamp        
         self.redo_of = redo_of               
         self.user_object_id = user_object_id
+        self.sql_queries = []
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
@@ -131,11 +139,25 @@ class Action():
             return None
         id = result[0]
         return Action(id = id)
+    
+    def add_sql_query(self, sqlquery: str) -> None:
+        """Add a sql query to the action."""
+        self.sql_queries.append(sqlquery)
 
     def execute(self) -> None:
-        """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
+        """Run all of the sql queries in the action."""
+        cursor = Action.conn.cursor()
+        # Execute all of the SQL queries
+        for query in self.sql_queries:
+            cursor.execute(query)
+        # Log the action to the Actions table
+        cursor.execute("INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?, ?)", (self.id, self.user_object_id, self.name, self.timestamp, self.redo_of))        
+        Action.conn.commit()
+
+    def restore(self) -> None:
+        """Execute the action, restoring the state of the referenced research objects to be the state in this Action."""        
         # Create a new action, where "redo_of" is set to self.id.
-        action = Action(name = self.name, closeable = True, redo_of = self.id)
+        action = Action(name = self.name, redo_of = self.id)
         cursor = Action.conn.cursor()
         table_names = ["data_values", "research_object_attributes", "data_address_schemas", "data_addresses"]
         column_labels_list = [["action_id", "address_id", "schema_id", "VR_id", "PR_id", "scalar_value"], 
@@ -154,12 +176,10 @@ class Action():
                 cursor.execute(sqlquery, row)
         
         Action.conn.commit()
-        action.close()
 
     def redo(self) -> None:
         """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
-        # Create a new action, where "redo_of" is set to self.id.
-        #TODO: This should be callable from anywhere, not just from self. Needs to reference the current_action_id for that user.
+        # Create a new action, where "redo_of" is set to self.id.        
         next_action = Action.next(id = self.id)
         if next_action is None:
             return
@@ -168,25 +188,18 @@ class Action():
 
     def undo(self) -> None:
         """Undo the action, causing the current state of the referenced widgets and research objects to be the state of the previous Action."""
-        # Log the action to the database.
-        #TODO: This should be callable from anywhere, not just from self. Needs to reference the current_action_id for that user.
+        # Log the action to the database.        
         prev_action = Action.previous(id = self.id)
         if prev_action is None:
-            return
-        Action.set_current_action(action = prev_action)
-        prev_action.execute()    
+            return        
+        prev_action.redo()    
 
     def _get_rows_of_action(action_id: str, table_name: str) -> list:
         """Get the rows of a table that were created by an action."""
         cursor = Action.conn.cursor()
         sqlquery = f"SELECT * FROM {table_name} WHERE action_id = '{action_id}'"
         return cursor.execute(sqlquery).fetchall()    
-    
-    def log(self):
-        """Log the action to the database."""        
-        Action.conn.cursor().execute("INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?, ?)", (self.id, self.user_object_id, self.name, self.timestamp, self.redo_of))        
-        Action.conn.commit()  
 
 if __name__=="__main__":    
-    action = Action("Test Action")
-    action.close()
+    action = Action(name = "Test Action")    
+    action.execute()
