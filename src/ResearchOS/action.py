@@ -160,7 +160,7 @@ class Action():
         """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
         # Create a new action, where "redo_of" is set to self.id.
         #TODO: This should be callable from anywhere, not just from self. Needs to reference the current_action_id for that user.
-        next_action = Action.get_next(id = self.id)
+        next_action = Action.next(id = self.id)
         if next_action is None:
             return
         Action.set_current_action(action = next_action)
@@ -184,7 +184,7 @@ class Action():
     
     def log(self):
         """Log the action to the database."""        
-        Action.conn.cursor().execute("INSERT INTO actions (action_id, user_object_id, name, timestamp_opened, timestamp_closed, redo_of) VALUES (?, ?, ?, ?, ?, ?)", (self.id, self.user_object_id, self.name, self.timestamp_opened, self.timestamp_closed, self.redo_of))        
+        Action.conn.cursor().execute("INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?, ?)", (self.id, self.user_object_id, self.name, self.timestamp, self.redo_of))        
         Action.conn.commit()  
 
 if __name__=="__main__":    
