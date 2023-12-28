@@ -284,6 +284,30 @@ class ResearchObject():
         action = Action(name = "remove_target_object_id")
         action.add_sql_query(sql)
         action.execute()
+
+    def _add_source_object_id(self, id: str, cls: type) -> None:
+        """Add a source object ID to the current target object."""
+        if not self._is_id(id):
+            raise ValueError("Invalid ID.")      
+        self.validate_id_class(id, cls)  
+        if self._is_source(id):
+            return # Already exists
+        sql = f"INSERT INTO research_object_attributes (object_id, target_object_id) VALUES ('{id}', '{self.id}')"
+        action = Action(name = "add_source_object_id")
+        action.add_sql_query(sql)
+        action.execute()
+
+    def _remove_source_object_id(self, id: str, cls: type) -> None:
+        """Remove a source object ID from the current target object."""
+        if not self._is_id(id):
+            raise ValueError("Invalid ID.")      
+        self.validate_id_class(id, cls)  
+        if not self._is_source(id):
+            return
+        sql = f"INSERT INTO research_object_attributes (object_id, target_object_id) VALUES ('{id}', {None})"
+        action = Action(name = "remove_source_object_id")
+        action.add_sql_query(sql)
+        action.execute()
     
     ###############################################################################################################################
     #################################################### end of parentage methods #################################################
