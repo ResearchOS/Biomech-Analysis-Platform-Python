@@ -11,25 +11,7 @@ import uuid
 # )
 # sys.path.append(PROJECT_ROOT)
 
-from config import ProdConfig
-
-def get_current_user_object_id() -> str:
-    """Get the ID of the current user."""
-    cursor = Action.conn.cursor()
-    sqlquery = "SELECT current_user_object_id FROM current_user"
-    result = cursor.execute(sqlquery).fetchone()
-    if result is None or len(result) == 0:
-        return None
-    if len(result) > 1:
-        raise AssertionError("There are multiple current users.")
-    return result[0]
-
-def set_current_user_object_id(user_object_id: str) -> None:
-    """Set the ID of the current user."""
-    cursor = Action.conn.cursor()
-    sqlquery = f"INSERT INTO current_user (current_user_object_id) VALUES ('{user_object_id}')"
-    cursor.execute(sqlquery)
-    Action.conn.commit()
+from src.ResearchOS.config import ProdConfig
 
 class Action():
 
@@ -151,11 +133,11 @@ class Action():
         for query in self.sql_queries:
             cursor.execute(query)
         # Log the action to the Actions table
-        cursor.execute("INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?, ?)", (self.id, self.user_object_id, self.name, self.timestamp, self.redo_of))        
+        cursor.execute("INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?)", (self.id, self.user_object_id, self.name, self.timestamp, self.redo_of))        
         Action.conn.commit()
 
     def restore(self) -> None:
-        """Execute the action, restoring the state of the referenced research objects to be the state in this Action."""        
+        """Restore the action, restoring the state of the referenced research objects to be the state in this Action."""        
         # Create a new action, where "redo_of" is set to self.id.
         action = Action(name = self.name, redo_of = self.id)
         cursor = Action.conn.cursor()

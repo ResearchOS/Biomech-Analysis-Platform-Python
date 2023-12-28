@@ -1,9 +1,7 @@
-from ResearchOS.DataObjects import DataObject
+from src.ResearchOS.DataObjects import DataObject
 from typing import Union
 
 from datetime import datetime
-
-import numpy as np
 
 class Visit(DataObject):
 
