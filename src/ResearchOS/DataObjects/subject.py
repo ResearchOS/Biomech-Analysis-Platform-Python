@@ -1,10 +1,16 @@
 from src.ResearchOS.DataObjects import DataObject
 
+from abc import abstractmethod
+
 class Subject(DataObject):
     """Subject class."""
 
     prefix: str = "SJ"
     logsheet_header: str = None
+
+    @abstractmethod
+    def get_all_ids() -> list[str]:
+        return super().get_all_ids(Subject)
 
     #################### Start class-specific attributes ###################
 

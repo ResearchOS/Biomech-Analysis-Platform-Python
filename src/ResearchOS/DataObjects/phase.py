@@ -1,11 +1,16 @@
 from src.ResearchOS.DataObjects import DataObject
-from typing import Union
+
+from abc import abstractmethod
 
 class Phase(DataObject):
     """Phase class."""
 
     prefix = "PH"
     logsheet_header: str = None
+
+    @abstractmethod
+    def get_all_ids() -> list[str]:
+        return super().get_all_ids(Phase)
 
     #################### Start class-specific attributes ###################
 

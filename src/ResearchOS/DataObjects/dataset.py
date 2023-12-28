@@ -4,7 +4,7 @@ from src.ResearchOS import ResearchObject
 
 from src.ResearchOS.DataObjects import DataObject
 from src.ResearchOS.SQL.database_init import DBInitializer
-from typing import Union
+
 
 class Dataset(DataObject):
     """A dataset is one set of data.
@@ -13,6 +13,10 @@ class Dataset(DataObject):
     2. data schema: The schema of the dataset (specified as a list of classes)"""
 
     prefix: str = "DS"
+
+    @abstractmethod
+    def get_all_ids() -> list[str]:
+        return super().get_all_ids(Dataset)
 
     @abstractmethod
     def new_current(name: str) -> "Dataset":

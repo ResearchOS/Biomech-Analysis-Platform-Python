@@ -1,8 +1,14 @@
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
+from abc import abstractmethod
+
 class Logsheet(PipelineObject):
 
     prefix = "LG"
+
+    @abstractmethod
+    def get_all_ids() -> list[str]:
+        return super().get_all_ids(Logsheet)
 
     #################### Start class-specific attributes ###################
     # self.logsheet_path = None
