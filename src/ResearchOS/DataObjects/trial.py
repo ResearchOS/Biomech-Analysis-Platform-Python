@@ -3,46 +3,31 @@ from typing import Union
 
 class Trial(DataObject):
 
-    _id_prefix: str = "TR"
-    _table_name: str = "trials"
+    preifx = "TR"
+    logsheet_header: str = None
 
-    def __new__(cls, uuid, *args, **kwargs):
-        return super().__new__(uuid, *args, **kwargs)
+    #################### Start class-specific attributes ###################
 
-    def __init__(self, *args, **kwargs):
-        # Check if the object already exists.
-        if hasattr(self, "uuid"):
-            return
-        super().__init__(*args, **kwargs)
-        self._phases = self.phases() # Get all phases for the trial.
-        self.visit_uuid = self._get_parent(self.uuid, "trials", "visit_uuid")
+    #################### Start Source objects ####################
+    def get_visits(self) -> list:
+        """Return a list of visit objects that belong to this trial."""
+        from src.ResearchOS.DataObjects.visit import Visit
+        vs_ids = self._get_all_source_object_ids(cls = Visit)
+        return [Visit(id = vs_id) for vs_id in vs_ids]
     
-    @property
-    def phases(self):
-        """Return all phases."""
-        from phase import Phase
-        return [Phase(uuid) for uuid in self._phases]
+    #################### Start Target objects ####################
+    def get_phase_ids(self) -> list:
+        """Return a list of phase object IDs that belong to this trial."""
+        from src.ResearchOS.DataObjects.phase import Phase
+        ph_ids = self._get_all_target_object_ids(cls = Phase)
+        return [Phase(id = ph_id) for ph_id in ph_ids]
     
-    @phases.setter
-    def phases(self, values: list[str] = None) -> list:
-        """Set phases. Can provide either a list of phase UUIDs or a list of phase objects."""
-        from phase import Phase
-        self._check_type(values, [str, Phase])
-        self._phases = self._to_uuids(values)
+    def add_phase_id(self, phase_id: str):
+        """Add a phase to the trial."""
+        from src.ResearchOS.DataObjects.phase import Phase        
+        self._add_target_object_id(phase_id, cls = Phase)
 
-    @property
-    def visit(self):
-        """Return the visit."""
-        from objects.visit import Visit
-        if not self.visit_uuid:
-            return None
-        return Visit(self.visit_uuid)
-    
-    @visit.setter
-    def visit(self):
-        """Cannot set the visit."""
-        raise AttributeError("Cannot set the visit from the trial.")
-    
-    def missing_parent_error(self) -> None:
-        """Raise an error if the parent is missing."""
-        raise AttributeError("Cannot create a trial without a visit.")
+    def remove_phase_id(self, phase_id: str):
+        """Remove a phase from the trial."""
+        from src.ResearchOS.DataObjects.phase import Phase        
+        self._remove_target_object_id(phase_id, cls = Phase)
