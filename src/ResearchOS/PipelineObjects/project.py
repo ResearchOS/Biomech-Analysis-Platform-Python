@@ -1,60 +1,86 @@
 from abc import abstractmethod
-from typing import Any, Type
 
-from ResearchOS import ResearchObject
-from ResearchOS.PipelineObjects import PipelineObject
-from ResearchOS.PipelineObjects import Analysis
-from ResearchOS.DataObjects import Dataset
-from ResearchOS import Action
+from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 class Project(PipelineObject):
+    """A project is a collection of analyses.
+    Class-specific Attributes:
+    1. current_analysis_id: The ID of the current analysis for this project.
+    2. current_dataset_id: The ID of the current dataset for this project.
+    3. project path: The root folder location of the project."""
 
-    prefix = "PJ"       
-
-    def check_valid_attrs(self):
-        if not self.is_id(self.current_analysis_id):
-            raise ValueError        
-
-    @abstractmethod
-    def new(name: str) -> "Project":
-        action = Action(name = "New Project" + name)
-        pj = Project(name = name)
-        action.close()
-        return pj
+    prefix = "PJ"
 
     @abstractmethod
     def new_current(name: str) -> "Project":
-        action = Action(name = "New Current Project" + name)
-        pj = Project.new(name = name)
-        an = Analysis.new_current(name = pj.name + "_Default")
-        pj.set_current_analysis(an.id)
-        action.close()
-        return pj
+        """Create a new analysis and set it as the current analysis for the current project."""
+        from src.ResearchOS.PipelineObjects.analysis import Analysis
+        pj = Project(name = name)
+        an = Analysis(name = pj.name + "_Default_Analysis")
+        pj.current_analysis_id = an.id
+        return pj  
+    
+    #################### Start class-specific attributes ###################
 
-    def set_current_analysis(self, id: str) -> None:
-        """Set an analysis as the current one for the project."""
-        self.current_analysis_id = id
+    def get_project_path(self) -> str:
+        """Return the project path."""        
+        return self.project_path
+    
+    def set_project_path(self, path: str) -> None:
+        """Set the project path."""        
+        self.project_path = path    
 
-    @abstractmethod
-    def load(id: str, action_id: str = None) -> ResearchObject:        
-        return ResearchObject.load(id = id, cls = Project, action_id = action_id)
+    def get_current_analysis_id(self) -> str:
+        """Return the current analysis object ID for this project."""
+        # from src.ResearchOS.PipelineObjects.analysis import Analysis
+        return self.current_analysis_id
     
-    def analyses(self):
-        """Return a list of analyses in the project."""
-        return self.children(cls = Analysis)
+    def set_current_analysis_id(self, analysis_id: str) -> None:
+        """Set the current analysis object ID for this project."""
+        from src.ResearchOS.PipelineObjects.analysis import Analysis
+        self.validate_id_class(analysis_id, Analysis)
+        self.current_analysis_id = analysis_id
+
+    def get_current_dataset_id(self) -> str:
+        """Return the current dataset object ID for this project."""
+        # from src.ResearchOS.DataObjects.dataset import Dataset
+        return self.current_dataset_id
     
-    def current_analysis(self) -> Analysis:
-        """Return the current analysis in the project."""
-        return Analysis.load(id = self.current_analysis_id)
+    def set_current_dataset_id(self, dataset_id: str) -> None:
+        """Set the current dataset object ID for this project."""
+        from src.ResearchOS.DataObjects.dataset import Dataset
+        self.validate_id_class(dataset_id, Dataset)
+        self.current_dataset_id = dataset_id
+
+    #################### Start Source objects ####################
+
+    def get_users(self) -> list:
+        """Return a list of user objects that belong to this project. Identical to Dataset.get_users()"""
+        from src.ResearchOS.user import User
+        us_ids = self._get_all_source_object_ids(cls = User)
+        return [User(id = us_id) for us_id in us_ids]
     
-    def current_dataset(self):
-        """Return the current dataset in the project."""        
-        return Dataset.load(id = self.current_dataset_id)
+    #################### Start Target objects ####################
+            
+    def get_analyses(self) -> list["Analysis"]:        
+        """Return a list of analysis objects in the project."""
+        from src.ResearchOS.PipelineObjects.analysis import Analysis
+        an_ids = self._get_all_target_object_ids(cls = Analysis)
+        return [Analysis(id = an_id) for an_id in an_ids]
     
-    def datasets(self):
-        """Return a list of datasets in the project."""        
-        return self.children(cls = Dataset)
+    def add_analysis_id(self, analysis_id: str):
+        """Add an analysis to the project."""
+        from src.ResearchOS.PipelineObjects.analysis import Analysis        
+        self._add_target_object_id(analysis_id, cls = Analysis)
+
+    def remove_analysis_id(self, analysis_id: str):
+        """Remove an analysis from the project."""
+        from src.ResearchOS.PipelineObjects.analysis import Analysis        
+        self._remove_target_object_id(analysis_id, cls = Analysis)
 
 if __name__=="__main__":
-    pj = Project.new_current(name = "Test")
+    from src.ResearchOS.PipelineObjects.analysis import Analysis
+    pj = Project(name = "Test")    
+    an = Analysis(name = "Test_Analysis")
+    pj.current_analysis_id = an.id
     print(pj)

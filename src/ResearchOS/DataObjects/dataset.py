@@ -1,56 +1,90 @@
-from DataObjects import DataObject
-from ResearchOS import DBInitializer
+from abc import abstractmethod
+
+from src.ResearchOS import ResearchObject
+
+from src.ResearchOS.DataObjects import DataObject
+from src.ResearchOS.SQL.database_init import DBInitializer
 from typing import Union
 
 class Dataset(DataObject):
+    """A dataset is one set of data.
+    Class-specific Attributes:
+    1. data path: The root folder location of the dataset.
+    2. data schema: The schema of the dataset (specified as a list of classes)"""
 
-    _id_prefix: str = "DS"
-    _table_name: str = "datasets"
+    prefix = "DS"
 
-    def __new__(cls, *args, **kwargs):
-        return super().__new__(cls, *args, **kwargs)
-
-    def __init__(self, *args, **kwargs):
-        # Check if the object already exists.
-        if self.uuid in DataObject._instances:
-            return
-        super().__init__(*args, **kwargs)
-        self._subjects = self._get_all_children(self.uuid, "dataset_uuid", "subjects")
-        
-    @property
-    def subjects(self) -> list[DataObject]:
-        """Return all subjects."""
-        from subject import Subject
-        return [Subject(uuid) for uuid in self._subjects]
+    @abstractmethod
+    def new_current(name: str) -> "Dataset":
+        """Create a new dataset and set it as the current dataset for the current project."""
+        from src.ResearchOS.DataObjects.dataset import Dataset
+        from src.ResearchOS.PipelineObjects.project import Project
+        ds = Dataset(name = name)
+        pj = Project.get_current_project_id()
+        pj = Project(id = pj)
+        pj.set_current_dataset_id(ds.id)
+        return ds
     
-    @subjects.setter
-    def subjects(self, values: list[Union[str, DataObject]] = None) -> None:
-        """Set subjects. Can provide either a list of subject UUIDs or a list of subject objects."""
-        from subject import Subject
-        self._check_type(values, [str, Subject])
-        self._subjects = self._to_uuids(values)
+    #################### Start class-specific attributes ###################
 
-    def remove_subject(self, subject: Union[str, DataObject]) -> None:
-        """Remove a subject from the dataset."""
-        from subject import Subject
-        self._check_type(subject, [str, Subject])
-        self._subjects.remove(subject.uuid)
-        self.update()
+    def get_data_path(self) -> str:
+        """Return the data path."""
+        # TODO: Read this from the database.
+        return self.data_path
 
-    def add_subject(self, subject: Union[str, DataObject]) -> None:
+    def set_data_path(self, path: str) -> None:
+        """Set the data path."""
+        self.data_path = path
+
+    def get_data_schema(self) -> list:
+        """Return the data schema."""
+        return self.data_schema
+
+    def set_data_schema(self, schema: list) -> None:
+        """Set the data schema."""
+        self.data_schema = schema
+    
+    #################### Start Source objects ####################
+
+    def get_users(self) -> list:
+        """Return a list of user objects that belong to this project. Identical to Project.get_users()"""
+        from src.ResearchOS.user import User
+        us_ids = self._get_all_source_object_ids(cls = User)
+        return [User(id = us_id) for us_id in us_ids]
+
+    #################### Start Target objects ####################
+
+    def get_projects(self) -> list:
+        """Return a list of project objects that use this dataset."""
+        from src.ResearchOS.PipelineObjects.project import Project
+        pj_ids = self._get_all_target_object_ids(cls = Project)
+        return [Project(id = pj_id) for pj_id in pj_ids]
+    
+    def add_project_id(self, project_id: str):
+        """Add a project to the dataset."""
+        from src.ResearchOS.PipelineObjects.project import Project
+        self._add_target_object_id(project_id, cls = Project)
+
+    def remove_project_id(self, project_id: str):
+        """Remove a project from the dataset."""
+        from src.ResearchOS.PipelineObjects.project import Project        
+        self._remove_target_object_id(project_id, cls = Project)
+
+    def get_subjects(self) -> list:
+        """Return a list of subject objects that belong to this dataset."""
+        from src.ResearchOS.DataObjects.subject import Subject
+        sj_ids = self._get_all_target_object_ids(cls = Subject)
+        return [Subject(id = sj_id) for sj_id in sj_ids]
+    
+    def add_subject_id(self, subject_id: str):
         """Add a subject to the dataset."""
-        from subject import Subject
-        self._check_type(subject, [str, Subject])
-        self._subjects.append(subject.uuid)
-        self.update()
+        from src.ResearchOS.DataObjects.subject import Subject
+        self._add_target_object_id(subject_id, cls = Subject)
 
-    def get_current():
-        """Get the current dataset."""
-        pass
-
-    def set_current():
-        """Set this dataset as the "current"."""
-        pass
+    def remove_subject_id(self, subject_id: str):
+        """Remove a subject from the dataset."""
+        from src.ResearchOS.DataObjects.subject import Subject        
+        self._remove_target_object_id(subject_id, cls = Subject)
 
 if __name__=="__main__":
     from DataObjects.subject import Subject

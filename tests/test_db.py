@@ -1,7 +1,7 @@
-from ResearchOS import DBInitializer
-from ResearchOS.DataObjects import DataObject
-from ResearchOS import ResearchObject
-from ResearchOS.PipelineObjects import Project
+from src.ResearchOS.SQL.database_init import DBInitializer
+from src.ResearchOS.DataObjects import DataObject
+from src.ResearchOS import ResearchObject
+from src.ResearchOS.PipelineObjects import Project
 from src.ResearchOS.config import TestConfig
 
 

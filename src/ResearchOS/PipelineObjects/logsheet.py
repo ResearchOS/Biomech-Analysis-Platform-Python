@@ -1,4 +1,4 @@
-from ResearchOS import PipelineObject
+from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from src.ResearchOS.action import Action
 
 import os
