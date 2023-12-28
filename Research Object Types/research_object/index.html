@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../../usage/">
+        <link rel="prev" href="../../Quick%20Start/quickstart_py/">
       
       
         <link rel="next" href="../Data%20Object%20Types/data_object/">
@@ -213,11 +213,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting_started/" class="md-nav__link">
+      <a href="../../usage/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Getting Started
+    Usage
   </span>
   
 
@@ -232,16 +232,82 @@
   
   
   
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Quick Start
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Quick Start
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../../usage/" class="md-nav__link">
+      <a href="../../Quick%20Start/quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Usage
+    Quick Start
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Quick%20Start/quickstart_py/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    quickstart.py
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -356,9 +422,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.research_object.ResearchObject.__del__" class="md-nav__link">
+  <a href="#src.ResearchOS.research_object.ResearchObject.__get_all_related_object_ids" class="md-nav__link">
     <span class="md-ellipsis">
-      __del__()
+      __get_all_related_object_ids()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.research_object.ResearchObject.__getattr__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __getattr__()
     </span>
   </a>
   
@@ -422,6 +497,15 @@
   <a href="#src.ResearchOS.research_object.ResearchObject.parse_id" class="md-nav__link">
     <span class="md-ellipsis">
       parse_id()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.research_object.ResearchObject.validate_id_class" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_id_class()
     </span>
   </a>
   
@@ -836,6 +920,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Pipeline%20Object%20Types/subset/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Subset
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -896,9 +1001,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.research_object.ResearchObject.__del__" class="md-nav__link">
+  <a href="#src.ResearchOS.research_object.ResearchObject.__get_all_related_object_ids" class="md-nav__link">
     <span class="md-ellipsis">
-      __del__()
+      __get_all_related_object_ids()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.research_object.ResearchObject.__getattr__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __getattr__()
     </span>
   </a>
   
@@ -962,6 +1076,15 @@
   <a href="#src.ResearchOS.research_object.ResearchObject.parse_id" class="md-nav__link">
     <span class="md-ellipsis">
       parse_id()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.research_object.ResearchObject.validate_id_class" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_id_class()
     </span>
   </a>
   
@@ -1294,15 +1417,53 @@
 <span class="normal">297</span>
 <span class="normal">298</span>
 <span class="normal">299</span>
-<span class="normal">300</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ResearchObject</span><span class="p">():</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ResearchObject</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;One research object. Parent class of Data Objects &amp; Pipeline Objects.&quot;&quot;&quot;</span>
 
     <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;RO&quot;</span> <span class="c1"># Testing only</span>
     <span class="n">_instances</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakValueDictionary</span><span class="p">()</span>
     <span class="n">_instances_count</span> <span class="o">=</span> <span class="p">{}</span>
 
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ResearchObject</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">id</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+
     <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new data object. If the object already exists, return the existing object.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new research object. If the object already exists, return the existing object.&quot;&quot;&quot;</span>
         <span class="n">object_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">object_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">object_id</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
@@ -1316,27 +1477,16 @@
             <span class="n">instance</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">object_id</span>            
             <span class="k">return</span> <span class="n">instance</span>
 
-    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete the object from memory.&quot;&quot;&quot;</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Deleting&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-        <span class="c1"># if self.id not in ResearchObject._instances:</span>
-        <span class="c1">#     raise ValueError(&quot;Object not in instances.&quot;)</span>
-        <span class="n">ResearchObject</span><span class="o">.</span><span class="n">_instances_count</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
-        <span class="k">if</span> <span class="n">ResearchObject</span><span class="o">.</span><span class="n">_instances_count</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">del</span> <span class="n">ResearchObject</span><span class="o">.</span><span class="n">_instances</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
-            <span class="k">del</span> <span class="n">ResearchObject</span><span class="o">.</span><span class="n">_instances_count</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">_stack_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;object creation&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">_stack_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>        
+        <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">id</span><span class="p">:</span>
-            <span class="nb">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
-        <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;created object &quot;</span> <span class="o">+</span> <span class="nb">id</span><span class="p">)</span>
+            <span class="nb">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="c1"># self.id always exists by this point thanks to __new__      </span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Create the object in the database.</span>
-            <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="c1"># Create the object in the database.            </span>
             <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;INSERT INTO research_objects (object_id) VALUES (&#39;</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
-            <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span>
-            <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span>
+            <span class="n">action</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
         <span class="c1"># print(traceback.format_stack(limit = _stack_limit))</span>
@@ -1344,7 +1494,6 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
         <span class="k">if</span> <span class="s2">&quot;deleted&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">deleted</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">action</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> <span class="c1"># Close the action, if possible.</span>
 
     <span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">__value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the attributes of a research object in memory and in the SQL database.&quot;&quot;&quot;</span>
@@ -1357,15 +1506,25 @@
             <span class="k">return</span> <span class="c1"># Don&#39;t log private attributes.</span>
 
         <span class="c1"># Open an action if there is not one open currently. Returns the open action if it is already open.</span>
-        <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;attribute_changed&quot;</span><span class="p">)</span>
+        <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;attribute_changed&quot;</span><span class="p">)</span>
 
-        <span class="n">table_name</span> <span class="o">=</span> <span class="s2">&quot;research_objects&quot;</span>
-        <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>        
         <span class="c1"># Create the object in the database, in the table that contains only the complete list of object ID&#39;s.        </span>
         <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES (&#39;</span><span class="si">{</span><span class="n">action</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39;, &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39;, &#39;</span><span class="si">{</span><span class="n">ResearchObject</span><span class="o">.</span><span class="n">_get_attr_id</span><span class="p">(</span><span class="n">__name</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;, &#39;</span><span class="si">{</span><span class="n">__value</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>  
+
+    <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the attribute of a research object from the SQL database.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">__name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;_&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Attribute </span><span class="si">{</span><span class="n">__name</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+        <span class="c1"># Get the attribute from the database.</span>
+        <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT attr_value FROM research_object_attributes WHERE object_id = &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39; AND attr_id = &#39;</span><span class="si">{</span><span class="n">ResearchObject</span><span class="o">.</span><span class="n">_get_attr_id</span><span class="p">(</span><span class="n">__name</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
         <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span>
-        <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
-        <span class="n">action</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> <span class="c1"># Close the action, if possible.     </span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Attribute </span><span class="si">{</span><span class="n">__name</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="c1">###############################################################################################################################</span>
     <span class="c1">#################################################### end of dunder methods ####################################################</span>
@@ -1400,22 +1559,7 @@
         <span class="k">return</span> <span class="nb">id</span>  
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_prefix_to_table_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert a prefix to a table name.&quot;&quot;&quot;</span>
-        <span class="n">prefix</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">prefix</span>
-        <span class="k">if</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;PJ&quot;</span><span class="p">,</span> <span class="s2">&quot;AN&quot;</span><span class="p">,</span> <span class="s2">&quot;LG&quot;</span><span class="p">,</span> <span class="s2">&quot;PG&quot;</span><span class="p">,</span> <span class="s2">&quot;PR&quot;</span><span class="p">,</span> <span class="s2">&quot;ST&quot;</span><span class="p">,</span> <span class="s2">&quot;VW&quot;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="s2">&quot;PipelineObjects&quot;</span>
-        <span class="k">elif</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;DS&quot;</span><span class="p">,</span> <span class="s2">&quot;SJ&quot;</span><span class="p">,</span> <span class="s2">&quot;TR&quot;</span><span class="p">,</span> <span class="s2">&quot;PH&quot;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="s2">&quot;DataObjects&quot;</span>
-        <span class="k">elif</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;VR&quot;</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Which table do Variables go in?&quot;</span><span class="p">)</span> 
-        <span class="k">elif</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;RO&quot;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="s2">&quot;research_objects&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid prefix.&quot;</span><span class="p">)</span>
-
-    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">,</span> <span class="n">action_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ResearchObject&quot;</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">object_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">,</span> <span class="n">action_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ResearchObject&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the current state of a research object from the database. If an action_id is specified, load the state of the object after that action.&quot;&quot;&quot;</span>
         <span class="c1"># 1. Get the current action if not provided.</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
@@ -1423,10 +1567,10 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">action_id</span><span class="p">:</span>
             <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">previous</span><span class="p">()</span> <span class="c1"># With no arguments, gets the &quot;current&quot;/most recent action.</span>
             <span class="n">action_id</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">id</span>
-            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">timestamp_closed</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">timestamp</span>
 
         <span class="c1"># 2. Get the action ID&#39;s for this object that were closed before the action_id.</span>
-        <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT action_id, attr_id, attr_value, child_of FROM research_object_attributes WHERE object_id = &#39;</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+        <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT action_id, attr_id, attr_value, child_of FROM research_object_attributes WHERE object_id = &#39;</span><span class="si">{</span><span class="n">object_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
         <span class="n">attr_result</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">attr_result</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No object with that ID exists.&quot;</span><span class="p">)</span>
@@ -1440,7 +1584,7 @@
         <span class="n">action_ids_in_time_order</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">action_ids_in_time_order</span><span class="p">]</span>        
         <span class="n">used_attr_ids</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">num_attrs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">curr_obj_attr_ids</span><span class="p">)))</span> <span class="c1"># Get the number of unique action ID&#39;s.</span>
-        <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">id</span>
+        <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">object_id</span>
         <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;child_of&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">curr_obj_action_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">action_ids_in_time_order</span><span class="p">):</span>            
             <span class="n">attr_id</span> <span class="o">=</span> <span class="n">attr_result</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
@@ -1455,19 +1599,13 @@
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">used_attr_ids</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_attrs</span><span class="p">:</span>
                 <span class="k">break</span>
 
-
-        <span class="n">research_object</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="nb">id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">)</span>
+        <span class="n">research_object</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="nb">id</span> <span class="o">=</span> <span class="n">object_id</span><span class="p">)</span>
         <span class="n">research_object</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">attrs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">research_object</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">new</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ResearchObject&quot;</span><span class="p">:</span>
-        <span class="n">research_object</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">research_object</span>
-
-    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">_get_attr_id</span><span class="p">(</span><span class="n">attr_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the ID of an attribute. If it does not exist, create it.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the ID of an attribute given its name. If it does not exist, create it.&quot;&quot;&quot;</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
         <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT attr_id FROM Attributes WHERE attr_name = &#39;</span><span class="si">{</span><span class="n">attr_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
         <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span>
@@ -1485,82 +1623,127 @@
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">_get_attr_name</span><span class="p">(</span><span class="n">attr_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the name of an attribute.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the name of an attribute given the attribute&#39;s ID. If it does not exist, return an error.&quot;&quot;&quot;</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
         <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT attr_name FROM Attributes WHERE attr_id = &#39;</span><span class="si">{</span><span class="n">attr_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
         <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span>
         <span class="n">rows</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No attribute with that ID exists.&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-
-    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the given ID is a valid ID for this research object.&quot;&quot;&quot;</span>        
-        <span class="n">pattern</span> <span class="o">=</span> <span class="s2">&quot;^[a-zA-Z]</span><span class="si">{2}</span><span class="s2">[a-fA-F0-9]</span><span class="si">{6}</span><span class="s2">_[a-fA-F0-9]</span><span class="si">{3}</span><span class="s2">$&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
-            <span class="k">return</span> <span class="kc">False</span>
-        <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>    
 
     <span class="c1">###############################################################################################################################</span>
     <span class="c1">#################################################### end of abstract methods ##################################################</span>
     <span class="c1">###############################################################################################################################</span>
 
-    <span class="k">def</span> <span class="nf">_get_all_parents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">child_table_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parent_column</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all parents of the child object type.</span>
-<span class="sd">        Dataset &gt; Subject &gt; Visit &gt; Trial &gt; Phase.&quot;&quot;&quot;</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;SELECT uuid FROM </span><span class="si">{</span><span class="n">child_table_name</span><span class="si">}</span><span class="s1"> WHERE </span><span class="si">{</span><span class="n">parent_column</span><span class="si">}</span><span class="s1"> = &quot;</span><span class="si">{</span><span class="n">parent_id</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+    <span class="k">def</span> <span class="nf">validate_id_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that the specified ID is a valid ID for the specified class, or None.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid ID.&quot;</span><span class="p">)</span>
+        <span class="c1"># Check that the ID is of the proper class.        </span>
+        <span class="n">id_info</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_id</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">id_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">prefix</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ID is not of the proper class.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the given ID matches the pattern of a valid research object ID.&quot;&quot;&quot;</span>              
+        <span class="n">pattern</span> <span class="o">=</span> <span class="s2">&quot;^[a-zA-Z]</span><span class="si">{2}</span><span class="s2">[a-fA-F0-9]</span><span class="si">{6}</span><span class="s2">_[a-fA-F0-9]</span><span class="si">{3}</span><span class="s2">$&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>    
+
+    <span class="k">def</span> <span class="nf">_is_id_or_none</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the given ID matches the pattern of a valid research object ID, or is None.&quot;&quot;&quot;</span>              
+        <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ResearchObject</span><span class="o">.</span><span class="n">is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all source object ids of the specified target object of the specified type.&quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;SELECT object_id FROM research_object_attributes WHERE target_object_id = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__get_all_related_object_ids</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">sql</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_all_target_object_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all target object ids of the specified source object of the specified type. &quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;SELECT target_object_id FROM research_object_attributes WHERE object_id = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__get_all_related_object_ids</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">sql</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__get_all_related_object_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">sql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Called by _get_all_source_object_ids and _get_all_target_object_ids.</span>
+<span class="sd">        Get all related object ids of the specified object of the specified type, either source of target objects.&quot;&quot;&quot;</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
         <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;uuid&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">prefix</span><span class="p">):</span>                
+                <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">data</span>
 
-    <span class="k">def</span> <span class="nf">_get_parent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">child_table_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parent_column</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the parent of the child object type.</span>
-<span class="sd">        Dataset &gt; Subject &gt; Visit &gt; Trial &gt; Phase.&quot;&quot;&quot;</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;SELECT </span><span class="si">{</span><span class="n">parent_column</span><span class="si">}</span><span class="s1"> FROM </span><span class="si">{</span><span class="n">child_table_name</span><span class="si">}</span><span class="s1"> WHERE uuid = &quot;</span><span class="si">{</span><span class="n">child_uuid</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
-        <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
-        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">parent_column</span><span class="p">])</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected &lt;=1 parent, got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="n">data</span>
-
-    <span class="k">def</span> <span class="nf">_is_parent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">table_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">parent_column</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">child_column</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the provided parent type is the parent of the child object.&quot;&quot;&quot;</span>
-        <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">previous</span><span class="p">()</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT object_id FROM research_object_attributes WHERE child_of = </span><span class="si">{</span><span class="n">parent_id</span><span class="si">}</span><span class="s2"> AND object_id = </span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2"> AND action_id = </span><span class="si">{</span><span class="n">action</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">def</span> <span class="nf">_is_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the specified object ID is a source object of the current object.&quot;&quot;&quot;</span>        
+        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT object_id FROM research_object_attributes WHERE target_object_id = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> AND object_id = </span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
         <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
-    <span class="k">def</span> <span class="nf">_get_all_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">column</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">child_table_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all children of the parent object type.</span>
-<span class="sd">        Dataset &gt; Subject &gt; Visit &gt; Trial &gt; Phase.&quot;&quot;&quot;</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;SELECT uuid FROM </span><span class="si">{</span><span class="n">child_table_name</span><span class="si">}</span><span class="s1"> WHERE </span><span class="si">{</span><span class="n">column</span><span class="si">}</span><span class="s1"> = &quot;</span><span class="si">{</span><span class="n">uuid</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+    <span class="k">def</span> <span class="nf">_is_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the specified object ID is a target object of the current object.&quot;&quot;&quot;</span>        
+        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT target_object_id FROM research_object_attributes WHERE object_id = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> AND target_object_id = </span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
         <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;uuid&#39;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">data</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
-    <span class="k">def</span> <span class="nf">_is_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the provided child type is the child of the parent (self) object.&quot;&quot;&quot;</span>
-        <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">previous</span><span class="p">()</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT object_id FROM research_object_attributes WHERE child_of = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> AND object_id = </span><span class="si">{</span><span class="n">child_id</span><span class="si">}</span><span class="s2"> AND action_id = </span><span class="si">{</span><span class="n">action</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
-        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">def</span> <span class="nf">_add_target_object_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a target object ID to the current source object.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid ID.&quot;</span><span class="p">)</span>      
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate_id_class</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span>  
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_target</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">return</span> <span class="c1"># Already exists.</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;INSERT INTO research_object_attributes (object_id, target_object_id) VALUES (&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39;, &#39;</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
+        <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;add_target_object_id&quot;</span><span class="p">)</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_remove_target_object_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a target object ID from the current source object.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid ID.&quot;</span><span class="p">)</span>      
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate_id_class</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span>  
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_target</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;INSERT INTO research_object_attributes (object_id, target_object_id) VALUES (&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39;, </span><span class="si">{</span><span class="kc">None</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;remove_target_object_id&quot;</span><span class="p">)</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_add_source_object_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a source object ID to the current target object.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid ID.&quot;</span><span class="p">)</span>      
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate_id_class</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span>  
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_source</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">return</span> <span class="c1"># Already exists</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;INSERT INTO research_object_attributes (object_id, target_object_id) VALUES (&#39;</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">&#39;, &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
+        <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;add_source_object_id&quot;</span><span class="p">)</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_remove_source_object_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a source object ID from the current target object.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid ID.&quot;</span><span class="p">)</span>      
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate_id_class</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span>  
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_source</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;INSERT INTO research_object_attributes (object_id, target_object_id) VALUES (&#39;</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">&#39;, </span><span class="si">{</span><span class="kc">None</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;remove_source_object_id&quot;</span><span class="p">)</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
 
     <span class="c1">###############################################################################################################################</span>
     <span class="c1">#################################################### end of parentage methods #################################################</span>
@@ -1602,35 +1785,89 @@
 
 
 
-<h2 id="src.ResearchOS.research_object.ResearchObject.__del__" class="doc doc-heading">
-          <code class="highlight language-python"><span class="fm">__del__</span><span class="p">()</span></code>
+<h2 id="src.ResearchOS.research_object.ResearchObject.__get_all_related_object_ids" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">__get_all_related_object_ids</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">sql</span><span class="p">)</span></code>
 
 </h2>
 
 
   <div class="doc doc-contents ">
   
-      <p>Delete the object from memory.</p>
+      <p>Called by _get_all_source_object_ids and _get_all_target_object_ids.
+Get all related object ids of the specified object of the specified type, either source of target objects.</p>
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/research_object.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
-<span class="normal">39</span>
-<span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span>
-<span class="normal">44</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete the object from memory.&quot;&quot;&quot;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Deleting&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-    <span class="c1"># if self.id not in ResearchObject._instances:</span>
-    <span class="c1">#     raise ValueError(&quot;Object not in instances.&quot;)</span>
-    <span class="n">ResearchObject</span><span class="o">.</span><span class="n">_instances_count</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
-    <span class="k">if</span> <span class="n">ResearchObject</span><span class="o">.</span><span class="n">_instances_count</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">del</span> <span class="n">ResearchObject</span><span class="o">.</span><span class="n">_instances</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
-        <span class="k">del</span> <span class="n">ResearchObject</span><span class="o">.</span><span class="n">_instances_count</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">__get_all_related_object_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">sql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Called by _get_all_source_object_ids and _get_all_target_object_ids.</span>
+<span class="sd">    Get all related object ids of the specified object of the specified type, either source of target objects.&quot;&quot;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">prefix</span><span class="p">):</span>                
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">data</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.ResearchOS.research_object.ResearchObject.__getattr__" class="doc doc-heading">
+          <code class="highlight language-python"><span class="fm">__getattr__</span><span class="p">(</span><span class="n">__name</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the attribute of a research object from the SQL database.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/research_object.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span>
+<span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the attribute of a research object from the SQL database.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">__name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;_&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Attribute </span><span class="si">{</span><span class="n">__name</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+    <span class="c1"># Get the attribute from the database.</span>
+    <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT attr_value FROM research_object_attributes WHERE object_id = &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39; AND attr_id = &#39;</span><span class="si">{</span><span class="n">ResearchObject</span><span class="o">.</span><span class="n">_get_attr_id</span><span class="p">(</span><span class="n">__name</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Attribute </span><span class="si">{</span><span class="n">__name</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -1644,7 +1881,7 @@
 
 
 <h2 id="src.ResearchOS.research_object.ResearchObject.__init__" class="doc doc-heading">
-          <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">_stack_limit</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></code>
+          <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;object creation&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">_stack_limit</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></code>
 
 </h2>
 
@@ -1655,7 +1892,9 @@
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/research_object.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">46</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
 <span class="normal">47</span>
 <span class="normal">48</span>
 <span class="normal">49</span>
@@ -1669,21 +1908,16 @@
 <span class="normal">57</span>
 <span class="normal">58</span>
 <span class="normal">59</span>
-<span class="normal">60</span>
-<span class="normal">61</span>
-<span class="normal">62</span>
-<span class="normal">63</span>
-<span class="normal">64</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">_stack_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">60</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;object creation&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">_stack_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>        
+    <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">id</span><span class="p">:</span>
-        <span class="nb">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
-    <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;created object &quot;</span> <span class="o">+</span> <span class="nb">id</span><span class="p">)</span>
+        <span class="nb">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="c1"># self.id always exists by this point thanks to __new__      </span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="c1"># Create the object in the database.</span>
-        <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="c1"># Create the object in the database.            </span>
         <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;INSERT INTO research_objects (object_id) VALUES (&#39;</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
-        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span>
-        <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
     <span class="c1"># print(traceback.format_stack(limit = _stack_limit))</span>
@@ -1691,7 +1925,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
     <span class="k">if</span> <span class="s2">&quot;deleted&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">deleted</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="n">action</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> <span class="c1"># Close the action, if possible.</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -1712,25 +1945,25 @@
 
   <div class="doc doc-contents ">
   
-      <p>Create a new data object. If the object already exists, return the existing object.</p>
+      <p>Create a new research object. If the object already exists, return the existing object.</p>
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/research_object.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">21</span>
-<span class="normal">22</span>
-<span class="normal">23</span>
-<span class="normal">24</span>
-<span class="normal">25</span>
-<span class="normal">26</span>
-<span class="normal">27</span>
-<span class="normal">28</span>
-<span class="normal">29</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">29</span>
 <span class="normal">30</span>
 <span class="normal">31</span>
 <span class="normal">32</span>
 <span class="normal">33</span>
-<span class="normal">34</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new data object. If the object already exists, return the existing object.&quot;&quot;&quot;</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new research object. If the object already exists, return the existing object.&quot;&quot;&quot;</span>
     <span class="n">object_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">object_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">object_id</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
@@ -1767,7 +2000,11 @@
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/research_object.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">66</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span>
 <span class="normal">69</span>
@@ -1779,14 +2016,7 @@
 <span class="normal">75</span>
 <span class="normal">76</span>
 <span class="normal">77</span>
-<span class="normal">78</span>
-<span class="normal">79</span>
-<span class="normal">80</span>
-<span class="normal">81</span>
-<span class="normal">82</span>
-<span class="normal">83</span>
-<span class="normal">84</span>
-<span class="normal">85</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">__value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">78</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">__value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the attributes of a research object in memory and in the SQL database.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">__name</span><span class="p">]</span> <span class="o">=</span> <span class="n">__value</span>
 
@@ -1797,15 +2027,12 @@
         <span class="k">return</span> <span class="c1"># Don&#39;t log private attributes.</span>
 
     <span class="c1"># Open an action if there is not one open currently. Returns the open action if it is already open.</span>
-    <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;attribute_changed&quot;</span><span class="p">)</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;attribute_changed&quot;</span><span class="p">)</span>
 
-    <span class="n">table_name</span> <span class="o">=</span> <span class="s2">&quot;research_objects&quot;</span>
-    <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>        
     <span class="c1"># Create the object in the database, in the table that contains only the complete list of object ID&#39;s.        </span>
     <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES (&#39;</span><span class="si">{</span><span class="n">action</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39;, &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39;, &#39;</span><span class="si">{</span><span class="n">ResearchObject</span><span class="o">.</span><span class="n">_get_attr_id</span><span class="p">(</span><span class="n">__name</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;, &#39;</span><span class="si">{</span><span class="n">__value</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
-    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span>
-    <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
-    <span class="n">action</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> <span class="c1"># Close the action, if possible.     </span>
+    <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span>
+    <span class="n">action</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>  
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -1834,13 +2061,7 @@
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/research_object.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 91</span>
-<span class="normal"> 92</span>
-<span class="normal"> 93</span>
-<span class="normal"> 94</span>
-<span class="normal"> 95</span>
-<span class="normal"> 96</span>
-<span class="normal"> 97</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 97</span>
 <span class="normal"> 98</span>
 <span class="normal"> 99</span>
 <span class="normal">100</span>
@@ -1860,7 +2081,13 @@
 <span class="normal">114</span>
 <span class="normal">115</span>
 <span class="normal">116</span>
-<span class="normal">117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">create_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">abstract</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a unique ID for the research object.&quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">random</span>
@@ -1901,17 +2128,13 @@
 
 <h2 id="src.ResearchOS.research_object.ResearchObject.is_id" class="doc doc-heading">
           <code class="highlight language-python"><span class="n">is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span></code>
-  
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
-  </span>
 
 </h2>
 
 
   <div class="doc doc-contents ">
   
-      <p>Check if the given ID is a valid ID for this research object.</p>
+      <p>Check if the given ID matches the pattern of a valid research object ID.</p>
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/research_object.py</code></summary>
@@ -1920,14 +2143,12 @@
 <span class="normal">216</span>
 <span class="normal">217</span>
 <span class="normal">218</span>
-<span class="normal">219</span>
-<span class="normal">220</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the given ID is a valid ID for this research object.&quot;&quot;&quot;</span>        
+<span class="normal">219</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the given ID matches the pattern of a valid research object ID.&quot;&quot;&quot;</span>              
     <span class="n">pattern</span> <span class="o">=</span> <span class="s2">&quot;^[a-zA-Z]</span><span class="si">{2}</span><span class="s2">[a-fA-F0-9]</span><span class="si">{6}</span><span class="s2">_[a-fA-F0-9]</span><span class="si">{3}</span><span class="s2">$&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">False</span>
-    <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">True</span>    
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -1941,7 +2162,7 @@
 
 
 <h2 id="src.ResearchOS.research_object.ResearchObject.load" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">load</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">action_id</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+          <code class="highlight language-python"><span class="n">load</span><span class="p">(</span><span class="n">object_id</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">action_id</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
   
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
@@ -1956,7 +2177,16 @@
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/research_object.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">134</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
 <span class="normal">135</span>
 <span class="normal">136</span>
 <span class="normal">137</span>
@@ -1990,18 +2220,8 @@
 <span class="normal">165</span>
 <span class="normal">166</span>
 <span class="normal">167</span>
-<span class="normal">168</span>
-<span class="normal">169</span>
-<span class="normal">170</span>
-<span class="normal">171</span>
-<span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span>
-<span class="normal">177</span>
-<span class="normal">178</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">,</span> <span class="n">action_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ResearchObject&quot;</span><span class="p">:</span>
+<span class="normal">168</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">object_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">,</span> <span class="n">action_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ResearchObject&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the current state of a research object from the database. If an action_id is specified, load the state of the object after that action.&quot;&quot;&quot;</span>
     <span class="c1"># 1. Get the current action if not provided.</span>
     <span class="n">cursor</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
@@ -2009,10 +2229,10 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">action_id</span><span class="p">:</span>
         <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">previous</span><span class="p">()</span> <span class="c1"># With no arguments, gets the &quot;current&quot;/most recent action.</span>
         <span class="n">action_id</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">id</span>
-        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">timestamp_closed</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">timestamp</span>
 
     <span class="c1"># 2. Get the action ID&#39;s for this object that were closed before the action_id.</span>
-    <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT action_id, attr_id, attr_value, child_of FROM research_object_attributes WHERE object_id = &#39;</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+    <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT action_id, attr_id, attr_value, child_of FROM research_object_attributes WHERE object_id = &#39;</span><span class="si">{</span><span class="n">object_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
     <span class="n">attr_result</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">attr_result</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No object with that ID exists.&quot;</span><span class="p">)</span>
@@ -2026,7 +2246,7 @@
     <span class="n">action_ids_in_time_order</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">action_ids_in_time_order</span><span class="p">]</span>        
     <span class="n">used_attr_ids</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">num_attrs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">curr_obj_attr_ids</span><span class="p">)))</span> <span class="c1"># Get the number of unique action ID&#39;s.</span>
-    <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">id</span>
+    <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">object_id</span>
     <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;child_of&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">curr_obj_action_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">action_ids_in_time_order</span><span class="p">):</span>            
         <span class="n">attr_id</span> <span class="o">=</span> <span class="n">attr_result</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
@@ -2041,8 +2261,7 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">used_attr_ids</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_attrs</span><span class="p">:</span>
             <span class="k">break</span>
 
-
-    <span class="n">research_object</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="nb">id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">)</span>
+    <span class="n">research_object</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="nb">id</span> <span class="o">=</span> <span class="n">object_id</span><span class="p">)</span>
     <span class="n">research_object</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">attrs</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">research_object</span>
 </code></pre></div></td></tr></table></div>
@@ -2069,19 +2288,62 @@
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/research_object.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">286</span>
-<span class="normal">287</span>
-<span class="normal">288</span>
-<span class="normal">289</span>
-<span class="normal">290</span>
-<span class="normal">291</span>
-<span class="normal">292</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse an ID into its prefix, abstract, and instance parts.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ResearchObject</span><span class="o">.</span><span class="n">is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid ID.&quot;</span><span class="p">)</span>
     <span class="n">abstract</span> <span class="o">=</span> <span class="nb">id</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">2</span><span class="o">+</span><span class="n">abstract_id_len</span><span class="p">]</span>
     <span class="n">instance</span> <span class="o">=</span> <span class="nb">id</span><span class="p">[</span><span class="o">-</span><span class="n">instance_id_len</span><span class="p">:]</span>
     <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="p">,</span> <span class="n">abstract</span><span class="p">,</span> <span class="n">instance</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.ResearchOS.research_object.ResearchObject.validate_id_class" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">validate_id_class</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Validate that the specified ID is a valid ID for the specified class, or None.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/research_object.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">validate_id_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that the specified ID is a valid ID for the specified class, or None.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_id</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid ID.&quot;</span><span class="p">)</span>
+    <span class="c1"># Check that the ID is of the proper class.        </span>
+    <span class="n">id_info</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_id</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">id_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">prefix</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ID is not of the proper class.&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>

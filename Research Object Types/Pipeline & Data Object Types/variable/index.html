@@ -213,11 +213,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting_started/" class="md-nav__link">
+      <a href="../../../usage/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Getting Started
+    Usage
   </span>
   
 
@@ -232,16 +232,82 @@
   
   
   
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Quick Start
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Quick Start
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../../../usage/" class="md-nav__link">
+      <a href="../../../Quick%20Start/quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Usage
+    Quick Start
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../Quick%20Start/quickstart_py/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    quickstart.py
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -775,6 +841,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Pipeline%20Object%20Types/subset/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Subset
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -868,7 +955,7 @@
 <a id="src.ResearchOS.variable.Variable"></a>
   <div class="doc doc-contents first">
           <p class="doc doc-class-bases">
-            Bases: <code><span title="research_object.ResearchObject">ResearchObject</span></code></p>
+            Bases: <code><a class="autorefs autorefs-internal" title="src.ResearchOS.DataObjects.data_object.DataObject" href="../../Data%20Object%20Types/data_object/#src.ResearchOS.DataObjects.data_object.DataObject">DataObject</a></code>, <code><a class="autorefs autorefs-internal" title="src.ResearchOS.PipelineObjects.pipeline_object.PipelineObject" href="../../Pipeline%20Object%20Types/pipeline_object/#src.ResearchOS.PipelineObjects.pipeline_object.PipelineObject">PipelineObject</a></code></p>
 
   
       <p>Variable class.</p>
@@ -900,7 +987,7 @@
 <span class="normal">26</span>
 <span class="normal">27</span>
 <span class="normal">28</span>
-<span class="normal">29</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Variable</span><span class="p">(</span><span class="n">ResearchObject</span><span class="p">):</span>
+<span class="normal">29</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Variable</span><span class="p">(</span><span class="n">DataObject</span><span class="p">,</span> <span class="n">PipelineObject</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Variable class.&quot;&quot;&quot;</span>
 
     <span class="n">_id_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VR&quot;</span>
@@ -911,15 +998,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_phases</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_parents</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span> <span class="s2">&quot;variable_uuid&quot;</span><span class="p">,</span> <span class="s2">&quot;phase_uuid&quot;</span><span class="p">,</span> <span class="s2">&quot;phase_variables&quot;</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">phases</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ResearchObject</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">phases</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return all phases.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">phase</span> <span class="kn">import</span> <span class="n">Phase</span>
+        <span class="kn">from</span> <span class="nn">src.ResearchOS.DataObjects.phase</span> <span class="kn">import</span> <span class="n">Phase</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">Phase</span><span class="p">(</span><span class="n">uuid</span><span class="p">)</span> <span class="k">for</span> <span class="n">uuid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_phases</span><span class="p">]</span>
 
     <span class="nd">@phases</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">phases</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResearchObject</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">phases</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set phases. Can provide either a list of phase UUIDs or a list of phase objects.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">phase</span> <span class="kn">import</span> <span class="n">Phase</span>
+        <span class="kn">from</span> <span class="nn">src.ResearchOS.DataObjects.phase</span> <span class="kn">import</span> <span class="n">Phase</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_type</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Phase</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_phases</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_uuids</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 
@@ -945,7 +1032,7 @@
 
 
 <h2 id="src.ResearchOS.variable.Variable.phases" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">phases</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ResearchObject</span><span class="p">]</span></code>
+          <code class="highlight language-python"><span class="n">phases</span><span class="p">:</span> <span class="nb">list</span></code>
   
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-property"><code>property</code></small>
