@@ -1,4 +1,4 @@
-from PipelineObjects.pipeline_object import PipelineObject
+from src.ResearchOS.PipelineObjects import PipelineObject
 
 class ProcessGroup(PipelineObject):
     pass

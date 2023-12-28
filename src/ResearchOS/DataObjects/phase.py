@@ -1,4 +1,4 @@
-from ResearchOS.DataObjects import DataObject
+from src.ResearchOS.DataObjects import DataObject
 from typing import Union
 
 class Phase(DataObject):
