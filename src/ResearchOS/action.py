@@ -20,12 +20,13 @@ class Action():
     conn = sqlite3.connect(_db_file)
     
     def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None):                           
+        from src.ResearchOS.user import User
         if not id:
             id = Action._create_uuid()
             if not timestamp:
                 timestamp = datetime.datetime.utcnow()
             if not user_object_id:
-                user_object_id = get_current_user_object_id()       
+                user_object_id = User.get_current_user_object_id()       
         else:
             # Loading an existing action.
             sqlquery = f"SELECT * FROM actions WHERE action_id = '{id}'"
