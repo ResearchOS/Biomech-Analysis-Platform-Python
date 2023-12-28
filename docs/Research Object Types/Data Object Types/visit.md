@@ -1,3 +1,3 @@
 # Visit
 
-::: src.ResearchOS.data_objects.visit.Visit
+::: src.ResearchOS.DataObjects.visit.Visit
