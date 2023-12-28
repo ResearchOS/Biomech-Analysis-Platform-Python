@@ -12,6 +12,10 @@ class Project(PipelineObject):
     prefix: str = "PJ"
 
     @abstractmethod
+    def get_all_ids() -> list[str]:
+        return super().get_all_ids(Project)
+
+    @abstractmethod
     def new_current(name: str) -> "Project":
         """Create a new analysis and set it as the current analysis for the current project."""
         from src.ResearchOS.PipelineObjects.analysis import Analysis

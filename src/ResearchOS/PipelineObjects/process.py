@@ -1,8 +1,14 @@
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
+from abc import abstractmethod
+
 class Process(PipelineObject):
 
     prefix = "PR"
+
+    @abstractmethod
+    def get_all_ids() -> list[str]:
+        return super().get_all_ids(Process)
 
     #################### Start class-specific attributes ###################
 

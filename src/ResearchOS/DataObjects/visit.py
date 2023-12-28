@@ -3,10 +3,16 @@ from typing import Union
 
 from datetime import datetime
 
+from abc import abstractmethod
+
 class Visit(DataObject):
 
     prefix: str = "VS"
     logsheet_header: str = None
+
+    @abstractmethod
+    def get_all_ids() -> list[str]:
+        return super().get_all_ids(Visit)
 
     #################### Start class-specific attributes ###################
 
