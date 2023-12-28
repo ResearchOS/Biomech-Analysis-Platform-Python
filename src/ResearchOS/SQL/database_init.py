@@ -1,12 +1,5 @@
 """Initialize a database to handle all of the data for the application."""
 
-# import os, sys
-# PROJECT_ROOT = os.path.abspath(os.path.join(
-#                   os.path.dirname(__file__), 
-#                   os.pardir)
-# )
-# sys.path.append(PROJECT_ROOT)
-
 import sqlite3
 
 class DBInitializer():
@@ -28,50 +21,6 @@ class DBInitializer():
         cursor.execute(sqlquery)
         self._conn.commit()
         user = User(id = default_user_object_id, name = "Default User")
-
-        # Initialize attributes in the database, for some informal standardization.
-        self.init_attr(name = "id")
-        self.init_attr(name = "name")
-        self.init_attr(name = "description")
-        self.init_attr(name = "target_object_id")
-        self.init_attr(name = "timestamp")
-        self.init_attr(name = "redo_of")
-        self.init_attr(name = "action_id")
-        self.init_attr(name = "object_id")
-        # self.init_attr(name = "attr_id")
-        # self.init_attr(name = "attr_value")
-        # self.init_attr(name = "child_of")
-        self.init_attr(name = "address_id")
-        self.init_attr(name = "schema_id")
-        self.init_attr(name = "VR_id")
-        self.init_attr(name = "PR_id")
-        self.init_attr(name = "scalar_value")
-        self.init_attr(name = "level0_value")
-        self.init_attr(name = "level1_value")
-        self.init_attr(name = "level2_value")
-        self.init_attr(name = "level3_value")
-        self.init_attr(name = "level4_value")
-        self.init_attr(name = "level5_value")
-        self.init_attr(name = "level6_value")
-        self.init_attr(name = "level7_value")
-        self.init_attr(name = "level8_value")
-        self.init_attr(name = "level9_value")
-        self.init_attr(name = "current_analysis_id")
-        self.init_attr(name = "current_project_id")
-        self.init_attr(name = "current_logsheet_id")
-        # self.init_attr(name = "current_process_group_id")
-        # self.init_attr(name = "current_process_id")
-        # self.init_attr(name = "current_variable_id")
-        self.init_attr(name = "current_subset_id")        
-        self.init_attr(name = "current_user_object_id")
-        self.init_attr(name = "current_action_id")
-
-
-    def init_attr(self, name: str):
-        """Initialize an attribute in the database."""
-        cursor = self._conn.cursor()
-        cursor.execute(f"INSERT INTO attributes (attr_name) VALUES ('{name}')")
-        self._conn.commit()
 
     def create_database(self):
         """Create the database and all of its tables."""
