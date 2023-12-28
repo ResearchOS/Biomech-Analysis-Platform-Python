@@ -1,11 +1,27 @@
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
+from abc import abstractmethod
+
 class Subset(PipelineObject):
     """Provides rules to select a subset of data from a dataset."""
     
     prefix = "SS"
 
+    @abstractmethod
+    def get_all_ids() -> list[str]:
+        return super().get_all_ids(Subset)
+
     #################### Start class-specific attributes ###################
+    def add_criteria(self, var_id: str, value, logic: str) -> None:
+        """Add a criterion to the subset.
+        Possible values for logic are: ">", "<", ">=", "<=", "==", "!=", "in", "not in", "is", "is not", "contains", "not contains"."""
+        from src.ResearchOS.variable import Variable
+        logic_options = [">", "<", ">=", "<=", "==", "!=", "in", "not in", "is", "is not", "contains", "not contains"]
+        if logic not in logic_options:
+            raise ValueError("Invalid logic value.")
+        if var_id not in Variable.get_all_ids():
+            raise ValueError("Invalid variable ID.")
+        self.criteria.append((var_id, value, logic))
 
     #################### Start Source objects ####################
     def get_processes(self) -> list:

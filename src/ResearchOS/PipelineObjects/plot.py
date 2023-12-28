@@ -1,11 +1,17 @@
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
+from abc import abstractmethod
+
 class Plot(PipelineObject):
     
         prefix = "PL"    
 
         # TODO: Plot name/other metadata for saving.
         # TODO: For variables, need to allow ability to specify which analysis to pull from.
+
+        @abstractmethod
+        def get_all_ids() -> list[str]:
+            return super().get_all_ids(Plot)
     
         #################### Start class-specific attributes ###################
 

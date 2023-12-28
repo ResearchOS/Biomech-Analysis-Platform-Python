@@ -1,10 +1,15 @@
 from src.ResearchOS.DataObjects import DataObject
-from typing import Union
+
+from abc import abstractmethod
 
 class Trial(DataObject):
 
     preifx = "TR"
     logsheet_header: str = None
+
+    @abstractmethod
+    def get_all_ids() -> list[str]:
+        return super().get_all_ids(Trial)
 
     #################### Start class-specific attributes ###################
 

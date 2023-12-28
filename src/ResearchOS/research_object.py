@@ -95,6 +95,15 @@ class ResearchObject():
     ###############################################################################################################################
 
     @abstractmethod
+    def get_all_ids(cls) -> list[str]:
+        """Get all object IDs of the specified class."""
+        cursor = Action.conn.cursor()
+        sqlquery = f"SELECT object_id FROM research_objects"
+        cursor.execute(sqlquery)
+        rows = cursor.fetchall()
+        return [row[0] for row in rows if (row[0] is not None and row[0].startswith(cls.prefix))]
+
+    @abstractmethod
     def create_id(cls, abstract: str = None, instance: str = None) -> str:
         """Create a unique ID for the research object."""
         import random
