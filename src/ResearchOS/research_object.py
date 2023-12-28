@@ -97,7 +97,8 @@ class ResearchObject():
                 attrs["target_object_id"].append(target_object_id)
 
             attr_name = ResearchObject._get_attr_name(attr_id)
-            attrs[attr_name] = attr_value
+            attr_type = ResearchObject._get_attr_type(attr_id)
+            attrs[attr_name] = attr_type(attr_value)
             if len(used_attr_ids) == num_attrs:
                 break
                 
@@ -109,14 +110,12 @@ class ResearchObject():
 
         if __name == "id": 
             raise ValueError("Cannot change the ID of a research object.")
-
         if __name[0] == "_":
             return # Don't log private attributes.
         
-        # Open an action if there is not one open currently. Returns the open action if it is already open.
-        action = Action(name = "attribute_changed")
-                       
-        # Create the object in the database, in the table that contains only the complete list of object ID's.        
+        # Create an action.
+        action = Action(name = "attribute_changed")                       
+        # Update the attribute in the database.       
         sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{__value}')"
         action.add_sql_query(sqlquery)
         action.execute()  
@@ -186,7 +185,8 @@ class ResearchObject():
         rows = cursor.fetchall()
         # If the attribute does not exist, create it.
         if len(rows) == 0:
-            sqlquery = f"INSERT INTO Attributes (attr_name, attr_type) VALUES ('{attr_name}', '{type(attr_value)}')"
+            attr_type = str(type(attr_value)).split("'")[1]
+            sqlquery = f"INSERT INTO Attributes (attr_name, attr_type) VALUES ('{attr_name}', '{attr_type}')"
             cursor.execute(sqlquery)
             sqlquery = f"SELECT attr_id FROM Attributes WHERE attr_name = '{attr_name}'"
             cursor.execute(sqlquery)            
@@ -205,7 +205,19 @@ class ResearchObject():
         rows = cursor.fetchall()
         if len(rows) == 0:
             raise Exception("No attribute with that ID exists.")
-        return rows[0][0]    
+        return rows[0][0]  
+
+    @abstractmethod
+    def _get_attr_type(attr_id: int) -> str:
+        """Get the type of an attribute given the attribute's ID. If it does not exist, return an error."""
+        from pydoc import locate
+        cursor = Action.conn.cursor()
+        sqlquery = f"SELECT attr_type FROM Attributes WHERE attr_id = '{attr_id}'"
+        cursor.execute(sqlquery)
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            raise Exception("No attribute with that ID exists.")
+        return locate(rows[0][0])
     
     ###############################################################################################################################
     #################################################### end of abstract methods ##################################################

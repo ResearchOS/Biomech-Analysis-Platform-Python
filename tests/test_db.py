@@ -3,7 +3,6 @@ from src.ResearchOS.config import TestConfig
 
 import os
 from unittest import TestCase
-from datetime import datetime
 
 db_file = TestConfig.db_file
 
