@@ -1,3 +1,3 @@
 # Phase
 
-::: src.ResearchOS.data_objects.phase.Phase
+::: src.ResearchOS.DataObjects.phase.Phase

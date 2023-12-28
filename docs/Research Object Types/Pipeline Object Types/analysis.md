@@ -1,3 +1,3 @@
 # Analysis
 
-::: src.ResearchOS.pipeline_objects.analysis.Analysis
+::: src.ResearchOS.PipelineObjects.analysis.Analysis

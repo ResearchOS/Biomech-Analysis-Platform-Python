@@ -1,3 +1,3 @@
 # Trial
 
-::: src.ResearchOS.data_objects.trial.Trial
+::: src.ResearchOS.DataObjects.trial.Trial
