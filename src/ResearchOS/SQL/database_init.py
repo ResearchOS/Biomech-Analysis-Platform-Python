@@ -16,7 +16,7 @@ class DBInitializer():
         from src.ResearchOS import User
         # Current User
         default_user_object_id = "US000000_000"
-        sqlquery = f"INSERT INTO current_user (current_user_object_id) VALUES ('{default_user_object_id}')"
+        sqlquery = f"INSERT INTO current_user (current_user_object_id) VALUES ('{default_user_object_id}')"        
         cursor = self._conn.cursor()
         cursor.execute(sqlquery)
         self._conn.commit()
@@ -60,7 +60,8 @@ class DBInitializer():
         # Attributes table. Lists all attributes that have been added to objects.
         cursor.execute("""CREATE TABLE IF NOT EXISTS attributes (
                         attr_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        attr_name TEXT NOT NULL
+                        attr_name TEXT NOT NULL,
+                        attr_type TEXT
                         )""")
 
         # Research objects attributes table. Lists all attributes that have been associated with research objects.
@@ -126,4 +127,3 @@ class DBInitializer():
 if __name__ == '__main__':
     from src.ResearchOS.config import ProdConfig
     db = DBInitializer(ProdConfig.db_file)
-    
