@@ -6,7 +6,7 @@ from abc import abstractmethod
 
 class User(DataObject, PipelineObject):
 
-    prefix = "US"
+    prefix: str = "US"
 
     @abstractmethod
     def new_current(id: str = None, name: str = None):

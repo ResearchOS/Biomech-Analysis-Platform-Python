@@ -12,7 +12,7 @@ class Dataset(DataObject):
     1. data path: The root folder location of the dataset.
     2. data schema: The schema of the dataset (specified as a list of classes)"""
 
-    prefix = "DS"
+    prefix: str = "DS"
 
     @abstractmethod
     def new_current(name: str) -> "Dataset":

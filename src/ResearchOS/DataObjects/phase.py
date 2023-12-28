@@ -4,47 +4,30 @@ from typing import Union
 class Phase(DataObject):
     """Phase class."""
 
-    _id_prefix: str = "PH"
-    _table_name: str = "phases"
+    prefix = "PH"
+    logsheet_header: str = None
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._variables_list = self._get_all_children(self.uuid, "phase_uuid", "phases")
-        self._trials_list = self._get_all_parents(self.uuid, "phase_uuid", "trial_uuid", "phases")
+    #################### Start class-specific attributes ###################
 
-    @property
-    def variables(self) -> list[DataObject]:
-        """Return all variables."""
-        from variable import Variable
-        return [Variable(uuid) for uuid in self._variables_list]
+    #################### Start Source objects ####################
+    def get_trials(self) -> list:
+        """Return a list of trial objects that belong to this phase."""
+        from src.ResearchOS.DataObjects.trial import Trial
+        tr_ids = self._get_all_source_object_ids(cls = Trial)
+        return [Trial(id = tr_id) for tr_id in tr_ids]
     
-    @variables.setter
-    def variables(self, values: list[Union[str, DataObject]] = None) -> None:
-        """Set variables. Can provide either a list of variable UUIDs or a list of variable objects."""
-        from variable import Variable
-        self._check_type(values, [str, Variable])
-        self._variables_list = self._to_uuids(values)
-
-    @property
-    def trials(self) -> list[DataObject]:
-        """Return all trials."""
-        from trial import Trial
-        return [Trial(uuid) for uuid in self._trials_list]
+    #################### Start Target objects ####################
+    def get_variable_ids(self) -> list:
+        """Return a list of variable IDs that belong to this phase."""
+        from src.ResearchOS.variable import Variable
+        return self._get_all_target_object_ids(cls = Variable)
     
-    @trials.setter
-    def trials(self, values: list[Union[str, DataObject]] = None) -> None:
-        """Set trials. Can provide either a list of trial UUIDs or a list of trial objects."""
-        from trial import Trial
-        self._check_type(values, [str, Trial])
-        self._trials_list = self._to_uuids(values)
+    def add_variable_id(self, variable_id: str):
+        """Add a variable to the phase."""
+        from src.ResearchOS.variable import Variable        
+        self._add_target_object_id(variable_id, cls = Variable)
 
-    def remove_variable(self, variable: Union[str, DataObject]) -> None:
+    def remove_variable_id(self, variable_id: str):
         """Remove a variable from the phase."""
-        from variable import Variable
-        self._check_type(variable, [str, Variable])
-        self._variables.remove(variable.uuid)
-        self.update()
-
-    def missing_parent_error(self) -> None:
-        """Raise an error if the parent is missing."""
-        pass
+        from src.ResearchOS.variable import Variable        
+        self._remove_target_object_id(variable_id, cls = Variable)

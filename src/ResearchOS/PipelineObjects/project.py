@@ -9,7 +9,7 @@ class Project(PipelineObject):
     2. current_dataset_id: The ID of the current dataset for this project.
     3. project path: The root folder location of the project."""
 
-    prefix = "PJ"
+    prefix: str = "PJ"
 
     @abstractmethod
     def new_current(name: str) -> "Project":
