@@ -20,14 +20,10 @@ class TestObjCreation(TestCase):
         ds = Dataset(id = "DS000000_000")
         self.assertTrue(ds.id == "DS000000_000")
 
-    # def test_create_subject(self):
-    #     from src.ResearchOS.DataObjects.subject import Subject
-    #     uuid1 = _create_uuid("subjects")
-    #     s1 = Subject()
-    #     s1_1 = Subject(s1.uuid)
-    #     s1_2 = Subject(uuid = s1.uuid)
-    #     self.assertTrue(s1 is s1_1 and s1 is s1_2)        
-    #     self.check_common_attrs(s1)
+    def test_create_subject(self):
+        from src.ResearchOS.DataObjects.subject import Subject
+        sj = Subject(id = "SJ000000_000")
+        self.assertTrue(sj.id == "SJ000000_000")
 
     # def test_create_visit(self):
     #     from src.ResearchOS.DataObjects.visit import Visit

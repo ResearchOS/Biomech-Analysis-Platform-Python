@@ -65,6 +65,44 @@ class ResearchObject():
         if "exists" not in self.__dict__:
             self.exists = True
 
+    def load(self) -> "ResearchObject":
+        """Load the current state of a research object from the database. Modifies the self object."""        
+        cursor = Action.conn.cursor()
+
+        # 2. Get the action ID's for this object that were closed before the action_id.
+        sqlquery = f"SELECT action_id, attr_id, attr_value, target_object_id FROM research_object_attributes WHERE object_id = '{self.id}'"
+        attr_result = cursor.execute(sqlquery).fetchall()
+        if len(attr_result) == 0:
+            raise ValueError("No object with that ID exists.")
+        curr_obj_action_ids = [row[0] for row in attr_result]
+        curr_obj_attr_ids = [row[1] for row in attr_result]
+        attrs = {}
+        # Get the action ID's for this object by timestamp, descending.        
+        curr_obj_action_ids_str = ",".join([f"'{action_id}'" for action_id in curr_obj_action_ids])
+        sqlquery = f"SELECT action_id, timestamp FROM actions WHERE action_id IN ({curr_obj_action_ids_str}) ORDER BY timestamp DESC"
+        action_ids_in_time_order = cursor.execute(sqlquery).fetchall()
+        action_ids_in_time_order = [row[0] for row in action_ids_in_time_order]        
+        used_attr_ids = []
+        num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
+        attrs["id"] = self.id
+        attrs["target_object_id"] = []
+        for index, curr_obj_action_id in enumerate(action_ids_in_time_order):            
+            attr_id = attr_result[index][1]
+            if attr_id in used_attr_ids:
+                continue
+            used_attr_ids.append(attr_id)            
+            attr_value = attr_result[index][2]
+            target_object_id = attr_result[index][3]
+            if target_object_id not in attrs["target_object_id"] and target_object_id is not None:
+                attrs["target_object_id"].append(target_object_id)
+
+            attr_name = ResearchObject._get_attr_name(attr_id)
+            attrs[attr_name] = attr_value
+            if len(used_attr_ids) == num_attrs:
+                break
+                
+        self.__dict__.update(attrs)
+
     def __setattr__(self, __name: str, __value: Any) -> None:
         """Set the attributes of a research object in memory and in the SQL database."""
         self.__dict__[__name] = __value
@@ -137,45 +175,7 @@ class ResearchObject():
             rows = cursor.fetchall()
             if len(rows) == 0:
                 is_unique = True
-        return id  
-    
-    def load(self) -> "ResearchObject":
-        """Load the current state of a research object from the database. Modifies the self object."""        
-        cursor = Action.conn.cursor()
-
-        # 2. Get the action ID's for this object that were closed before the action_id.
-        sqlquery = f"SELECT action_id, attr_id, attr_value, target_object_id FROM research_object_attributes WHERE object_id = '{self.id}'"
-        attr_result = cursor.execute(sqlquery).fetchall()
-        if len(attr_result) == 0:
-            raise ValueError("No object with that ID exists.")
-        curr_obj_action_ids = [row[0] for row in attr_result]
-        curr_obj_attr_ids = [row[1] for row in attr_result]
-        attrs = {}
-        # Get the action ID's for this object by timestamp, descending.        
-        curr_obj_action_ids_str = ",".join([f"'{action_id}'" for action_id in curr_obj_action_ids])
-        sqlquery = f"SELECT action_id, timestamp FROM actions WHERE action_id IN ({curr_obj_action_ids_str}) ORDER BY timestamp DESC"
-        action_ids_in_time_order = cursor.execute(sqlquery).fetchall()
-        action_ids_in_time_order = [row[0] for row in action_ids_in_time_order]        
-        used_attr_ids = []
-        num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
-        attrs["id"] = self.id
-        attrs["target_object_id"] = []
-        for index, curr_obj_action_id in enumerate(action_ids_in_time_order):            
-            attr_id = attr_result[index][1]
-            if attr_id in used_attr_ids:
-                continue
-            used_attr_ids.append(attr_id)            
-            attr_value = attr_result[index][2]
-            target_object_id = attr_result[index][3]
-            if target_object_id not in attrs["target_object_id"] and target_object_id is not None:
-                attrs["target_object_id"].append(target_object_id)
-
-            attr_name = ResearchObject._get_attr_name(attr_id)
-            attrs[attr_name] = attr_value
-            if len(used_attr_ids) == num_attrs:
-                break
-                
-        self.__dict__.update(attrs)        
+        return id      
 
     @abstractmethod
     def _get_attr_id(attr_name: str, attr_value: Any = None) -> int:
