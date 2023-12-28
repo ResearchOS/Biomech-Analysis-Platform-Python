@@ -1,3 +1,3 @@
 # Process
 
-::: src.ResearchOS.pipeline_objects.process.Process
+::: src.ResearchOS.PipelineObjects.process.Process

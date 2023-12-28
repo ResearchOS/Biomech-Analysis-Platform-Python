@@ -1,3 +1,3 @@
 # Subject
 
-::: src.ResearchOS.data_objects.subject.Subject
+::: src.ResearchOS.DataObjects.subject.Subject

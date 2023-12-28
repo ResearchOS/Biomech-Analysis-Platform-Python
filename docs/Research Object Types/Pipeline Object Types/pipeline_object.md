@@ -1,3 +1,3 @@
 # Pipeline Objects
 
-::: src.ResearchOS.pipeline_objects.pipeline_object.PipelineObject
+::: src.ResearchOS.PipelineObjects.pipeline_object.PipelineObject
