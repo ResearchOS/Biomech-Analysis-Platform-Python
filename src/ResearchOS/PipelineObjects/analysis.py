@@ -8,13 +8,7 @@ class Analysis(PipelineObject):
 
     @abstractmethod
     def get_all_ids() -> list[str]:
-        return super().get_all_ids(Analysis)
-
-    # def __init__(self, current_logsheet_id: str = None): 
-    #     """Initialize the class-specific attributes."""        
-    #     super().__init__()
-    #     self.validate_id_class(current_logsheet_id, "LG")        
-    #     self.current_logsheet_id = current_logsheet_id        
+        return super().get_all_ids(Analysis)   
     
     def new_current(name: str):
         from src.ResearchOS.PipelineObjects.logsheet import Logsheet        
