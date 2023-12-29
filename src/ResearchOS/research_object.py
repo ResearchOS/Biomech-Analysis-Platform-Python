@@ -1,9 +1,9 @@
-from typing import Any, Type
+from typing import Any
 import re
 from abc import abstractmethod
 import datetime
 import weakref
-import traceback
+import json
 
 from src.ResearchOS.action import Action
 from src.ResearchOS.config import ProdConfig
@@ -41,29 +41,30 @@ class ResearchObject():
             instance.__dict__['id'] = object_id            
             return instance
 
-    def __init__(self, name: str = "object creation", id: str = None) -> None:
-        """"""
-        if id:
-            # Load the object from the database.
-            try:
-                self.load()
-                return
-            except ValueError: # Throws an exception if the object does not exist. In that case, create it.
-                pass
-        action = Action(name = name)
-        if not id:
-            id = self.id # self.id always exists by this point thanks to __new__
+    def __init__(self, name: str = "object creation", attrs: dict = {}, id: str = None) -> None:
+        """id is required but will actually not be used here because it is assigned during __new__"""
+        id = self.id # self.id always exists by this point thanks to __new__        
+        # Try to load the object from the database.
         try:
-            # Create the object in the database.            
-            sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
-            action.add_sql_query(sqlquery)
-            action.execute()
-        except Exception as e:
-            print(e)        
-        if "name" not in self.__dict__:
-            self.name = name
-        if "exists" not in self.__dict__:
-            self.exists = True
+            self.load()            
+        except ValueError: # Throws an exception if the object does not exist. In that case, create it.            
+            action = Action(name = name)        
+            try:
+                # Create the object in the database.            
+                sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
+                action.add_sql_query(sqlquery)
+                action.execute()
+            except Exception as e:
+                print(e)   
+            if "exists" not in self.__dict__:
+                self.exists = True
+            if "name" not in self.__dict__:
+                self.name = name            
+        # Ensure that all of the required attributes are present.
+        for attr in attrs:
+            if attr in self.__dict__:
+                continue
+            self.__setattr__(attr, attrs[attr])            
 
     def load(self) -> "ResearchObject":
         """Load the current state of a research object from the database. Modifies the self object."""        
@@ -86,12 +87,13 @@ class ResearchObject():
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
         attrs["id"] = self.id
         attrs["target_object_id"] = []
-        for index, curr_obj_action_id in enumerate(action_ids_in_time_order):            
+        for curr_obj_action_id in action_ids_in_time_order:
+            index = curr_obj_action_ids.index(curr_obj_action_id)
             attr_id = attr_result[index][1]
             if attr_id in used_attr_ids:
                 continue
-            used_attr_ids.append(attr_id)            
-            attr_value = attr_result[index][2]
+            used_attr_ids.append(attr_id)
+            attr_value = json.loads(attr_result[index][2])
             target_object_id = attr_result[index][3]
             if target_object_id not in attrs["target_object_id"] and target_object_id is not None:
                 attrs["target_object_id"].append(target_object_id)
@@ -115,25 +117,26 @@ class ResearchObject():
         
         # Create an action.
         action = Action(name = "attribute_changed")                       
-        # Update the attribute in the database.       
-        sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{__value}')"
+        # Update the attribute in the database.
+        json_value = json.dumps(__value, indent = 4) # Encode the value as json
+        sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"
         action.add_sql_query(sqlquery)
         action.execute()  
 
-    def __getattr__(self, __name: str) -> Any:
-        """Get the attribute of a research object from the SQL database."""
-        if __name[0] == "_":
-            raise AttributeError(f"Attribute {__name} does not exist.")
-        # Get the attribute from the database.
-        sqlquery = f"SELECT attr_value, attr_type FROM research_object_attributes WHERE object_id = '{self.id}' AND attr_id = '{ResearchObject._get_attr_id(__name)}'"
-        cursor = Action.conn.cursor()
-        cursor.execute(sqlquery)
-        rows = cursor.fetchall()
-        if len(rows) == 0:
-            raise AttributeError(f"Attribute {__name} does not exist.")
-        attr_value = rows[0][0]
-        attr_type = getattr(__builtins__, rows[0][1])
-        return attr_type(attr_value) # Cast the attribute to the proper type.        
+    # def __getattr__(self, __name: str) -> Any:
+    #     """Get the attribute of a research object from the SQL database."""
+    #     if __name[0] == "_":
+    #         raise AttributeError(f"Attribute {__name} does not exist.")
+    #     # Get the attribute from the database.
+    #     sqlquery = f"SELECT attr_value, attr_type FROM research_object_attributes WHERE object_id = '{self.id}' AND attr_id = '{ResearchObject._get_attr_id(__name)}'"
+    #     cursor = Action.conn.cursor()
+    #     cursor.execute(sqlquery)
+    #     rows = cursor.fetchall()
+    #     if len(rows) == 0:
+    #         raise AttributeError(f"Attribute {__name} does not exist.")
+    #     attr_value = rows[0][0]
+    #     attr_type = getattr(__builtins__, rows[0][1])
+    #     return attr_type(attr_value) # Cast the attribute to the proper type.        
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
