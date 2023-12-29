@@ -108,6 +108,7 @@ class ResearchObject():
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         """Set the attributes of a research object in memory and in the SQL database."""
+        # TODO: Does this get called when deleting an attribute from an object?
         self.__dict__[__name] = __value
 
         if __name == "id": 

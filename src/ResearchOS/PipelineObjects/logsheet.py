@@ -6,7 +6,14 @@ class Logsheet(PipelineObject):
 
     prefix = "LG"
 
+    @abstractmethod
+    def get_all_ids() -> list[str]:
+        return super().get_all_ids(Logsheet)
+
+    #################### Start class-specific attributes ###################
     def __init__(self, **kwargs):
+        """Initialize the attributes that are required by ResearchOS.
+        Other attributes can be added & modified later."""
         attrs = {}
         attrs["logsheet_path"] = "" # Path to logsheet.
         attrs["logsheet_headers"] = [] # List of tuples. Each tuple is: (header_name, type, variable ID)
@@ -14,15 +21,9 @@ class Logsheet(PipelineObject):
         attrs["class_column_names"] = {} # dict where the keys are logsheet column names (first column of logsheet_headers), values are class types        
         super().__init__(attrs = attrs)
 
-    @abstractmethod
-    def get_all_ids() -> list[str]:
-        return super().get_all_ids(Logsheet)
-
-    #################### Start class-specific attributes ###################
-    # self.logsheet_path = None
-    # self.logsheet_headers = None # Includes header names, types, and variable IDs.
-    # self.num_header_rows = None
-    # self.class_column_names = None # dict or tuple mapping logsheet column names to class names to save with the current data schema.
+    def json_translate_XXX(self):
+        """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
+        XXX is the exact name of the attribute. Method name must follow this format."""        
 
     #################### Start Source objects ####################
     def get_analyses(self) -> list:
