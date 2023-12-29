@@ -122,22 +122,7 @@ class ResearchObject():
         json_value = json.dumps(__value, indent = 4) # Encode the value as json
         sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"
         action.add_sql_query(sqlquery)
-        action.execute()  
-
-    # def __getattr__(self, __name: str) -> Any:
-    #     """Get the attribute of a research object from the SQL database."""
-    #     if __name[0] == "_":
-    #         raise AttributeError(f"Attribute {__name} does not exist.")
-    #     # Get the attribute from the database.
-    #     sqlquery = f"SELECT attr_value, attr_type FROM research_object_attributes WHERE object_id = '{self.id}' AND attr_id = '{ResearchObject._get_attr_id(__name)}'"
-    #     cursor = Action.conn.cursor()
-    #     cursor.execute(sqlquery)
-    #     rows = cursor.fetchall()
-    #     if len(rows) == 0:
-    #         raise AttributeError(f"Attribute {__name} does not exist.")
-    #     attr_value = rows[0][0]
-    #     attr_type = getattr(__builtins__, rows[0][1])
-    #     return attr_type(attr_value) # Cast the attribute to the proper type.        
+        action.execute()         
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
