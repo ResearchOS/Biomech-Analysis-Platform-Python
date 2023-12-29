@@ -25,6 +25,13 @@ class Logsheet(PipelineObject):
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""        
 
+    def validate_num_header_rows(self, num_header_rows):
+        """Validate the number of header rows. If it is not valid, the value is rejected."""
+        if not isinstance(num_header_rows, int):
+            raise ValueError("Num header rows must be an integer!")
+        if num_header_rows<0:
+            raise ValueError("Num header rows must be positive!")
+
     #################### Start Source objects ####################
     def get_analyses(self) -> list:
         """Return a list of analysis objects that belong to this logsheet."""
@@ -52,5 +59,6 @@ class Logsheet(PipelineObject):
 if __name__=="__main__":
     lg = Logsheet(id = "LG000000_001")
     print(lg.num_header_rows)
-    lg.num_header_rows = 3
+    # lg.test = 1
+    lg.num_header_rows = -1
     print(lg.num_header_rows)
