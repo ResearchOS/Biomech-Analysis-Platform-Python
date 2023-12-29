@@ -44,25 +44,26 @@ class Project(PipelineObject):
         if not self.object_exists(id):
             raise ValueError("Analysis does not exist!")
     
-    def set_current_analysis_id(self, analysis_id: str) -> None:
-        """Set the current analysis object ID for this project."""
-        from src.ResearchOS.PipelineObjects.analysis import Analysis
-        self.validate_id_class(analysis_id, Analysis)
-        self.current_analysis_id = analysis_id
+    def validate_current_dataset_id(self, id):
+        """Validate the current dataset ID. If it is not valid, the value is rejected."""
+        if not self.is_id(id):
+            raise ValueError("Specified value is not an ID!")
+        parsed_id = self.parse_id(id)
+        if parsed_id[0] != "DS":
+            raise ValueError("Specified ID is not a Dataset!")
+        if not self.object_exists(id):
+            raise ValueError("Dataset does not exist!")
+        
+    def validate_project_path(self, path):
+        """Validate the project path. If it is not valid, the value is rejected."""
+        # 1. Check that the string is a valid path, and is not a file.
+        # 2. Check that the path exists in the file system.
 
-    def get_current_dataset_id(self) -> str:
-        """Return the current dataset object ID for this project."""
-        # from src.ResearchOS.DataObjects.dataset import Dataset
-        return self.current_dataset_id
-    
-    def set_current_dataset_id(self, dataset_id: str) -> None:
-        """Set the current dataset object ID for this project."""
-        from src.ResearchOS.DataObjects.dataset import Dataset
-        self.validate_id_class(dataset_id, Dataset)
-        self.current_dataset_id = dataset_id
+    def json_translate_XXX(self):
+        """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
+        XXX is the exact name of the attribute. Method name must follow this format."""
 
     #################### Start Source objects ####################
-
     def get_users(self) -> list:
         """Return a list of user objects that belong to this project. Identical to Dataset.get_users()"""
         from src.ResearchOS.user import User
@@ -70,7 +71,6 @@ class Project(PipelineObject):
         return [User(id = us_id) for us_id in us_ids]
     
     #################### Start Target objects ####################
-            
     def get_analyses(self) -> list["Analysis"]:        
         """Return a list of analysis objects in the project."""
         from src.ResearchOS.PipelineObjects.analysis import Analysis

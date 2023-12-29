@@ -109,12 +109,9 @@ class ResearchObject():
 
     def __setattr__(self, __name: str, __value: Any, validate: bool = True) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
-        Validates the attribute if it is a built-in ResearchOS attribute, and the object is not being initialized."""
-        from pydoc import locate
-        # TODO: Does this get called when deleting an attribute from an object? 
-        # 1. Construct a method name: "validate_{__name}". If there is no method of that name, proceed.        
-        if validate:                                          
-            # 2. If there is a method with that name, and __value is not valid, throw an error.
+        Validates the attribute if it is a built-in ResearchOS attribute, and the object is not being initialized."""        
+        # TODO: Does this get called when deleting an attribute from an object?         
+        if validate:                                                      
             try:
                 eval(f"self.validate_{__name}({__value})")
             except AttributeError as e:
