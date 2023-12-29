@@ -14,7 +14,7 @@ class Project(PipelineObject):
     @abstractmethod
     def get_all_ids() -> list[str]:
         return super().get_all_ids(Project)
-
+    
     @abstractmethod
     def new_current(name: str) -> "Project":
         """Create a new analysis and set it as the current analysis for the current project."""
@@ -25,19 +25,24 @@ class Project(PipelineObject):
         return pj  
     
     #################### Start class-specific attributes ###################
-
-    def get_project_path(self) -> str:
-        """Return the project path."""        
-        return self.project_path
+    def __init__(self, **kwargs):
+        """Initialize the attributes that are required by ResearchOS.
+        Other attributes can be added & modified later."""
+        attrs = {}
+        attrs["current_analysis_id"] = "" # The current analysis for the project.
+        attrs["current_dataset_id"] = "" # The current dataset for the project.
+        attrs["project_path"] = "" # The root folder for the current project.        
+        super().__init__(attrs = attrs)            
     
-    def set_project_path(self, path: str) -> None:
-        """Set the project path."""        
-        self.project_path = path    
-
-    def get_current_analysis_id(self) -> str:
-        """Return the current analysis object ID for this project."""
-        # from src.ResearchOS.PipelineObjects.analysis import Analysis
-        return self.current_analysis_id
+    def validate_current_analysis_id(self, id):
+        """Validate the current analysis ID. If it is not valid, the value is rejected."""        
+        if not self.is_id(id):
+            raise ValueError("Specified value is not an ID!")
+        parsed_id = self.parse_id(id)
+        if parsed_id[0] != "AN":
+            raise ValueError("Specified ID is not an Analysis!")
+        if not self.object_exists(id):
+            raise ValueError("Analysis does not exist!")
     
     def set_current_analysis_id(self, analysis_id: str) -> None:
         """Set the current analysis object ID for this project."""

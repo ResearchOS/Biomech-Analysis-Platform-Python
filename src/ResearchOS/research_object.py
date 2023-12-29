@@ -64,7 +64,8 @@ class ResearchObject():
         for attr in attrs:
             if attr in self.__dict__:
                 continue
-            self.__setattr__(attr, attrs[attr])            
+            # Don't validate during object initialization because the initial values won't pass the validation.
+            self.__setattr__(attr, attrs[attr], validate = False)            
 
     def load(self) -> "ResearchObject":
         """Load the current state of a research object from the database. Modifies the self object."""        
@@ -106,9 +107,19 @@ class ResearchObject():
                 
         self.__dict__.update(attrs)
 
-    def __setattr__(self, __name: str, __value: Any) -> None:
-        """Set the attributes of a research object in memory and in the SQL database."""
-        # TODO: Does this get called when deleting an attribute from an object?
+    def __setattr__(self, __name: str, __value: Any, validate: bool = True) -> None:
+        """Set the attributes of a research object in memory and in the SQL database.
+        Validates the attribute if it is a built-in ResearchOS attribute, and the object is not being initialized."""
+        from pydoc import locate
+        # TODO: Does this get called when deleting an attribute from an object? 
+        # 1. Construct a method name: "validate_{__name}". If there is no method of that name, proceed.        
+        if validate:                                          
+            # 2. If there is a method with that name, and __value is not valid, throw an error.
+            try:
+                eval(f"self.validate_{__name}({__value})")
+            except AttributeError as e:
+                pass
+
         self.__dict__[__name] = __value
 
         if __name == "id": 
