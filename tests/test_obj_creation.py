@@ -15,6 +15,46 @@ class TestObjCreation(TestCase):
         import os
         os.remove(self.db_file)
 
+    #################### USER & VARIABLE ####################
+    def test_create_user(self):
+        from src.ResearchOS.user import User
+        us = User(id = "US000000_000")
+        self.assertTrue(us.id == "US000000_000")
+        self.assertTrue(us.exists)
+
+    def test_create_variable(self):
+        from src.ResearchOS.variable import Variable
+        vr = Variable(id = "VR000000_000")
+        self.assertTrue(vr.id == "VR000000_000")
+        self.assertTrue(vr.exists)
+
+    #################### PIPELINE OBJECTS ####################
+    def test_create_project(self):
+        from src.ResearchOS.PipelineObjects.project import Project
+        pj = Project(id = "PJ000000_000")
+        self.assertTrue(pj.id == "PJ000000_000")
+        self.assertTrue(pj.exists)
+
+    def test_create_analysis(self):
+        from src.ResearchOS.PipelineObjects.analysis import Analysis
+        an = Analysis(id = "AN000000_000")
+        self.assertTrue(an.id == "AN000000_000")
+        self.assertTrue(an.exists)
+
+    def test_create_process(self):
+        from src.ResearchOS.PipelineObjects.process import Process
+        pr = Process(id = "PR000000_000")
+        self.assertTrue(pr.id == "PR000000_000")
+        self.assertTrue(pr.exists)
+
+    def test_create_subset(self):
+        from src.ResearchOS.PipelineObjects.subset import Subset
+        ss = Subset(id = "SS000000_000")
+        self.assertTrue(ss.id == "SS000000_000")
+        self.assertTrue(ss.exists)
+
+    #################### DATA OBJECTS ####################
+
     def test_create_dataset(self):   
         from src.ResearchOS.DataObjects.dataset import Dataset          
         ds = Dataset(id = "DS000000_000")
