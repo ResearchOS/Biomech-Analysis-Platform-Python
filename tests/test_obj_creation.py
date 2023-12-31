@@ -85,6 +85,19 @@ class TestObjCreation(TestCase):
         self.assertTrue(ph.id == "PH000000_000")    
         self.assertTrue(ph.exists)
 
+    #################### COPYING ####################
+    def test_copy_instance_object_to_new(self):
+        from src.ResearchOS.PipelineObjects.logsheet import Logsheet
+        lg = Logsheet(id = "LG000000_000")
+        lg2 = lg.copy_to_new_instance()
+        self.assertTrue(lg.abstract_id() == lg2.abstract_id())  
+        self.assertTrue(lg.id != lg2.id)
+        dict1 = lg.__dict__
+        dict2 = lg2.__dict__
+        del dict1["id"]
+        del dict2["id"]
+        self.assertTrue(dict1 == dict2)      
+
 
 
 if __name__=="__main__":
