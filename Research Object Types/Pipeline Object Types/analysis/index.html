@@ -12,7 +12,7 @@
         <link rel="prev" href="../../Pipeline%20%26%20Data%20Object%20Types/variable/">
       
       
-        <link rel="next" href="../pipeline_object/">
+        <link rel="next" href="../logsheet/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -731,15 +731,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.analysis.Analysis.__init__" class="md-nav__link">
-    <span class="md-ellipsis">
-      __init__()
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#src.ResearchOS.PipelineObjects.analysis.Analysis.add_logsheet" class="md-nav__link">
     <span class="md-ellipsis">
       add_logsheet()
@@ -806,6 +797,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logsheet
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -967,15 +979,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.analysis.Analysis.__init__" class="md-nav__link">
-    <span class="md-ellipsis">
-      __init__()
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#src.ResearchOS.PipelineObjects.analysis.Analysis.add_logsheet" class="md-nav__link">
     <span class="md-ellipsis">
       add_logsheet()
@@ -1068,9 +1071,7 @@
 
             <details class="quote">
               <summary>Source code in <code>src/ResearchOS/PipelineObjects/analysis.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 5</span>
 <span class="normal"> 6</span>
 <span class="normal"> 7</span>
 <span class="normal"> 8</span>
@@ -1129,11 +1130,9 @@
 
     <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;AN&quot;</span>    
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_logsheet_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> 
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the class-specific attributes.&quot;&quot;&quot;</span>        
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">validate_id_class</span><span class="p">(</span><span class="n">current_logsheet_id</span><span class="p">,</span> <span class="s2">&quot;LG&quot;</span><span class="p">)</span>        
-        <span class="bp">self</span><span class="o">.</span><span class="n">current_logsheet_id</span> <span class="o">=</span> <span class="n">current_logsheet_id</span>        
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_all_ids</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_all_ids</span><span class="p">(</span><span class="n">Analysis</span><span class="p">)</span>   
 
     <span class="k">def</span> <span class="nf">new_current</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="kn">from</span> <span class="nn">src.ResearchOS.PipelineObjects.logsheet</span> <span class="kn">import</span> <span class="n">Logsheet</span>        
@@ -1197,39 +1196,6 @@
 
 
 
-
-
-<div class="doc doc-object doc-function">
-
-
-
-
-<h2 id="src.ResearchOS.PipelineObjects.analysis.Analysis.__init__" class="doc doc-heading">
-          <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">current_logsheet_id</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
-
-</h2>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Initialize the class-specific attributes.</p>
-
-          <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/PipelineObjects/analysis.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_logsheet_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> 
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the class-specific attributes.&quot;&quot;&quot;</span>        
-    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">validate_id_class</span><span class="p">(</span><span class="n">current_logsheet_id</span><span class="p">,</span> <span class="s2">&quot;LG&quot;</span><span class="p">)</span>        
-    <span class="bp">self</span><span class="o">.</span><span class="n">current_logsheet_id</span> <span class="o">=</span> <span class="n">current_logsheet_id</span>        
-</code></pre></div></td></tr></table></div>
-          </details>
-  </div>
-
-</div>
 
 
 <div class="doc doc-object doc-function">

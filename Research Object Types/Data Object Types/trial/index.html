@@ -782,6 +782,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../Pipeline%20Object%20Types/logsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logsheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../Pipeline%20Object%20Types/pipeline_object/" class="md-nav__link">
         
   
@@ -996,8 +1017,7 @@
 
             <details class="quote">
               <summary>Source code in <code>src/ResearchOS/DataObjects/trial.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 4</span>
-<span class="normal"> 5</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 5</span>
 <span class="normal"> 6</span>
 <span class="normal"> 7</span>
 <span class="normal"> 8</span>
@@ -1025,10 +1045,19 @@
 <span class="normal">30</span>
 <span class="normal">31</span>
 <span class="normal">32</span>
-<span class="normal">33</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Trial</span><span class="p">(</span><span class="n">DataObject</span><span class="p">):</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Trial</span><span class="p">(</span><span class="n">DataObject</span><span class="p">):</span>
 
     <span class="n">preifx</span> <span class="o">=</span> <span class="s2">&quot;TR&quot;</span>
     <span class="n">logsheet_header</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_all_ids</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_all_ids</span><span class="p">(</span><span class="n">Trial</span><span class="p">)</span>
 
     <span class="c1">#################### Start class-specific attributes ###################</span>
 
@@ -1088,10 +1117,10 @@
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/DataObjects/trial.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">25</span>
-<span class="normal">26</span>
-<span class="normal">27</span>
-<span class="normal">28</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">add_phase_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phase_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">add_phase_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phase_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a phase to the trial.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">src.ResearchOS.DataObjects.phase</span> <span class="kn">import</span> <span class="n">Phase</span>        
     <span class="bp">self</span><span class="o">.</span><span class="n">_add_target_object_id</span><span class="p">(</span><span class="n">phase_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Phase</span><span class="p">)</span>
@@ -1119,11 +1148,11 @@
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/DataObjects/trial.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">19</span>
-<span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span>
-<span class="normal">23</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_phase_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_phase_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of phase object IDs that belong to this trial.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">src.ResearchOS.DataObjects.phase</span> <span class="kn">import</span> <span class="n">Phase</span>
     <span class="n">ph_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_target_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Phase</span><span class="p">)</span>
@@ -1152,11 +1181,11 @@
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/DataObjects/trial.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">12</span>
-<span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_visits</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_visits</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of visit objects that belong to this trial.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">src.ResearchOS.DataObjects.visit</span> <span class="kn">import</span> <span class="n">Visit</span>
     <span class="n">vs_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Visit</span><span class="p">)</span>
@@ -1185,10 +1214,10 @@
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/DataObjects/trial.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
-<span class="normal">31</span>
-<span class="normal">32</span>
-<span class="normal">33</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">remove_phase_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phase_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">remove_phase_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phase_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a phase from the trial.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">src.ResearchOS.DataObjects.phase</span> <span class="kn">import</span> <span class="n">Phase</span>        
     <span class="bp">self</span><span class="o">.</span><span class="n">_remove_target_object_id</span><span class="p">(</span><span class="n">phase_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Phase</span><span class="p">)</span>

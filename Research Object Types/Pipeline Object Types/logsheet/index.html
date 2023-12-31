@@ -9,10 +9,10 @@
       
       
       
-        <link rel="prev" href="../pipeline_object/">
+        <link rel="prev" href="../analysis/">
       
       
-        <link rel="next" href="../process_group/">
+        <link rel="next" href="../pipeline_object/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -20,7 +20,7 @@
     
     
       
-        <title>Process - ResearchOS</title>
+        <title>Logsheet - ResearchOS</title>
       
     
     
@@ -64,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#process" class="md-skip">
+        <a href="#logsheet" class="md-skip">
           Skip to content
         </a>
       
@@ -100,7 +100,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Process
+              Logsheet
             
           </span>
         </div>
@@ -694,10 +694,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../logsheet/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Logsheet
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -706,6 +726,107 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet" class="md-nav__link">
+    <span class="md-ellipsis">
+      Logsheet
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __init__()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.add_variable_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_variable_id()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.get_analyses" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_analyses()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.get_variable_ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_variable_ids()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.json_translate_class_column_names" class="md-nav__link">
+    <span class="md-ellipsis">
+      json_translate_class_column_names()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.json_translate_logsheet_headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      json_translate_logsheet_headers()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.remove_variable_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      remove_variable_id()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.validate_num_header_rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_num_header_rows()
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -736,30 +857,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Process
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../process/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -768,98 +869,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process" class="md-nav__link">
-    <span class="md-ellipsis">
-      Process
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.add_input_variable" class="md-nav__link">
-    <span class="md-ellipsis">
-      add_input_variable()
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.add_output_variable" class="md-nav__link">
-    <span class="md-ellipsis">
-      add_output_variable()
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.get_analyses" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_analyses()
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.get_input_variable_ids" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_input_variable_ids()
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.get_output_variable_ids" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_output_variable_ids()
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.remove_input_variable" class="md-nav__link">
-    <span class="md-ellipsis">
-      remove_input_variable()
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.remove_output_variable" class="md-nav__link">
-    <span class="md-ellipsis">
-      remove_output_variable()
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -970,34 +979,34 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process" class="md-nav__link">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet" class="md-nav__link">
     <span class="md-ellipsis">
-      Process
+      Logsheet
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.add_input_variable" class="md-nav__link">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.__init__" class="md-nav__link">
     <span class="md-ellipsis">
-      add_input_variable()
+      __init__()
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.add_output_variable" class="md-nav__link">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.add_variable_id" class="md-nav__link">
     <span class="md-ellipsis">
-      add_output_variable()
+      add_variable_id()
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.get_analyses" class="md-nav__link">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.get_analyses" class="md-nav__link">
     <span class="md-ellipsis">
       get_analyses()
     </span>
@@ -1006,36 +1015,45 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.get_input_variable_ids" class="md-nav__link">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.get_variable_ids" class="md-nav__link">
     <span class="md-ellipsis">
-      get_input_variable_ids()
+      get_variable_ids()
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.get_output_variable_ids" class="md-nav__link">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.json_translate_class_column_names" class="md-nav__link">
     <span class="md-ellipsis">
-      get_output_variable_ids()
+      json_translate_class_column_names()
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.remove_input_variable" class="md-nav__link">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.json_translate_logsheet_headers" class="md-nav__link">
     <span class="md-ellipsis">
-      remove_input_variable()
+      json_translate_logsheet_headers()
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.process.Process.remove_output_variable" class="md-nav__link">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.remove_variable_id" class="md-nav__link">
     <span class="md-ellipsis">
-      remove_output_variable()
+      remove_variable_id()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.logsheet.Logsheet.validate_num_header_rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_num_header_rows()
     </span>
   </a>
   
@@ -1056,27 +1074,22 @@
                   
 
 
-<h1 id="process">Process</h1>
+<h1 id="logsheet">Logsheet</h1>
 
 
 <div class="doc doc-object doc-class">
 
 
 
-<a id="src.ResearchOS.PipelineObjects.process.Process"></a>
+<a id="src.ResearchOS.PipelineObjects.logsheet.Logsheet"></a>
   <div class="doc doc-contents first">
           <p class="doc doc-class-bases">
             Bases: <code><a class="autorefs autorefs-internal" title="src.ResearchOS.PipelineObjects.pipeline_object.PipelineObject" href="../pipeline_object/#src.ResearchOS.PipelineObjects.pipeline_object.PipelineObject">PipelineObject</a></code></p>
 
 
             <details class="quote">
-              <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
+              <summary>Source code in <code>src/ResearchOS/PipelineObjects/logsheet.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">10</span>
 <span class="normal">11</span>
 <span class="normal">12</span>
 <span class="normal">13</span>
@@ -1119,55 +1132,82 @@
 <span class="normal">50</span>
 <span class="normal">51</span>
 <span class="normal">52</span>
-<span class="normal">53</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Process</span><span class="p">(</span><span class="n">PipelineObject</span><span class="p">):</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Logsheet</span><span class="p">(</span><span class="n">PipelineObject</span><span class="p">):</span>
 
-    <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;PR&quot;</span>
+    <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;LG&quot;</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">get_all_ids</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_all_ids</span><span class="p">(</span><span class="n">Process</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_all_ids</span><span class="p">(</span><span class="n">Logsheet</span><span class="p">)</span>
 
     <span class="c1">#################### Start class-specific attributes ###################</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the attributes that are required by ResearchOS.</span>
+<span class="sd">        Other attributes can be added &amp; modified later.&quot;&quot;&quot;</span>
+        <span class="n">attrs</span> <span class="o">=</span> <span class="p">{}</span>        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_instance_object</span><span class="p">:</span>
+            <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;logsheet_path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_LOGSHEET_PATH</span> <span class="c1"># Path to logsheet.</span>
+            <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;logsheet_headers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_LOGSHEET_HEADERS</span> <span class="c1"># List of tuples. Each tuple is: (header_name, type, variable ID)</span>
+            <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;num_header_rows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_NUM_HEADER_ROWS</span> <span class="c1"># Integer</span>
+            <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;class_column_names&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_CLASS_COLUMN_NAMES</span> <span class="c1"># dict where the keys are logsheet column names (first column of logsheet_headers), values are class types        </span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">json_translate_logsheet_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.</span>
+<span class="sd">        XXX is the exact name of the attribute. Method name must follow this format.&quot;&quot;&quot;</span>        
+
+    <span class="k">def</span> <span class="nf">json_translate_class_column_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.</span>
+<span class="sd">        XXX is the exact name of the attribute. Method name must follow this format.&quot;&quot;&quot;</span>        
+
+    <span class="k">def</span> <span class="nf">validate_num_header_rows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_header_rows</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate the number of header rows. If it is not valid, the value is rejected.&quot;&quot;&quot;</span>        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_header_rows</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Num header rows must be an integer!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_header_rows</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Num header rows must be positive!&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_header_rows</span> <span class="o">%</span> <span class="mi">1</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Num header rows must be an integer!&quot;</span><span class="p">)</span>
 
     <span class="c1">#################### Start Source objects ####################</span>
     <span class="k">def</span> <span class="nf">get_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of analysis objects that belong to this process.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of analysis objects that belong to this logsheet.&quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">src.ResearchOS.PipelineObjects.analysis</span> <span class="kn">import</span> <span class="n">Analysis</span>
         <span class="n">an_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Analysis</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">Analysis</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">an_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">an_id</span> <span class="ow">in</span> <span class="n">an_ids</span><span class="p">]</span>
 
     <span class="c1">#################### Start Target objects ####################</span>
-    <span class="k">def</span> <span class="nf">get_input_variable_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of variable IDs that belong to this process.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">get_output_variable_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of variable IDs that belong to this process.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">get_variable_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of variable IDs that belong to this logsheet.&quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_target_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_input_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_id</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an input variable to the process.&quot;&quot;&quot;</span>
-        <span class="c1"># TODO: Need to add a mapping between variable ID and name in code.</span>
-        <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>        
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_source_object_id</span><span class="p">(</span><span class="n">var_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">add_variable_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a variable to the logsheet.&quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Mapping between variable ID and column header.</span>
+        <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_target_object_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_output_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_id</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an output variable to the process.&quot;&quot;&quot;</span>
-        <span class="c1"># TODO: Need to add a mapping between variable ID and name in code.</span>
-        <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>        
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_target_object_id</span><span class="p">(</span><span class="n">var_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">remove_input_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_id</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove an input variable from the process.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>        
-        <span class="bp">self</span><span class="o">.</span><span class="n">_remove_source_object_id</span><span class="p">(</span><span class="n">var_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">remove_output_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_id</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove an output variable from the process.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>        
-        <span class="bp">self</span><span class="o">.</span><span class="n">_remove_target_object_id</span><span class="p">(</span><span class="n">var_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">remove_variable_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a variable from the logsheet.&quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_remove_target_object_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
 
@@ -1189,27 +1229,38 @@
 
 
 
-<h2 id="src.ResearchOS.PipelineObjects.process.Process.add_input_variable" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">add_input_variable</span><span class="p">(</span><span class="n">var_id</span><span class="p">)</span></code>
+<h2 id="src.ResearchOS.PipelineObjects.logsheet.Logsheet.__init__" class="doc doc-heading">
+          <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 </h2>
 
 
   <div class="doc doc-contents ">
   
-      <p>Add an input variable to the process.</p>
+      <p>Initialize the attributes that are required by ResearchOS.
+Other attributes can be added &amp; modified later.</p>
 
           <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">33</span>
-<span class="normal">34</span>
-<span class="normal">35</span>
-<span class="normal">36</span>
-<span class="normal">37</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">add_input_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_id</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add an input variable to the process.&quot;&quot;&quot;</span>
-    <span class="c1"># TODO: Need to add a mapping between variable ID and name in code.</span>
-    <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>        
-    <span class="bp">self</span><span class="o">.</span><span class="n">_add_source_object_id</span><span class="p">(</span><span class="n">var_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/logsheet.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the attributes that are required by ResearchOS.</span>
+<span class="sd">    Other attributes can be added &amp; modified later.&quot;&quot;&quot;</span>
+    <span class="n">attrs</span> <span class="o">=</span> <span class="p">{}</span>        
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_instance_object</span><span class="p">:</span>
+        <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;logsheet_path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_LOGSHEET_PATH</span> <span class="c1"># Path to logsheet.</span>
+        <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;logsheet_headers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_LOGSHEET_HEADERS</span> <span class="c1"># List of tuples. Each tuple is: (header_name, type, variable ID)</span>
+        <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;num_header_rows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_NUM_HEADER_ROWS</span> <span class="c1"># Integer</span>
+        <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;class_column_names&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_CLASS_COLUMN_NAMES</span> <span class="c1"># dict where the keys are logsheet column names (first column of logsheet_headers), values are class types        </span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -1222,27 +1273,27 @@
 
 
 
-<h2 id="src.ResearchOS.PipelineObjects.process.Process.add_output_variable" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">add_output_variable</span><span class="p">(</span><span class="n">var_id</span><span class="p">)</span></code>
+<h2 id="src.ResearchOS.PipelineObjects.logsheet.Logsheet.add_variable_id" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">add_variable_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">)</span></code>
 
 </h2>
 
 
   <div class="doc doc-contents ">
   
-      <p>Add an output variable to the process.</p>
+      <p>Add a variable to the logsheet.</p>
 
           <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">39</span>
-<span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">add_output_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_id</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add an output variable to the process.&quot;&quot;&quot;</span>
-    <span class="c1"># TODO: Need to add a mapping between variable ID and name in code.</span>
-    <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>        
-    <span class="bp">self</span><span class="o">.</span><span class="n">_add_target_object_id</span><span class="p">(</span><span class="n">var_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/logsheet.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">add_variable_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a variable to the logsheet.&quot;&quot;&quot;</span>
+    <span class="c1"># TODO: Mapping between variable ID and column header.</span>
+    <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_add_target_object_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -1255,7 +1306,7 @@
 
 
 
-<h2 id="src.ResearchOS.PipelineObjects.process.Process.get_analyses" class="doc doc-heading">
+<h2 id="src.ResearchOS.PipelineObjects.logsheet.Logsheet.get_analyses" class="doc doc-heading">
           <code class="highlight language-python"><span class="n">get_analyses</span><span class="p">()</span></code>
 
 </h2>
@@ -1263,16 +1314,16 @@
 
   <div class="doc doc-contents ">
   
-      <p>Return a list of analysis objects that belong to this process.</p>
+      <p>Return a list of analysis objects that belong to this logsheet.</p>
 
           <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">16</span>
-<span class="normal">17</span>
-<span class="normal">18</span>
-<span class="normal">19</span>
-<span class="normal">20</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of analysis objects that belong to this process.&quot;&quot;&quot;</span>
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/logsheet.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_analyses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of analysis objects that belong to this logsheet.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">src.ResearchOS.PipelineObjects.analysis</span> <span class="kn">import</span> <span class="n">Analysis</span>
     <span class="n">an_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Analysis</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">Analysis</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">an_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">an_id</span> <span class="ow">in</span> <span class="n">an_ids</span><span class="p">]</span>
@@ -1288,54 +1339,23 @@
 
 
 
-<h2 id="src.ResearchOS.PipelineObjects.process.Process.get_input_variable_ids" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">get_input_variable_ids</span><span class="p">()</span></code>
+<h2 id="src.ResearchOS.PipelineObjects.logsheet.Logsheet.get_variable_ids" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">get_variable_ids</span><span class="p">()</span></code>
 
 </h2>
 
 
   <div class="doc doc-contents ">
   
-      <p>Return a list of variable IDs that belong to this process.</p>
+      <p>Return a list of variable IDs that belong to this logsheet.</p>
 
           <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">23</span>
-<span class="normal">24</span>
-<span class="normal">25</span>
-<span class="normal">26</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_input_variable_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of variable IDs that belong to this process.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-          </details>
-  </div>
-
-</div>
-
-
-<div class="doc doc-object doc-function">
-
-
-
-
-<h2 id="src.ResearchOS.PipelineObjects.process.Process.get_output_variable_ids" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">get_output_variable_ids</span><span class="p">()</span></code>
-
-</h2>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Return a list of variable IDs that belong to this process.</p>
-
-          <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">28</span>
-<span class="normal">29</span>
-<span class="normal">30</span>
-<span class="normal">31</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_output_variable_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of variable IDs that belong to this process.&quot;&quot;&quot;</span>
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/logsheet.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_variable_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of variable IDs that belong to this logsheet.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_target_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -1350,25 +1370,24 @@
 
 
 
-<h2 id="src.ResearchOS.PipelineObjects.process.Process.remove_input_variable" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">remove_input_variable</span><span class="p">(</span><span class="n">var_id</span><span class="p">)</span></code>
+<h2 id="src.ResearchOS.PipelineObjects.logsheet.Logsheet.json_translate_class_column_names" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">json_translate_class_column_names</span><span class="p">()</span></code>
 
 </h2>
 
 
   <div class="doc doc-contents ">
   
-      <p>Remove an input variable from the process.</p>
+      <p>Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
+XXX is the exact name of the attribute. Method name must follow this format.</p>
 
           <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">45</span>
-<span class="normal">46</span>
-<span class="normal">47</span>
-<span class="normal">48</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">remove_input_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_id</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove an input variable from the process.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>        
-    <span class="bp">self</span><span class="o">.</span><span class="n">_remove_source_object_id</span><span class="p">(</span><span class="n">var_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/logsheet.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">json_translate_class_column_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.</span>
+<span class="sd">    XXX is the exact name of the attribute. Method name must follow this format.&quot;&quot;&quot;</span>        
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -1381,25 +1400,94 @@
 
 
 
-<h2 id="src.ResearchOS.PipelineObjects.process.Process.remove_output_variable" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">remove_output_variable</span><span class="p">(</span><span class="n">var_id</span><span class="p">)</span></code>
+<h2 id="src.ResearchOS.PipelineObjects.logsheet.Logsheet.json_translate_logsheet_headers" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">json_translate_logsheet_headers</span><span class="p">()</span></code>
 
 </h2>
 
 
   <div class="doc doc-contents ">
   
-      <p>Remove an output variable from the process.</p>
+      <p>Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
+XXX is the exact name of the attribute. Method name must follow this format.</p>
 
           <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">50</span>
-<span class="normal">51</span>
-<span class="normal">52</span>
-<span class="normal">53</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">remove_output_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_id</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove an output variable from the process.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>        
-    <span class="bp">self</span><span class="o">.</span><span class="n">_remove_target_object_id</span><span class="p">(</span><span class="n">var_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/logsheet.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">json_translate_logsheet_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.</span>
+<span class="sd">    XXX is the exact name of the attribute. Method name must follow this format.&quot;&quot;&quot;</span>        
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.ResearchOS.PipelineObjects.logsheet.Logsheet.remove_variable_id" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">remove_variable_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Remove a variable from the logsheet.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/logsheet.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">remove_variable_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a variable from the logsheet.&quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_remove_target_object_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="src.ResearchOS.PipelineObjects.logsheet.Logsheet.validate_num_header_rows" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">validate_num_header_rows</span><span class="p">(</span><span class="n">num_header_rows</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Validate the number of header rows. If it is not valid, the value is rejected.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/logsheet.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">validate_num_header_rows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_header_rows</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate the number of header rows. If it is not valid, the value is rejected.&quot;&quot;&quot;</span>        
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_header_rows</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Num header rows must be an integer!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">num_header_rows</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Num header rows must be positive!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">num_header_rows</span> <span class="o">%</span> <span class="mi">1</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Num header rows must be an integer!&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
