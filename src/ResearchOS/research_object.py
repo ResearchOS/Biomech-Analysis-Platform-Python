@@ -15,8 +15,12 @@ class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
 
     prefix = "RO" # Testing only
-    _instances = weakref.WeakValueDictionary()
-    _instances_count = {}
+    _objects = weakref.WeakValueDictionary()
+    _objects_count = {}
+    DEFAULT_EXISTS_ATTRIBUTE_NAME = "exists"
+    DEFAULT_EXISTS_ATTRIBUTE_VALUE = True
+    DEFAULT_NAME_ATTRIBUTE_NAME = "name"
+    DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation"
     
     def __hash__(self):
         return hash(self.id)
@@ -27,21 +31,23 @@ class ResearchObject():
         return NotImplemented
 
     def __new__(cls, is_abstract: bool = False, *args, **kwargs):
-        """Create a new research object. If the object already exists, return the existing object."""
-        object_id = kwargs.get("id", None)
+        """Create a new research object. If the object already exists, return the existing object.
+        If is_abstract is True, returns an abstract object that does not have an instance ID.
+        Otherwise, returns an instance object that has an instance ID."""
+        object_id = kwargs.get("id", None)        
         if object_id is None:
             object_id = cls.create_id(cls, is_abstract = is_abstract)
-        if object_id in ResearchObject._instances:
-            ResearchObject._instances_count[object_id] += 1
-            return ResearchObject._instances[object_id]
+        if object_id in ResearchObject._objects:
+            ResearchObject._objects_count[object_id] += 1
+            return ResearchObject._objects[object_id]
         else: # Create a new object.
             instance = super(ResearchObject, cls).__new__(cls)
-            ResearchObject._instances[object_id] = instance
-            ResearchObject._instances_count[object_id] = 1
-            instance.__dict__['id'] = object_id            
+            ResearchObject._objects[object_id] = instance
+            ResearchObject._objects_count[object_id] = 1
+            instance.__dict__['id'] = object_id
             return instance
 
-    def __init__(self, name: str = "object creation", attrs: dict = {}, id: str = None) -> None:
+    def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, attrs: dict = {}, id: str = None) -> None:
         """id is required but will actually not be used here because it is assigned during __new__"""
         id = self.id # self.id always exists by this point thanks to __new__        
         # Try to load the object from the database.
@@ -56,10 +62,10 @@ class ResearchObject():
                 action.execute()
             except Exception as e:
                 print(e)   
-            if "exists" not in self.__dict__:
-                self.exists = True
-            if "name" not in self.__dict__:
-                self.name = name            
+            if ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_NAME not in self.__dict__:
+                self.__dict__[ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_NAME] = ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_VALUE
+            if ResearchObject.DEFAULT_NAME_ATTRIBUTE_NAME not in self.__dict__:
+                self.__dict__[ResearchObject.DEFAULT_NAME_ATTRIBUTE_NAME] = name
         # Ensure that all of the required attributes are present.
         for attr in attrs:
             if attr in self.__dict__:
@@ -133,8 +139,13 @@ class ResearchObject():
         action = Action(name = "attribute_changed")                       
         # Update the attribute in the database.
         json_value = json.dumps(__value, indent = 4) # Encode the value as json
-        sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"
+        sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"                
         action.add_sql_query(sqlquery)
+        # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects.
+        if "current" in __name and "id" in __name and validate:
+            json_value = json.dumps(ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_VALUE, indent = 4)         
+            sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value, target_object_id) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_NAME, ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_VALUE)}', '{json_value}', '{__value}')"
+            action.add_sql_query(sqlquery)
         action.execute()         
 
     ###############################################################################################################################
@@ -362,8 +373,8 @@ class ResearchObject():
         """Copy the current object to a new object with a new instance ID but the same abstract ID. Return the new object."""
         cls = type(self)
         if new_id is None:
-            abstract = self.parse_id(self.id)[1]
-            new_id = cls.create_id(cls, abstract = abstract)
+            abstract_id = self.parse_id(self.id)[1]
+            new_id = cls.create_id(cls, abstract = abstract_id)
         new_object = cls(copy = True, id = new_id)        
         attrs = self.__dict__
         for key, value in attrs.items():
@@ -374,7 +385,7 @@ class ResearchObject():
         return new_object
 
     ###############################################################################################################################
-    #################################################### end of abstract/instance relation ########################################
+    ############################################ end of abstract/instance relation methods ########################################
     ############################################################################################################################### 
     
     def parse_id(self, id: str) -> tuple:
@@ -388,13 +399,13 @@ class ResearchObject():
             instance = id[-instance_id_len:]
         return (self.prefix, abstract, instance)
     
-    def _get_public_keys(self) -> list[str]:
-        """Return all public keys of the current object."""        
-        keys = []
-        for key in vars(self).keys():
-            if not key.startswith('_'):
-                keys.append(key)
-        return keys
+    # def _get_public_keys(self) -> list[str]:
+    #     """Return all public keys of the current object."""        
+    #     keys = []
+    #     for key in vars(self).keys():
+    #         if not key.startswith('_'):
+    #             keys.append(key)
+    #     return keys
     
 if __name__=="__main__":
     # Cannot run anything from here because Action is a circular import.
