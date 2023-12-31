@@ -26,11 +26,11 @@ class ResearchObject():
             return self.id == other.id
         return NotImplemented
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, is_abstract: bool = False, *args, **kwargs):
         """Create a new research object. If the object already exists, return the existing object."""
         object_id = kwargs.get("id", None)
         if object_id is None:
-            object_id = cls.create_id(cls)
+            object_id = cls.create_id(cls, is_abstract = is_abstract)
         if object_id in ResearchObject._instances:
             ResearchObject._instances_count[object_id] += 1
             return ResearchObject._instances[object_id]
@@ -102,6 +102,11 @@ class ResearchObject():
             attr_name = ResearchObject._get_attr_name(attr_id)
             attr_type = ResearchObject._get_attr_type(attr_id)
             attrs[attr_name] = attr_type(attr_value)
+            eval_str = "self.json_translate_" + attr_name + "()"
+            try:
+                attrs[attr_name] = eval(eval_str)
+            except AttributeError:
+                pass
             if len(used_attr_ids) == num_attrs:
                 break
                 
@@ -109,20 +114,20 @@ class ResearchObject():
 
     def __setattr__(self, __name: str, __value: Any, validate: bool = True) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
-        Validates the attribute if it is a built-in ResearchOS attribute, and the object is not being initialized."""        
+        Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it), and the object is not being initialized."""        
         # TODO: Does this get called when deleting an attribute from an object?         
-        if validate:                                                      
-            try:
-                eval(f"self.validate_{__name}({__value})")
-            except AttributeError as e:
-                pass
-
-        self.__dict__[__name] = __value
-
         if __name == "id": 
             raise ValueError("Cannot change the ID of a research object.")
         if __name[0] == "_":
-            return # Don't log private attributes.
+            return # Don't log private attributes.        
+        if validate:                                                      
+            try:
+                method = eval(f"self.validate_{__name}")
+                method(__value)
+            except AttributeError as e:
+                pass
+
+        self.__dict__[__name] = __value        
         
         # Create an action.
         action = Action(name = "attribute_changed")                       
@@ -146,7 +151,7 @@ class ResearchObject():
         return [row[0] for row in rows if (row[0] is not None and row[0].startswith(cls.prefix))]
 
     @abstractmethod
-    def create_id(cls, abstract: str = None, instance: str = None) -> str:
+    def create_id(cls, abstract: str = None, instance: str = None, is_abstract: bool = False) -> str:
         """Create a unique ID for the research object."""
         import random
         table_name = "research_objects"
@@ -157,12 +162,14 @@ class ResearchObject():
                 abstract_new = "0" * (abstract_id_len-len(abstract_new)) + abstract_new
             else:
                 abstract_new = abstract
-
+            
             if not instance:
                 instance_new = str(hex(random.randrange(0, 16**instance_id_len))[2:]).upper()
                 instance_new = "0" * (instance_id_len-len(instance_new)) + instance_new
             else:
                 instance_new = instance
+            if is_abstract:
+                instance_new = ""
  
             id = cls.prefix + abstract_new + "_" + instance_new
             cursor = Action.conn.cursor()
@@ -171,6 +178,8 @@ class ResearchObject():
             rows = cursor.fetchall()
             if len(rows) == 0:
                 is_unique = True
+            elif is_abstract:
+                raise ValueError("Abstract ID already exists.")
         return id      
 
     @abstractmethod
@@ -220,16 +229,32 @@ class ResearchObject():
     #################################################### end of abstract methods ##################################################
     ###############################################################################################################################
 
-    def validate_id_class(self, id: str, cls: str) -> None:
-        """Validate that the specified ID is a valid ID for the specified class, or None."""
-        if id is None:
-            return
-        if not self.is_id(id):
-            raise ValueError(f"Invalid ID.")
-        # Check that the ID is of the proper class.        
-        id_info  = self.parse_id(id)
-        if id_info[0] != cls.prefix:
-            raise ValueError(f"ID is not of the proper class.")
+    def abstract_id(self) -> str:
+        """Return the abstract ID of the current object."""
+        return self.parse_id(self.id)[1]
+
+    def is_instance_object(self) -> bool:
+        """Return true if the object is an instance object, false if it is an abstract object."""
+        return self.parse_id(self.id)[2] is not None
+
+    def object_exists(self, id: str) -> bool:
+        """Return true if the specified id exists in the database, false if not."""
+        cursor = Action.conn.cursor()
+        sqlquery = f"SELECT object_id FROM research_objects WHERE object_id = '{id}'"
+        cursor.execute(sqlquery)
+        rows = cursor.fetchall()
+        return len(rows) > 0
+
+    # def validate_id_class(self, id: str, cls: str) -> None:
+    #     """Validate that the specified ID is a valid ID for the specified class, or None."""
+    #     if id is None:
+    #         return
+    #     if not self.is_id(id):
+    #         raise ValueError(f"Invalid ID.")
+    #     # Check that the ID is of the proper class.        
+    #     id_info  = self.parse_id(id)
+    #     if id_info[0] != cls.prefix:
+    #         raise ValueError(f"ID is not of the proper class.")
         
     def is_id(id: str) -> bool:
         """Check if the given ID matches the pattern of a valid research object ID."""              
@@ -332,13 +357,35 @@ class ResearchObject():
     ###############################################################################################################################
     #################################################### end of parentage methods #################################################
     ############################################################################################################################### 
+        
+    def copy_to_new_instance(self, new_id: str = None) -> "ResearchObject":
+        """Copy the current object to a new object with a new instance ID but the same abstract ID. Return the new object."""
+        cls = type(self)
+        if new_id is None:
+            abstract = self.parse_id(self.id)[1]
+            new_id = cls.create_id(cls, abstract = abstract)
+        new_object = cls(copy = True, id = new_id)        
+        attrs = self.__dict__
+        for key, value in attrs.items():
+            if key == "id":
+                continue
+            # No validation because that would've already happened when the original object was created.
+            new_object.__setattr__(key, value, validate = False)
+        return new_object
+
+    ###############################################################################################################################
+    #################################################### end of abstract/instance relation ########################################
+    ############################################################################################################################### 
     
     def parse_id(self, id: str) -> tuple:
         """Parse an ID into its prefix, abstract, and instance parts."""
         if not ResearchObject.is_id(id):
             raise ValueError("Invalid ID.")
         abstract = id[2:2+abstract_id_len]
-        instance = id[-instance_id_len:]
+        num_underscores = id.count("_")
+        instance = None
+        if num_underscores == 1:            
+            instance = id[-instance_id_len:]
         return (self.prefix, abstract, instance)
     
     def _get_public_keys(self) -> list[str]:
