@@ -20,7 +20,7 @@ class ResearchObject():
     DEFAULT_EXISTS_ATTRIBUTE_NAME = "exists"
     DEFAULT_EXISTS_ATTRIBUTE_VALUE = True
     DEFAULT_NAME_ATTRIBUTE_NAME = "name"
-    DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation"
+    DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation"    
     
     def __hash__(self):
         return hash(self.id)
@@ -121,7 +121,8 @@ class ResearchObject():
     def __setattr__(self, __name: str, __value: Any, validate: bool = True) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
         Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it), and the object is not being initialized."""        
-        # TODO: Does this get called when deleting an attribute from an object?         
+        # TODO: Does this get called when deleting an attribute from an object?
+        # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.
         if __name == "id": 
             raise ValueError("Cannot change the ID of a research object.")
         if __name[0] == "_":
