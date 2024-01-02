@@ -81,7 +81,7 @@ class Project(PipelineObject):
         """Return a list of analysis objects in the project."""
         from src.ResearchOS.PipelineObjects.analysis import Analysis
         an_ids = self._get_all_target_object_ids(cls = Analysis)
-        return [Analysis(id = an_id) for an_id in an_ids]
+        return self._gen_obj_or_none(an_ids, Analysis)
     
     def add_analysis_id(self, analysis_id: str):
         """Add an analysis to the project."""
