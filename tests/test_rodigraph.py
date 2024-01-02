@@ -27,6 +27,7 @@ class TestRODigraph(TestCase):
         self.assertTrue(rod.has_edge(pj.id, an.id))
 
     def test_set_current_analysis_id(self):
+        """Setting an analysis as current should be reflected in the database."""
         from src.ResearchOS.PipelineObjects.project import Project
         from src.ResearchOS.PipelineObjects.analysis import Analysis
         pj = Project()

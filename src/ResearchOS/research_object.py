@@ -123,7 +123,7 @@ class ResearchObject():
         Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it), and the object is not being initialized."""        
         # TODO: Does this get called when deleting an attribute from an object?
         # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.
-        if __name == "id": 
+        if __name == "id":
             raise ValueError("Cannot change the ID of a research object.")
         if __name[0] == "_":
             return # Don't log private attributes.        
@@ -256,21 +256,12 @@ class ResearchObject():
         cursor.execute(sqlquery)
         rows = cursor.fetchall()
         return len(rows) > 0
-
-    # def validate_id_class(self, id: str, cls: str) -> None:
-    #     """Validate that the specified ID is a valid ID for the specified class, or None."""
-    #     if id is None:
-    #         return
-    #     if not self.is_id(id):
-    #         raise ValueError(f"Invalid ID.")
-    #     # Check that the ID is of the proper class.        
-    #     id_info  = self.parse_id(id)
-    #     if id_info[0] != cls.prefix:
-    #         raise ValueError(f"ID is not of the proper class.")
         
     def is_id(self, id: str) -> bool:
         """Check if the given ID matches the pattern of a valid research object ID."""              
         pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
+        if not isinstance(id, str):
+            raise ValueError("id must be a str!")
         if not re.match(pattern, id):
             return False
         return True    
@@ -318,11 +309,10 @@ class ResearchObject():
         cursor.execute(sql)
         return len(cursor.fetchall()) > 0
     
-    def _add_target_object_id(self, id: str, cls: type) -> None:
+    def _add_target_object_id(self, id: str) -> None:
         """Add a target object ID to the current source object."""
-        if not self._is_id(id):
-            raise ValueError("Invalid ID.")      
-        self.validate_id_class(id, cls)  
+        if not self.is_id(id):
+            raise ValueError("Invalid ID.")              
         if self._is_target(id):
             return # Already exists.
         sql = f"INSERT INTO research_object_attributes (object_id, target_object_id) VALUES ('{self.id}', '{id}')"
@@ -330,11 +320,10 @@ class ResearchObject():
         action.add_sql_query(sql)
         action.execute()
 
-    def _remove_target_object_id(self, id: str, cls: type) -> None:
+    def _remove_target_object_id(self, id: str) -> None:
         """Remove a target object ID from the current source object."""
-        if not self._is_id(id):
-            raise ValueError("Invalid ID.")      
-        self.validate_id_class(id, cls)  
+        if not self.is_id(id):
+            raise ValueError("Invalid ID.")              
         if not self._is_target(id):
             return
         sql = f"INSERT INTO research_object_attributes (object_id, target_object_id) VALUES ('{self.id}', {None})"
@@ -406,14 +395,6 @@ class ResearchObject():
         if num_underscores == 1:            
             instance = id[-instance_id_len:]
         return (prefix, abstract, instance)
-    
-    # def _get_public_keys(self) -> list[str]:
-    #     """Return all public keys of the current object."""        
-    #     keys = []
-    #     for key in vars(self).keys():
-    #         if not key.startswith('_'):
-    #             keys.append(key)
-    #     return keys
     
 if __name__=="__main__":
     # Cannot run anything from here because Action is a circular import.
