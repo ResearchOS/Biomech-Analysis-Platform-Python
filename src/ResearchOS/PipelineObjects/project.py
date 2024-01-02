@@ -2,6 +2,10 @@ from abc import abstractmethod
 
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
+DEFAULT_CURRENT_ANALYSIS_ID: str = ""
+DEFAULT_CURRENT_DATASET_ID: str = ""
+DEFAULT_PROJECT_PATH: str = ""  
+
 class Project(PipelineObject):
     """A project is a collection of analyses.
     Class-specific Attributes:
@@ -10,9 +14,6 @@ class Project(PipelineObject):
     3. project path: The root folder location of the project."""
 
     prefix: str = "PJ"      
-    DEFAULT_CURRENT_ANALYSIS_ID: str = ""
-    DEFAULT_CURRENT_DATASET_ID: str = ""
-    DEFAULT_PROJECT_PATH: str = ""  
 
     @abstractmethod
     def get_all_ids() -> list[str]:
@@ -33,9 +34,9 @@ class Project(PipelineObject):
         """Initialize the attributes that are required by ResearchOS.
         Other attributes can be added & modified later."""
         attrs = {}
-        attrs["current_analysis_id"] = Project.DEFAULT_CURRENT_ANALYSIS_ID # The current analysis for the project.
-        attrs["current_dataset_id"] = Project.DEFAULT_CURRENT_DATASET_ID # The current dataset for the project.
-        attrs["project_path"] = Project.DEFAULT_PROJECT_PATH # The root folder for the current project.
+        attrs["current_analysis_id"] = DEFAULT_CURRENT_ANALYSIS_ID # The current analysis for the project.
+        attrs["current_dataset_id"] = DEFAULT_CURRENT_DATASET_ID # The current dataset for the project.
+        attrs["project_path"] = DEFAULT_PROJECT_PATH # The root folder for the current project.
         super().__init__(attrs = attrs)            
     
     def validate_current_analysis_id(self, id: str):
@@ -74,7 +75,7 @@ class Project(PipelineObject):
         """Return a list of user objects that belong to this project. Identical to Dataset.get_users()"""
         from src.ResearchOS.user import User
         us_ids = self._get_all_source_object_ids(cls = User)
-        return [User(id = us_id) for us_id in us_ids]
+        return self._gen_obj_or_none(us_ids, User)
     
     #################### Start Target objects ####################
     def get_analyses(self) -> list["Analysis"]:        
@@ -86,16 +87,16 @@ class Project(PipelineObject):
     def add_analysis_id(self, analysis_id: str):
         """Add an analysis to the project."""
         from src.ResearchOS.PipelineObjects.analysis import Analysis        
-        self._add_target_object_id(analysis_id, cls = Analysis)
+        self._add_target_object_id(analysis_id)
 
     def remove_analysis_id(self, analysis_id: str):
         """Remove an analysis from the project."""
         from src.ResearchOS.PipelineObjects.analysis import Analysis        
-        self._remove_target_object_id(analysis_id, cls = Analysis)
+        self._remove_target_object_id(analysis_id)
 
 if __name__=="__main__":
     from src.ResearchOS.PipelineObjects.analysis import Analysis
     pj = Project(name = "Test")    
-    # an = Analysis(name = "Test_Analysis")
+    an = Analysis(name = "Test_Analysis")
     pj.current_analysis_id = an.id
     print(pj)
