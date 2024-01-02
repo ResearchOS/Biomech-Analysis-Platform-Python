@@ -20,7 +20,7 @@ class Logsheet(PipelineObject):
         """Initialize the attributes that are required by ResearchOS.
         Other attributes can be added & modified later."""
         attrs = {}        
-        if self.is_instance_object:
+        if self.is_instance_object():
             attrs["logsheet_path"] = DEFAULT_LOGSHEET_PATH # Path to logsheet.
             attrs["logsheet_headers"] = DEFAULT_LOGSHEET_HEADERS # List of tuples. Each tuple is: (header_name, type, variable ID)
             attrs["num_header_rows"] = DEFAULT_NUM_HEADER_ROWS # Integer

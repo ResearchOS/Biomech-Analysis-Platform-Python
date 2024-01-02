@@ -268,7 +268,7 @@ class ResearchObject():
     #     if id_info[0] != cls.prefix:
     #         raise ValueError(f"ID is not of the proper class.")
         
-    def is_id(id: str) -> bool:
+    def is_id(self, id: str) -> bool:
         """Check if the given ID matches the pattern of a valid research object ID."""              
         pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
         if not re.match(pattern, id):
@@ -284,12 +284,12 @@ class ResearchObject():
     def _get_all_source_object_ids(self, cls) -> list[str]:
         """Get all source object ids of the specified target object of the specified type."""
         sql = f'SELECT object_id FROM research_object_attributes WHERE target_object_id = "{self.id}"'
-        self.__get_all_related_object_ids(cls, sql)
+        return self.__get_all_related_object_ids(cls, sql)
     
     def _get_all_target_object_ids(self, cls) -> list[str]:
         """Get all target object ids of the specified source object of the specified type. """
         sql = f'SELECT target_object_id FROM research_object_attributes WHERE object_id = "{self.id}"'
-        self.__get_all_related_object_ids(cls, sql)
+        return self.__get_all_related_object_ids(cls, sql)
 
     def __get_all_related_object_ids(self, cls, sql) -> list[str]:
         """Called by _get_all_source_object_ids and _get_all_target_object_ids.
@@ -365,6 +365,12 @@ class ResearchObject():
         action = Action(name = "remove_source_object_id")
         action.add_sql_query(sql)
         action.execute()
+
+    def _gen_obj_or_none(self, ids, cls: type) -> "ResearchObject":
+        """Generate the objects of the specified class, or None if the IDs argument is None."""
+        if ids is None or len(ids) == 0:
+            return None
+        return [cls(id = id) for id in ids]
     
     ###############################################################################################################################
     #################################################### end of parentage methods #################################################
@@ -387,18 +393,19 @@ class ResearchObject():
 
     ###############################################################################################################################
     ############################################ end of abstract/instance relation methods ########################################
-    ############################################################################################################################### 
+    ###############################################################################################################################     
     
     def parse_id(self, id: str) -> tuple:
         """Parse an ID into its prefix, abstract, and instance parts."""
-        if not ResearchObject.is_id(id):
+        if not self.is_id(id):
             raise ValueError("Invalid ID.")
+        prefix = id[0:2]
         abstract = id[2:2+abstract_id_len]
         num_underscores = id.count("_")
         instance = None
         if num_underscores == 1:            
             instance = id[-instance_id_len:]
-        return (self.prefix, abstract, instance)
+        return (prefix, abstract, instance)
     
     # def _get_public_keys(self) -> list[str]:
     #     """Return all public keys of the current object."""        
