@@ -2,6 +2,10 @@ from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from abc import abstractmethod
 
+default_attrs = {}
+default_attrs["method"] = None
+default_attrs["level"] = None
+
 class Process(PipelineObject):
 
     prefix = "PR"
@@ -11,6 +15,17 @@ class Process(PipelineObject):
         return super().get_all_ids(Process)
 
     #################### Start class-specific attributes ###################
+    def validate_method(self, method: function) -> None:
+        pass
+
+    def validate_level(self, level: type) -> None:
+        pass
+
+    def json_translate_method(self):
+        pass
+
+    def json_translate_level(self):
+        pass
 
     #################### Start Source objects ####################
     def get_analyses(self) -> list:
@@ -20,37 +35,45 @@ class Process(PipelineObject):
         return [Analysis(id = an_id) for an_id in an_ids]
     
     #################### Start Target objects ####################
-    def get_input_variable_ids(self) -> list:
+
+    #################### Start class-specific methods ###################
+    def get_input_variables(self) -> list:
         """Return a list of variable IDs that belong to this process."""
         from src.ResearchOS.variable import Variable
-        return self._get_all_source_object_ids(cls = Variable)
+        vr_ids = self._get_all_source_object_ids(cls = Variable)
+        return self._gen_obj_or_none(vr_ids, Variable)
     
-    def get_output_variable_ids(self) -> list:
+    def get_output_variables(self) -> list:
         """Return a list of variable IDs that belong to this process."""
         from src.ResearchOS.variable import Variable
-        return self._get_all_target_object_ids(cls = Variable)
+        vr_ids = self._get_all_target_object_ids(cls = Variable)
+        return self._gen_obj_or_none(vr_ids, Variable)
     
-    def add_input_variable(self, var_id):
+    def add_input_variable_id(self, var_id):
         """Add an input variable to the process."""
         # TODO: Need to add a mapping between variable ID and name in code.
         from src.ResearchOS.variable import Variable        
         self._add_source_object_id(var_id, cls = Variable)
 
-    def add_output_variable(self, var_id):
+    def add_output_variable_id(self, var_id):
         """Add an output variable to the process."""
         # TODO: Need to add a mapping between variable ID and name in code.
         from src.ResearchOS.variable import Variable        
         self._add_target_object_id(var_id, cls = Variable)
 
-    def remove_input_variable(self, var_id):
+    def remove_input_variable_id(self, var_id):
         """Remove an input variable from the process."""
         from src.ResearchOS.variable import Variable        
         self._remove_source_object_id(var_id, cls = Variable)
 
-    def remove_output_variable(self, var_id):
+    def remove_output_variable_id(self, var_id):
         """Remove an output variable from the process."""
         from src.ResearchOS.variable import Variable        
         self._remove_target_object_id(var_id, cls = Variable)
+
+    def run_method(self) -> None:
+        """Execute the attached method."""
+        pass
 
 
 if __name__=="__main__":
