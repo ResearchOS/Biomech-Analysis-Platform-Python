@@ -147,9 +147,14 @@ class ResearchObject():
         # Create an action.
         action = Action(name = "attribute_changed")                       
         # Update the attribute in the database.
-        json_value = json.dumps(__value, indent = 4) # Encode the value as json
-        sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"                
-        action.add_sql_query(sqlquery)
+        # TODO: Implement the "store___" methods!!!
+        try:
+            method = eval(f"self.store_{__name}")
+            action = method(__value, action = action)
+        except AttributeError as e:
+            json_value = json.dumps(__value, indent = 4) # Encode the value as json
+            sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"                
+            action.add_sql_query(sqlquery)
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects.
         if "current" in __name and "id" in __name and validate:
             json_value = json.dumps(DEFAULT_EXISTS_ATTRIBUTE_VALUE, indent = 4)         
@@ -273,6 +278,10 @@ class ResearchObject():
         if not re.match(pattern, id):
             return False
         return True    
+    
+    def _is_id_of_class(self, id: str, cls: type) -> bool:
+        """True if the ID is of the proper type, False if not."""
+        return id.startswith(cls.prefix)
 
     def _is_id_or_none(self, id: str) -> bool:
         """Check if the given ID matches the pattern of a valid research object ID, or is None."""              
@@ -344,10 +353,11 @@ class ResearchObject():
         """Add a source object ID to the current target object in the database."""
         if not self._is_id(id):
             raise ValueError("Invalid ID.")      
-        self.validate_id_class(id, cls)  
+        if not self._is_id_of_class(id, cls):
+            raise ValueError("ID is of the wrong class!")
         if self._is_source(id):
             return # Already exists
-        sql = f"INSERT INTO research_object_attributes (object_id, target_object_id) VALUES ('{id}', '{self.id}')"
+        sql = f"INSERT INTO research_object_attributes (object_id, target_object_id, attr_id, attr_value) VALUES ('{id}', '{self.id}, {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME)}, {True})"
         action = Action(name = "add_source_object_id")
         action.add_sql_query(sql)
         action.execute()
@@ -356,10 +366,11 @@ class ResearchObject():
         """Remove a source object ID from the current target object in the database."""
         if not self._is_id(id):
             raise ValueError("Invalid ID.")      
-        self.validate_id_class(id, cls)  
+        if not self._is_id_of_class(id, cls):
+            raise ValueError("ID is of the wrong class!")
         if not self._is_source(id):
             return
-        sql = f"INSERT INTO research_object_attributes (object_id, target_object_id) VALUES ('{id}', {None})"
+        sql = f"INSERT INTO research_object_attributes (object_id, target_object_id, attr_id, attr_value) VALUES ('{id}', {self.id}, {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME)}, {False})"
         action = Action(name = "remove_source_object_id")
         action.add_sql_query(sql)
         action.execute()
@@ -373,6 +384,14 @@ class ResearchObject():
     ###############################################################################################################################
     #################################################### end of parentage methods #################################################
     ############################################################################################################################### 
+
+    def get_abstract_object(self) -> "ResearchObject":
+        """Return the abstract object corresponding to the given the instance object. If abstract is given, return self."""
+        if not self.is_instance_object():
+            return self
+        abstract_id = self.parse_id()[1]
+        cls = type(self)
+        return cls(id = abstract_id)
         
     def copy_to_new_instance(self, new_id: str = None) -> "ResearchObject":
         """Copy the current object to a new object with a new instance ID but the same abstract ID. Return the new object."""
