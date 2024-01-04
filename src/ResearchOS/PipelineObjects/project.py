@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
-# Set default values for the project-specific attributes.
+# Defaults should be of the same type as the expected values.
 default_attrs = {}
 default_attrs["current_analysis_id"] = ""
 default_attrs["current_dataset_id"] = ""
@@ -41,10 +41,13 @@ class Project(PipelineObject):
     #################### Start class-specific attributes ###################
     def __init__(self, **kwargs):
         """Initialize the attributes that are required by ResearchOS.
-        Other attributes can be added & modified later."""        
-        super().__init__(attrs = default_attrs, **kwargs)            
+        Other attributes can be added & modified later."""  
+        attrs = {}
+        if self.is_instance_object():
+            attrs = default_attrs      
+        super().__init__(attrs = attrs, **kwargs)            
     
-    def validate_current_analysis_id(self, id: str):
+    def validate_current_analysis_id(self, id: str) -> None:
         """Validate the current analysis ID. If it is not valid, the value is rejected."""        
         if not self.is_id(id):
             raise ValueError("Specified value is not an ID!")
@@ -54,7 +57,7 @@ class Project(PipelineObject):
         if not self.object_exists(id):
             raise ValueError("Analysis does not exist!")
     
-    def validate_current_dataset_id(self, id: str):
+    def validate_current_dataset_id(self, id: str) -> None:
         """Validate the current dataset ID. If it is not valid, the value is rejected."""
         if not self.is_id(id):
             raise ValueError("Specified value is not an ID!")
@@ -64,14 +67,14 @@ class Project(PipelineObject):
         if not self.object_exists(id):
             raise ValueError("Dataset does not exist!")
         
-    def validate_project_path(self, path: str):
+    def validate_project_path(self, path: str) -> None:
         """Validate the project path. If it is not valid, the value is rejected."""
         # 1. Check that the path exists in the file system.
         import os
         if not os.path.exists(path):
             raise ValueError("Specified path is not a path or does not currently exist!")        
 
-    def json_translate_XXX(self) -> type:
+    def json_translate_XXX(self) -> Any:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""
 
@@ -92,14 +95,14 @@ class Project(PipelineObject):
     def add_analysis_id(self, analysis_id: str):
         """Add an analysis to the project."""
         from src.ResearchOS.PipelineObjects.analysis import Analysis        
-        self._add_target_object_id(analysis_id)
+        self._add_target_object_id(analysis_id, cls = Analysis)
 
     def remove_analysis_id(self, analysis_id: str):
         """Remove an analysis from the project."""
         from src.ResearchOS.PipelineObjects.analysis import Analysis        
-        self._remove_target_object_id(analysis_id)
+        self._remove_target_object_id(analysis_id, cls = Analysis)
 
-    #################### Start class-specific objects ####################
+    #################### Start class-specific methods ####################
     def open_project_path(self) -> None:
         """Open the project's path in the Finder/File Explorer."""
         path = self.project_path

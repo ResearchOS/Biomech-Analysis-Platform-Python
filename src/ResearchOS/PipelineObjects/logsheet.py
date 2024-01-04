@@ -2,10 +2,12 @@ from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from abc import abstractmethod
 
-DEFAULT_LOGSHEET_PATH = ""
-DEFAULT_LOGSHEET_HEADERS = []
-DEFAULT_NUM_HEADER_ROWS = -1
-DEFAULT_CLASS_COLUMN_NAMES = {}
+# Defaults should be of the same type as the expected values.
+default_attrs = {}
+default_attrs["logsheet_path"] = ""
+default_attrs["logsheet_headers"] = []
+default_attrs["num_header_rows"] = -1
+default_attrs["class_column_names"] = {}
 
 class Logsheet(PipelineObject):
 
@@ -21,18 +23,18 @@ class Logsheet(PipelineObject):
         Other attributes can be added & modified later."""
         attrs = {}        
         if self.is_instance_object():
-            attrs["logsheet_path"] = DEFAULT_LOGSHEET_PATH # Path to logsheet.
-            attrs["logsheet_headers"] = DEFAULT_LOGSHEET_HEADERS # List of tuples. Each tuple is: (header_name, type, variable ID)
-            attrs["num_header_rows"] = DEFAULT_NUM_HEADER_ROWS # Integer
-            attrs["class_column_names"] = DEFAULT_CLASS_COLUMN_NAMES # dict where the keys are logsheet column names (first column of logsheet_headers), values are class types        
-        super().__init__(attrs = attrs)
+            attrs = default_attrs
+        super().__init__(attrs = attrs, **kwargs)
 
-    def json_translate_logsheet_headers(self):
+    def __str__(self):
+        return super().__str__(default_attrs.keys(), self.__dict__)
+
+    def json_translate_logsheet_headers(self) -> list:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""        
         pass
 
-    def json_translate_class_column_names(self):
+    def json_translate_class_column_names(self) -> dict:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""        
         pass
@@ -86,6 +88,7 @@ class Logsheet(PipelineObject):
             
     def validate_class_column_names(self, class_column_names: dict):
         """Validate the class column names."""
+        # TODO: Fix this, it should include type (int/str) and level (as a ResearchObject subclass of type "type")
         # 1. Check that the class column names are a dict.
         if not isinstance(class_column_names, dict):
             raise ValueError("Class column names must be a dict!")
@@ -124,11 +127,19 @@ class Logsheet(PipelineObject):
     #################### Start class-specific methods ####################
     def run_logsheet(self):
         """Run the logsheet import process."""
+        from src.ResearchOS.PipelineObjects.project import Project
+        from src.ResearchOS.DataObjects.dataset import Dataset
+        from src.ResearchOS.user import User
         # 1. Validate that each attribute of the logsheet follows the proper format.
         self.validate_logsheet_headers(self.logsheet_headers)
         self.validate_class_column_names(self.class_column_names)
         self.validate_logsheet_path(self.logsheet_path)
         self.validate_num_header_rows(self.num_header_rows)
+
+        pj = Project(id = User.get_current_project_id())
+        ds = Dataset(id = pj.current_dataset_id)
+        ds.validate_dataset_path(ds.dataset_path)
+        ds.validate_data_schema(ds.data_schema)
         # 2. Load the logsheet
 
         # 3. TODO: Check that the length of logsheet headers list equals the number of columns in the logsheet.

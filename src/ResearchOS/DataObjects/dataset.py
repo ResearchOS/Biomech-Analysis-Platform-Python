@@ -1,9 +1,10 @@
 from abc import abstractmethod
 
-from src.ResearchOS import ResearchObject
-
 from src.ResearchOS.DataObjects import DataObject
-from src.ResearchOS.SQL.database_init import DBInitializer
+
+default_attrs = {}
+default_attrs["dataset_path"] = ""
+default_attrs["data_schema"] = []
 
 
 class Dataset(DataObject):
@@ -27,42 +28,58 @@ class Dataset(DataObject):
         pj = Project.get_current_project_id()
         pj = Project(id = pj)
         pj.set_current_dataset_id(ds.id)
-        return ds
+        return ds, pj
+    
+    def __str__(self):
+        return super().__str__(default_attrs.keys(), self.__dict__)
     
     #################### Start class-specific attributes ###################
+    def validate_dataset_path(self, path: str) -> None:
+        """Validate the dataset path."""
+        import os
+        if not os.path.exists(path):
+            raise ValueError("Specified path is not a path or does not currently exist!")        
+        
+    def validate_data_schema(self, schema: list) -> None:
+        """Validate the data schema follows the proper format."""
+        from src.ResearchOS.user import User
+        from src.ResearchOS.variable import Variable
+        # TODO: Check that every element is unique, no repeats.
+        if not isinstance(schema, list):
+            raise ValueError("Schema must be provided as a list!")
+        if len(schema) <= 1:
+            raise ValueError("At least two elements required for the schema! Dataset + one more")
+        for x in schema:
+            if not isinstance(x, type):
+                raise ValueError("Schema must be provided as a list of types!")
+        if User in schema:
+            raise ValueError("Do not include the User object in the schema! It is assumed to be the first element in the list")
+        if Variable in schema:
+            raise ValueError("Do not include the Variable object in the schema! It is assumed to be the last element in the list")
+        if Dataset != schema[0]:
+            raise ValueError("Dataset must be the first element in the list! Each type after that is in sequentially 'decreasing' order.")
 
-    def get_data_path(self) -> str:
-        """Return the data path."""
-        # TODO: Read this from the database.
-        return self.data_path
+    def json_translate_data_schema(self, schema) -> list:
+        """Translate the data schema from to the proper value because the default json translation fails with this data structure."""
+        pass
 
-    def set_data_path(self, path: str) -> None:
-        """Set the data path."""
-        self.data_path = path
-
-    def get_data_schema(self) -> list:
-        """Return the data schema."""
-        return self.data_schema
-
-    def set_data_schema(self, schema: list) -> None:
-        """Set the data schema."""
-        self.data_schema = schema
+    def store_data_schema(self, schema, action):
+        """Method to custom store the data schema."""
+        pass
     
     #################### Start Source objects ####################
-
     def get_users(self) -> list:
         """Return a list of user objects that belong to this project. Identical to Project.get_users()"""
         from src.ResearchOS.user import User
         us_ids = self._get_all_source_object_ids(cls = User)
-        return [User(id = us_id) for us_id in us_ids]
+        return self._gen_obj_or_none(us_ids, User)
 
     #################### Start Target objects ####################
-
     def get_projects(self) -> list:
         """Return a list of project objects that use this dataset."""
         from src.ResearchOS.PipelineObjects.project import Project
         pj_ids = self._get_all_target_object_ids(cls = Project)
-        return [Project(id = pj_id) for pj_id in pj_ids]
+        return self._gen_obj_or_none(pj_ids, Project)
     
     def add_project_id(self, project_id: str):
         """Add a project to the dataset."""
@@ -78,7 +95,7 @@ class Dataset(DataObject):
         """Return a list of subject objects that belong to this dataset."""
         from src.ResearchOS.DataObjects.subject import Subject
         sj_ids = self._get_all_target_object_ids(cls = Subject)
-        return [Subject(id = sj_id) for sj_id in sj_ids]
+        return self._gen_obj_or_none(sj_ids, Subject)
     
     def add_subject_id(self, subject_id: str):
         """Add a subject to the dataset."""
@@ -90,10 +107,16 @@ class Dataset(DataObject):
         from src.ResearchOS.DataObjects.subject import Subject        
         self._remove_target_object_id(subject_id, cls = Subject)
 
+    #################### Start class-specific methods ####################
+    def open_dataset_path(self) -> None:
+        """Open the dataset's path in the Finder/File Explorer."""
+        path = self.dataset_path
+
 if __name__=="__main__":
     from DataObjects.subject import Subject
     from DataObjects.trial import Trial
     from DataObjects.phase import Phase
+    from src.ResearchOS.SQL.database_init import DBInitializer
     db = DBInitializer()
     
     d1 = Dataset("DS1")
