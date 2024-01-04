@@ -42,9 +42,8 @@ class User(DataObject, PipelineObject):
         return current_user.current_project_id
     
     def set_current_project_id(self, project_id: str) -> None:
-        """Set the current project object ID for the current user."""        
-        current_user_object_id = self.get_current_user_object_id()
-        current_user = User(id = current_user_object_id)
+        """Set the current project object ID for the current user."""                
+        current_user = User(id = self.id)
         current_user.current_project_id = project_id
     
 if __name__=="__main__":
