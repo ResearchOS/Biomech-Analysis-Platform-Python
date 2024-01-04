@@ -2,6 +2,9 @@ from src.ResearchOS.config import TestConfig
 from src.ResearchOS.SQL.database_init import DBInitializer
 from unittest import TestCase
 
+from src.ResearchOS.Digraph.rodigraph import ResearchObjectDigraph as rod
+import networkx as nx
+
 db_file = TestConfig.db_file
 
 class TestRODigraph(TestCase):
@@ -14,6 +17,16 @@ class TestRODigraph(TestCase):
     def teardown_class(self):
         import os
         os.remove(self.db_file)
+
+    def test_digraph_creation(self):
+        """Ensure that the digraph is created with the proper objects and relations."""
+        from src.ResearchOS.PipelineObjects.project import Project
+        pj, an = Project.new_current()
+        g = rod()
+        self.assertTrue(isinstance(g, nx.MultiDiGraph))
+        self.assertTrue(g.has_node(pj.id))
+        self.assertTrue(g.has_node(an.id))
+        self.assertTrue(g.has_edge(pj.id, an.id))
 
     def test_add_edge_with_current_analysis_id(self):
         """Setting an analysis as current should also add an edge to the digraph."""

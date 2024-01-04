@@ -30,10 +30,12 @@ class Logsheet(PipelineObject):
     def json_translate_logsheet_headers(self):
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""        
+        pass
 
     def json_translate_class_column_names(self):
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""        
+        pass
 
     def validate_num_header_rows(self, num_header_rows: int):
         """Validate the number of header rows. If it is not valid, the value is rejected."""        
@@ -118,6 +120,20 @@ class Logsheet(PipelineObject):
         """Remove a variable from the logsheet."""
         from src.ResearchOS.variable import Variable
         self._remove_target_object_id(variable_id, cls = Variable)
+
+    #################### Start class-specific methods ####################
+    def run_logsheet(self):
+        """Run the logsheet import process."""
+        # 1. Validate that each attribute of the logsheet follows the proper format.
+        self.validate_logsheet_headers(self.logsheet_headers)
+        self.validate_class_column_names(self.class_column_names)
+        self.validate_logsheet_path(self.logsheet_path)
+        self.validate_num_header_rows(self.num_header_rows)
+        # 2. Load the logsheet
+
+        # 3. TODO: Check that the length of logsheet headers list equals the number of columns in the logsheet.
+
+        # 4. Run the logsheet import.
 
 if __name__=="__main__":
     lg = Logsheet(id = "LG000000")

@@ -1,5 +1,6 @@
 import networkx as nx
 from src.ResearchOS.research_object import ResearchObject
+import src.ResearchOS.research_object.DEFAULT_EXISTS_ATTRIBUTE_NAME
 
 from src.ResearchOS.action import Action
 
@@ -8,13 +9,20 @@ import json
 class ResearchObjectDigraph(nx.MultiDiGraph):
     """Research Object Digraph."""
 
-    def __init__(self):
+    def __init__(self, 
+                 pipeline_only: bool = False, 
+                 data_only: bool = False, 
+                 parent_node_id: str = None):
+        """Arguments:
+            pipeline_only: If True, only include Pipeline Objects in the DiGraph.
+            data_only: If True, only include Data Objects in the DiGraph.
+            parent_node_id: If not None, only include the objects that are target objects of the specified node."""
         # NOTE: I know that this is not the most efficient algorithm to do this, but it'll work for small scale.        
         # 1. Initialize the digraph.
         super().__init__() # So that this object is properly initialized as a MultiDiGraph.
 
         # 2. Load all of the nodes from the database. Assumes that they are sorted in ascending time order.
-        sqlquery = f"SELECT attr_id FROM attributes WHERE attr_name IS '{ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_NAME}'"
+        sqlquery = f"SELECT attr_id FROM attributes WHERE attr_name IS '{DEFAULT_EXISTS_ATTRIBUTE_NAME}'"
         result = Action.conn.cursor().execute(sqlquery).fetchall()
         if result is None:
             return # Empty digraph anyways.        
@@ -54,6 +62,22 @@ class ResearchObjectDigraph(nx.MultiDiGraph):
 
         # 2. Load it from the database. How to get the class?
         return cls(id = key)
+    
+    def add_node(self, object_id: str, **kwargs) -> None:
+        """Validate inputs for nx.MultiDiGraph.add_node()"""
+        if not ResearchObject.is_id(None, object_id) or not ResearchObject.object_exists(None, object_id):
+            raise ValueError("Object ID is not a valid object ID!")
+        super().add_node(object_id, **kwargs)    
+        
+    def add_edge(self, source_id: str, target_id: str, **kwargs) -> None:
+        """Validate inputs for nx.MultiDiGraph.add_edge()"""
+        if not ResearchObject.is_id(None, source_id) or not ResearchObject.object_exists(None, source_id):
+            raise ValueError("Source object ID is not a valid object ID!")
+        if not ResearchObject.is_id(None, target_id) or not ResearchObject.object_exists(None, target_id):
+            raise ValueError("Target object ID is not a valid object ID!")
+        super().add_edge(source_id, target_id, **kwargs)
+
+    
     
 if __name__=="__main__":
     rod = ResearchObjectDigraph()

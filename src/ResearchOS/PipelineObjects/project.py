@@ -2,9 +2,11 @@ from abc import abstractmethod
 
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
-DEFAULT_CURRENT_ANALYSIS_ID: str = ""
-DEFAULT_CURRENT_DATASET_ID: str = ""
-DEFAULT_PROJECT_PATH: str = ""  
+# Set default values for the project-specific attributes.
+default_attrs = {}
+default_attrs["current_analysis_id"] = ""
+default_attrs["current_dataset_id"] = ""
+default_attrs["project_path"] = ""
 
 class Project(PipelineObject):
     """A project is a collection of analyses.
@@ -20,7 +22,7 @@ class Project(PipelineObject):
         return super().get_all_ids(Project)
     
     @abstractmethod
-    def new_current(name: str) -> "Project":
+    def new_current(name: str = "New Project") -> "Project":
         """Create a new analysis and set it as the current analysis for the current project.
         Returns the project & analysis objects as a tuple."""
         from src.ResearchOS.PipelineObjects.analysis import Analysis
@@ -29,15 +31,18 @@ class Project(PipelineObject):
         pj.current_analysis_id = an.id
         return pj, an
     
+    # TODO: Should I use __str__ or __repr__?
+    def __str__(self):        
+        return super().__str__(default_attrs.keys(), self.__dict__)
+
+    def __repr__(self):
+        pass    
+    
     #################### Start class-specific attributes ###################
     def __init__(self, **kwargs):
         """Initialize the attributes that are required by ResearchOS.
-        Other attributes can be added & modified later."""
-        attrs = {}
-        attrs["current_analysis_id"] = DEFAULT_CURRENT_ANALYSIS_ID # The current analysis for the project.
-        attrs["current_dataset_id"] = DEFAULT_CURRENT_DATASET_ID # The current dataset for the project.
-        attrs["project_path"] = DEFAULT_PROJECT_PATH # The root folder for the current project.
-        super().__init__(attrs = attrs)            
+        Other attributes can be added & modified later."""        
+        super().__init__(attrs = default_attrs, **kwargs)            
     
     def validate_current_analysis_id(self, id: str):
         """Validate the current analysis ID. If it is not valid, the value is rejected."""        
@@ -64,7 +69,7 @@ class Project(PipelineObject):
         # 1. Check that the path exists in the file system.
         import os
         if not os.path.exists(path):
-            raise ValueError("Specified path does not exist!")        
+            raise ValueError("Specified path is not a path or does not currently exist!")        
 
     def json_translate_XXX(self) -> type:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
@@ -94,9 +99,15 @@ class Project(PipelineObject):
         from src.ResearchOS.PipelineObjects.analysis import Analysis        
         self._remove_target_object_id(analysis_id)
 
+    #################### Start class-specific objects ####################
+    def open_project_path(self) -> None:
+        """Open the project's path in the Finder/File Explorer."""
+        path = self.project_path
+    
+
 if __name__=="__main__":
     from src.ResearchOS.PipelineObjects.analysis import Analysis
-    pj = Project(name = "Test")    
-    an = Analysis(name = "Test_Analysis")
+    pj, an = Project.new_current(name = "Test")        
     pj.current_analysis_id = an.id
+    pj.project_path = 'Test'
     print(pj)

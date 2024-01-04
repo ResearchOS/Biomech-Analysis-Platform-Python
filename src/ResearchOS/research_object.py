@@ -11,16 +11,17 @@ from src.ResearchOS.config import ProdConfig
 abstract_id_len = ProdConfig.abstract_id_len
 instance_id_len = ProdConfig.instance_id_len
 
+DEFAULT_EXISTS_ATTRIBUTE_NAME = "exists"
+DEFAULT_EXISTS_ATTRIBUTE_VALUE = True
+DEFAULT_NAME_ATTRIBUTE_NAME = "name"
+DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation" 
+
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
 
     prefix = "RO" # Testing only
     _objects = weakref.WeakValueDictionary()
-    _objects_count = {}
-    DEFAULT_EXISTS_ATTRIBUTE_NAME = "exists"
-    DEFAULT_EXISTS_ATTRIBUTE_VALUE = True
-    DEFAULT_NAME_ATTRIBUTE_NAME = "name"
-    DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation"    
+    _objects_count = {}   
     
     def __hash__(self):
         return hash(self.id)
@@ -29,6 +30,12 @@ class ResearchObject():
         if isinstance(other, ResearchObject):
             return self.id == other.id
         return NotImplemented
+    
+    def __str__(self, class_attr_names: list[str], attrs: dict) -> str:
+        #         return_str = "current_analysis_id: " + self.current_analysis_id + "\n" + ...
+        # "current_dataset_id: " + self.current_dataset_id + "\n" + ...
+        # "project_path: " + self.project_path
+        pass
 
     def __new__(cls, is_abstract: bool = False, *args, **kwargs):
         """Create a new research object. If the object already exists, return the existing object.
@@ -62,10 +69,10 @@ class ResearchObject():
                 action.execute()
             except Exception as e:
                 print(e)   
-            if ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_NAME not in self.__dict__:
-                self.__dict__[ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_NAME] = ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_VALUE
-            if ResearchObject.DEFAULT_NAME_ATTRIBUTE_NAME not in self.__dict__:
-                self.__dict__[ResearchObject.DEFAULT_NAME_ATTRIBUTE_NAME] = name
+            if DEFAULT_EXISTS_ATTRIBUTE_NAME not in self.__dict__:
+                self.__setattr__(DEFAULT_EXISTS_ATTRIBUTE_NAME, DEFAULT_EXISTS_ATTRIBUTE_VALUE)
+            if DEFAULT_NAME_ATTRIBUTE_NAME not in self.__dict__:
+                self.__setattr__(DEFAULT_NAME_ATTRIBUTE_NAME, name)
         # Ensure that all of the required attributes are present.
         for attr in attrs:
             if attr in self.__dict__:
@@ -93,7 +100,8 @@ class ResearchObject():
         used_attr_ids = []
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
         attrs["id"] = self.id
-        attrs["target_object_id"] = []
+        # attrs["source_object_ids"] = [] # Do objects contain a reference to the source object ID's?
+        attrs["target_object_ids"] = []
         for curr_obj_action_id in action_ids_in_time_order:
             index = curr_obj_action_ids.index(curr_obj_action_id)
             attr_id = attr_result[index][1]
@@ -144,8 +152,8 @@ class ResearchObject():
         action.add_sql_query(sqlquery)
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects.
         if "current" in __name and "id" in __name and validate:
-            json_value = json.dumps(ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_VALUE, indent = 4)         
-            sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value, target_object_id) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_NAME, ResearchObject.DEFAULT_EXISTS_ATTRIBUTE_VALUE)}', '{json_value}', '{__value}')"
+            json_value = json.dumps(DEFAULT_EXISTS_ATTRIBUTE_VALUE, indent = 4)         
+            sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value, target_object_id) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME, DEFAULT_EXISTS_ATTRIBUTE_VALUE)}', '{json_value}', '{__value}')"
             action.add_sql_query(sqlquery)
         action.execute()         
 
@@ -268,23 +276,24 @@ class ResearchObject():
 
     def _is_id_or_none(self, id: str) -> bool:
         """Check if the given ID matches the pattern of a valid research object ID, or is None."""              
-        if id is None or ResearchObject.is_id(id):
+        if id is None or self.is_id(id):
             return True
         return False
 
     def _get_all_source_object_ids(self, cls) -> list[str]:
-        """Get all source object ids of the specified target object of the specified type."""
-        sql = f'SELECT object_id FROM research_object_attributes WHERE target_object_id = "{self.id}"'
+        """Get all source object ids of the specified target object of the specified type. Immediate neighbors only, equivalent to predecessors() method"""
+        sql = f'SELECT object_id, {DEFAULT_EXISTS_ATTRIBUTE_NAME} FROM research_object_attributes WHERE target_object_id = "{self.id}"'
         return self.__get_all_related_object_ids(cls, sql)
     
     def _get_all_target_object_ids(self, cls) -> list[str]:
-        """Get all target object ids of the specified source object of the specified type. """
-        sql = f'SELECT target_object_id FROM research_object_attributes WHERE object_id = "{self.id}"'
+        """Get all target object ids of the specified source object of the specified type. Immediate neighbors only, equivalent to successors() method"""
+        sql = f'SELECT target_object_id, {DEFAULT_EXISTS_ATTRIBUTE_NAME} FROM research_object_attributes WHERE object_id = "{self.id}"'
         return self.__get_all_related_object_ids(cls, sql)
 
     def __get_all_related_object_ids(self, cls, sql) -> list[str]:
         """Called by _get_all_source_object_ids and _get_all_target_object_ids.
         Get all related object ids of the specified object of the specified type, either source of target objects."""
+        # TODO: Ensure that the edges are not outdated, check the "exists" property.
         cursor = Action.conn.cursor()
         cursor.execute(sql)
         data = []
@@ -310,7 +319,7 @@ class ResearchObject():
         return len(cursor.fetchall()) > 0
     
     def _add_target_object_id(self, id: str) -> None:
-        """Add a target object ID to the current source object."""
+        """Add a target object ID to the current source object in the database."""
         if not self.is_id(id):
             raise ValueError("Invalid ID.")              
         if self._is_target(id):
@@ -332,7 +341,7 @@ class ResearchObject():
         action.execute()
 
     def _add_source_object_id(self, id: str, cls: type) -> None:
-        """Add a source object ID to the current target object."""
+        """Add a source object ID to the current target object in the database."""
         if not self._is_id(id):
             raise ValueError("Invalid ID.")      
         self.validate_id_class(id, cls)  
@@ -344,7 +353,7 @@ class ResearchObject():
         action.execute()
 
     def _remove_source_object_id(self, id: str, cls: type) -> None:
-        """Remove a source object ID from the current target object."""
+        """Remove a source object ID from the current target object in the database."""
         if not self._is_id(id):
             raise ValueError("Invalid ID.")      
         self.validate_id_class(id, cls)  
@@ -356,7 +365,7 @@ class ResearchObject():
         action.execute()
 
     def _gen_obj_or_none(self, ids, cls: type) -> "ResearchObject":
-        """Generate the objects of the specified class, or None if the IDs argument is None."""
+        """Generate the objects of the specified class, or None if the IDs argument is None or []."""
         if ids is None or len(ids) == 0:
             return None
         return [cls(id = id) for id in ids]
