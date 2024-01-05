@@ -111,7 +111,11 @@ class Project(PipelineObject):
 
 if __name__=="__main__":
     from src.ResearchOS.PipelineObjects.analysis import Analysis
-    pj, an = Project.new_current(name = "Test")        
-    pj.current_analysis_id = an.id
+    pj = Project(name = "Test")
+    an1 = Analysis()      
+    an2 = Analysis()
+    pj.current_analysis_id = an1.id
+    pj.add_analysis_id(an2.id)
+    ans = pj.get_analyses()
     pj.project_path = 'Test'
     print(pj)

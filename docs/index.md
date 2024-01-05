@@ -1,19 +1,11 @@
 # Welcome to ResearchOS
 
-This is the documentation for [ResearchOS](https://github.com/ResearchOS/ResearchOS)
+This is the documentation for [ResearchOS](https://github.com/ResearchOS/ResearchOS), a Python package for scientific computing.
 
 # Install with pip
 ```
 pip install researchos
 ```
 
-## Project layout
-
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        Research Object Types/  # The documentation homepage.
-            research_objects.md  # The documentation homepage.
-            pipeline_objects.md  # The documentation homepage.
-            data_objects.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+# Project Description
+Scientific computing is currently fractured, with many competing standards (or lack thereof) that do not provide a common way to communicate. ResearchOS provides a generalized framework to perform scientific computing of any kind, in a modular, easily shareable format.
