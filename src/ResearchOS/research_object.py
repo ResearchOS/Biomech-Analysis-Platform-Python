@@ -298,12 +298,12 @@ class ResearchObject():
 
     def _get_all_source_object_ids(self, cls) -> list[str]:
         """Get all source object ids of the specified target object of the specified type. Immediate neighbors only, equivalent to predecessors() method"""
-        sql = f'SELECT object_id, {DEFAULT_EXISTS_ATTRIBUTE_NAME} FROM research_object_attributes WHERE target_object_id = "{self.id}"'
+        sql = f'SELECT object_id, attr_value FROM research_object_attributes WHERE target_object_id = "{self.id}"'
         return self.__get_all_related_object_ids(cls, sql)
     
     def _get_all_target_object_ids(self, cls) -> list[str]:
         """Get all target object ids of the specified source object of the specified type. Immediate neighbors only, equivalent to successors() method"""
-        sql = f'SELECT target_object_id, {DEFAULT_EXISTS_ATTRIBUTE_NAME} FROM research_object_attributes WHERE object_id = "{self.id}"'
+        sql = f'SELECT target_object_id, attr_value FROM research_object_attributes WHERE object_id = "{self.id}"'
         return self.__get_all_related_object_ids(cls, sql)
 
     def __get_all_related_object_ids(self, cls, sql) -> list[str]:
@@ -322,37 +322,43 @@ class ResearchObject():
     
     def _is_source(self, id: str) -> bool:
         """Check if the specified object ID is a source object of the current object."""        
-        sql = f"SELECT object_id FROM research_object_attributes WHERE target_object_id = {self.id} AND object_id = {id}"
+        sql = f"SELECT object_id FROM research_object_attributes WHERE target_object_id = '{self.id}' AND object_id = '{id}'"
         cursor = Action.conn.cursor()
         cursor.execute(sql)
         return len(cursor.fetchall()) > 0
     
     def _is_target(self, id: str) -> bool:
         """Check if the specified object ID is a target object of the current object."""        
-        sql = f"SELECT target_object_id FROM research_object_attributes WHERE object_id = {self.id} AND target_object_id = {id}"
+        sql = f"SELECT target_object_id FROM research_object_attributes WHERE object_id = '{self.id}' AND target_object_id = '{id}'"
         cursor = Action.conn.cursor()
         cursor.execute(sql)
         return len(cursor.fetchall()) > 0
     
-    def _add_target_object_id(self, id: str) -> None:
+    def _add_target_object_id(self, id: str, cls: type) -> None:
         """Add a target object ID to the current source object in the database."""
         if not self.is_id(id):
-            raise ValueError("Invalid ID.")              
+            raise ValueError("Invalid ID.")    
+        if not self._is_id_of_class(id, cls):
+            raise ValueError("ID is of the wrong class!")          
         if self._is_target(id):
             return # Already exists.
-        sql = f"INSERT INTO research_object_attributes (object_id, target_object_id) VALUES ('{self.id}', '{id}')"
         action = Action(name = "add_target_object_id")
+        json_value = json.dumps(True)
+        sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{id}', {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME)}, '{json_value}')"        
         action.add_sql_query(sql)
         action.execute()
 
-    def _remove_target_object_id(self, id: str) -> None:
+    def _remove_target_object_id(self, id: str, cls: type) -> None:
         """Remove a target object ID from the current source object."""
         if not self.is_id(id):
-            raise ValueError("Invalid ID.")              
+            raise ValueError("Invalid ID.")   
+        if not self._is_id_of_class(id, cls):
+            raise ValueError("ID is of the wrong class!")           
         if not self._is_target(id):
             return
-        sql = f"INSERT INTO research_object_attributes (object_id, target_object_id) VALUES ('{self.id}', {None})"
         action = Action(name = "remove_target_object_id")
+        json_value = json.dumps(False)
+        sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', {id}, {ResearchObject._get_attr_id(DEFAULT_NAME_ATTRIBUTE_NAME)}, '{json_value}')"        
         action.add_sql_query(sql)
         action.execute()
 
@@ -364,8 +370,9 @@ class ResearchObject():
             raise ValueError("ID is of the wrong class!")
         if self._is_source(id):
             return # Already exists
-        sql = f"INSERT INTO research_object_attributes (object_id, target_object_id, attr_id, attr_value) VALUES ('{id}', '{self.id}, {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME)}, {True})"
         action = Action(name = "add_source_object_id")
+        json_value = json.dumps(True)
+        sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{id}', '{self.id}, {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME)}, '{json_value}')"        
         action.add_sql_query(sql)
         action.execute()
 
@@ -377,8 +384,9 @@ class ResearchObject():
             raise ValueError("ID is of the wrong class!")
         if not self._is_source(id):
             return
-        sql = f"INSERT INTO research_object_attributes (object_id, target_object_id, attr_id, attr_value) VALUES ('{id}', {self.id}, {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME)}, {False})"
+        json_value = json.dumps(False)
         action = Action(name = "remove_source_object_id")
+        sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{id}', {self.id}, {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME)}, '{json_value}')"        
         action.add_sql_query(sql)
         action.execute()
 

@@ -9,4 +9,6 @@ All Research Objects are one or both of the following:
 
 - **Pipeline Objects** - objects that are involved in performing data analysis, such as a Process or Project.
 
+![Research Object Class Hierarchy](research_objects_class_hierarchy.png)
+
 ::: src.ResearchOS.research_object.ResearchObject
