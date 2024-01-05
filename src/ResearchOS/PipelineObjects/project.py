@@ -1,12 +1,13 @@
 from abc import abstractmethod
+from typing import Any
 
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 # Defaults should be of the same type as the expected values.
 default_attrs = {}
-default_attrs["current_analysis_id"] = ""
-default_attrs["current_dataset_id"] = ""
-default_attrs["project_path"] = ""
+default_attrs["current_analysis_id"] = None
+default_attrs["current_dataset_id"] = None
+default_attrs["project_path"] = None
 
 class Project(PipelineObject):
     """A project is a collection of analyses.

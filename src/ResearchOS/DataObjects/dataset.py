@@ -3,8 +3,8 @@ from abc import abstractmethod
 from src.ResearchOS.DataObjects import DataObject
 
 default_attrs = {}
-default_attrs["dataset_path"] = ""
-default_attrs["data_schema"] = []
+default_attrs["dataset_path"] = None
+default_attrs["data_schema"] = None
 
 
 class Dataset(DataObject):
