@@ -1,4 +1,5 @@
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from typing import Callable
 
 from abc import abstractmethod
 
@@ -15,7 +16,7 @@ class Process(PipelineObject):
         return super().get_all_ids(Process)
 
     #################### Start class-specific attributes ###################
-    def validate_method(self, method: function) -> None:
+    def validate_method(self, method: Callable) -> None:
         pass
 
     def validate_level(self, level: type) -> None:

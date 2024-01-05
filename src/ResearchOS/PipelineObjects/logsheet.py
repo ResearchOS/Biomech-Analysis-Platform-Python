@@ -4,10 +4,10 @@ from abc import abstractmethod
 
 # Defaults should be of the same type as the expected values.
 default_attrs = {}
-default_attrs["logsheet_path"] = ""
-default_attrs["logsheet_headers"] = []
-default_attrs["num_header_rows"] = -1
-default_attrs["class_column_names"] = {}
+default_attrs["logsheet_path"] = None
+default_attrs["logsheet_headers"] = None
+default_attrs["num_header_rows"] = None
+default_attrs["class_column_names"] = None
 
 class Logsheet(PipelineObject):
 
@@ -29,15 +29,17 @@ class Logsheet(PipelineObject):
     def __str__(self):
         return super().__str__(default_attrs.keys(), self.__dict__)
 
-    def json_translate_logsheet_headers(self) -> list:
+    def json_translate_logsheet_headers(self, json_var: list) -> list:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""        
-        pass
+        transl_var = None
+        return transl_var
 
-    def json_translate_class_column_names(self) -> dict:
+    def json_translate_class_column_names(self, json_var: dict) -> dict:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""        
-        pass
+        transl_var = None
+        return transl_var
 
     def validate_num_header_rows(self, num_header_rows: int):
         """Validate the number of header rows. If it is not valid, the value is rejected."""        

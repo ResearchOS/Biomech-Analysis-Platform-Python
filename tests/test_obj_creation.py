@@ -9,7 +9,9 @@ class TestObjCreation(TestCase):
     db_file: str = db_file
     
     def setup_class(self):
-        db = DBInitializer(db_file)
+        from src.ResearchOS.action import Action
+        Action._db_file = db_file
+        db = DBInitializer(db_file)        
 
     def teardown_class(self):
         import os
@@ -31,8 +33,8 @@ class TestObjCreation(TestCase):
     #################### PIPELINE OBJECTS ####################
     def test_create_project(self):
         from src.ResearchOS.PipelineObjects.project import Project
-        pj = Project(id = "PJ000000_000")
-        self.assertTrue(pj.id == "PJ000000_000")
+        pj = Project(id = "PJ000000_040") # Random ID.
+        self.assertTrue(pj.id == "PJ000000_040")
         self.assertTrue(pj.exists)
 
     def test_create_analysis(self):

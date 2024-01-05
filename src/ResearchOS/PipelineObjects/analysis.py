@@ -2,6 +2,9 @@ from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from abc import abstractmethod
 
+default_attrs = {}
+default_attrs["current_logsheet_id"] = None
+
 class Analysis(PipelineObject):
 
     prefix = "AN"    
