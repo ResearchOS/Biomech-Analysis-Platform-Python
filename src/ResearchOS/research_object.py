@@ -54,21 +54,20 @@ class ResearchObject():
             instance.__dict__['id'] = object_id
             return instance
 
-    def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, attrs: dict = {}, id: str = None) -> None:
+    def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, attrs: dict = {}, id: str = None, **kwargs) -> None:
         """id is required but will actually not be used here because it is assigned during __new__"""
-        id = self.id # self.id always exists by this point thanks to __new__        
-        # Try to load the object from the database.
+        id = self.id # self.id always exists by this point thanks to __new__
+        if not self.is_id(id):
+            raise ValueError("Not an ID!")
         try:
+            # Fails if the object does not exist.
             self.load()            
-        except ValueError: # Throws an exception if the object does not exist. In that case, create it.            
-            action = Action(name = name)        
-            try:
-                # Create the object in the database.            
-                sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
-                action.add_sql_query(sqlquery)
-                action.execute()
-            except Exception as e:
-                print(e)   
+        except ValueError:
+            # Create the new object in the database.
+            action = Action(name = name)                             
+            sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
+            action.add_sql_query(sqlquery)
+            action.execute()
             if DEFAULT_EXISTS_ATTRIBUTE_NAME not in self.__dict__:
                 self.__setattr__(DEFAULT_EXISTS_ATTRIBUTE_NAME, DEFAULT_EXISTS_ATTRIBUTE_VALUE)
             if DEFAULT_NAME_ATTRIBUTE_NAME not in self.__dict__:
@@ -110,16 +109,24 @@ class ResearchObject():
             used_attr_ids.append(attr_id)
             attr_value = json.loads(attr_result[index][2])
             target_object_id = attr_result[index][3]
-            if target_object_id not in attrs["target_object_id"] and target_object_id is not None:
+            if target_object_id is not None and target_object_id not in attrs["target_object_id"]:
                 attrs["target_object_id"].append(target_object_id)
 
             attr_name = ResearchObject._get_attr_name(attr_id)
             attr_type = ResearchObject._get_attr_type(attr_id)
-            attrs[attr_name] = attr_type(attr_value)
-            eval_str = "self.json_translate_" + attr_name + "()"
+            attr_val = attr_type(attr_value)   
+            # Translate the attribute from string to the propre type/format.                     
             try:
-                attrs[attr_name] = eval(eval_str)
-            except AttributeError:
+                json_translate_method = eval("self.json_translate_" + attr_name)
+                attr_val = json_translate_method(attr_value)
+            except AttributeError as e:
+                pass
+            attrs[attr_name] = attr_val
+            # Now that the value is loaded as the proper type/format, validate it.
+            try:
+                validate_method = eval("self.validate_" + attr_name)
+                validate_method(attr_val)
+            except AttributeError as e:
                 pass
             if len(used_attr_ids) == num_attrs:
                 break
@@ -134,7 +141,7 @@ class ResearchObject():
         if __name == "id":
             raise ValueError("Cannot change the ID of a research object.")
         if __name[0] == "_":
-            return # Don't log private attributes.        
+            return # Don't log private attributes.
         if validate:                                                      
             try:
                 method = eval(f"self.validate_{__name}")
