@@ -1,13 +1,22 @@
+from ResearchOS.research_object import DEFAULT_NAME_ATTRIBUTE_NAME
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from abc import abstractmethod
 
-default_attrs = {}
-default_attrs["current_logsheet_id"] = None
+default_instance_attrs = {}
+default_instance_attrs["current_logsheet_id"] = str
+
+default_abstract_attrs = {}
 
 class Analysis(PipelineObject):
 
-    prefix = "AN"    
+    prefix = "AN"
+
+    def get_default_attrs(self):
+        """Return a dictionary of default instance or abstract attributes, as appropriate for this object."""
+        if self.is_instance_object():
+            return default_instance_attrs
+        return default_abstract_attrs    
 
     @abstractmethod
     def get_all_ids() -> list[str]:
@@ -19,6 +28,12 @@ class Analysis(PipelineObject):
         lg = Logsheet(name = an.name + "_Default")
         an.current_logsheet_id = lg.id                
         return an
+    
+    def __str__(self):        
+        return super().__str__(self.get_default_attrs().keys(), self.__dict__)
+    
+    def __init__(self, **kwargs) -> None:
+        super().__init__(attrs = self.get_default_attrs(), **kwargs)
     
     #################### Start class-specific attributes ###################
 
