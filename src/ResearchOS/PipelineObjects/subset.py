@@ -2,6 +2,9 @@ from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from abc import abstractmethod
 
+default_instance_attrs = {}
+default_instance_attrs["conditions"] = {}
+
 class Subset(PipelineObject):
     """Provides rules to select a subset of data from a dataset."""
     

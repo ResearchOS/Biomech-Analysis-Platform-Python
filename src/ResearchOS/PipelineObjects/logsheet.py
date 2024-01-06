@@ -127,7 +127,7 @@ class Logsheet(PipelineObject):
         self._remove_target_object_id(variable_id, cls = Variable)
 
     #################### Start class-specific methods ####################
-    def run_logsheet(self):
+    def read_logsheet(self):
         """Run the logsheet import process."""
         from src.ResearchOS.PipelineObjects.project import Project
         from src.ResearchOS.DataObjects.dataset import Dataset
