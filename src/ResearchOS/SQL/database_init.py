@@ -58,6 +58,7 @@ class DBInitializer():
                         )""")
 
         # Attributes table. Lists all attributes that have been added to objects.
+        # NOTE: attr_type is NOT JSON, it is just a str representation of a class name.
         cursor.execute("""CREATE TABLE IF NOT EXISTS attributes (
                         attr_id INTEGER PRIMARY KEY AUTOINCREMENT,
                         attr_name TEXT NOT NULL,

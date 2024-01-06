@@ -115,6 +115,8 @@ class ResearchObject():
             attr_name = ResearchObject._get_attr_name(attr_id)
             attr_type = ResearchObject._get_attr_type(attr_id)
             attr_val = attr_type(attr_value)   
+            if attr_value is None:
+                attr_val = None            
             # Translate the attribute from string to the propre type/format.                     
             try:
                 json_translate_method = eval("self.json_translate_" + attr_name)
@@ -122,10 +124,11 @@ class ResearchObject():
             except AttributeError as e:
                 pass
             attrs[attr_name] = attr_val
-            # Now that the value is loaded as the proper type/format, validate it.
+            # Now that the value is loaded as the proper type/format (and is not None), validate it.
             try:
-                validate_method = eval("self.validate_" + attr_name)
-                validate_method(attr_val)
+                if attrs[attr_name] is not None:
+                    validate_method = eval("self.validate_" + attr_name)
+                    validate_method(attr_val)
             except AttributeError as e:
                 pass
             if len(used_attr_ids) == num_attrs:
@@ -159,6 +162,20 @@ class ResearchObject():
             method = eval(f"self.store_{__name}")
             action = method(__value, action = action)
         except AttributeError as e:
+            # 1. Check if the attribute already exists in the database.
+            cursor = Action.conn.cursor()
+            sqlquery = f"SELECT attr_id FROM attributes WHERE attr_name = '{__name}'"
+            cursor.execute(sqlquery)
+            rows = cursor.fetchall()
+            if len(rows) == 0:
+                # Create the attribute in the database.
+                __value = None # Everything's default value.
+                sqlquery = f"INSERT INTO attributes (attr_name) VALUES ('{__name}')"
+                cursor.execute(sqlquery)
+                Action.conn.commit()
+                sqlquery = f"SELECT attr_id FROM attributes WHERE attr_name = '{__name}'"
+                cursor.execute(sqlquery)
+                rows = cursor.fetchall()                                
             json_value = json.dumps(__value, indent = 4) # Encode the value as json
             sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"                
             action.add_sql_query(sqlquery)
@@ -167,7 +184,7 @@ class ResearchObject():
             json_value = json.dumps(DEFAULT_EXISTS_ATTRIBUTE_VALUE, indent = 4)         
             sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value, target_object_id) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME, DEFAULT_EXISTS_ATTRIBUTE_VALUE)}', '{json_value}', '{__value}')"
             action.add_sql_query(sqlquery)
-        action.execute()         
+        action.execute()        
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
@@ -219,19 +236,12 @@ class ResearchObject():
         """Get the ID of an attribute given its name. If it does not exist, create it."""
         cursor = Action.conn.cursor()
         sqlquery = f"SELECT attr_id FROM Attributes WHERE attr_name = '{attr_name}'"
-        cursor.execute(sqlquery)
+        cursor.execute(sqlquery)            
         rows = cursor.fetchall()
-        # If the attribute does not exist, create it.
-        if len(rows) == 0:
-            attr_type = str(type(attr_value)).split("'")[1]
-            sqlquery = f"INSERT INTO Attributes (attr_name, attr_type) VALUES ('{attr_name}', '{attr_type}')"
-            cursor.execute(sqlquery)
-            sqlquery = f"SELECT attr_id FROM Attributes WHERE attr_name = '{attr_name}'"
-            cursor.execute(sqlquery)            
-            rows = cursor.fetchall()
-            if len(rows) > 1:
-                raise Exception("More than one attribute with the same name.")
-            
+        if len(rows) > 1:
+            raise Exception("More than one attribute with the same name.")
+        elif len(rows)==0:
+            raise Exception("No attribute with that name exists. This should never happen!!")
         return rows[0][0]   
     
     @abstractmethod

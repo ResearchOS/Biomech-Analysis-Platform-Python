@@ -21,10 +21,11 @@ an.current_logsheet_id = lg.id  # Set the current logsheet for the analysis
 ds = Dataset(id = "DS4E22F9_437")  # Create a new dataset
 pj.current_dataset_id = ds.id  # Set the current dataset for the project
 
-pj.project_path = "C:/Users/Owner/Documents/ResearchOS"  # Set the project path
-ds.dataset_path = "C:/Users/Owner/Documents/ResearchOS"  # Set the dataset path
+path = "/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python"
+pj.project_path = path  # Set the project path
+ds.dataset_path = path  # Set the dataset path
 
-lg.logsheet_path = "C:/Users/Owner/Documents/ResearchOS"  # Set the logsheet path
+lg.logsheet_path = path  # Set the logsheet path
 lg.logsheet_headers = []  # Set the logsheet headers
 lg.class_column_names = {}  # Set the class column names
 lg.num_header_rows = 3  # Set the number of header rows

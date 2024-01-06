@@ -4,8 +4,8 @@ from typing import Callable
 from abc import abstractmethod
 
 default_attrs = {}
-default_attrs["method"] = None
-default_attrs["level"] = None
+default_attrs["method"] = Callable
+default_attrs["level"] = type
 
 class Process(PipelineObject):
 

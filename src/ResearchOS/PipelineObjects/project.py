@@ -4,10 +4,12 @@ from typing import Any
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 # Defaults should be of the same type as the expected values.
-default_attrs = {}
-default_attrs["current_analysis_id"] = None
-default_attrs["current_dataset_id"] = None
-default_attrs["project_path"] = None
+default_instance_attrs = {}
+default_instance_attrs["current_analysis_id"] = str
+default_instance_attrs["current_dataset_id"] = str
+default_instance_attrs["project_path"] = str
+
+default_abstract_attrs = {}
 
 class Project(PipelineObject):
     """A project is a collection of analyses.
@@ -34,7 +36,9 @@ class Project(PipelineObject):
     
     # TODO: Should I use __str__ or __repr__?
     def __str__(self):        
-        return super().__str__(default_attrs.keys(), self.__dict__)
+        if self.is_instance_object():
+            return super().__str__(default_instance_attrs.keys(), self.__dict__)
+        return super().__str__(default_abstract_attrs.keys(), self.__dict__)
 
     def __repr__(self):
         pass    
@@ -45,7 +49,9 @@ class Project(PipelineObject):
         Other attributes can be added & modified later."""  
         attrs = {}
         if self.is_instance_object():
-            attrs = default_attrs      
+            attrs = default_instance_attrs  
+        else:
+            attrs = default_abstract_attrs    
         super().__init__(attrs = attrs, **kwargs)            
     
     def validate_current_analysis_id(self, id: str) -> None:
@@ -72,6 +78,8 @@ class Project(PipelineObject):
         """Validate the project path. If it is not valid, the value is rejected."""
         # 1. Check that the path exists in the file system.
         import os
+        if not isinstance(path, str):
+            raise ValueError("Specified path is not a string!")
         if not os.path.exists(path):
             raise ValueError("Specified path is not a path or does not currently exist!")        
 
