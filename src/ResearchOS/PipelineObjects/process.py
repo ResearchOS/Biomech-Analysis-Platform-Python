@@ -50,6 +50,12 @@ class Process(PipelineObject):
         vr_ids = self._get_all_target_object_ids(cls = Variable)
         return self._gen_obj_or_none(vr_ids, Variable)
     
+    def get_subsets(self) -> list:
+        """Return a list of subset IDs that belong to this process."""
+        from src.ResearchOS.PipelineObjects.subset import Subset
+        ss_ids = self._get_all_target_object_ids(cls = Subset)
+        return self._gen_obj_or_none(ss_ids, Subset)
+    
     def add_input_variable_id(self, var_id):
         """Add an input variable to the process."""
         # TODO: Need to add a mapping between variable ID and name in code.
@@ -71,6 +77,16 @@ class Process(PipelineObject):
         """Remove an output variable from the process."""
         from src.ResearchOS.variable import Variable        
         self._remove_target_object_id(var_id, cls = Variable)
+
+    def add_subset_id(self, ss_id):
+        """Add a subset to the process."""
+        from src.ResearchOS.PipelineObjects.subset import Subset
+        self._add_target_object_id(ss_id, cls = Subset)
+
+    def remove_subset_id(self, ss_id):
+        """Remove a subset from the process."""
+        from src.ResearchOS.PipelineObjects.subset import Subset
+        self._remove_target_object_id(ss_id, cls = Subset)
 
     def run_method(self) -> None:
         """Execute the attached method."""
