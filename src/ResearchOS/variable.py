@@ -3,6 +3,9 @@ from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from abc import abstractmethod
 
+default_instance_attrs = {}
+default_instance_attrs["hard_coded_value"] = None
+
 class Variable(DataObject, PipelineObject):
     """Variable class."""
 
