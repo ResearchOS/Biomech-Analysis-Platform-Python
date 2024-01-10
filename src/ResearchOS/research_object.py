@@ -21,7 +21,7 @@ class ResearchObject():
 
     prefix = "RO" # Testing only
     _objects = weakref.WeakValueDictionary()
-    _objects_count = {}   
+    # _objects_count = {}   
     
     def __hash__(self):
         return hash(self.id)
@@ -53,12 +53,12 @@ class ResearchObject():
         if object_id is None:            
             object_id = cls.create_id(cls, is_abstract = abstract)
         if object_id in ResearchObject._objects:
-            ResearchObject._objects_count[object_id] += 1
+            # ResearchObject._objects_count[object_id] += 1
             return ResearchObject._objects[object_id]
         else: # Create a new object.
             instance = super(ResearchObject, cls).__new__(cls)
             ResearchObject._objects[object_id] = instance
-            ResearchObject._objects_count[object_id] = 1
+            # ResearchObject._objects_count[object_id] = 1
             instance.__dict__['id'] = object_id
             return instance
 
@@ -123,7 +123,7 @@ class ResearchObject():
         attrs["id"] = self.id
         for row in ordered_attr_result:            
             attr_id = row[1]
-            attr_value = row[2]
+            attr_value_json = row[2]
             target_object_id = row[3]
             if attr_id in used_attr_ids:
                 continue
@@ -131,26 +131,22 @@ class ResearchObject():
                 used_attr_ids.append(attr_id)                        
 
             attr_name = ResearchObject._get_attr_name(attr_id)
-            attr_type = ResearchObject._get_attr_type(attr_id)
-            attr_val = attr_type(attr_value)   
-            if attr_value is None:
-                attr_val = None            
             # Translate the attribute from string to the proper type/format.                     
             try:
-                json_translate_method = eval("self.json_translate_" + attr_name)
-                attr_val = json_translate_method(attr_value)
+                from_json_method = eval("self.from_json_" + attr_name)
+                attr_value = from_json_method(attr_value_json)
             except AttributeError as e:
-                pass
-            attrs[attr_name] = attr_val
+                attr_value = json.loads(attr_value_json)            
             # Now that the value is loaded as the proper type/format (and is not None), validate it.
             try:
-                if attrs[attr_name] is not None:
-                    validate_method = eval("self.from_json_" + attr_name)
-                    validate_method(attr_val)
+                if attr_value is not None:
+                    validate_method = eval("self.validate_" + attr_name)
+                    validate_method(attr_value)
             except AttributeError as e:
                 pass
+            attrs[attr_name] = attr_value
             if len(used_attr_ids) == num_attrs:
-                break
+                break # Every attribute is accounted for.
                 
         self.__dict__.update(attrs)
 
@@ -165,12 +161,21 @@ class ResearchObject():
             raise ValueError("Cannot change the ID of a research object.")
         if __name[0] == "_":
             return # Don't log private attributes.
+        # Validate the value        
         if validate:                                                      
             try:
-                method = eval(f"self.validate_{__name}")
-                method(__value)
+                validate_method = eval(f"self.validate_{__name}")
+                validate_method(__value)
             except AttributeError as e:
-                pass              
+                pass
+
+        to_json_method = None
+        try:
+            to_json_method = eval(f"self.to_json_{__name}")
+            json_value = to_json_method(__value)
+        except AttributeError as e:            
+            json_value = json.dumps(__value, indent = 4)
+
         
         # Create an action.
         execute_action = False
@@ -179,16 +184,17 @@ class ResearchObject():
             action = Action(name = "attribute_changed")
         # Update the attribute in the database.
         try:
-            method = eval(f"self.store_{__name}")
-            action = method(__value, action = action)            
+            assert to_json_method is None # Cannot convert to json AND have a store method. Store method takes precedence.
+            method = eval(f"self.store_{__name}")            
+            action = method(__value, action = action)
         except AttributeError as e:
-            self._default_store_obj_attr(__name, __value, action = action)            
+            self._default_store_obj_attr(__name, json_value, action = action)            
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
         pattern = r"^current_[\w\d]+_id$"
         if re.match(pattern, __name) and validate:
             action = self._default_store_edge_attr(target_object_id = __value, name = __name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
-        if self.__dict__.get(__name, None) != __value:
-            execute_action = True # Need to execute an action if adding an edge.
+            # if self.__dict__.get(__name, None) != __value:
+            #     execute_action = True # Need to execute an action if adding an edge.
         if execute_action:
             action.execute()
         self.__dict__[__name] = __value
