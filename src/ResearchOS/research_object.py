@@ -15,6 +15,7 @@ DEFAULT_EXISTS_ATTRIBUTE_NAME = "exists"
 DEFAULT_EXISTS_ATTRIBUTE_VALUE = True
 DEFAULT_NAME_ATTRIBUTE_NAME = "name"
 DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation" 
+DEFAULT_ABSTRACT_KWARG_NAME = "abstract"
 
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
@@ -37,13 +38,21 @@ class ResearchObject():
         # "project_path: " + self.project_path
         pass
 
-    def __new__(cls, is_abstract: bool = False, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):
         """Create a new research object. If the object already exists, return the existing object.
-        If is_abstract is True, returns an abstract object that does not have an instance ID.
+        If abstract is True, returns an abstract object that does not have an instance ID.
         Otherwise, returns an instance object that has an instance ID."""
-        object_id = kwargs.get("id", None)        
+        if DEFAULT_ABSTRACT_KWARG_NAME not in kwargs.keys():
+            abstract = False
+        object_id = None
+        if len(args)==1:
+            object_id = args[0]
+        elif len(args) > 1:
+            raise ValueError("Only id can be a positional argument")
         if object_id is None:
-            object_id = cls.create_id(cls, is_abstract = is_abstract)
+            object_id = kwargs.get("id", None)        
+        if object_id is None:            
+            object_id = cls.create_id(cls, is_abstract = abstract)
         if object_id in ResearchObject._objects:
             ResearchObject._objects_count[object_id] += 1
             return ResearchObject._objects[object_id]
@@ -54,30 +63,34 @@ class ResearchObject():
             instance.__dict__['id'] = object_id
             return instance
 
-    def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, attrs: dict = {}, id: str = None, **kwargs) -> None:
+    def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, default_attrs: dict = {}, **kwargs) -> None:
         """id is required but will actually not be used here because it is assigned during __new__"""
         id = self.id # self.id always exists by this point thanks to __new__
         if not self.is_id(id):
             raise ValueError("Not an ID!")
         try:
             # Fails if the object does not exist.
-            self.load()            
+            is_new = False
+            self.load()
         except ValueError:
             # Create the new object in the database.
-            action = Action(name = name)                             
+            is_new = True
+            action = Action(name = name)
             sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
             action.add_sql_query(sqlquery)
-            action.execute()
+            action.execute(commit = False)
             if DEFAULT_EXISTS_ATTRIBUTE_NAME not in self.__dict__:
                 self.__setattr__(DEFAULT_EXISTS_ATTRIBUTE_NAME, DEFAULT_EXISTS_ATTRIBUTE_VALUE)
             if DEFAULT_NAME_ATTRIBUTE_NAME not in self.__dict__:
                 self.__setattr__(DEFAULT_NAME_ATTRIBUTE_NAME, name)
         # Ensure that all of the required attributes are present.
-        for attr in attrs:
-            if attr in self.__dict__:
+        for default_attr in default_attrs:
+            if default_attr in self.__dict__:
                 continue
             # Don't validate during object initialization because the initial values won't pass the validation.
-            self.__setattr__(attr, attrs[attr], validate = False)            
+            self.__setattr__(default_attr, default_attrs[default_attr], validate = False)            
+        if is_new:
+            action.execute()
 
     def load(self) -> "ResearchObject":
         """Load the current state of a research object from the database. Modifies the self object."""        
@@ -99,8 +112,6 @@ class ResearchObject():
         used_attr_ids = []
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
         attrs["id"] = self.id
-        # attrs["source_object_ids"] = [] # Do objects contain a reference to the source object ID's?
-        attrs["target_object_ids"] = []
         for curr_obj_action_id in action_ids_in_time_order:
             index = curr_obj_action_ids.index(curr_obj_action_id)
             attr_id = attr_result[index][1]
@@ -127,7 +138,7 @@ class ResearchObject():
             # Now that the value is loaded as the proper type/format (and is not None), validate it.
             try:
                 if attrs[attr_name] is not None:
-                    validate_method = eval("self.validate_" + attr_name)
+                    validate_method = eval("self.from_json_" + attr_name)
                     validate_method(attr_val)
             except AttributeError as e:
                 pass
@@ -136,11 +147,13 @@ class ResearchObject():
                 
         self.__dict__.update(attrs)
 
-    def __setattr__(self, __name: str, __value: Any, validate: bool = True) -> None:
+    def __setattr__(self, __name: str, __value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
         Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it), and the object is not being initialized."""        
         # TODO: Does this get called when deleting an attribute from an object?
         # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.
+        if not validate and self.__dict__.get(__name, None) == __value:
+            return # No change.
         if __name == "id":
             raise ValueError("Cannot change the ID of a research object.")
         if __name[0] == "_":
@@ -155,36 +168,36 @@ class ResearchObject():
         self.__dict__[__name] = __value        
         
         # Create an action.
-        action = Action(name = "attribute_changed")                       
-        # Update the attribute in the database.
-        # TODO: Implement the "store___" methods!!!
+        execute_action = False
+        if action is None:
+            execute_action = True
+            action = Action(name = "attribute_changed")
+        # Update the attribute in the database.        
         try:
             method = eval(f"self.store_{__name}")
-            action = method(__value, action = action)
+            action = method(__value, action = action)            
         except AttributeError as e:
-            # 1. Check if the attribute already exists in the database.
-            cursor = Action.conn.cursor()
-            sqlquery = f"SELECT attr_id FROM attributes WHERE attr_name = '{__name}'"
-            cursor.execute(sqlquery)
-            rows = cursor.fetchall()
-            if len(rows) == 0:
-                # Create the attribute in the database.
-                __value = None # Everything's default value.
-                sqlquery = f"INSERT INTO attributes (attr_name) VALUES ('{__name}')"
-                cursor.execute(sqlquery)
-                Action.conn.commit()
-                sqlquery = f"SELECT attr_id FROM attributes WHERE attr_name = '{__name}'"
-                cursor.execute(sqlquery)
-                rows = cursor.fetchall()                                
-            json_value = json.dumps(__value, indent = 4) # Encode the value as json
-            sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"                
-            action.add_sql_query(sqlquery)
-        # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects.
+            self._default_store_obj_attr(__name, __value, action = action)            
+        # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
         if "current" in __name and "id" in __name and validate:
-            json_value = json.dumps(DEFAULT_EXISTS_ATTRIBUTE_VALUE, indent = 4)         
-            sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value, target_object_id) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME, DEFAULT_EXISTS_ATTRIBUTE_VALUE)}', '{json_value}', '{__value}')"
-            action.add_sql_query(sqlquery)
-        action.execute()        
+            action = self._default_store_edge_attr(target_object_id = __value, name = __name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
+        if execute_action:
+            action.execute()
+
+    def _default_store_edge_attr(self, target_object_id: str, name: str, value: Any, action: Action) -> None:
+        """Create a digraph edge between the current object and the target object with the specified attribute."""
+        json_value = json.dumps(value, indent = 4)
+        sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value, target_object_id) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(name, value)}', '{json_value}', '{target_object_id}')"
+        action.add_sql_query(sqlquery)
+        return action
+
+    def _default_store_obj_attr(self, __name: str, __value: Any, action: Action) -> Action:
+        """If no store_attr method exists for the object attribute, use this default method."""                              
+        json_value = json.dumps(__value, indent = 4) # Encode the value as json
+        sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"                
+        action.add_sql_query(sqlquery)
+        return action
+
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
@@ -232,7 +245,7 @@ class ResearchObject():
         return id      
 
     @abstractmethod
-    def _get_attr_id(attr_name: str, attr_value: Any = None) -> int:
+    def _get_attr_id(attr_name: str, attr_value: Any) -> int:
         """Get the ID of an attribute given its name. If it does not exist, create it."""
         cursor = Action.conn.cursor()
         sqlquery = f"SELECT attr_id FROM Attributes WHERE attr_name = '{attr_name}'"
@@ -241,8 +254,19 @@ class ResearchObject():
         if len(rows) > 1:
             raise Exception("More than one attribute with the same name.")
         elif len(rows)==0:
-            raise Exception("No attribute with that name exists. This should never happen!!")
-        return rows[0][0]   
+            ResearchObject._create_attr(attr_name, attr_value)
+            return ResearchObject._get_attr_id(attr_name, attr_value)
+        return rows[0][0]
+    
+    @abstractmethod
+    def _create_attr(attr_name: str, attr_value) -> int:
+        """Create a new attribute with the specified name and return its ID."""
+        cursor = Action.conn.cursor()
+        attr_type = str(type(attr_value)).split("'")[1]
+        sqlquery = f"INSERT INTO Attributes (attr_name, attr_type) VALUES {attr_name, attr_type}"
+        # sqlquery = f"INSERT INTO Attributes (attr_name, attr_type) VALUES ('{attr_name}', '{attr_type}')"
+        cursor.execute(sqlquery)
+        return cursor.lastrowid
     
     @abstractmethod
     def _get_attr_name(attr_id: int) -> str:
@@ -448,6 +472,14 @@ class ResearchObject():
         if num_underscores == 1:            
             instance = id[-instance_id_len:]
         return (prefix, abstract, instance)
+    
+    def _open_path(self, path: str) -> None:
+        """Open a file or directory in the default application."""
+        import os, subprocess
+        if os.path.isdir(path):
+            subprocess.Popen(["open", path])
+        else:
+            subprocess.Popen(["open", "-R", path])
     
 if __name__=="__main__":
     # Cannot run anything from here because Action is a circular import.

@@ -26,13 +26,15 @@ class Action():
             if not timestamp:
                 timestamp = datetime.datetime.utcnow()
             if not user_object_id:
-                user_object_id = User.get_current_user_object_id()       
+                user_object_id = User.get_current_user_object_id()
         else:
             # Loading an existing action.
             sqlquery = f"SELECT * FROM actions WHERE action_id = '{id}'"
-            result = Action.conn.cursor().execute(sqlquery).fetchone()
+            result = Action.conn.cursor().execute(sqlquery).fetchone()            
             if result is None:
                 raise AssertionError(f"Action {id} does not exist.")
+            if len(result) > 1:
+                raise AssertionError(f"Action {id} is not unique.")
             user_object_id = result[1]
             name = result[2]                        
             timestamp = result[3]            
@@ -127,15 +129,17 @@ class Action():
         """Add a sql query to the action."""
         self.sql_queries.append(sqlquery)
 
-    def execute(self) -> None:
+    def execute(self, commit: bool = True) -> None:
         """Run all of the sql queries in the action."""
         cursor = Action.conn.cursor()
-        # Execute all of the SQL queries
+        # Execute all of the SQL queries        
         for query in self.sql_queries:
             cursor.execute(query)
+        self.sql_queries = []
         # Log the action to the Actions table
         cursor.execute("INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?)", (self.id, self.user_object_id, self.name, self.timestamp, self.redo_of))        
-        Action.conn.commit()
+        if commit:
+            Action.conn.commit()
 
     def restore(self) -> None:
         """Restore the action, restoring the state of the referenced research objects to be the state in this Action."""        

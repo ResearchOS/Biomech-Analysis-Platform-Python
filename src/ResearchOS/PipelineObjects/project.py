@@ -52,10 +52,12 @@ class Project(PipelineObject):
             attrs = default_instance_attrs  
         else:
             attrs = default_abstract_attrs    
-        super().__init__(attrs = attrs, **kwargs)            
+        super().__init__(default_attrs = attrs, **kwargs)
     
     def validate_current_analysis_id(self, id: str) -> None:
         """Validate the current analysis ID. If it is not valid, the value is rejected."""        
+        if not isinstance(id, str):
+            raise ValueError("Specified value is not a string!")
         if not self.is_id(id):
             raise ValueError("Specified value is not an ID!")
         parsed_id = self.parse_id(id)
@@ -115,6 +117,7 @@ class Project(PipelineObject):
     def open_project_path(self) -> None:
         """Open the project's path in the Finder/File Explorer."""
         path = self.project_path
+        self._open_path(path)
     
 
 if __name__=="__main__":
