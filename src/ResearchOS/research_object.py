@@ -107,45 +107,35 @@ class ResearchObject():
         sorted_result = [result[index] for index in indices]
         return sorted_result
 
-    def load(self) -> "ResearchObject":
-        """Load the current state of a research object from the database. Modifies the self object."""        
+    def load(self) -> None:
+        """Load the current state of a research object from the database."""        
         cursor = Action.conn.cursor()
-
-        # 2. Get the action ID's for this object that were closed before the action_id.
         sqlquery = f"SELECT action_id, attr_id, attr_value, target_object_id FROM research_object_attributes WHERE object_id = '{self.id}'"
         unordered_attr_result = cursor.execute(sqlquery).fetchall()
         ordered_attr_result = ResearchObject._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
         if len(unordered_attr_result) == 0:
-            raise ValueError("No object with that ID exists.")
-        attr_result = ResearchObject._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
-        curr_obj_action_ids = [row[0] for row in attr_result]
-        curr_obj_attr_ids = [row[1] for row in attr_result]
-        attrs = {}
-        # Get the action ID's for this object by timestamp, descending.        
-        curr_obj_action_ids_str = ",".join([f"'{action_id}'" for action_id in curr_obj_action_ids])
-        sqlquery = f"SELECT action_id, timestamp FROM actions WHERE action_id IN ({curr_obj_action_ids_str}) ORDER BY timestamp DESC"
-        action_ids_in_time_order = cursor.execute(sqlquery).fetchall()
-        action_ids_in_time_order = [row[0] for row in action_ids_in_time_order]        
-        used_attr_ids = []
+            raise ValueError("No object with that ID exists.")         
+                             
+        curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
+        used_attr_ids = []
+        attrs = {}
         attrs["id"] = self.id
-        for curr_obj_action_id in action_ids_in_time_order:
-            index = curr_obj_action_ids.index(curr_obj_action_id)
-            attr_id = attr_result[index][1]
+        for row in ordered_attr_result:            
+            attr_id = row[1]
+            attr_value = row[2]
+            target_object_id = row[3]
             if attr_id in used_attr_ids:
                 continue
-            used_attr_ids.append(attr_id)
-            attr_value = json.loads(attr_result[index][2])
-            target_object_id = attr_result[index][3]
-            if target_object_id is not None and target_object_id not in attrs["target_object_id"]:
-                attrs["target_object_id"].append(target_object_id)
+            else:
+                used_attr_ids.append(attr_id)                        
 
             attr_name = ResearchObject._get_attr_name(attr_id)
             attr_type = ResearchObject._get_attr_type(attr_id)
             attr_val = attr_type(attr_value)   
             if attr_value is None:
                 attr_val = None            
-            # Translate the attribute from string to the propre type/format.                     
+            # Translate the attribute from string to the proper type/format.                     
             try:
                 json_translate_method = eval("self.json_translate_" + attr_name)
                 attr_val = json_translate_method(attr_value)
@@ -194,7 +184,7 @@ class ResearchObject():
         except AttributeError as e:
             self._default_store_obj_attr(__name, __value, action = action)            
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
-        pattern = "^current_[\w\d]+_id$"
+        pattern = r"^current_[\w\d]+_id$"
         if re.match(pattern, __name) and validate:
             action = self._default_store_edge_attr(target_object_id = __value, name = __name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
         if self.__dict__.get(__name, None) != __value:
@@ -216,7 +206,6 @@ class ResearchObject():
         sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"                
         action.add_sql_query(sqlquery)
         return action
-
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
