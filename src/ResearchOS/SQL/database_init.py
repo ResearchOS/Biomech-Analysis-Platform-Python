@@ -1,46 +1,31 @@
 """Initialize a database to handle all of the data for the application."""
 
 import sqlite3, os
+DEFAULT_USER_ID = "US000000_000"
 
 class DBInitializer():
     def __init__(self, db_file: str):        
         os.remove(db_file)        
         self._conn = sqlite3.connect(db_file)   
-        full_file = os.path.abspath(db_file) 
-        os.chmod(full_file, 0o755)
-        # os.chmod(full_file, 755)
+        full_file = os.path.abspath(db_file)         
         folder = os.path.dirname(full_file)
+        os.chmod(full_file, 0o755)
         os.chmod(folder, 0o755)
-        # os.chmod(folder, 755)
         self.create_database()
         self._conn.commit()
         self.init_current_user_id()
-        # self.init_values()
-        # self._conn.commit()
         self._conn.cursor().close()
         self._conn.close()
 
-    def init_current_user_id(self, user_id: str = "US000000_000"):
+    def init_current_user_id(self, user_id: str = DEFAULT_USER_ID):
         """Initialize the current user ID."""
         cursor = self._conn.cursor()
         sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{user_id}')"
         cursor.execute(sqlquery)
         self._conn.commit()
-        # sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('US000000_001')"
-        # cursor.execute(sqlquery)
-        # self._conn.commit()
         sqlquery = f"INSERT INTO current_user (current_user_object_id) VALUES ('{user_id}')"
         cursor.execute(sqlquery)
-        self._conn.commit()        
-
-    def init_values(self):
-        """Initialize the values in the database."""
-        from src.ResearchOS import User
-        # Current User
-        # default_user_object_id = "US000000_000"
-        # User.set_current_user_object_id("US000000_000")
-        # user = User(id = default_user_object_id, name = "Default User", current_user_id = True)
-        # User.set_current_user_object_id(user.id)        
+        self._conn.commit()             
 
     def create_database(self):
         """Create the database and all of its tables."""
@@ -53,8 +38,10 @@ class DBInitializer():
 
         # Current user table.
         cursor.execute("""CREATE TABLE IF NOT EXISTS current_user (
+                        action_id TEXT PRIMARY KEY,
                         current_user_object_id TEXT,
-                        FOREIGN KEY (current_user_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
+                        FOREIGN KEY (current_user_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
 
         # Settings table. Contains all settings for the application.

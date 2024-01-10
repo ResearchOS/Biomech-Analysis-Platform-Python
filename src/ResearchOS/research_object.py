@@ -80,9 +80,9 @@ class ResearchObject():
             action.add_sql_query(sqlquery)
             action.execute(commit = False)
             if DEFAULT_EXISTS_ATTRIBUTE_NAME not in self.__dict__:
-                self.__setattr__(DEFAULT_EXISTS_ATTRIBUTE_NAME, DEFAULT_EXISTS_ATTRIBUTE_VALUE)
+                self.__setattr__(DEFAULT_EXISTS_ATTRIBUTE_NAME, DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
             if DEFAULT_NAME_ATTRIBUTE_NAME not in self.__dict__:
-                self.__setattr__(DEFAULT_NAME_ATTRIBUTE_NAME, name)
+                self.__setattr__(DEFAULT_NAME_ATTRIBUTE_NAME, name, action = action)
         # Ensure that all of the required attributes are present.
         for default_attr in default_attrs:
             if default_attr in self.__dict__:
@@ -151,7 +151,7 @@ class ResearchObject():
         """Set the attributes of a research object in memory and in the SQL database.
         Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it), and the object is not being initialized."""        
         # TODO: Does this get called when deleting an attribute from an object?
-        # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.
+        # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.        
         if not validate and self.__dict__.get(__name, None) == __value:
             return # No change.
         if __name == "id":
@@ -313,12 +313,13 @@ class ResearchObject():
         
     def is_id(self, id: str) -> bool:
         """Check if the given ID matches the pattern of a valid research object ID."""              
-        pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
+        instance_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
+        abstract_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}$"
         if not isinstance(id, str):
             raise ValueError("id must be a str!")
-        if not re.match(pattern, id):
-            return False
-        return True    
+        if re.match(instance_pattern, id) or re.match(abstract_pattern, id):
+            return True
+        return False    
     
     def _is_id_of_class(self, id: str, cls: type) -> bool:
         """True if the ID is of the proper type, False if not."""
