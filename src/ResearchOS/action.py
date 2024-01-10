@@ -21,16 +21,19 @@ class Action():
     
     def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None):                           
         from src.ResearchOS.user import User
+        cursor = Action.conn.cursor()
         if not id:
-            id = Action._create_uuid()
+            id = Action._create_uuid()            
             if not timestamp:
                 timestamp = datetime.datetime.utcnow()
             if not user_object_id:
                 user_object_id = User.get_current_user_object_id()
+            # Do not commit here! When the action is executed then the action and the other db changes will be committed.
+            cursor.execute("INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?)", (id, user_object_id, name, timestamp, redo_of))
         else:
             # Loading an existing action.
             sqlquery = f"SELECT * FROM actions WHERE action_id = '{id}'"
-            result = Action.conn.cursor().execute(sqlquery).fetchone()            
+            result = cursor.execute(sqlquery).fetchone()            
             if result is None:
                 raise AssertionError(f"Action {id} does not exist.")
             if len(result) > 1:
@@ -136,9 +139,8 @@ class Action():
         for query in self.sql_queries:
             cursor.execute(query)
         self.sql_queries = []
-        # Log the action to the Actions table
-        cursor.execute("INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?)", (self.id, self.user_object_id, self.name, self.timestamp, self.redo_of))        
-        if commit:
+        # Log the action to the Actions table        
+        if commit:            
             Action.conn.commit()
 
     def restore(self) -> None:

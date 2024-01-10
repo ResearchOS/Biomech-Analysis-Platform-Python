@@ -40,8 +40,8 @@ class User(DataObject, PipelineObject):
     def get_current_user_object_id() -> str:
         """Get the ID of the current user."""
         cursor = Action.conn.cursor()
-        sqlquery = "SELECT current_user_object_id FROM current_user"
-        result = cursor.execute(sqlquery).fetchone()
+        sqlquery = "SELECT current_user_object_id, action_id FROM current_user"
+        result = cursor.execute(sqlquery).fetchall()
         if result is not None and len(result) > 1:
             raise AssertionError("There are multiple current users.")
         if result is None or len(result) == 0:            
@@ -50,11 +50,11 @@ class User(DataObject, PipelineObject):
 
     @abstractmethod
     def set_current_user_object_id(user_object_id: str) -> None:
-        """Set the ID of the current user."""        
-        sqlquery = f"INSERT INTO current_user (current_user_object_id) VALUES ('{user_object_id}')"
+        """Set the ID of the current user."""
         action = Action(name = "Set current user" + user_object_id)
+        sqlquery = f"INSERT INTO current_user (action_id, current_user_object_id) VALUES ('{action.id}', '{user_object_id}')"        
         action.add_sql_query(sqlquery)
-        action.execute()    
+        action.execute()
         
     def get_current_project_id(self) -> str:
         """Return the current project object ID for the current user."""                     
