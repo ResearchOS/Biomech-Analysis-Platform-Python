@@ -92,6 +92,9 @@ class ResearchObject():
         if is_new:
             action.execute()
 
+    def _get_time_ordered_action_ids(self, action_id: str = None) -> list[str]:
+        """Given an action id (or None), return the action ID's for this object in time order."""
+
     def load(self) -> "ResearchObject":
         """Load the current state of a research object from the database. Modifies the self object."""        
         cursor = Action.conn.cursor()
