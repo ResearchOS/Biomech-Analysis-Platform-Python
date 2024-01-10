@@ -17,7 +17,7 @@ class Action():
         if not id:
             id = Action._create_uuid()            
             if not timestamp:
-                timestamp = datetime.datetime.utcnow()
+                timestamp = datetime.datetime.now(datetime.UTC)
             if not user_object_id:
                 user_object_id = User.get_current_user_object_id()
             # Do not commit here! When the action is executed then the action and the other db changes will be committed.
@@ -72,21 +72,17 @@ class Action():
         return True    
     
     @abstractmethod
-    def set_current_action(action: "Action") -> None:
-        """Set the current action."""        
+    def get_latest_action(user_id: str = None) -> "Action":
+        """Get the most recent action performed chronologically for the current user."""
         cursor = Action.conn.cursor()
-        setting_name = 'current_action_id'
-        sqlquery = f"INSERT INTO settings (user_object_id, setting_name, setting_value) VALUES ('{action.user_object_id}', '{setting_name}', '{action.id}')"
-        cursor.execute(sqlquery)
-        Action.conn.commit()
-    
-    @abstractmethod
-    def get_current_action() -> "Action":
-        """Get the action that is set as 'current'."""
-        cursor = Action.conn.cursor()  
-        setting_name = 'current_action_id'
-        sqlquery = f"SELECT setting_value FROM settings WHERE setting_name = {setting_name}"
-        result = cursor.execute(sqlquery).fetchone()
+        if not user_id:
+            from src.ResearchOS.user import User
+            user_id = User.get_current_user_object_id()
+        sqlquery = f"SELECT action_id FROM actions WHERE user_object_id = '{user_id}' ORDER BY timestamp DESC LIMIT 1"
+        try:
+            result = cursor.execute(sqlquery).fetchone()
+        except sqlite3.OperationalError:
+            raise AssertionError(f"User {user_id} does not exist.")
         if result is None:
             return None
         id = result[0]

@@ -1,7 +1,6 @@
 from typing import Any
 import re
 from abc import abstractmethod
-import datetime
 import weakref
 import json
 
@@ -64,10 +63,12 @@ class ResearchObject():
             return instance
 
     def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, default_attrs: dict = {}, **kwargs) -> None:
-        """id is required but will actually not be used here because it is assigned during __new__"""
+        """id is required as either an arg or kwarg but will actually not be used here because it is assigned during __new__"""
         id = self.id # self.id always exists by this point thanks to __new__
         if not self.is_id(id):
             raise ValueError("Not an ID!")
+        if "id" in kwargs:
+            del kwargs["id"]
         try:
             # Fails if the object does not exist.
             is_new = False
@@ -78,22 +79,33 @@ class ResearchObject():
             action = Action(name = name)
             sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
             action.add_sql_query(sqlquery)
-            action.execute(commit = False)
-            if DEFAULT_EXISTS_ATTRIBUTE_NAME not in self.__dict__:
-                self.__setattr__(DEFAULT_EXISTS_ATTRIBUTE_NAME, DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
-            if DEFAULT_NAME_ATTRIBUTE_NAME not in self.__dict__:
-                self.__setattr__(DEFAULT_NAME_ATTRIBUTE_NAME, name, action = action)
-        # Ensure that all of the required attributes are present.
-        for default_attr in default_attrs:
-            if default_attr in self.__dict__:
+            action.execute(commit = False)            
+            default_attrs = {**default_attrs, **{DEFAULT_EXISTS_ATTRIBUTE_NAME: DEFAULT_EXISTS_ATTRIBUTE_VALUE, DEFAULT_NAME_ATTRIBUTE_NAME: name}} # Python 3.5 or later
+        all_attrs = {**default_attrs, **kwargs} # Append kwargs to default attributes.
+        for attr in all_attrs:
+            # Skip if it already exists, or if it exists in the object (from being loaded) and is the same as the kwarg's value.
+            if attr in self.__dict__ or (attr in kwargs and attr in self.__dict__ and self.__dict__[attr] != kwargs[attr]):
                 continue
-            # Don't validate during object initialization because the initial values won't pass the validation.
-            self.__setattr__(default_attr, default_attrs[default_attr], validate = False)            
+            validate = False
+            if attr in kwargs:
+                validate = True
+            self.__setattr__(attr, all_attrs[attr], validate = validate)
         if is_new:
             action.execute()
 
-    def _get_time_ordered_action_ids(self, action_id: str = None) -> list[str]:
-        """Given an action id (or None), return the action ID's for this object in time order."""
+    @abstractmethod
+    def _get_time_ordered_result(result: list, action_col_num: int) -> list[str]:
+        """Return the result array from conn.cursor().execute() in reverse chronological order (e.g. latest first)."""
+        unordered_action_ids = [row[action_col_num] for row in result] # A list of action ID's in no particular order.
+        sqlquery = f"SELECT action_id FROM actions WHERE action_id IN ({','.join([f'"{action_id}"' for action_id in unordered_action_ids])}) ORDER BY timestamp DESC"
+        cursor = Action.conn.cursor()
+        ordered_action_ids = cursor.execute(sqlquery).fetchall()
+        if ordered_action_ids is None or len(ordered_action_ids) == 0:
+            raise ValueError("No actions found.")
+        ordered_action_ids = [action_id[0] for action_id in ordered_action_ids]
+        indices = [ordered_action_ids.index(action_id) for action_id in unordered_action_ids]
+        sorted_result = [result[index] for index in indices]
+        return sorted_result
 
     def load(self) -> "ResearchObject":
         """Load the current state of a research object from the database. Modifies the self object."""        
@@ -101,9 +113,11 @@ class ResearchObject():
 
         # 2. Get the action ID's for this object that were closed before the action_id.
         sqlquery = f"SELECT action_id, attr_id, attr_value, target_object_id FROM research_object_attributes WHERE object_id = '{self.id}'"
-        attr_result = cursor.execute(sqlquery).fetchall()
-        if len(attr_result) == 0:
+        unordered_attr_result = cursor.execute(sqlquery).fetchall()
+        ordered_attr_result = ResearchObject._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
+        if len(unordered_attr_result) == 0:
             raise ValueError("No object with that ID exists.")
+        attr_result = ResearchObject._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
         curr_obj_action_ids = [row[0] for row in attr_result]
         curr_obj_attr_ids = [row[1] for row in attr_result]
         attrs = {}
@@ -152,8 +166,8 @@ class ResearchObject():
 
     def __setattr__(self, __name: str, __value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
-        Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it), and the object is not being initialized."""        
-        # TODO: Does this get called when deleting an attribute from an object?
+        Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it).
+        If it is not a built-in ResearchOS attribute, then no validation occurs."""
         # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.        
         if not validate and self.__dict__.get(__name, None) == __value:
             return # No change.
@@ -166,26 +180,28 @@ class ResearchObject():
                 method = eval(f"self.validate_{__name}")
                 method(__value)
             except AttributeError as e:
-                pass
-
-        self.__dict__[__name] = __value        
+                pass              
         
         # Create an action.
         execute_action = False
         if action is None:
             execute_action = True
             action = Action(name = "attribute_changed")
-        # Update the attribute in the database.        
+        # Update the attribute in the database.
         try:
             method = eval(f"self.store_{__name}")
             action = method(__value, action = action)            
         except AttributeError as e:
             self._default_store_obj_attr(__name, __value, action = action)            
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
-        if "current" in __name and "id" in __name and validate:
+        pattern = "^current_[\w\d]+_id$"
+        if re.match(pattern, __name) and validate:
             action = self._default_store_edge_attr(target_object_id = __value, name = __name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
+        if self.__dict__.get(__name, None) != __value:
+            execute_action = True # Need to execute an action if adding an edge.
         if execute_action:
             action.execute()
+        self.__dict__[__name] = __value
 
     def _default_store_edge_attr(self, target_object_id: str, name: str, value: Any, action: Action) -> None:
         """Create a digraph edge between the current object and the target object with the specified attribute."""
