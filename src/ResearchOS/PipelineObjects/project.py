@@ -5,9 +5,9 @@ from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 # Defaults should be of the same type as the expected values.
 default_instance_attrs = {}
-default_instance_attrs["current_analysis_id"] = str
-default_instance_attrs["current_dataset_id"] = str
-default_instance_attrs["project_path"] = str
+default_instance_attrs["current_analysis_id"] = None
+default_instance_attrs["current_dataset_id"] = None
+default_instance_attrs["project_path"] = None
 
 default_abstract_attrs = {}
 
