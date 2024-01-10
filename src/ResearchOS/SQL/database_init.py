@@ -1,6 +1,7 @@
 """Initialize a database to handle all of the data for the application."""
 
-import sqlite3, os
+import sqlite3, os, datetime
+from src.ResearchOS.action import Action
 DEFAULT_USER_ID = "US000000_000"
 
 class DBInitializer():
@@ -23,7 +24,10 @@ class DBInitializer():
         sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{user_id}')"
         cursor.execute(sqlquery)
         self._conn.commit()
-        sqlquery = f"INSERT INTO current_user (current_user_object_id) VALUES ('{user_id}')"
+        action_id = Action._create_uuid()
+        sqlquery = f"INSERT INTO current_user (action_id, current_user_object_id) VALUES ('{action_id}', '{user_id}')"        
+        cursor.execute(sqlquery)
+        sqlquery = f"INSERT INTO actions (action_id, user_object_id, name, timestamp) VALUES ('{action_id}', '{user_id}', 'Initialize current user', '{datetime.datetime.now(datetime.UTC)}')"
         cursor.execute(sqlquery)
         self._conn.commit()             
 
