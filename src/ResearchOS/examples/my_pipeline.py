@@ -23,7 +23,7 @@ from src.ResearchOS.config import ProdConfig
 us = User("US000000_001", name = "Mitchell Tillman", current_user = True)
 User.set_current_user_object_id(us.id)
 pj= Project(id = "PJE55E00_0CE")  # Create a new project and analysis
-us.set_current_project_id(pj.id)  # Set the current project for the user
+us.current_project_id = pj.id  # Set the current project for the user
 an = Analysis(id = "AN1B61E9_5D4")  # Create a new analysis
 pj.test = None
 pj.current_analysis_id = an.id  # Set the current analysis for the project

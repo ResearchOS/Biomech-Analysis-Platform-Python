@@ -42,8 +42,6 @@ class User(DataObject, PipelineObject):
         cursor = Action.conn.cursor()
         sqlquery = "SELECT action_id, current_user_object_id FROM current_user"        
         result = cursor.execute(sqlquery).fetchall()        
-        if result is not None and len(result) > 1:
-            raise AssertionError("There are multiple current users.")
         if result is None or len(result) == 0:
             raise ValueError("There is no current user. This should never happen!")
         ordered_result = User._get_time_ordered_result(result, action_col_num = 0)
