@@ -28,7 +28,6 @@ PyYAML==6.0.1
 pyyaml_env_tag==0.1
 regex==2023.12.25
 requests==2.31.0
--e git+https://github.com/ResearchOS/ResearchOS.git@944e8d4ca72089ed92c8e5f2e91e995a622535b5#egg=ResearchOS
 six==1.16.0
 urllib3==2.1.0
 watchdog==3.0.0

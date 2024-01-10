@@ -2,14 +2,6 @@
 import datetime
 import sqlite3
 from abc import abstractmethod
-import uuid
-
-# import os, sys
-# PROJECT_ROOT = os.path.abspath(os.path.join(
-#                   os.path.dirname(__file__), 
-#                   os.pardir)
-# )
-# sys.path.append(PROJECT_ROOT)
 
 from src.ResearchOS.config import ProdConfig
 
