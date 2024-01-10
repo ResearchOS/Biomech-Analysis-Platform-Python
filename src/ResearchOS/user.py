@@ -4,9 +4,30 @@ from src.ResearchOS.action import Action
 
 from abc import abstractmethod
 
+default_instance_attrs = {}
+default_instance_attrs["current_user_id"] = bool
+
+default_abstract_attrs = {}
+
 class User(DataObject, PipelineObject):
 
     prefix: str = "US"
+
+    def get_default_attrs(self):
+        """Return a dictionary of default instance or abstract attributes, as appropriate for this object."""
+        if self.is_instance_object():
+            return default_instance_attrs
+        return default_abstract_attrs
+    
+    @abstractmethod
+    def get_all_ids() -> list[str]:
+        return super().get_all_ids(User)
+    
+    def __str__(self):
+        return super().__str__(self.get_default_attrs().keys(), self.__dict__)
+    
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(attrs = self.get_default_attrs(), **kwargs)
 
     @abstractmethod
     def new_current(id: str = None, name: str = None):
@@ -21,10 +42,10 @@ class User(DataObject, PipelineObject):
         cursor = Action.conn.cursor()
         sqlquery = "SELECT current_user_object_id FROM current_user"
         result = cursor.execute(sqlquery).fetchone()
-        if result is None or len(result) == 0:
-            return None
-        if len(result) > 1:
+        if result is not None and len(result) > 1:
             raise AssertionError("There are multiple current users.")
+        if result is None or len(result) == 0:            
+            raise ValueError("There is no current user. This should never happen!")
         return result[0]
 
     @abstractmethod

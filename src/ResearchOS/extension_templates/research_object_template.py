@@ -1,7 +1,9 @@
 from src.ResearchOS.DataObjects.data_object import DataObject
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from src.ResearchOS.action import Action
 
 from abc import abstractmethod
+from typing import Any
 import json
 
 default_instance_attrs = {}
@@ -32,28 +34,32 @@ class Template(PipelineObject, DataObject):
 
     #################### Start class-specific attributes ###################
     def validate_attr1(self, attr1: type) -> None:
-        """Validate the value of attr1. If it is not valid, raise a ValueError (or any error besides AttributeError).
+        """Validate the value of attr1. If one of the checks for validity fail, raise a ValueError (or any error besides AttributeError).
         "attr1" must match the attribute name exactly.
-        This method is only called during __setattr__, while the attribute is being set."""
-        pass
+        This method is only called during __setattr__, while the attribute is being set."""        
+        raise NotImplementedError
 
-    def from_json_attr1(self):
+    def from_json_attr1(self) -> str:
         """Translate the value of attr1 from a JSON-friendly format.
         "attr1" must match the attribute name exactly.
         This method is called when loading an attribute from the research_objects_attributes table."""
+        raise NotImplementedError
         return json.loads(self.attr1, indent = 4)
 
-    def to_json_attr1(self):
+    def to_json_attr1(self) -> Any:
         """Translate the value of attr1 into a JSON-friendly format.
         "attr1" must match the attribute name exactly.
         This method is called when storing an attribute in the research_objects_attributes table."""
+        raise NotImplementedError
         return json.dumps(self.attr1, indent = 4)
 
-    def store_attr1(self, attr1: type) -> None:
-        """Custom method to store the value of attr1.
-        "attr1" must match the attribute name exactly.
-        This method is called when storing an attribute in the research_objects_attributes table."""
-        pass
+    def store_attr1(self, attr1: type, action: Action) -> Action:
+        """Custom method to store the value of attr1. "attr1" must match the attribute name exactly.
+        This method is called when storing an attribute in the research_objects_attributes table.
+        action.add_sql_query(sqlquery) to add to the list of sql_queries to be executed."""
+        sqlquery = ""
+        action.add_sql_query(sqlquery)
+        return action
         
     #################### Start Source objects ####################
     def get_template_source_objects(self) -> list:

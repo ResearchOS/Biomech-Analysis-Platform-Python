@@ -1,4 +1,4 @@
-from ResearchOS.research_object import DEFAULT_NAME_ATTRIBUTE_NAME
+from src.ResearchOS.research_object import DEFAULT_NAME_ATTRIBUTE_NAME
 from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from abc import abstractmethod
@@ -33,7 +33,7 @@ class Analysis(PipelineObject):
         return super().__str__(self.get_default_attrs().keys(), self.__dict__)
     
     def __init__(self, **kwargs) -> None:
-        super().__init__(attrs = self.get_default_attrs(), **kwargs)
+        super().__init__(default_attrs = self.get_default_attrs(), **kwargs)
     
     #################### Start class-specific attributes ###################
 
