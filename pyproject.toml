@@ -22,6 +22,7 @@ authors = [
 # dynamic = ["version", "description"]
 description = "Operating system for scientific research."
 readme = "README.md"
+classifiers = []
 # classifiers = [
 #     "Development Status :: 1 - Planning",
 #     "Environment :: Console",
