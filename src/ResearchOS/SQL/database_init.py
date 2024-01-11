@@ -5,8 +5,9 @@ from src.ResearchOS.action import Action
 DEFAULT_USER_ID = "US000000_000"
 
 class DBInitializer():
-    def __init__(self, db_file: str):        
-        os.remove(db_file)        
+    def __init__(self, db_file: str):
+        if os.path.exists(db_file):
+            os.remove(db_file)        
         self._conn = sqlite3.connect(db_file)   
         full_file = os.path.abspath(db_file)         
         folder = os.path.dirname(full_file)

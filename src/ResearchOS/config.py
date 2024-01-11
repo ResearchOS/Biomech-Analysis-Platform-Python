@@ -21,7 +21,7 @@ class GeneralConfig():
     #             ["Plot", "PL"],
     #         ]
 
-class ProdConfig(GeneralConfig):
+class Config(GeneralConfig):
     db_file = 'src/ResearchOS/SQL/database.db'
 
 class DevConfig(GeneralConfig):

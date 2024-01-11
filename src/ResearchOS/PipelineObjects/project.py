@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Any
 
-from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 # Defaults should be of the same type as the expected values.
 default_instance_attrs = {}
@@ -28,7 +28,7 @@ class Project(PipelineObject):
     def new_current(name: str = "New Project") -> "Project":
         """Create a new analysis and set it as the current analysis for the current project.
         Returns the project & analysis objects as a tuple."""
-        from src.ResearchOS.PipelineObjects.analysis import Analysis
+        from ResearchOS import Analysis
         pj = Project(name = name)
         an = Analysis(name = pj.name + "_Default_Analysis")
         pj.current_analysis_id = an.id
@@ -92,25 +92,25 @@ class Project(PipelineObject):
     #################### Start Source objects ####################
     def get_users(self) -> list:
         """Return a list of user objects that belong to this project. Identical to Dataset.get_users()"""
-        from src.ResearchOS.user import User
+        from ResearchOS.user import User
         us_ids = self._get_all_source_object_ids(cls = User)
         return self._gen_obj_or_none(us_ids, User)
     
     #################### Start Target objects ####################
     def get_analyses(self) -> list["Analysis"]:        
         """Return a list of analysis objects in the project."""
-        from src.ResearchOS.PipelineObjects.analysis import Analysis
+        from ResearchOS.PipelineObjects.analysis import Analysis
         an_ids = self._get_all_target_object_ids(cls = Analysis)
         return self._gen_obj_or_none(an_ids, Analysis)
     
     def add_analysis_id(self, analysis_id: str):
         """Add an analysis to the project."""
-        from src.ResearchOS.PipelineObjects.analysis import Analysis        
+        from ResearchOS.PipelineObjects.analysis import Analysis        
         self._add_target_object_id(analysis_id, cls = Analysis)
 
     def remove_analysis_id(self, analysis_id: str):
         """Remove an analysis from the project."""
-        from src.ResearchOS.PipelineObjects.analysis import Analysis        
+        from ResearchOS.PipelineObjects.analysis import Analysis        
         self._remove_target_object_id(analysis_id, cls = Analysis)
 
     #################### Start class-specific methods ####################
@@ -121,7 +121,7 @@ class Project(PipelineObject):
     
 
 if __name__=="__main__":
-    from src.ResearchOS.PipelineObjects.analysis import Analysis
+    from ResearchOS.PipelineObjects.analysis import Analysis
     pj = Project(name = "Test")
     an1 = Analysis()      
     an2 = Analysis()

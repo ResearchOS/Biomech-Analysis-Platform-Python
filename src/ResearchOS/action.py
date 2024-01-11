@@ -3,11 +3,11 @@ import datetime
 import sqlite3
 from abc import abstractmethod
 
-from src.ResearchOS.config import ProdConfig
+from ResearchOS.config import Config
 
 class Action():
 
-    _db_file: str = ProdConfig.db_file
+    _db_file: str = Config.db_file
     # Create a connection to the SQL database.  
     conn = sqlite3.connect(_db_file)
     

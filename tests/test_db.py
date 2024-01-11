@@ -1,5 +1,5 @@
-from src.ResearchOS.SQL.database_init import DBInitializer
-from src.ResearchOS.config import TestConfig
+from ResearchOS import DBInitializer
+from ResearchOS.config import TestConfig
 
 import os
 from unittest import TestCase
