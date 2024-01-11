@@ -15,5 +15,4 @@ from .PipelineObjects.subset import Subset
 from .PipelineObjects.process import Process
 from .variable import Variable
 from .user import User
-# from .action import Action
 from .SQL.database_init import DBInitializer

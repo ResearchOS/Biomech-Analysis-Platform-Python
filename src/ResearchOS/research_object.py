@@ -97,7 +97,8 @@ class ResearchObject():
     def _get_time_ordered_result(result: list, action_col_num: int) -> list[str]:
         """Return the result array from conn.cursor().execute() in reverse chronological order (e.g. latest first)."""
         unordered_action_ids = [row[action_col_num] for row in result] # A list of action ID's in no particular order.
-        sqlquery = f"SELECT action_id FROM actions WHERE action_id IN ({','.join([f'"{action_id}"' for action_id in unordered_action_ids])}) ORDER BY timestamp DESC"
+        action_ids_str = {','.join([f'"{action_id}"' for action_id in unordered_action_ids])}
+        sqlquery = f"SELECT action_id FROM actions WHERE action_id IN ({action_ids_str}) ORDER BY timestamp DESC"
         cursor = Action.conn.cursor()
         ordered_action_ids = cursor.execute(sqlquery).fetchall()
         if ordered_action_ids is None or len(ordered_action_ids) == 0:

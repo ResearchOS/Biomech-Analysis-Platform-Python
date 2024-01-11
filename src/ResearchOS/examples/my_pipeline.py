@@ -5,8 +5,6 @@ import sys
 sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
 import ResearchOS as ros
 
-ros.DBInitializer(ros.Config.db_file)
-
 # from src.ResearchOS.SQL.database_init import DBInitializer as DBInit
 # from src.ResearchOS.config import ProdConfig
 # db = DBInit(ProdConfig.db_file)

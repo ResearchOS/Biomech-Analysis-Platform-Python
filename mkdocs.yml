@@ -1,4 +1,7 @@
 site_name: ResearchOS
+site_author: Mitchell Tillman
+repo_name: ResearchOS
+repo_url: https://github.com/ResearchOS/ResearchOS
 theme:
   name: material
   features:
@@ -6,7 +9,7 @@ theme:
 
 plugins:
   - search
-  - mkdocstrings
-  # handlers:
-  #   python: python
-  #     paths: src
+  - mkdocstrings:
+      default_handler: python
+      # watch:
+      #   - src

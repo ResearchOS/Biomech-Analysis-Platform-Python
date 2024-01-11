@@ -23,7 +23,6 @@ authors = [
 description = "Operating system for scientific research."
 readme = "README.md"
 classifiers = [
-    "Private :: Do Not Upload",
     "Development Status :: 1 - Planning",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
@@ -33,15 +32,17 @@ classifiers = [
     "Operating System :: MacOS :: MacOS X",
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",    
-    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Utilities",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
 ]
 
 [project.urls]
-Documentation = "https://test.com/testme"
-Repository = "https://github.com"
+Documentation = "https://researchos.github.io/ResearchOS/"
+Repository = "https://github.com/ResearchOS/ResearchOS"
 
 [project.optional-dependencies]
 doc = [
