@@ -41,5 +41,3 @@ classifiers = [
 [project.urls]
 Documentation = "https://researchos.github.io/ResearchOS/"
 Repository = "https://github.com/ResearchOS/ResearchOS"
-
-
