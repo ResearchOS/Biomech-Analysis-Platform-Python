@@ -1,4 +1,4 @@
-# Welcome to ResearchOS
+# Welcome to ResearchOS (pre-alpha version)
 
 This is the documentation for [ResearchOS](https://github.com/ResearchOS/ResearchOS), a Python package for scientific computing.
 

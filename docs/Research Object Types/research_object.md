@@ -11,4 +11,4 @@ All Research Objects are one or both of the following:
 
 ![Research Object Class Hierarchy](research_objects_class_hierarchy.png)
 
-::: src.ResearchOS.research_object.ResearchObject
+::: ResearchOS.research_object.ResearchObject
