@@ -22,21 +22,21 @@ authors = [
 # dynamic = ["version", "description"]
 description = "Operating system for scientific research."
 readme = "README.md"
-classifiers = [
-    "Development Status :: 1 - Planning",
-    "Environment :: Console",
-    "Intended Audience :: Science/Research",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Education",
-    "Natural Language :: English",
-    "Operating System :: MacOS :: MacOS X",    
-    "Programming Language :: Python :: 3",
-    "Topic :: Scientific/Engineering",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Utilities",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Operating System :: OS Independent",
-]
+# classifiers = [
+#     "Development Status :: 1 - Planning",
+#     "Environment :: Console",
+#     "Intended Audience :: Science/Research",
+#     "Intended Audience :: Developers",
+#     "Intended Audience :: Education",
+#     "Natural Language :: English",
+#     "Operating System :: MacOS :: MacOS X",    
+#     "Programming Language :: Python :: 3",
+#     "Topic :: Scientific/Engineering",
+#     "Topic :: Software Development :: Libraries :: Python Modules",
+#     "Topic :: Utilities",
+#     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+#     "Operating System :: OS Independent"
+# ]
 
 [project.urls]
 Documentation = "https://researchos.github.io/ResearchOS/"
