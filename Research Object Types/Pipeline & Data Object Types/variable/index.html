@@ -7,6 +7,8 @@
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
       
+        <meta name="author" content="Mitchell Tillman">
+      
       
       
         <link rel="prev" href="../user/">
@@ -150,6 +152,18 @@
 </div>
     
     
+      <div class="md-header__source">
+        <a href="https://github.com/ResearchOS/ResearchOS" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ResearchOS
+  </div>
+</a>
+      </div>
+    
   </nav>
   
 </header>
@@ -184,6 +198,18 @@
     ResearchOS
   </label>
   
+    <div class="md-nav__source">
+      <a href="https://github.com/ResearchOS/ResearchOS" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ResearchOS
+  </div>
+</a>
+    </div>
+  
   <ul class="md-nav__list" data-md-scrollfix>
     
       
@@ -197,7 +223,7 @@
         
   
   <span class="md-ellipsis">
-    Welcome to ResearchOS
+    Welcome to ResearchOS (pre-alpha version)
   </span>
   
 
@@ -732,7 +758,7 @@
         <li class="md-nav__item">
   <a href="#src.ResearchOS.variable.Variable.get_source_object_ids" class="md-nav__link">
     <span class="md-ellipsis">
-      get_source_object_ids()
+      get_source_object_ids
     </span>
   </a>
   
@@ -992,7 +1018,7 @@
         <li class="md-nav__item">
   <a href="#src.ResearchOS.variable.Variable.get_source_object_ids" class="md-nav__link">
     <span class="md-ellipsis">
-      get_source_object_ids()
+      get_source_object_ids
     </span>
   </a>
   
@@ -1012,6 +1038,9 @@
                 
                   
 
+  
+  
+
 
 <h1 id="variable">Variable</h1>
 
@@ -1023,17 +1052,14 @@
 <a id="src.ResearchOS.variable.Variable"></a>
   <div class="doc doc-contents first">
           <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="src.ResearchOS.DataObjects.data_object.DataObject" href="../../Data%20Object%20Types/data_object/#src.ResearchOS.DataObjects.data_object.DataObject">DataObject</a></code>, <code><a class="autorefs autorefs-internal" title="src.ResearchOS.PipelineObjects.pipeline_object.PipelineObject" href="../../Pipeline%20Object%20Types/pipeline_object/#src.ResearchOS.PipelineObjects.pipeline_object.PipelineObject">PipelineObject</a></code></p>
+            Bases: <code><span title="ResearchOS.DataObjects.data_object.DataObject">DataObject</span></code>, <code><span title="ResearchOS.PipelineObjects.pipeline_object.PipelineObject">PipelineObject</span></code></p>
 
   
       <p>Variable class.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/ResearchOS/variable.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 9</span>
 <span class="normal">10</span>
 <span class="normal">11</span>
 <span class="normal">12</span>
@@ -1046,7 +1072,10 @@
 <span class="normal">19</span>
 <span class="normal">20</span>
 <span class="normal">21</span>
-<span class="normal">22</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Variable</span><span class="p">(</span><span class="n">DataObject</span><span class="p">,</span> <span class="n">PipelineObject</span><span class="p">):</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Variable</span><span class="p">(</span><span class="n">DataObject</span><span class="p">,</span> <span class="n">PipelineObject</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Variable class.&quot;&quot;&quot;</span>
 
     <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VR&quot;</span>           
@@ -1060,7 +1089,7 @@
     <span class="c1">#################### Start Source objects ####################</span>
     <span class="k">def</span> <span class="nf">get_source_object_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of all source objects for the Variable.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
+        <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>
         <span class="n">ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="bp">cls</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">)</span> <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
@@ -1083,7 +1112,6 @@
 
 
 
-
 <h2 id="src.ResearchOS.variable.Variable.get_source_object_ids" class="doc doc-heading">
           <code class="highlight language-python"><span class="n">get_source_object_ids</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span></code>
 
@@ -1096,13 +1124,13 @@
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/variable.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">18</span>
-<span class="normal">19</span>
-<span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_source_object_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_source_object_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of all source objects for the Variable.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">src.ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
+    <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>
     <span class="n">ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="bp">cls</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">)</span> <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
@@ -1116,6 +1144,7 @@
   </div>
 
   </div>
+
 
 </div>
 
