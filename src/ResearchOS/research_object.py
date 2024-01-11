@@ -4,11 +4,11 @@ from abc import abstractmethod
 import weakref
 import json
 
-from src.ResearchOS.action import Action
-from src.ResearchOS.config import ProdConfig
+from ResearchOS.action import Action
+from ResearchOS import Config
 
-abstract_id_len = ProdConfig.abstract_id_len
-instance_id_len = ProdConfig.instance_id_len
+abstract_id_len = Config.abstract_id_len
+instance_id_len = Config.instance_id_len
 
 DEFAULT_EXISTS_ATTRIBUTE_NAME = "exists"
 DEFAULT_EXISTS_ATTRIBUTE_VALUE = True
@@ -175,7 +175,6 @@ class ResearchObject():
             json_value = to_json_method(__value)
         except AttributeError as e:            
             json_value = json.dumps(__value, indent = 4)
-
         
         # Create an action.
         execute_action = False
@@ -188,7 +187,7 @@ class ResearchObject():
             method = eval(f"self.store_{__name}")            
             action = method(__value, action = action)
         except AttributeError as e:
-            self._default_store_obj_attr(__name, json_value, action = action)            
+            self._default_store_obj_attr(__name, __value, json_value, action = action)            
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
         pattern = r"^current_[\w\d]+_id$"
         if re.match(pattern, __name) and validate:
@@ -206,9 +205,8 @@ class ResearchObject():
         action.add_sql_query(sqlquery)
         return action
 
-    def _default_store_obj_attr(self, __name: str, __value: Any, action: Action) -> Action:
-        """If no store_attr method exists for the object attribute, use this default method."""                              
-        json_value = json.dumps(__value, indent = 4) # Encode the value as json
+    def _default_store_obj_attr(self, __name: str, __value: Any, json_value: Any, action: Action) -> Action:
+        """If no store_attr method exists for the object attribute, use this default method."""                                      
         sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"                
         action.add_sql_query(sqlquery)
         return action

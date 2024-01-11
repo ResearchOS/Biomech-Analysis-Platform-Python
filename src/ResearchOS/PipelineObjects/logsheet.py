@@ -1,4 +1,4 @@
-from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from abc import abstractmethod
 
@@ -104,34 +104,34 @@ class Logsheet(PipelineObject):
     #################### Start Source objects ####################
     def get_analyses(self) -> list:
         """Return a list of analysis objects that belong to this logsheet."""
-        from src.ResearchOS.PipelineObjects.analysis import Analysis
+        from ResearchOS.PipelineObjects.analysis import Analysis
         an_ids = self._get_all_source_object_ids(cls = Analysis)
         return self._gen_obj_or_none(an_ids, Analysis)
     
     #################### Start Target objects ####################
     def get_variable_ids(self) -> list:
         """Return a list of variable IDs that belong to this logsheet."""
-        from src.ResearchOS.variable import Variable
+        from ResearchOS.variable import Variable
         vr_ids = self._get_all_target_object_ids(cls = Variable)
         return self._gen_obj_or_none(vr_ids, Variable)
     
     def add_variable_id(self, variable_id: str):
         """Add a variable to the logsheet."""
         # TODO: Mapping between variable ID and column header.
-        from src.ResearchOS.variable import Variable
+        from ResearchOS.variable import Variable
         self._add_target_object_id(variable_id, cls = Variable)
 
     def remove_variable_id(self, variable_id: str):
         """Remove a variable from the logsheet."""
-        from src.ResearchOS.variable import Variable
+        from ResearchOS.variable import Variable
         self._remove_target_object_id(variable_id, cls = Variable)
 
     #################### Start class-specific methods ####################
     def read_logsheet(self):
         """Run the logsheet import process."""
-        from src.ResearchOS.PipelineObjects.project import Project
-        from src.ResearchOS.DataObjects.dataset import Dataset
-        from src.ResearchOS.user import User
+        from ResearchOS.PipelineObjects.project import Project
+        from ResearchOS.DataObjects.dataset import Dataset
+        from ResearchOS.user import User
         # 1. Validate that each attribute of the logsheet follows the proper format.
         self.validate_logsheet_headers(self.logsheet_headers)
         self.validate_class_column_names(self.class_column_names)

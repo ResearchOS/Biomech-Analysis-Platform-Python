@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from src.ResearchOS.DataObjects import DataObject
+from ResearchOS import DataObject
 
 default_attrs = {}
 default_attrs["dataset_path"] = None
@@ -21,9 +21,8 @@ class Dataset(DataObject):
 
     @abstractmethod
     def new_current(name: str) -> "Dataset":
-        """Create a new dataset and set it as the current dataset for the current project."""
-        from src.ResearchOS.DataObjects.dataset import Dataset
-        from src.ResearchOS.PipelineObjects.project import Project
+        """Create a new dataset and set it as the current dataset for the current project."""        
+        from ResearchOS import Project
         ds = Dataset(name = name)
         pj = Project.get_current_project_id()
         pj = Project(id = pj)
@@ -42,8 +41,8 @@ class Dataset(DataObject):
         
     def validate_data_schema(self, schema: list) -> None:
         """Validate the data schema follows the proper format."""
-        from src.ResearchOS.user import User
-        from src.ResearchOS.variable import Variable
+        from ResearchOS import User
+        from ResearchOS import Variable
         # TODO: Check that every element is unique, no repeats.
         if not isinstance(schema, list):
             raise ValueError("Schema must be provided as a list!")
@@ -70,41 +69,41 @@ class Dataset(DataObject):
     #################### Start Source objects ####################
     def get_users(self) -> list:
         """Return a list of user objects that belong to this project. Identical to Project.get_users()"""
-        from src.ResearchOS.user import User
+        from ResearchOS import User
         us_ids = self._get_all_source_object_ids(cls = User)
         return self._gen_obj_or_none(us_ids, User)
 
     #################### Start Target objects ####################
     def get_projects(self) -> list:
         """Return a list of project objects that use this dataset."""
-        from src.ResearchOS.PipelineObjects.project import Project
+        from ResearchOS import Project
         pj_ids = self._get_all_target_object_ids(cls = Project)
         return self._gen_obj_or_none(pj_ids, Project)
     
     def add_project_id(self, project_id: str):
         """Add a project to the dataset."""
-        from src.ResearchOS.PipelineObjects.project import Project
+        from ResearchOS import Project
         self._add_target_object_id(project_id, cls = Project)
 
     def remove_project_id(self, project_id: str):
         """Remove a project from the dataset."""
-        from src.ResearchOS.PipelineObjects.project import Project        
+        from ResearchOS import Project        
         self._remove_target_object_id(project_id, cls = Project)
 
     def get_subjects(self) -> list:
         """Return a list of subject objects that belong to this dataset."""
-        from src.ResearchOS.DataObjects.subject import Subject
+        from ResearchOS import Subject
         sj_ids = self._get_all_target_object_ids(cls = Subject)
         return self._gen_obj_or_none(sj_ids, Subject)
     
     def add_subject_id(self, subject_id: str):
         """Add a subject to the dataset."""
-        from src.ResearchOS.DataObjects.subject import Subject
+        from ResearchOS import Subject
         self._add_target_object_id(subject_id, cls = Subject)
 
     def remove_subject_id(self, subject_id: str):
         """Remove a subject from the dataset."""
-        from src.ResearchOS.DataObjects.subject import Subject        
+        from ResearchOS import Subject        
         self._remove_target_object_id(subject_id, cls = Subject)
 
     #################### Start class-specific methods ####################
@@ -116,7 +115,7 @@ if __name__=="__main__":
     from DataObjects.subject import Subject
     from DataObjects.trial import Trial
     from DataObjects.phase import Phase
-    from src.ResearchOS.SQL.database_init import DBInitializer
+    from ResearchOS.SQL.database_init import DBInitializer
     db = DBInitializer()
     
     d1 = Dataset("DS1")

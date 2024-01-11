@@ -1,36 +1,30 @@
 """A Python port of my data analysis pipeline."""
 
-from src.ResearchOS.PipelineObjects.project import Project
-from src.ResearchOS.PipelineObjects.analysis import Analysis
-from src.ResearchOS.PipelineObjects.logsheet import Logsheet
-from src.ResearchOS.DataObjects.dataset import Dataset
-from src.ResearchOS.DataObjects.subject import Subject
-from src.ResearchOS.DataObjects.visit import Visit
-from src.ResearchOS.DataObjects.trial import Trial
-from src.ResearchOS.DataObjects.phase import Phase
-from src.ResearchOS.PipelineObjects.subset import Subset
-from src.ResearchOS.PipelineObjects.process import Process
-from src.ResearchOS.variable import Variable
-from src.ResearchOS.user import User
+# Set Python path
+import sys
+sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
+import ResearchOS as ros
 
-from src.ResearchOS.SQL.database_init import DBInitializer as DBInit
-from src.ResearchOS.config import ProdConfig
+ros.DBInitializer(ros.Config.db_file)
+
+# from src.ResearchOS.SQL.database_init import DBInitializer as DBInit
+# from src.ResearchOS.config import ProdConfig
 # db = DBInit(ProdConfig.db_file)
 # del db
 
 ### PROBLEM: I need to be able to create a current user, but that requires an Action, which requires a current user.
 
-us = User("US000000_001", name = "Mitchell Tillman", current_user = True)
-User.set_current_user_object_id(us.id)
-pj= Project(id = "PJE55E00_0CE")  # Create a new project and analysis
+us = ros.User("US000000_001", name = "Mitchell Tillman", current_user = True)
+ros.User.set_current_user_object_id(us.id)
+pj= ros.Project(id = "PJE55E00_0CE")  # Create a new project and analysis
 us.current_project_id = pj.id  # Set the current project for the user
-an = Analysis(id = "AN1B61E9_5D4")  # Create a new analysis
+an = ros.Analysis(id = "AN1B61E9_5D4")  # Create a new analysis
 pj.test = None
 pj.current_analysis_id = an.id  # Set the current analysis for the project
-lg = Logsheet(id = "LGB4002C_900")  # Create a new logsheet
+lg = ros.Logsheet(id = "LGB4002C_900")  # Create a new logsheet
 an.current_logsheet_id = lg.id  # Set the current logsheet for the analysis
 
-ds = Dataset(id = "DS4E22F9_437")  # Create a new dataset
+ds = ros.Dataset(id = "DS4E22F9_437")  # Create a new dataset
 pj.current_dataset_id = ds.id  # Set the current dataset for the project
 
 path = "/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python"
@@ -42,7 +36,7 @@ lg.logsheet_headers = []  # Set the logsheet headers
 lg.class_column_names = {}  # Set the class column names
 lg.num_header_rows = 3  # Set the number of header rows
 
-ds.schema = [Dataset, Subject, Visit, Trial, Phase]  # Set the dataset schema
+ds.schema = [ros.Dataset, ros.Subject,ros. Visit, ros.Trial, ros.Phase]  # Set the dataset schema
 
 vrs = lg.read_logsheet()  # Read the logsheet
 print(vrs)  # Print the variables so I know which ones were created.

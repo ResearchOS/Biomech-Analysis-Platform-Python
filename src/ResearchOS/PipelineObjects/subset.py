@@ -1,4 +1,4 @@
-from src.ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from abc import abstractmethod
 
@@ -18,7 +18,7 @@ class Subset(PipelineObject):
     def add_criteria(self, var_id: str, value, logic: str) -> None:
         """Add a criterion to the subset.
         Possible values for logic are: ">", "<", ">=", "<=", "==", "!=", "in", "not in", "is", "is not", "contains", "not contains"."""
-        from src.ResearchOS.variable import Variable
+        from ResearchOS import Variable
         logic_options = [">", "<", ">=", "<=", "==", "!=", "in", "not in", "is", "is not", "contains", "not contains"]
         if logic not in logic_options:
             raise ValueError("Invalid logic value.")
@@ -29,21 +29,27 @@ class Subset(PipelineObject):
     #################### Start Source objects ####################
     def get_processes(self) -> list:
         """Return a list of process objects that belong to this subset."""
-        from src.ResearchOS.PipelineObjects.process import Process
+        from ResearchOS import Process
         pr_ids = self._get_all_source_object_ids(cls = Process)
         return [Process(id = pr_id) for pr_id in pr_ids]
     
     def get_plots(self) -> list:
         """Return a list of plot objects that belong to this subset."""
-        from src.ResearchOS.PipelineObjects.plot import Plot
+        from ResearchOS import Plot
         pl_ids = self._get_all_source_object_ids(cls = Plot)
         return [Plot(id = pl_id) for pl_id in pl_ids]
     
-    def get_logsheets(self) -> list:
-        """Return a list of logsheet objects that belong to this subset."""
-        from src.ResearchOS.PipelineObjects.logsheet import Logsheet
-        lg_ids = self._get_all_source_object_ids(cls = Logsheet)
-        return [Logsheet(id = lg_id) for lg_id in lg_ids]
+    def get_trials(self) -> list:
+        """Return a list of trial objects that belong to this subset."""
+        from ResearchOS import Trial
+        tr_ids = self._get_all_source_object_ids(cls = Trial)
+        return [Trial(id = tr_id) for tr_id in tr_ids]
+    
+    # def get_logsheets(self) -> list:
+    #     """Return a list of logsheet objects that belong to this subset."""
+    #     from ResearchOS import Logsheet
+    #     lg_ids = self._get_all_source_object_ids(cls = Logsheet)
+    #     return [Logsheet(id = lg_id) for lg_id in lg_ids]
     
     #################### Start Target objects ####################
     # TODO: Does anything go here? Do subsets point to anything?

@@ -1,5 +1,5 @@
-from src.ResearchOS import ResearchObject
-from typing import Any
+from ResearchOS import ResearchObject
+# from typing import Any
 
 class PipelineObject(ResearchObject):
     """Parent class of all pipeline objects: Projects, Analyses, Logsheets, Process Groups, Processes, Variables, SpecifyTrials, Views"""
