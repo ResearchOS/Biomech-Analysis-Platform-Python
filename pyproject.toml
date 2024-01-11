@@ -12,7 +12,9 @@ packages = [
 [project]
 name = "ResearchOS"
 version = "0.0.0"
-dependencies = []
+dependencies = [
+    "mkdocstrings-python"
+]
 requires-python = ">=3.11"
 authors = [
     {name = "Mitchell Tillman", email = "mtillman14@gmail.com"},
