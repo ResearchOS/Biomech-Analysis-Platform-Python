@@ -5,11 +5,6 @@ import sys
 sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
 import ResearchOS as ros
 
-# from src.ResearchOS.SQL.database_init import DBInitializer as DBInit
-# from src.ResearchOS.config import ProdConfig
-# db = DBInit(ProdConfig.db_file)
-# del db
-
 ### PROBLEM: I need to be able to create a current user, but that requires an Action, which requires a current user.
 
 us = ros.User("US000000_001", name = "Mitchell Tillman", current_user = True)
@@ -29,7 +24,8 @@ path = "/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Ana
 pj.project_path = path  # Set the project path
 ds.dataset_path = path  # Set the dataset path
 
-lg.logsheet_path = path  # Set the logsheet path
+logsheet_path = "/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src/ResearchOS/examples/logsheet.xlsx"
+lg.logsheet_path = logsheet_path  # Set the logsheet path
 lg.logsheet_headers = []  # Set the logsheet headers
 lg.class_column_names = {}  # Set the class column names
 lg.num_header_rows = 3  # Set the number of header rows
@@ -42,22 +38,22 @@ print(vrs)  # Print the variables so I know which ones were created.
 def method():
     pass
 
-ss_slg = Subset(id = "SS6BC411_7E1")
-ss_slg.level = Trial
+ss_slg = ros.Subset(id = "SS6BC411_7E1")
+ss_slg.level = ros.Trial
 ss_slg.conditions["and"]["condition1"] = ["VR5C539C_608", "==", "test"]
 ss_slg.conditions["and"]["condition2"] = ["VR5C539C_608", "==", "test"]
 ss_slg.conditions["and"]["condition3"] = ["VR5C539C_608", "==", "test"]
 
-pr_import = Process(id = "PR640E80_AF2")
-pr_import.level = Process
+pr_import = ros.Process(id = "PR640E80_AF2", level = ros.Process)
+# pr_import.level = ros.Process
 pr_import.method = method
 pr_import.add_subset_id(ss_slg.id)
-vr_fps_used = Variable(id = "VR5C539C_608")
+vr_fps_used = ros.Variable(id = "VR5C539C_608")
 vr_fps_used.hard_coded_value = "test"
 vr_abs_fps_used = vr_fps_used.get_abstract_object()
 vr_abs_fps_used.is_hard_coded = True
 pr_import.add_input_variable_id(id = vr_fps_used.id, name_in_code = "fps_used")
 
-vr_mocap_data = Variable(id = "VR613E29_FFA")
+vr_mocap_data = ros.Variable(id = "VR613E29_FFA")
 pr_import.add_output_variable_id(id = vr_mocap_data.id, name_in_code = "mocap_data")
 pr_import.run_method()

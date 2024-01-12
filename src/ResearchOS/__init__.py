@@ -23,4 +23,4 @@ from .PipelineObjects.subset import Subset
 from .PipelineObjects.process import Process
 from .variable import Variable
 from .user import User
-from .SQL.database_init import DBInitializer
+from .database_init import DBInitializer

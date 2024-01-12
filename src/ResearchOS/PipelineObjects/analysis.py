@@ -4,7 +4,7 @@ from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from abc import abstractmethod
 
 default_instance_attrs = {}
-default_instance_attrs["current_logsheet_id"] = str
+default_instance_attrs["current_logsheet_id"] = None
 
 default_abstract_attrs = {}
 

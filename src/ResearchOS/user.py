@@ -5,7 +5,7 @@ from ResearchOS.action import Action
 from abc import abstractmethod
 
 default_instance_attrs = {}
-default_instance_attrs["current_user_id"] = None
+default_instance_attrs["current_user"] = None
 
 default_abstract_attrs = {}
 
@@ -28,6 +28,19 @@ class User(DataObject, PipelineObject):
     
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(default_attrs = self.get_default_attrs(), **kwargs)
+
+    def validate_current_project_id(self, id: str) -> bool:
+        """Validate the current project ID. If it is not valid, the value is rejected."""        
+        if not isinstance(id, str):
+            raise ValueError("Specified value is not a string!")
+        if not self.is_id(id):
+            raise ValueError("Specified value is not an ID!")
+        parsed_id = self.parse_id(id)
+        if parsed_id[0] != "PJ":
+            raise ValueError("Specified ID is not a Project!")
+        if not self.object_exists(id):
+            raise ValueError("Project does not exist!")
+        
 
     @abstractmethod
     def new_current(id: str = None, name: str = None):

@@ -70,6 +70,7 @@ class ResearchObject():
     def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, default_attrs: dict = {}, **kwargs) -> None:
         """id is required as either an arg or kwarg but will actually not be used here because it is assigned during __new__"""
         id = self.id # self.id always exists by this point thanks to __new__
+        action = Action(name = name)
         if not self.is_id(id):
             raise ValueError("Not an ID!")
         if "id" in kwargs:
@@ -80,21 +81,33 @@ class ResearchObject():
             self.load()
         except ValueError:
             # Create the new object in the database.
-            is_new = True
-            action = Action(name = name)
+            is_new = True            
             sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
             action.add_sql_query(sqlquery)
             action.execute(commit = False)            
             default_attrs = {**default_attrs, **{DEFAULT_EXISTS_ATTRIBUTE_NAME: DEFAULT_EXISTS_ATTRIBUTE_VALUE, DEFAULT_NAME_ATTRIBUTE_NAME: name}} # Python 3.5 or later
-        all_attrs = {**default_attrs, **kwargs} # Append kwargs to default attributes.
+        all_attrs = {**default_attrs, **kwargs} # Append kwargs to default attributes. Overwrites default attributes with same key.
+        # def_attrs = default_attrs.copy()
+        # for attr in def_attrs:
+        #     if attr in kwargs:
+        #         del default_attrs[attr] # Remove the default attribute if it is specified in kwargs.
         for attr in all_attrs:
-            # Skip if it already exists, or if it exists in the object (from being loaded) and is the same as the kwarg's value.
-            if attr in self.__dict__ or (attr in kwargs and attr in self.__dict__ and self.__dict__[attr] != kwargs[attr]):
-                continue
-            validate = False
+            validate = True
+            set_attr_flag = False
+            if attr in default_attrs:
+                if attr not in self.__dict__:
+                    set_attr_flag = True
+                if attr not in kwargs:
+                    validate = False
             if attr in kwargs:
-                validate = True
-            self.__setattr__(attr, all_attrs[attr], validate = validate)
+                if attr not in default_attrs:
+                    validate = False
+                if attr not in self.__dict__:                    
+                    set_attr_flag = True
+                elif self.__dict__[attr] != kwargs[attr]:
+                    set_attr_flag = True
+            if set_attr_flag:
+                self.__setattr__(attr, all_attrs[attr], action = action, validate = validate)
         if is_new:
             action.execute()
 
@@ -109,7 +122,13 @@ class ResearchObject():
         if ordered_action_ids is None or len(ordered_action_ids) == 0:
             raise ValueError("No actions found.")
         ordered_action_ids = [action_id[0] for action_id in ordered_action_ids]
-        indices = [ordered_action_ids.index(action_id) for action_id in unordered_action_ids]
+        indices = []
+        for action_id in ordered_action_ids:
+            for i, unordered_action_id in enumerate(unordered_action_ids):
+                if unordered_action_id == action_id:
+                    indices.append(i)                    
+            # indices.append(unordered_action_ids.index(action_id))
+        # indices = [ordered_action_ids.index(action_id) for action_id in unordered_action_ids]
         sorted_result = [result[index] for index in indices]
         return sorted_result
 
@@ -161,7 +180,7 @@ class ResearchObject():
         Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it).
         If it is not a built-in ResearchOS attribute, then no validation occurs."""
         # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.        
-        if not validate and self.__dict__.get(__name, None) == __value:
+        if __name in self.__dict__ and self.__dict__.get(__name, None) == __value:
             return # No change.
         if __name == "id":
             raise ValueError("Cannot change the ID of a research object.")
@@ -196,7 +215,7 @@ class ResearchObject():
             self._default_store_obj_attr(__name, __value, json_value, action = action)            
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
         pattern = r"^current_[\w\d]+_id$"
-        if re.match(pattern, __name) and validate:
+        if re.match(pattern, __name):
             action = self._default_store_edge_attr(target_object_id = __value, name = __name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
             # if self.__dict__.get(__name, None) != __value:
             #     execute_action = True # Need to execute an action if adding an edge.

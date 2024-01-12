@@ -60,7 +60,7 @@ class Logsheet(PipelineObject):
         if not os.path.isfile(path):
             raise ValueError("Specified path is not a file!")
         # 3. Check that the file is a CSV.
-        if not path.endswith(".csv"):
+        if not path.endswith(("csv", "xlsx", "xls")):
             raise ValueError("Specified file is not a CSV!")
         # 4. Check that the file is not empty.
         if os.stat(path).st_size == 0:

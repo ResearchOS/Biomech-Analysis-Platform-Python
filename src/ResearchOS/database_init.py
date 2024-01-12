@@ -1,14 +1,17 @@
 """Initialize a database to handle all of the data for the application."""
 
 import sqlite3, os, datetime
-from ResearchOS.action import Action
-from ResearchOS.config import Config
+import sys
+sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
+import ResearchOS as ros
+
+# from ResearchOS.config import Config
+config = ros.Config()
 
 DEFAULT_USER_ID = "US000000_000"
 
 class DBInitializer():
-    def __init__(self):
-        config = Config()
+    def __init__(self):        
         db_file = config.db_file
         if os.path.exists(db_file):
             os.remove(db_file)        
@@ -25,6 +28,7 @@ class DBInitializer():
 
     def init_current_user_id(self, user_id: str = DEFAULT_USER_ID):
         """Initialize the current user ID."""
+        from ResearchOS.action import Action
         cursor = self._conn.cursor()
         sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{user_id}')"
         cursor.execute(sqlquery)
@@ -83,6 +87,7 @@ class DBInitializer():
 
         # Research objects attributes table. Lists all attributes that have been associated with research objects.
         cursor.execute("""CREATE TABLE IF NOT EXISTS research_object_attributes (
+                        action_row_id INTEGER PRIMARY KEY AUTOINCREMENT,
                         action_id TEXT NOT NULL,
                         object_id TEXT NOT NULL,
                         attr_id INTEGER NOT NULL,
@@ -91,8 +96,7 @@ class DBInitializer():
                         FOREIGN KEY (attr_id) REFERENCES attributes(attr_id) ON DELETE CASCADE,
                         FOREIGN KEY (object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (target_object_id) REFERENCES research_objects(target_object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id, object_id, attr_id)                        
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE                       
                         )""")
         
         # Data objects data values. Lists all data values for all data objects.
@@ -141,6 +145,5 @@ class DBInitializer():
                         )""")
 
         
-if __name__ == '__main__':
-    from src.ResearchOS.config import ProdConfig
-    db = DBInitializer(ProdConfig.db_file)
+if __name__ == '__main__':    
+    db = DBInitializer()

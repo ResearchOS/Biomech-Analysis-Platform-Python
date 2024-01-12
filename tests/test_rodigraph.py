@@ -1,7 +1,7 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/src")
 from ResearchOS.config import Config
-from ResearchOS.SQL.database_init import DBInitializer
+from ResearchOS.database_init import DBInitializer
 from unittest import TestCase
 
 from src.ResearchOS.Digraph.rodigraph import ResearchObjectDigraph as rod
