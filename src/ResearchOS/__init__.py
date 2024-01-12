@@ -1,3 +1,11 @@
+import os
+# For production, this is expected to raise an error. 
+# For development, this will set the environment to dev.
+try:
+    from .dev_env_file import set_dev_env
+    set_dev_env()    
+except ModuleNotFoundError:
+    os.environ["ENV"] = "prod"
 from .config import Config
 from .research_object import ResearchObject
 from .DataObjects.data_object import DataObject

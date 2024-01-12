@@ -5,14 +5,16 @@ from abc import abstractmethod
 
 from ResearchOS.config import Config
 
+config = Config()
+
 class Action():
 
-    _db_file: str = Config.db_file
+    _db_file: str = config.db_file
     # Create a connection to the SQL database.  
     conn = sqlite3.connect(_db_file)
     
     def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None):                           
-        from src.ResearchOS.user import User
+        from ResearchOS import User
         cursor = Action.conn.cursor()
         if not id:
             id = Action._create_uuid()            

@@ -1,24 +1,23 @@
-from ResearchOS.config import TestConfig
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/src")
+from ResearchOS.config import Config
 from ResearchOS.SQL.database_init import DBInitializer
 from unittest import TestCase
-
-db_file = TestConfig.db_file
 
 import ResearchOS as ros
 from ResearchOS.action import Action
 
-class TestObjCreation(TestCase):
-
-    db_file: str = db_file
+class TestObjCreation(TestCase):    
     
     def setup_class(self):
-        # from ResearchOS import Action
-        Action._db_file = db_file
-        db = DBInitializer(db_file)        
+        os.environ["ENV"] = "test"
+        self.config = Config()
+        Action._db_file = self.config.db_file        
+        db = DBInitializer()        
 
     def teardown_class(self):
         import os
-        os.remove(self.db_file)
+        os.remove(self.config.db_file)
 
     #################### USER & VARIABLE ####################
     def test_create_user(self):

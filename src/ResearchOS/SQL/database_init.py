@@ -1,11 +1,15 @@
 """Initialize a database to handle all of the data for the application."""
 
 import sqlite3, os, datetime
-from src.ResearchOS.action import Action
+from ResearchOS.action import Action
+from ResearchOS.config import Config
+
 DEFAULT_USER_ID = "US000000_000"
 
 class DBInitializer():
-    def __init__(self, db_file: str):
+    def __init__(self):
+        config = Config()
+        db_file = config.db_file
         if os.path.exists(db_file):
             os.remove(db_file)        
         self._conn = sqlite3.connect(db_file)   

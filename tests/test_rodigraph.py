@@ -1,23 +1,23 @@
-from src.ResearchOS.config import TestConfig
-from src.ResearchOS.SQL.database_init import DBInitializer
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/src")
+from ResearchOS.config import Config
+from ResearchOS.SQL.database_init import DBInitializer
 from unittest import TestCase
 
 from src.ResearchOS.Digraph.rodigraph import ResearchObjectDigraph as rod
 import ResearchOS as ros
 import networkx as nx
 
-db_file = TestConfig.db_file
-
-class TestRODigraph(TestCase):
-
-    db_file: str = db_file
+class TestRODigraph(TestCase):    
 
     def setup_class(self):
-        db = DBInitializer(db_file)
+        os.environ["ENV"] = "test"
+        self.config = Config()        
+        db = DBInitializer()  
 
     def teardown_class(self):
         import os
-        os.remove(self.db_file)
+        os.remove(self.config.db_file)
 
     def test_digraph_creation(self):
         """Ensure that the digraph is created with the proper objects and relations."""        

@@ -7,8 +7,13 @@ import json
 from ResearchOS.action import Action
 from ResearchOS import Config
 
-abstract_id_len = Config.abstract_id_len
-instance_id_len = Config.instance_id_len
+config = Config()
+
+config.abstract_id_len = 6
+config.instance_id_len = 3
+
+abstract_id_len = config.abstract_id_len
+instance_id_len = config.instance_id_len
 
 DEFAULT_EXISTS_ATTRIBUTE_NAME = "exists"
 DEFAULT_EXISTS_ATTRIBUTE_VALUE = True
@@ -97,7 +102,7 @@ class ResearchObject():
     def _get_time_ordered_result(result: list, action_col_num: int) -> list[str]:
         """Return the result array from conn.cursor().execute() in reverse chronological order (e.g. latest first)."""
         unordered_action_ids = [row[action_col_num] for row in result] # A list of action ID's in no particular order.
-        action_ids_str = {','.join([f'"{action_id}"' for action_id in unordered_action_ids])}
+        action_ids_str = ', '.join([f'"{action_id}"' for action_id in unordered_action_ids])
         sqlquery = f"SELECT action_id FROM actions WHERE action_id IN ({action_ids_str}) ORDER BY timestamp DESC"
         cursor = Action.conn.cursor()
         ordered_action_ids = cursor.execute(sqlquery).fetchall()
