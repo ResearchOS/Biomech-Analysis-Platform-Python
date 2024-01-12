@@ -132,13 +132,15 @@ class Logsheet(PipelineObject):
         from ResearchOS.PipelineObjects.project import Project
         from ResearchOS.DataObjects.dataset import Dataset
         from ResearchOS.user import User
-        # 1. Validate that each attribute of the logsheet follows the proper format.
+        # 1. Validate that each attribute of this logsheet and the other object types follows the proper format.
         self.validate_logsheet_headers(self.logsheet_headers)
         self.validate_class_column_names(self.class_column_names)
         self.validate_logsheet_path(self.logsheet_path)
         self.validate_num_header_rows(self.num_header_rows)
 
-        pj = Project(id = User.get_current_project_id())
+        us = User(id = User.get_current_user_object_id())
+        pj = Project(id = us.current_project_id)
+        us.validate_current_project_id(pj.id)
         ds = Dataset(id = pj.current_dataset_id)
         ds.validate_dataset_path(ds.dataset_path)
         ds.validate_data_schema(ds.data_schema)

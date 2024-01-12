@@ -18,7 +18,7 @@ packages = ["src/ResearchOS"]
 
 [project]
 name = "ResearchOS"
-version = "0.0.2"
+version = "0.0.3"
 requires-python = ">=3.0"
 authors = [
     {name = "Mitchell Tillman <mtillman14@gmail.com>"},
