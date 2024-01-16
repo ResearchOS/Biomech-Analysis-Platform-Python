@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.github",
+  "/docs",
+  "mkdocs.yml",
+  "requirements_dev.txt",
+  "/archive",
+  "pypi_upload_instructions.md",
+  "dev_env_file.py",
+  "/src/ResearchOS/tests",
+  "/src/ResearchOS/dev_database.db"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ResearchOS"]
+
+[project]
+name = "ResearchOS"
+version = "0.0.4"
+requires-python = ">=3.0"
+authors = [
+    {name = "Mitchell Tillman <mtillman14@gmail.com>"},
+]
+description = "Operating system for scientific research."
+readme = "README.md"
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Natural Language :: English",
+    "Operating System :: MacOS :: MacOS X",    
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent"
+]
+
+[project.urls]
+Documentation = "https://researchos.github.io/ResearchOS/"
+Repository = "https://github.com/ResearchOS/ResearchOS"
