@@ -10,7 +10,9 @@ exclude = [
   "requirements_dev.txt",
   "/archive",
   "pypi_upload_instructions.md",
-  "dev_env_file.py"
+  "dev_env_file.py",
+  "/src/ResearchOS/tests",
+  "/src/ResearchOS/dev_database.db"
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -18,7 +20,7 @@ packages = ["src/ResearchOS"]
 
 [project]
 name = "ResearchOS"
-version = "0.0.3"
+version = "0.0.4"
 requires-python = ">=3.0"
 authors = [
     {name = "Mitchell Tillman <mtillman14@gmail.com>"},
