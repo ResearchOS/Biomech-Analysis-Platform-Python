@@ -970,6 +970,45 @@
 <h1 id="project-description">Project Description</h1>
 <p>Scientific computing is currently fractured, with many competing data standards (or lack thereof) and data processing tools that do not have a common way to communicate. ResearchOS provides a generalized framework to perform scientific computing of any kind, in a modular, easily shareable format.</p>
 <p>The primary innovation behind ResearchOS is to treat every single piece of the scientific data analysis workflow as an object, complete with ID and metadata. While this incurs some code overhead, the ability to have a standardized way to communicate between different parts of a pipeline and to share and integrate others' pipelines is invaluable, and sorely needed in the scientific computing community.</p>
+<h1 id="roadmap">Roadmap</h1>
+<h2 id="version-01">Version 0.1</h2>
+<ul>
+<li>[x] Do multiple things with one Action.</li>
+<li>[x] Create research objects, save and load them with attributes</li>
+<li>[x] Create edges between research objects and allow the edges to have their own attributes.</li>
+<li>[ ] Load and save even complex attributes (e.g. list of dicts) with JSON. Right now I'm just using json.loads()/dumps() but I may need something more sophisticated.</li>
+<li>[ ] Implement read logsheet.<ul>
+<li>[ ] Populate the database with the logsheet data.</li>
+</ul>
+</li>
+<li>[ ] Implement saving participant data to disk/the database.<ul>
+<li>[ ] Implement data schema for participant data</li>
+</ul>
+</li>
+<li>[ ] Implement subsets.</li>
+<li>[ ] Publish my proof of concept to JOSS.</li>
+</ul>
+<h2 id="version-02">Version 0.2</h2>
+<ul>
+<li>[ ] Create a graph of research objects and edges</li>
+<li>[ ] Implement rollback-able version history for research objects</li>
+<li>[ ] Enhance multi-user support on the same machine.</li>
+<li>[ ] Look into CI/CD best practices, improve test coverage.</li>
+<li>[ ] Import/export a ResearchObject for sharing with other users.</li>
+<li>[ ] Export stats results to LaTeX tables.</li>
+<li>[ ] Export images to LaTeX figures.<ul>
+<li>[ ] For images with transparent backgrounds, allow them to be stacked so that multiple can be compared at once.</li>
+</ul>
+</li>
+</ul>
+<h2 id="version-03-and-beyond">Version 0.3 and beyond</h2>
+<ul>
+<li>[ ] Implement a MariaDB-based backend for ResearchOS so that it can be used in a multi-user environment.</li>
+<li>[ ] Implement password-based authentication for the MariaDB backend.</li>
+<li>[ ] Implement a web-based frontend for ResearchOS.</li>
+<li>[ ] Get journals on board with ResearchOS so that they can accept ResearchObjects with submissions.</li>
+<li>[ ] Integrate ResearchOS with participant management systems like RedHat so that people &amp; data are linked.</li>
+</ul>
 
 
 

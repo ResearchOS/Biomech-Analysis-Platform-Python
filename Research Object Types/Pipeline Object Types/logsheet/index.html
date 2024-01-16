@@ -1387,7 +1387,9 @@
 <span class="normal">141</span>
 <span class="normal">142</span>
 <span class="normal">143</span>
-<span class="normal">144</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Logsheet</span><span class="p">(</span><span class="n">PipelineObject</span><span class="p">):</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Logsheet</span><span class="p">(</span><span class="n">PipelineObject</span><span class="p">):</span>
 
     <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;LG&quot;</span>
 
@@ -1438,7 +1440,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Specified path is not a file!&quot;</span><span class="p">)</span>
         <span class="c1"># 3. Check that the file is a CSV.</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.csv&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="s2">&quot;xlsx&quot;</span><span class="p">,</span> <span class="s2">&quot;xls&quot;</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Specified file is not a CSV!&quot;</span><span class="p">)</span>
         <span class="c1"># 4. Check that the file is not empty.</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -1510,13 +1512,15 @@
         <span class="kn">from</span> <span class="nn">ResearchOS.PipelineObjects.project</span> <span class="kn">import</span> <span class="n">Project</span>
         <span class="kn">from</span> <span class="nn">ResearchOS.DataObjects.dataset</span> <span class="kn">import</span> <span class="n">Dataset</span>
         <span class="kn">from</span> <span class="nn">ResearchOS.user</span> <span class="kn">import</span> <span class="n">User</span>
-        <span class="c1"># 1. Validate that each attribute of the logsheet follows the proper format.</span>
+        <span class="c1"># 1. Validate that each attribute of this logsheet and the other object types follows the proper format.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">validate_logsheet_headers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logsheet_headers</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">validate_class_column_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">class_column_names</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">validate_logsheet_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logsheet_path</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">validate_num_header_rows</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_header_rows</span><span class="p">)</span>
 
-        <span class="n">pj</span> <span class="o">=</span> <span class="n">Project</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">get_current_project_id</span><span class="p">())</span>
+        <span class="n">us</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">get_current_user_object_id</span><span class="p">())</span>
+        <span class="n">pj</span> <span class="o">=</span> <span class="n">Project</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">us</span><span class="o">.</span><span class="n">current_project_id</span><span class="p">)</span>
+        <span class="n">us</span><span class="o">.</span><span class="n">validate_current_project_id</span><span class="p">(</span><span class="n">pj</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
         <span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">pj</span><span class="o">.</span><span class="n">current_dataset_id</span><span class="p">)</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">validate_dataset_path</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">dataset_path</span><span class="p">)</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">validate_data_schema</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">data_schema</span><span class="p">)</span>
@@ -1765,18 +1769,22 @@ XXX is the exact name of the attribute. Method name must follow this format.</p>
 <span class="normal">141</span>
 <span class="normal">142</span>
 <span class="normal">143</span>
-<span class="normal">144</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">read_logsheet</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">read_logsheet</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the logsheet import process.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">ResearchOS.PipelineObjects.project</span> <span class="kn">import</span> <span class="n">Project</span>
     <span class="kn">from</span> <span class="nn">ResearchOS.DataObjects.dataset</span> <span class="kn">import</span> <span class="n">Dataset</span>
     <span class="kn">from</span> <span class="nn">ResearchOS.user</span> <span class="kn">import</span> <span class="n">User</span>
-    <span class="c1"># 1. Validate that each attribute of the logsheet follows the proper format.</span>
+    <span class="c1"># 1. Validate that each attribute of this logsheet and the other object types follows the proper format.</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">validate_logsheet_headers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logsheet_headers</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">validate_class_column_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">class_column_names</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">validate_logsheet_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logsheet_path</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">validate_num_header_rows</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_header_rows</span><span class="p">)</span>
 
-    <span class="n">pj</span> <span class="o">=</span> <span class="n">Project</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">get_current_project_id</span><span class="p">())</span>
+    <span class="n">us</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">get_current_user_object_id</span><span class="p">())</span>
+    <span class="n">pj</span> <span class="o">=</span> <span class="n">Project</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">us</span><span class="o">.</span><span class="n">current_project_id</span><span class="p">)</span>
+    <span class="n">us</span><span class="o">.</span><span class="n">validate_current_project_id</span><span class="p">(</span><span class="n">pj</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
     <span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">pj</span><span class="o">.</span><span class="n">current_dataset_id</span><span class="p">)</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">validate_dataset_path</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">dataset_path</span><span class="p">)</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">validate_data_schema</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">data_schema</span><span class="p">)</span>
@@ -1967,7 +1975,7 @@ XXX is the exact name of the attribute. Method name must follow this format.</p>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Specified path is not a file!&quot;</span><span class="p">)</span>
     <span class="c1"># 3. Check that the file is a CSV.</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.csv&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="s2">&quot;xlsx&quot;</span><span class="p">,</span> <span class="s2">&quot;xls&quot;</span><span class="p">)):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Specified file is not a CSV!&quot;</span><span class="p">)</span>
     <span class="c1"># 4. Check that the file is not empty.</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
