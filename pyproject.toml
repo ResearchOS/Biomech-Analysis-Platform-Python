@@ -12,7 +12,8 @@ exclude = [
   "pypi_upload_instructions.md",
   "dev_env_file.py",
   "/src/ResearchOS/tests",
-  "/src/ResearchOS/dev_database.db"
+  "/src/ResearchOS/dev_database.db",
+  "/src/ResearchOS/config_no_prod/"
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -1,3 +1,9 @@
+v0.0.5
+*Hopefully* finalized changes to config.py so it works in all envs.
+
+v0.0.4
+Made some more changes to config.py so that hopefully config works across dev, test, and prod environments!
+
 v0.0.3
 Got the package to fully install, but didn't get it to run. Made changes to dev vs. prod vs. test configs, especially regarding database file locations.
 

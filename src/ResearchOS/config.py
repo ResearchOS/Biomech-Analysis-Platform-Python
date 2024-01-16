@@ -54,7 +54,7 @@ class ProdConfig(GeneralConfig):
 class DevConfig(GeneralConfig):   
     """Get the config file for the development environment.""" 
     default_config_file = str(Path("src", "ResearchOS", "config", "dev_config.json").resolve())
-    config_file = str(Path("src", "ResearchOS", "config_no_prod", "config.json").resolve())
+    config_file = str(Path("src", "ResearchOS", "config_no_prod", "dev_config.json").resolve())
 
 class TestConfig(GeneralConfig):   
     """Get the config file for the test environment."""
