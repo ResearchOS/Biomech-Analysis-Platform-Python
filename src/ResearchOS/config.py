@@ -1,60 +1,84 @@
-# Purpose: Configuration file for the application
+# Purpose: Configuration files for the application
 
-import json, os, sys
+# How this works:
+# 1. There are two "default" config file templates in this project's config folder: dev/prod/test and general.
+#   The general config file contains attributes that are common to all environments.
+# When the application is run:
+# 1. Checks the OS's standard location for the config file's existence. If it exists, it loads it into memory.
+# If it does not exist:
+# 1. The two appropriate config files are both loaded into memory.
+# 2. Saves the config file to the OS's standard location.
+
+import json, os
+from pathlib import Path
+import platform
 
 class GeneralConfig():
 
-    general_config_file: str = "config/general_config.json"
+    default_general_config_file = str(Path("src", "ResearchOS", "config", "general_config.json").resolve())
     general_attr_names = [
         "abstract_id_len",
         "instance_id_len"
-    ]
+    ]   
 
-    def init_config(self, config_file: str) -> None:
-        """Initialize the config file."""
-        
-        attrs = json.load(open(config_file, "r"))
-        self.__dict__.update({"env_attr_names": list(attrs.keys())})
-        self.__dict__.update({"config_file": config_file})
-        self.__dict__.update(attrs)
-
-    def __init__(self, config_file: str = general_config_file) -> None:
+    def __init__(self) -> None:
         """Load all of the attributes from the config file."""
-        self.__dict__.update({"general_config_file": config_file})
-        attrs = json.load(open(config_file, "r"))          
-        self.__dict__.update({"general_attr_names": list(attrs.keys())})
+        # 1. Checks the OS's standard location for the config file's existence. If it exists, it loads it into memory.
+        parent_folder = os.path.dirname(self.default_general_config_file)
+        # Create the parent folder if it doesn't exist.
+        if not os.path.exists(parent_folder):
+            os.makedirs(parent_folder)
+        # Create the config file if it doesn't exist.        
+        if os.path.exists(self.config_file):
+            self.load_config(self.config_file)
+        else:
+            # Merge general and env-specific configs, and save them.
+            self.load_config(self.default_general_config_file)
+            self.load_config(self.default_config_file)
+            self.save_config(self.config_file)                    
+
+    def __setattr__(self, name, value) -> None:
+        """Set the attribute and save the config file."""
+        super().__setattr__(name, value)
+        self.save_config(self.config_file)
+
+    def load_config(self, config_file: str) -> None:
+        """Load all of the attributes from the config file."""
+        if not os.path.exists(config_file):
+            raise FileNotFoundError(f"Config file {config_file} does not exist.")
+        attrs = json.load(open(config_file, "r"))
         self.__dict__.update(attrs)
 
-    def __setattr__(self, name: str, value: str) -> None:
-        """Set the attribute and save it to the config file."""        
-        if name in self.general_attr_names:
-            file = self.general_config_file
-        elif name in self.env_attr_names:
-            file = self.config_file
+    def save_config(self, config_file: str) -> None:
+        """Save all of the attributes to the config file."""
+        attrs = self.__dict__
+        json.dump(attrs, open(config_file, "w"), indent = 4)
 
-        attrs = json.load(open(file, "r"))
-        attrs[name] = value
-        json.dump(attrs, open(file, "w"), indent = 4)
-        setattr(self, name, value)
+def get_os_config_file_path() -> str:
+    """Get the OS's standard location for the config file."""
+    if platform.system() == "Darwin":
+        home_dir = os.path.expanduser("~")
+        base_path = os.path.join(home_dir, "Library", "Application Support", "ResearchOS")
+    elif platform.system() == "Windows":
+        base_path = os.path.join(os.environ["APPDATA"], "ResearchOS")    
+    elif platform.system() == "Linux":
+        base_path = os.path.join(os.environ["HOME"], ".config", "ResearchOS")
+    return os.path.join(base_path, "config.json")
 
 class ProdConfig(GeneralConfig):
-    config_file = "config/prod_config.json"
-    def __init__(self, config_file: str = config_file) -> None:
-        """Initialize the config file."""
-        self.init_config(config_file = config_file)        
+    """Get the config file for the production environment."""
+    default_config_file = str(Path("src", "ResearchOS", "config", "prod_config.json").resolve())
+    config_file = get_os_config_file_path()
 
-class DevConfig(GeneralConfig):
-    # When would I use this one?
-    config_file = "src/ResearchOS/config/dev_config.json"
-    def __init__(self, config_file: str = config_file) -> None:
-        """Initialize the config file."""
-        self.init_config(config_file = config_file)        
+class DevConfig(GeneralConfig):   
+    """Get the config file for the development environment.""" 
+    default_config_file = str(Path("src", "ResearchOS", "config", "dev_config.json").resolve())
+    config_file = str(Path("src", "ResearchOS", "config_no_prod", "config.json").resolve())
 
-class TestConfig(GeneralConfig):    
-    config_file = "src/ResearchOS/config/test_config.json"    
-    def __init__(self, config_file: str = config_file) -> None:
-        """Initialize the config file."""
-        self.init_config(config_file = config_file)    
+class TestConfig(GeneralConfig):   
+    """Get the config file for the test environment."""
+    default_config_file = str(Path("src","ResearchOS","config","test_config.json").resolve())
+    config_file = str(Path("src","ResearchOS","config_no_prod","test_config.json").resolve())     
 
 class Config():
 
@@ -66,12 +90,8 @@ class Config():
         elif os.environ.get("ENV") == "prod":
             config = ProdConfig()
         self.__dict__.update(config.__dict__)
-        self.__dict__.update({"config_file": config.config_file})
-        self.__dict__.update({"db_file": config.db_file})
 
 if __name__=="__main__":
-    os.environ["ENV"] = "test"
+    os.environ["ENV"] = "prod"
     config = Config()
-    print(config.abstract_id_len)
-    config.abstract_id_len = 10
-    print(config.abstract_id_len)
+    # print(config.__dict__)
