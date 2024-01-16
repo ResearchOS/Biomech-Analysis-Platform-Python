@@ -1,0 +1,7 @@
+{
+    "abstract_id_len": 6,
+    "instance_id_len": 3,
+    "db_file": "src/ResearchOS/dev_database.db",
+    "config_file": "/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src/ResearchOS/config_no_prod/config.json",
+    "test": "test"
+}
