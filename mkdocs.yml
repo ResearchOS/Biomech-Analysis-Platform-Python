@@ -11,5 +11,3 @@ plugins:
   - search
   - mkdocstrings:
       default_handler: python
-      # watch:
-      #   - src
