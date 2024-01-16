@@ -30,7 +30,7 @@ lg.logsheet_headers = []  # Set the logsheet headers
 lg.class_column_names = {}  # Set the class column names
 lg.num_header_rows = 3  # Set the number of header rows
 
-ds.schema = [ros.Dataset, ros.Subject,ros. Visit, ros.Trial, ros.Phase]  # Set the dataset schema
+ds.schema = [ros.Dataset, ros.Subject, ros.Visit, ros.Trial, ros.Phase]  # Set the dataset schema
 
 vrs = lg.read_logsheet()  # Read the logsheet
 print(vrs)  # Print the variables so I know which ones were created.
