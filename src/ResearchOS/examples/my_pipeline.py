@@ -28,13 +28,10 @@ lg.logsheet_headers = []  # Set the logsheet headers
 lg.class_column_names = {}  # Set the class column names
 lg.num_header_rows = 3  # Set the number of header rows
 
-ds.schema = [ros.Dataset, ros.Subject, ros.Visit, ros.Trial, ros.Phase]  # Set the dataset schema
+ds.schema = [ros.Dataset, ros.Subject, ros.Visit, ros.Trial]  # Set the dataset schema
 
 vrs = lg.read_logsheet()  # Read the logsheet
 print(vrs)  # Print the variables so I know which ones were created.
-
-def method():
-    pass
 
 ss_slg = ros.Subset(id = "SS6BC411_7E1")
 ss_slg.level = ros.Trial
@@ -43,7 +40,7 @@ ss_slg.conditions["and"]["condition2"] = ["VR5C539C_608", "==", "test"]
 ss_slg.conditions["and"]["condition3"] = ["VR5C539C_608", "==", "test"]
 
 pr_import = ros.Process(id = "PR640E80_AF2", level = ros.Process)
-# pr_import.level = ros.Process
+pr_import.level = [ros.Phase]
 pr_import.method = method
 pr_import.add_subset_id(ss_slg.id)
 vr_fps_used = ros.Variable(id = "VR5C539C_608")

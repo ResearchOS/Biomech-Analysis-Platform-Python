@@ -24,7 +24,6 @@ class ResearchObject():
 
     prefix = "RO" # Testing only
     _objects = weakref.WeakValueDictionary()
-    # _objects_count = {}   
     
     def __hash__(self):
         return hash(self.id)
@@ -86,10 +85,7 @@ class ResearchObject():
             action.execute(commit = False)            
             default_attrs = {**default_attrs, **{DEFAULT_EXISTS_ATTRIBUTE_NAME: DEFAULT_EXISTS_ATTRIBUTE_VALUE, DEFAULT_NAME_ATTRIBUTE_NAME: name}} # Python 3.5 or later
         all_attrs = {**default_attrs, **kwargs} # Append kwargs to default attributes. Overwrites default attributes with same key.
-        # def_attrs = default_attrs.copy()
-        # for attr in def_attrs:
-        #     if attr in kwargs:
-        #         del default_attrs[attr] # Remove the default attribute if it is specified in kwargs.
+
         for attr in all_attrs:
             validate = True
             set_attr_flag = False
@@ -125,9 +121,7 @@ class ResearchObject():
         for action_id in ordered_action_ids:
             for i, unordered_action_id in enumerate(unordered_action_ids):
                 if unordered_action_id == action_id:
-                    indices.append(i)                    
-            # indices.append(unordered_action_ids.index(action_id))
-        # indices = [ordered_action_ids.index(action_id) for action_id in unordered_action_ids]
+                    indices.append(i)
         sorted_result = [result[index] for index in indices]
         return sorted_result
 
@@ -160,7 +154,13 @@ class ResearchObject():
                 from_json_method = eval("self.from_json_" + attr_name)
                 attr_value = from_json_method(attr_value_json)
             except AttributeError as e:
-                attr_value = json.loads(attr_value_json)            
+                attr_value = json.loads(attr_value_json)
+
+            try:
+                method = eval(f"self.load_{attr_name}")            
+                method(attr_value)
+            except AttributeError as e:
+                pass
             # Now that the value is loaded as the proper type/format (and is not None), validate it.
             try:
                 if attr_value is not None:
@@ -193,18 +193,18 @@ class ResearchObject():
             except AttributeError as e:
                 pass
 
-        to_json_method = None
-        try:
-            to_json_method = eval(f"self.to_json_{name}")
-            json_value = to_json_method(value)
-        except AttributeError as e:
-            json_value = json.dumps(value, indent = 4)
-        
         # Create an action.
         execute_action = False
         if action is None:
             execute_action = True
             action = Action(name = "attribute_changed")
+        to_json_method = None
+        try:
+            to_json_method = eval(f"self.to_json_{name}")
+            json_value = to_json_method(value, action = action)
+        except AttributeError as e:
+            json_value = json.dumps(value, indent = 4)
+                
         # Update the attribute in the database.
         try:
             # assert to_json_method is None # Cannot convert to json AND have a store method. Store method takes precedence.
@@ -234,16 +234,16 @@ class ResearchObject():
         """If no store_attr method exists for the object attribute, use this default method."""                                      
         sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(name, value)}', '{json_value}')"                
         action.add_sql_query(sqlquery)
-        return action
-    
-    def _get_subclasses(mod, cls):
-        """Yield all subclasses of cls within module mod.
-        From here: https://stackoverflow.com/questions/44352/iterate-over-subclasses-of-a-given-class-in-a-given-module"""
-        objs = []
-        for name, obj in inspect.getmembers(mod):
-            if hasattr(obj, "__bases__") and cls in obj.__bases__:
-                objs.append(obj)
-        return objs
+        return action  
+
+    def _get_subclasses(self, cls):
+        """Get all subclasses of the provided class
+        Self argument is ignored."""        
+        subclasses = cls.__subclasses__()
+        result = subclasses[:]
+        for subclass in subclasses:
+            result.extend(self._get_subclasses(subclass))
+        return result
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
