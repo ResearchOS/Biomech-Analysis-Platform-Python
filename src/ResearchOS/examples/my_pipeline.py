@@ -5,8 +5,6 @@ import sys
 sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
 import ResearchOS as ros
 
-### PROBLEM: I need to be able to create a current user, but that requires an Action, which requires a current user.
-
 us = ros.User("US000000_001", name = "Mitchell Tillman", current_user = True)
 ros.User.set_current_user_object_id(us.id)
 pj= ros.Project(id = "PJE55E00_0CE")  # Create a new project and analysis

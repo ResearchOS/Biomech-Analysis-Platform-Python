@@ -3,14 +3,12 @@ import re
 from abc import abstractmethod
 import weakref
 import json
+import inspect
 
 from ResearchOS.action import Action
 from ResearchOS import Config
 
 config = Config()
-
-config.abstract_id_len = 6
-config.instance_id_len = 3
 
 abstract_id_len = config.abstract_id_len
 instance_id_len = config.instance_id_len
@@ -55,8 +53,9 @@ class ResearchObject():
             raise ValueError("Only id can be a positional argument")
         if object_id is None:
             object_id = kwargs.get("id", None)        
-        if object_id is None:            
-            object_id = cls.create_id(cls, is_abstract = abstract)
+        if object_id is None:
+            raise ValueError("id is required as either an arg or kwarg") # Temporary - not inherently necessary, but maybe should be when running headless for idempotency?
+            # object_id = cls.create_id(cls, is_abstract = abstract) # Uncomment if/when 0 args/kwargs in constructor is ok.
         if object_id in ResearchObject._objects:
             # ResearchObject._objects_count[object_id] += 1
             return ResearchObject._objects[object_id]
@@ -198,7 +197,7 @@ class ResearchObject():
         try:
             to_json_method = eval(f"self.to_json_{__name}")
             json_value = to_json_method(__value)
-        except AttributeError as e:            
+        except AttributeError as e:
             json_value = json.dumps(__value, indent = 4)
         
         # Create an action.
@@ -211,6 +210,7 @@ class ResearchObject():
             assert to_json_method is None # Cannot convert to json AND have a store method. Store method takes precedence.
             method = eval(f"self.store_{__name}")            
             action = method(__value, action = action)
+            execute_action = True # Just in case.
         except AttributeError as e:
             self._default_store_obj_attr(__name, __value, json_value, action = action)            
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
@@ -235,6 +235,15 @@ class ResearchObject():
         sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"                
         action.add_sql_query(sqlquery)
         return action
+    
+    def _get_subclasses(mod, cls):
+        """Yield all subclasses of cls within module mod.
+        From here: https://stackoverflow.com/questions/44352/iterate-over-subclasses-of-a-given-class-in-a-given-module"""
+        objs = []
+        for name, obj in inspect.getmembers(mod):
+            if hasattr(obj, "__bases__") and cls in obj.__bases__:
+                objs.append(obj)
+        return objs
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################

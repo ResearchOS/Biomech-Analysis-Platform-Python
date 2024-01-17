@@ -1,6 +1,8 @@
 from abc import abstractmethod
+import json, uuid
 
 from ResearchOS import DataObject
+from ResearchOS.action import Action
 
 default_attrs = {}
 default_attrs["dataset_path"] = None
@@ -47,10 +49,10 @@ class Dataset(DataObject):
         if not isinstance(schema, list):
             raise ValueError("Schema must be provided as a list!")
         if len(schema) <= 1:
-            raise ValueError("At least two elements required for the schema! Dataset + one more")
+            raise ValueError("At least two elements required for the schema! Dataset is always first + one more")
         for x in schema:
             if not isinstance(x, type):
-                raise ValueError("Schema must be provided as a list of types!")
+                raise ValueError("Schema must be provided as a list of ResearchObject types!")
         if User in schema:
             raise ValueError("Do not include the User object in the schema! It is assumed to be the first element in the list")
         if Variable in schema:
@@ -58,13 +60,61 @@ class Dataset(DataObject):
         if Dataset != schema[0]:
             raise ValueError("Dataset must be the first element in the list! Each type after that is in sequentially 'decreasing' order.")
 
-    def json_translate_data_schema(self, schema) -> list:
-        """Translate the data schema from to the proper value because the default json translation fails with this data structure."""
-        pass
+    def to_json_data_schema(self, schema) -> list:
+        """Translate the data schema to json because the default json translation fails with types
+        Returns a list of class prefixes."""
+        prefix_schema = []
+        for sch in schema:
+            prefix_schema.append(sch.prefix)
+        return json.dumps(prefix_schema)
 
-    def store_data_schema(self, schema, action):
-        """Method to custom store the data schema."""
-        pass
+    def from_json_data_schema(self, schema) -> list:
+        """Translate the data schema from json because the default json translation fails with this data structure.
+        Returns a list of class objects."""
+        classes = self._get_subclasses(DataObject)
+        json_schema = json.loads(schema) # Should return a list of prefixes.
+        types_schema = [] # Should return a list of DataObject classes.
+        for sch in json_schema:
+            for cls in classes:
+                if sch != cls.prefix:
+                    continue
+                types_schema.append(cls)
+        return types_schema
+
+    def store_data_schema(self, schema: list[str], action: Action) -> None:
+        """Method to custom store the data schema. Gets stored to multiple rows, one per class.
+        Adds the sql queries to the Action object. The Action is executed elsewhere."""
+        # 1. Generate a new schema ID.
+        schema = self.to_json_data_schema(schema)
+        schema_id = Action._create_uuid() # Data schema ID is a UUID.                
+        for sch, idx in enumerate(schema):
+            sqlquery = f"INSERT INTO data_address_schemas (schema_id, level_name, level_num, dataset_id, action_id) VALUES ('{schema_id}', '{sch}', '{idx}', '{self.id}', '{action.id}')"
+            action.add_sql_query(sqlquery)
+
+    def load_data_schema(self, schema_id: str) -> list:
+        """Load the data schema from the database."""
+        cursor = Action.conn.cursor()
+        sqlquery = f"SELECT * FROM data_address_schemas WHERE schema_id = '{schema_id}'"
+        result = cursor.execute(sqlquery).fetchall()
+        schema = []
+        for row in result:
+            schema.append(row[1])
+        return self.from_json_data_schema(schema)
+
+    @abstractmethod
+    def _create_uuid() -> str:
+        """Create the schema_id (as uuid.uuid4()) for the data schema."""
+        import uuid
+        is_unique = False
+        cursor = Action.conn.cursor()
+        while not is_unique:
+            uuid_out = str(uuid.uuid4()) # For testing dataset creation.            
+            sql = f'SELECT schema_id FROM data_address_schemas WHERE schema_id = "{uuid_out}"'
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            if len(rows) == 0:
+                is_unique = True
+        return uuid_out
     
     #################### Start Source objects ####################
     def get_users(self) -> list:
