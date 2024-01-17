@@ -205,9 +205,9 @@ class Logsheet(PipelineObject):
                 # Convert the cell to the appropriate type.
                 conv_header = type_curr(cell)
                 # Get the Variable to assign the value to.
-                var = Variable(id = header[2])
+                var = Variable(id = header[2], parent = dobjs_instances[-1])
                 # Assign the value to the Variable.
-                
+
 
 
 if __name__=="__main__":
