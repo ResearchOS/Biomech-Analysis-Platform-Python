@@ -258,6 +258,15 @@ class ResearchObject():
         for subclass in subclasses:
             result.extend(self._get_subclasses(subclass))
         return result
+    
+    def _is_orphan_with_removal(self, id: str) -> bool:
+        """Check if the object would be orphaned if the specified object ID were removed from its list of parent ID's."""
+        if not self.is_id(id):
+            raise ValueError("Invalid ID.")
+        if not self._is_source(id):
+            raise ValueError("ID is not a source object of the current object.")
+        if len(self._get_all_source_object_ids(type(self))) == 1:
+            return True
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
@@ -398,13 +407,13 @@ class ResearchObject():
     
     def _get_all_target_object_ids(self, cls) -> list[str]:
         """Get all target object ids of the specified source object of the specified type. Immediate neighbors only, equivalent to successors() method"""
-        sql = f'SELECT target_object_id, attr_value FROM research_object_attributes WHERE object_id = "{self.id}"'
+        sql = f'SELECT target_object_id, attr_value FROM research_object_attributes WHERE object_id = "{self.id} AND target_object_id IS NOT NULL"'
         return self.__get_all_related_object_ids(cls, sql)
 
     def __get_all_related_object_ids(self, cls, sql) -> list[str]:
         """Called by _get_all_source_object_ids and _get_all_target_object_ids.
         Get all related object ids of the specified object of the specified type, either source of target objects."""
-        # TODO: Ensure that the edges are not outdated, check the "exists" property.
+        # TODO: Ensure that the edges are not outdated, check the "exists" property of the edge.
         cursor = Action.conn.cursor()
         cursor.execute(sql)
         data = []
