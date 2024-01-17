@@ -19,14 +19,17 @@ The primary innovation behind ResearchOS is to treat every single piece of the s
 - [x] Create research objects, save and load them with attributes
 - [x] Create edges between research objects and allow the edges to have their own attributes.
 - [ ] Load and save even complex attributes (e.g. list of dicts) with JSON. Right now I'm just using json.loads()/dumps() but I may need something more sophisticated.
-- [ ] Implement read logsheet.
-    - [ ] Populate the database with the logsheet data.
+- [ ] Implement Logsheet
+    - [ ] Implement read logsheet.
+        - [ ] Populate the database with the logsheet data.
 - [ ] Implement saving participant data to disk/the database.
     - [ ] Implement data schema for participant data
 - [ ] Implement subsets.
 - [ ] Publish my proof of concept to JOSS.
 
 ## Version 0.2
+- [ ] Implement Plots
+- [ ] Implement Stats
 - [ ] Create a graph of research objects and edges
 - [ ] Implement rollback-able version history for research objects
 - [ ] Enhance multi-user support on the same machine.
