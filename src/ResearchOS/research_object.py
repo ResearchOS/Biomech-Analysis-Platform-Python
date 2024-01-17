@@ -3,7 +3,6 @@ import re
 from abc import abstractmethod
 import weakref
 import json
-import inspect
 
 from ResearchOS.action import Action
 from ResearchOS import Config
@@ -18,6 +17,8 @@ DEFAULT_EXISTS_ATTRIBUTE_VALUE = True
 DEFAULT_NAME_ATTRIBUTE_NAME = "name"
 DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation" 
 DEFAULT_ABSTRACT_KWARG_NAME = "abstract"
+
+ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method.
 
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
@@ -73,6 +74,16 @@ class ResearchObject():
             raise ValueError("Not an ID!")
         if "id" in kwargs:
             del kwargs["id"]
+        if "parent" not in kwargs:
+            if self.prefix not in ok_parent_class_prefixes:
+                raise ValueError("parent is required as a kwarg")
+            # parent = self.get_current_parent_id()
+            
+        parent = kwargs["parent"]
+        if isinstance(parent, ResearchObject):
+            parent = parent.id
+        if not self.object_exists(parent):
+            raise ValueError("parent is not a valid, pre-existing object ID!")        
         try:
             # Fails if the object does not exist.
             is_new = False
@@ -103,6 +114,9 @@ class ResearchObject():
                     set_attr_flag = True
             if set_attr_flag:
                 self.__setattr__(attr, all_attrs[attr], action = action, validate = validate)
+        # If the parent is not an existing parent, then add it as a parent.
+        if not self._is_source(parent):
+            self._add_source_object_id(parent, cls = type(self))
         if is_new:
             action.execute()
 
