@@ -41,7 +41,7 @@ class Dataset(DataObject):
         if not os.path.exists(path):
             raise ValueError("Specified path is not a path or does not currently exist!")        
         
-    def validate_data_schema(self, schema: list) -> None:
+    def validate_schema(self, schema: list) -> None:
         """Validate the data schema follows the proper format."""
         from ResearchOS import User
         from ResearchOS import Variable
@@ -59,6 +59,14 @@ class Dataset(DataObject):
             raise ValueError("Do not include the Variable object in the schema! It is assumed to be the last element in the list")
         if Dataset != schema[0]:
             raise ValueError("Dataset must be the first element in the list! Each type after that is in sequentially 'decreasing' order.")
+        
+    def to_json_schema(self, schema):
+        """Placeholder to make the load happy."""
+        pass
+
+    def from_json_schema(self, schema):
+        """Placeholder to make the load happy."""
+        pass
 
     def to_json_data_schema(self, schema) -> list:
         """Translate the data schema to json because the default json translation fails with types
@@ -66,7 +74,7 @@ class Dataset(DataObject):
         prefix_schema = []
         for sch in schema:
             prefix_schema.append(sch.prefix)
-        return json.dumps(prefix_schema)
+        return prefix_schema
 
     def from_json_data_schema(self, schema) -> list:
         """Translate the data schema from json because the default json translation fails with this data structure.
@@ -81,17 +89,17 @@ class Dataset(DataObject):
                 types_schema.append(cls)
         return types_schema
 
-    def store_data_schema(self, schema: list[str], action: Action) -> None:
+    def store_schema(self, schema: list[str], action: Action) -> None:
         """Method to custom store the data schema. Gets stored to multiple rows, one per class.
         Adds the sql queries to the Action object. The Action is executed elsewhere."""
         # 1. Generate a new schema ID.
         schema = self.to_json_data_schema(schema)
-        schema_id = Action._create_uuid() # Data schema ID is a UUID.                
-        for sch, idx in enumerate(schema):
+        schema_id = Dataset._create_uuid() # Data schema ID is a UUID.                
+        for idx, sch in enumerate(schema):
             sqlquery = f"INSERT INTO data_address_schemas (schema_id, level_name, level_num, dataset_id, action_id) VALUES ('{schema_id}', '{sch}', '{idx}', '{self.id}', '{action.id}')"
             action.add_sql_query(sqlquery)
 
-    def load_data_schema(self, schema_id: str) -> list:
+    def load_schema(self, schema_id: str) -> list:
         """Load the data schema from the database."""
         cursor = Action.conn.cursor()
         sqlquery = f"SELECT * FROM data_address_schemas WHERE schema_id = '{schema_id}'"

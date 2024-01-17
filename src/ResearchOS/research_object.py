@@ -174,31 +174,31 @@ class ResearchObject():
                 
         self.__dict__.update(attrs)
 
-    def __setattr__(self, __name: str, __value: Any, action: Action = None, validate: bool = True) -> None:
+    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
         Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it).
         If it is not a built-in ResearchOS attribute, then no validation occurs."""
         # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.        
-        if __name in self.__dict__ and self.__dict__.get(__name, None) == __value:
+        if name in self.__dict__ and self.__dict__.get(name, None) == value:
             return # No change.
-        if __name == "id":
+        if name == "id":
             raise ValueError("Cannot change the ID of a research object.")
-        if __name[0] == "_":
+        if name[0] == "_":
             return # Don't log private attributes.
         # Validate the value        
         if validate:                                                      
             try:
-                validate_method = eval(f"self.validate_{__name}")
-                validate_method(__value)
+                validate_method = eval(f"self.validate_{name}")
+                validate_method(value)
             except AttributeError as e:
                 pass
 
         to_json_method = None
         try:
-            to_json_method = eval(f"self.to_json_{__name}")
-            json_value = to_json_method(__value)
+            to_json_method = eval(f"self.to_json_{name}")
+            json_value = to_json_method(value)
         except AttributeError as e:
-            json_value = json.dumps(__value, indent = 4)
+            json_value = json.dumps(value, indent = 4)
         
         # Create an action.
         execute_action = False
@@ -207,21 +207,21 @@ class ResearchObject():
             action = Action(name = "attribute_changed")
         # Update the attribute in the database.
         try:
-            assert to_json_method is None # Cannot convert to json AND have a store method. Store method takes precedence.
-            method = eval(f"self.store_{__name}")            
-            action = method(__value, action = action)
+            # assert to_json_method is None # Cannot convert to json AND have a store method. Store method takes precedence.
+            method = eval(f"self.store_{name}")            
+            method(value, action = action)
             execute_action = True # Just in case.
         except AttributeError as e:
-            self._default_store_obj_attr(__name, __value, json_value, action = action)            
+            self._default_store_obj_attr(name, value, json_value, action = action)            
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
         pattern = r"^current_[\w\d]+_id$"
-        if re.match(pattern, __name):
-            action = self._default_store_edge_attr(target_object_id = __value, name = __name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
-            # if self.__dict__.get(__name, None) != __value:
+        if re.match(pattern, name):
+            action = self._default_store_edge_attr(target_object_id = value, name = name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
+            # if self.__dict__.get(name, None) != value:
             #     execute_action = True # Need to execute an action if adding an edge.
         if execute_action:
             action.execute()
-        self.__dict__[__name] = __value
+        self.__dict__[name] = value
 
     def _default_store_edge_attr(self, target_object_id: str, name: str, value: Any, action: Action) -> None:
         """Create a digraph edge between the current object and the target object with the specified attribute."""
@@ -230,9 +230,9 @@ class ResearchObject():
         action.add_sql_query(sqlquery)
         return action
 
-    def _default_store_obj_attr(self, __name: str, __value: Any, json_value: Any, action: Action) -> Action:
+    def _default_store_obj_attr(self, name: str, value: Any, json_value: Any, action: Action) -> Action:
         """If no store_attr method exists for the object attribute, use this default method."""                                      
-        sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(__name, __value)}', '{json_value}')"                
+        sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(name, value)}', '{json_value}')"                
         action.add_sql_query(sqlquery)
         return action
     
