@@ -4,7 +4,7 @@ from abc import abstractmethod
 
 class Trial(DataObject):
 
-    preifx = "TR"
+    prefix = "TR"
     logsheet_header: str = None
 
     @abstractmethod

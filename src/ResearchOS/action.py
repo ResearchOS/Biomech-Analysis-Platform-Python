@@ -27,11 +27,12 @@ class Action():
         else:
             # Loading an existing action.
             sqlquery = f"SELECT * FROM actions WHERE action_id = '{id}'"
-            result = cursor.execute(sqlquery).fetchone()            
+            result = cursor.execute(sqlquery).fetchall()            
             if result is None:
                 raise AssertionError(f"Action {id} does not exist.")
             if len(result) > 1:
                 raise AssertionError(f"Action {id} is not unique.")
+            result = result[0]
             user_object_id = result[1]
             name = result[2]                        
             timestamp = result[3]            
@@ -78,7 +79,7 @@ class Action():
         """Get the most recent action performed chronologically for the current user."""
         cursor = Action.conn.cursor()
         if not user_id:
-            from src.ResearchOS.user import User
+            from ResearchOS import User
             user_id = User.get_current_user_object_id()
         sqlquery = f"SELECT action_id FROM actions WHERE user_object_id = '{user_id}' ORDER BY timestamp DESC LIMIT 1"
         try:

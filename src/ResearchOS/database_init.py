@@ -153,8 +153,7 @@ class DBInitializer():
                         action_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
                         dataset_id TEXT NOT NULL,
-                        level_name TEXT NOT NULL,
-                        level_index TEXT NOT NULL,
+                        levels_ordered TEXT NOT NULL,
                         FOREIGN KEY (dataset_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
