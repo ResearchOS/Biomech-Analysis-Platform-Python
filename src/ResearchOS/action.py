@@ -11,11 +11,12 @@ class Action():
 
     _db_file: str = config.db_file
     # Create a connection to the SQL database.  
-    conn = sqlite3.connect(_db_file)
+    conn: sqlite3.Connection = sqlite3.connect(_db_file)    
     
     def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None):                           
         from ResearchOS import User
-        cursor = Action.conn.cursor()
+        conn = Action.conn
+        cursor = conn.cursor()
         if not id:
             id = Action._create_uuid()            
             if not timestamp:
@@ -56,7 +57,7 @@ class Action():
         is_unique = False
         cursor = Action.conn.cursor()
         while not is_unique:
-            uuid_out = str(uuid.uuid4()) # For testing dataset creation.            
+            uuid_out = str(uuid.uuid4()) # For testing dataset creation.
             sql = f'SELECT action_id FROM actions WHERE action_id = "{uuid_out}"'
             cursor.execute(sql)
             rows = cursor.fetchall()
@@ -125,14 +126,15 @@ class Action():
 
     def execute(self, commit: bool = True) -> None:
         """Run all of the sql queries in the action."""
-        cursor = Action.conn.cursor()
+        conn = Action.conn
+        cursor = conn.cursor()
         # Execute all of the SQL queries        
         for query in self.sql_queries:
             cursor.execute(query)
         self.sql_queries = []
         # Log the action to the Actions table        
         if commit:            
-            Action.conn.commit()
+            conn.commit()
 
     def restore(self) -> None:
         """Restore the action, restoring the state of the referenced research objects to be the state in this Action."""        

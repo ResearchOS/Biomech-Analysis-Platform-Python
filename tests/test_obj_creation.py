@@ -2,12 +2,12 @@ import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/src")
 from ResearchOS.config import Config
 from ResearchOS.database_init import DBInitializer
-from unittest import TestCase
+# from unittest import TestCase
 
 import ResearchOS as ros
 from ResearchOS.action import Action
 
-class TestObjCreation(TestCase):    
+class TestObjCreation:    
     
     def setup_class(self):
         os.environ["ENV"] = "test"
