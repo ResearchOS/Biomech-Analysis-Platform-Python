@@ -4,6 +4,7 @@ import sqlite3, os, datetime
 import sys
 sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
 import ResearchOS as ros
+from ResearchOS.action import Action
 
 # from ResearchOS.config import Config
 config = ros.Config()
@@ -17,13 +18,16 @@ intended_tables = [
 class DBInitializer():
     def __init__(self):        
         db_file = config.db_file
+        Action.conn.close()
         if os.path.exists(db_file):
-            os.remove(db_file)        
-        self._conn = sqlite3.connect(db_file)   
+            os.remove(db_file)
+        Action.conn = sqlite3.connect(db_file)
+        self._conn = Action.conn
+        # self._conn = sqlite3.connect(db_file)   
         full_file = os.path.abspath(db_file)         
         folder = os.path.dirname(full_file)
-        os.chmod(full_file, 0o755)
-        os.chmod(folder, 0o755)
+        # os.chmod(full_file, 0o755)
+        # os.chmod(folder, 0o755)
         self.create_database()
         self._conn.commit()
         self.check_tables_exist()

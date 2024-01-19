@@ -18,7 +18,9 @@ DEFAULT_NAME_ATTRIBUTE_NAME = "name"
 DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation" 
 DEFAULT_ABSTRACT_KWARG_NAME = "abstract"
 
-ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method.
+# DEFAULT_USER_PARENT = "US000000_000"
+
+ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method (or no parent, for User).
 
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
@@ -75,14 +77,16 @@ class ResearchObject():
         if "id" in kwargs:
             del kwargs["id"]
         if "parent" not in kwargs:
-            if self.prefix not in ok_parent_class_prefixes:
-                raise ValueError("parent is required as a kwarg")
-            # parent = self.get_current_parent_id()
-            
-        parent = kwargs["parent"]
+            if self.prefix in ok_parent_class_prefixes:
+                parent = None
+            else:
+                raise ValueError("parent is required as a kwarg")            
+        else:
+            parent = kwargs["parent"]
         if isinstance(parent, ResearchObject):
             parent = parent.id
-        if not self.object_exists(parent):
+            kwargs["parent"] = parent
+        if parent is not None and not self.object_exists(parent):
             raise ValueError("parent is not a valid, pre-existing object ID!")        
         try:
             # Fails if the object does not exist.
@@ -115,7 +119,7 @@ class ResearchObject():
             if set_attr_flag:
                 self.__setattr__(attr, all_attrs[attr], action = action, validate = validate)
         # If the parent is not an existing parent, then add it as a parent.
-        if not self._is_source(parent):
+        if parent and not self._is_source(parent):
             self._add_source_object_id(parent, cls = type(self))
         if is_new:
             action.execute()
@@ -316,10 +320,12 @@ class ResearchObject():
     @abstractmethod
     def _get_attr_id(attr_name: str, attr_value: Any) -> int:
         """Get the ID of an attribute given its name. If it does not exist, create it."""
-        cursor = Action.conn.cursor()
+        conn = Action.conn
+        cursor = conn.cursor()
         sqlquery = f"SELECT attr_id FROM Attributes WHERE attr_name = '{attr_name}'"
         cursor.execute(sqlquery)            
         rows = cursor.fetchall()
+
         if len(rows) > 1:
             raise Exception("More than one attribute with the same name.")
         elif len(rows)==0:
@@ -448,7 +454,7 @@ class ResearchObject():
             return # Already exists.
         action = Action(name = "add_target_object_id")
         json_value = json.dumps(True)
-        sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{id}', {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME)}, '{json_value}')"        
+        sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{id}', {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME, True)}, '{json_value}')"        
         action.add_sql_query(sql)
         action.execute()
 
@@ -468,7 +474,7 @@ class ResearchObject():
 
     def _add_source_object_id(self, id: str, cls: type) -> None:
         """Add a source object ID to the current target object in the database."""
-        if not self._is_id(id):
+        if not self.is_id(id):
             raise ValueError("Invalid ID.")      
         if not self._is_id_of_class(id, cls):
             raise ValueError("ID is of the wrong class!")

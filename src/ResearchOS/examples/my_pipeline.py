@@ -12,7 +12,7 @@ us.current_project_id = pj.id  # Set the current project for the user
 an = ros.Analysis(id = "AN1B61E9_5D4")  # Create a new analysis
 pj.test = None
 pj.current_analysis_id = an.id  # Set the current analysis for the project
-lg = ros.Logsheet(id = "LGB4002C_900")  # Create a new logsheet
+lg = ros.Logsheet(id = "LGB4002C_900", parent = an)  # Create a new logsheet
 an.current_logsheet_id = lg.id  # Set the current logsheet for the analysis
 
 ds = ros.Dataset(id = "DS4E22F9_437")  # Create a new dataset

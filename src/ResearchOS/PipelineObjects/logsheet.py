@@ -1,5 +1,5 @@
-from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
-from ResearchOS import DataObject, Variable
+from ResearchOS import PipelineObject, DataObject, Variable
+from ResearchOS.action import Action
 import json
 
 from abc import abstractmethod
@@ -39,25 +39,25 @@ class Logsheet(PipelineObject):
     def __repr__(self) -> str:
         pass
 
-    def from_json_logsheet_headers(self, json_var: list) -> list:
+    def from_json_logsheet_headers(self, json_var: list, action: Action) -> list:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""        
-        var = None
+        var = json.loads(None)
         return var
     
-    def to_json_logsheet_headers(self, var: list) -> list:
+    def to_json_logsheet_headers(self, var: list, action: Action) -> list:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""        
-        json_var = None
+        json_var = json.dumps(None)
         return json_var
 
-    def from_json_class_column_names(self, json_var: dict) -> dict:
+    def from_json_class_column_names(self, json_var: dict, action: Action) -> dict:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""        
         var = None
         return var
     
-    def to_json_class_column_names(self, var: dict) -> dict:
+    def to_json_class_column_names(self, var: dict, action: Action) -> dict:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
         XXX is the exact name of the attribute. Method name must follow this format."""        
         json_var = None

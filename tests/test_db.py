@@ -1,12 +1,14 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/src")
-import tests
 from ResearchOS.config import Config
+from ResearchOS.action import Action
 from ResearchOS import DBInitializer
 
-from unittest import TestCase
+@pytest.fixture(scope="function")
+def db_conn():
+    return Action.conn
 
-class TestDatabase(TestCase):
+class TestDatabase:
 
     def setup_class(self):        
         self.config = Config()
