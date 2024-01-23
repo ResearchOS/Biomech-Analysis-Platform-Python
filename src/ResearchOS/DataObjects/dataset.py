@@ -17,6 +17,8 @@ class Dataset(DataObject):
     2. data schema: The schema of the dataset (specified as a list of classes)"""
 
     prefix: str = "DS"
+    _current_source_type_prefixes = ["PJ"]
+    _source_type_prefixes = ["PJ"]
 
     @abstractmethod
     def get_all_ids() -> list[str]:
