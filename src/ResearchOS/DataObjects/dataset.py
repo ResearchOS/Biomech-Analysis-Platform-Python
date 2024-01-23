@@ -17,22 +17,12 @@ class Dataset(DataObject):
     2. data schema: The schema of the dataset (specified as a list of classes)"""
 
     prefix: str = "DS"
-    _current_source_type_prefixes = ["PJ"]
-    _source_type_prefixes = ["PJ"]
+    _current_source_type_prefix = "PJ"
+    _source_type_prefix = "PJ"
 
     @abstractmethod
     def get_all_ids() -> list[str]:
         return super().get_all_ids(Dataset)
-
-    @abstractmethod
-    def new_current(name: str) -> "Dataset":
-        """Create a new dataset and set it as the current dataset for the current project."""        
-        from ResearchOS import Project
-        ds = Dataset(name = name)
-        pj = Project.get_current_project_id()
-        pj = Project(id = pj)
-        pj.set_current_dataset_id(ds.id)
-        return ds, pj
     
     def __str__(self):
         return super().__str__(default_instance_attrs.keys(), self.__dict__)
@@ -61,7 +51,9 @@ class Dataset(DataObject):
         # TODO: Check that every element is unique, no repeats.
         if not isinstance(schema, list):
             raise ValueError("Schema must be provided as a list!")
-        if len(schema) <= 1:
+        if len(schema) == 0:
+            return # They're resetting the schema.
+        if len(schema) == 1:
             raise ValueError("At least two elements required for the schema! Dataset is always first + one more")
         for x in schema:
             if not isinstance(x, type):

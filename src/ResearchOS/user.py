@@ -12,7 +12,9 @@ default_abstract_attrs = {}
 
 class User(DataObject, PipelineObject):
 
-    prefix: str = "US"    
+    prefix: str = "US"
+    # _current_source_type_prefixes = None # placeholder
+    _source_type_prefixes = None # placeholder    
 
     def get_default_attrs(self):
         """Return a dictionary of default instance or abstract attributes, as appropriate for this object."""

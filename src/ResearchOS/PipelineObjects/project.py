@@ -19,8 +19,8 @@ class Project(PipelineObject):
     3. project path: The root folder location of the project."""
 
     prefix: str = "PJ"
-    _current_source_type_prefixes = ["US"]
-    _source_type_prefixes = ["US"]
+    _current_source_type_prefix = "US"
+    _source_type_prefix = "US"
 
     @abstractmethod
     def get_all_ids() -> list[str]:
