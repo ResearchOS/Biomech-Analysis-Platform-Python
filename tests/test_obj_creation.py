@@ -24,8 +24,7 @@ class TestObjCreation:
 
     #################### USER & VARIABLE ####################
     def test_create_user(self, db_conn):
-        us = ros.User(id = "US000000_000")
-        an = ros.Analysis(id = "ANFFFFFF_000")
+        us = ros.User(id = "US000000_000")        
         
         us.id == "US000000_000"
         us.exists == True
@@ -36,18 +35,29 @@ class TestObjCreation:
         vr.exists == True
 
     #################### PIPELINE OBJECTS ####################
-    def test_create_project(self, db_conn):        
-        pj = ros.Project(id = "PJ000000_040") # Random ID.
+    def test_create_project(self, db_conn):
+        us = ros.User(id = "US000000_000")        
+        pj = ros.Project(id = "PJ000000_040", parent = us) # Random ID.
+        us.current_project_id == pj.id
         pj.id == "PJ000000_040"
         pj.exists == True
 
-    def test_create_analysis(self, db_conn):        
-        an = ros.Analysis(id = "AN000000_000")
+    def test_create_analysis(self, db_conn):
+        us = ros.User(id = "US000000_000")        
+        pj = ros.Project(id = "PJ000000_040", parent = us) # Random ID.
+        an = ros.Analysis(id = "AN000000_000", parent = pj)
+        pj.current_analysis_id == an.id
+        us.current_project_id == pj.id
         an.id == "AN000000_000"
         an.exists == True
 
-    def test_create_process(self, db_conn):        
-        pr = ros.Process(id = "PR000000_000")
+    def test_create_process(self, db_conn):   
+        us = ros.User(id = "US000000_000")        
+        pj = ros.Project(id = "PJ000000_040", parent = us) # Random ID.
+        an = ros.Analysis(id = "AN000000_000", parent = pj)     
+        pr = ros.Process(id = "PR000000_000", parent = an)
+        pj.current_analysis_id == an.id
+        us.current_project_id == pj.id
         pr.id == "PR000000_000"
         pr.exists == True
 
@@ -102,7 +112,8 @@ if __name__=="__main__":
     toc = TestObjCreation()
     db = toc.setup_class()
     conn = db._conn
-    toc.test_create_user(conn)
+    # toc.test_create_user(conn)
+    toc.test_create_project(conn)
     toc.test_create_dataset(conn)
     toc.test_create_subject(conn)
     toc.test_create_visit(conn)

@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Any
 
-from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS import PipelineObject
 
 # Defaults should be of the same type as the expected values.
 default_instance_attrs = {}
@@ -18,7 +18,9 @@ class Project(PipelineObject):
     2. current_dataset_id: The ID of the current dataset for this project.
     3. project path: The root folder location of the project."""
 
-    prefix: str = "PJ"      
+    prefix: str = "PJ"
+    _current_source_type_prefixes = ["US"]
+    _source_type_prefixes = ["US"]
 
     @abstractmethod
     def get_all_ids() -> list[str]:

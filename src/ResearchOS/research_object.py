@@ -29,6 +29,8 @@ class ResearchObject():
 
     prefix = "RO" # Testing only
     _objects = weakref.WeakValueDictionary()
+    _current_source_type_prefixes = [] # Overwritten by subclasses that need it. For builtin "current_{cls}_id" attributes.
+    _source_type_prefixes = [] # Overwritten by subclasses that need it. For knowing which classes are valid target types.
     
     def __hash__(self):
         return hash(self.id)
@@ -80,7 +82,8 @@ class ResearchObject():
         if "id" in kwargs:
             del kwargs["id"]
         if "parent" not in kwargs:
-            if self.prefix in ok_parent_class_prefixes:
+            if len(self._current_source_type_prefixes) > 0:
+                # Need to auto-add the parent if it is not specified for the classes that support that.
                 parent = None
             else:
                 raise ValueError("parent is required as a kwarg")            
@@ -124,7 +127,7 @@ class ResearchObject():
                 self.__setattr__(attr, all_attrs[attr], action = action, validate = validate)
         # If the parent is not an existing parent, then add it as a parent.
         if parent and not self._is_source(parent):
-            self._add_source_object_id(parent, cls = type(self))
+            self._add_source_object_id(parent)
         if is_new:
             action.execute()
 
@@ -474,14 +477,30 @@ class ResearchObject():
         json_value = json.dumps(False)
         sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', {id}, {ResearchObject._get_attr_id(DEFAULT_NAME_ATTRIBUTE_NAME)}, '{json_value}')"        
         action.add_sql_query(sql)
-        action.execute()
+        action.execute()   
 
-    def _add_source_object_id(self, id: str, cls: type) -> None:
-        """Add a source object ID to the current target object in the database."""
+    def _add_source_object_id(self, id: str) -> None:
+        """Add a source object ID to the current target object in the database.
+        NOTE: I really don't like the way that this method came out. Too many exceptions for too many classes."""   
+        import ResearchOS as ros     
         if not self.is_id(id):
-            raise ValueError("Invalid ID.")      
-        if not self._is_id_of_class(id, cls):
-            raise ValueError("ID is of the wrong class!")
+            raise ValueError("Invalid ID.")
+        
+        prefix = self.parse_id(id)[0]
+        classes = self._get_subclasses(ResearchObject)
+        cls = None
+        for c in classes:
+            if c.prefix == prefix:
+                cls = c
+                break
+        source_obj = cls(id = id)
+        attr_name = "current_" + type(cls).lower() + "_id"
+        if prefix not in self._current_source_type_prefixes:
+            raise ValueError("ID is of the wrong class, cannot be linked to this class type!")        
+        source_obj.__setattr__(attr_name, self.id)
+        if prefix not in self._source_type_prefixes:
+            raise ValueError("ID is of the wrong class, cannot be linked to this class type!")
+
         if self._is_source(id):
             return # Already exists
         action = Action(name = "add_source_object_id")
@@ -490,7 +509,7 @@ class ResearchObject():
         action.add_sql_query(sql)
         action.execute()
 
-    def _remove_source_object_id(self, id: str, cls: type) -> None:
+    def _remove_source_object_id(self, id: str) -> None:
         """Remove a source object ID from the current target object in the database."""
         if not self._is_id(id):
             raise ValueError("Invalid ID.")      

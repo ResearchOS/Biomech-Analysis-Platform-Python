@@ -6,12 +6,13 @@ from abc import abstractmethod
 
 default_instance_attrs = {}
 default_instance_attrs["current_user"] = None
+default_instance_attrs["current_project_id"] = None
 
 default_abstract_attrs = {}
 
 class User(DataObject, PipelineObject):
 
-    prefix: str = "US"
+    prefix: str = "US"    
 
     def get_default_attrs(self):
         """Return a dictionary of default instance or abstract attributes, as appropriate for this object."""
@@ -39,15 +40,14 @@ class User(DataObject, PipelineObject):
         if parsed_id[0] != "PJ":
             raise ValueError("Specified ID is not a Project!")
         if not self.object_exists(id):
-            raise ValueError("Project does not exist!")
-        
+            raise ValueError("Project does not exist!")    
 
-    @abstractmethod
-    def new_current(id: str = None, name: str = None):
-        """Create a new user and set it as the current one."""        
-        user = User(id = id, name = name)
-        User.set_current_user_object_id(id)        
-        return user
+    # @abstractmethod
+    # def new_current(id: str = None, name: str = None):
+    #     """Create a new user and set it as the current one."""        
+    #     user = User(id = id, name = name)
+    #     User.set_current_user_object_id(id)        
+    #     return user
 
     @abstractmethod
     def get_current_user_object_id() -> str:

@@ -7,16 +7,19 @@ import ResearchOS as ros
 
 us = ros.User("US000000_000", name = "Mitchell Tillman", current_user = True)
 ros.User.set_current_user_object_id(us.id)
-pj= ros.Project(id = "PJE55E00_0CE")  # Create a new project and analysis
+pj= ros.Project(id = "PJ000000_000")
 us.current_project_id = pj.id  # Set the current project for the user
+ds = ros.Dataset(id = "DS000000_000")  # Create a new dataset
+pj.current_dataset_id = ds.id  # Set the current dataset for the project
+  # Create a new project and analysis
+
 an = ros.Analysis(id = "AN1B61E9_5D4")  # Create a new analysis
 pj.test = None
 pj.current_analysis_id = an.id  # Set the current analysis for the project
 lg = ros.Logsheet(id = "LGB4002C_900", parent = an)  # Create a new logsheet
 an.current_logsheet_id = lg.id  # Set the current logsheet for the analysis
 
-ds = ros.Dataset(id = "DS4E22F9_437")  # Create a new dataset
-pj.current_dataset_id = ds.id  # Set the current dataset for the project
+
 
 path = "/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python"
 pj.project_path = path  # Set the project path
