@@ -18,6 +18,8 @@ DEFAULT_NAME_ATTRIBUTE_NAME = "name"
 DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation" 
 DEFAULT_ABSTRACT_KWARG_NAME = "abstract"
 
+DEFAULT_USER_ID = "US000000_000"
+
 # DEFAULT_USER_PARENT = "US000000_000"
 
 ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method (or no parent, for User).
@@ -68,9 +70,10 @@ class ResearchObject():
             instance.__dict__['id'] = object_id
             return instance
 
-    def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, default_attrs: dict = {}, **kwargs) -> None:
-        """id is required as either an arg or kwarg but will actually not be used here because it is assigned during __new__"""
-        id = self.id # self.id always exists by this point thanks to __new__
+    def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, default_attrs: dict = {}, action: Action = None, **kwargs) -> None:
+        """id is required as either an arg or kwarg but will actually not be used here because it is assigned during __new__().
+        action is only ever an input during initialization."""
+        id = self.id # self.id always exists by this point thanks to __new__()
         action = Action(name = name)
         if not self.is_id(id):
             raise ValueError("Not an ID!")
@@ -96,7 +99,8 @@ class ResearchObject():
             # Create the new object in the database.
             is_new = True            
             sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
-            action.add_sql_query(sqlquery)
+            if id is not DEFAULT_USER_ID: # Don't add the default user to the database, it's already in there.
+                action.add_sql_query(sqlquery)
             action.execute(commit = False)            
             default_attrs = {**default_attrs, **{DEFAULT_EXISTS_ATTRIBUTE_NAME: DEFAULT_EXISTS_ATTRIBUTE_VALUE, DEFAULT_NAME_ATTRIBUTE_NAME: name}} # Python 3.5 or later
         all_attrs = {**default_attrs, **kwargs} # Append kwargs to default attributes. Overwrites default attributes with same key.

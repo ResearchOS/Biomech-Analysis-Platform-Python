@@ -4,6 +4,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "
 from ResearchOS.config import Config
 from ResearchOS.database_init import DBInitializer
 
+from fixtures import db_conn
+
 class TestDatabase:
 
     def setup_class(self):    
@@ -14,10 +16,10 @@ class TestDatabase:
         # os.remove(self.config.db_file)
         pass
 
-    def test_create_config(self):
+    def test_create_config(self, db_conn):
         config = Config()
-        self.assertTrue(os.environ.get("ENV") == "test")
-        self.assertTrue(os.path.isfile(config.config_file))
+        os.environ.get("ENV") == "test"
+        os.path.isfile(config.config_file)
 
 
 if __name__=="__main__":

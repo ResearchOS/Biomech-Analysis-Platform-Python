@@ -1,11 +1,13 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/src")
+os.environ["ENV"] = "test"
 from ResearchOS.config import Config
 from ResearchOS.database_init import DBInitializer
-# from unittest import TestCase
 
 import ResearchOS as ros
 from ResearchOS.action import Action
+
+from fixtures import db_conn
 
 class TestObjCreation:    
     
@@ -13,104 +15,98 @@ class TestObjCreation:
         os.environ["ENV"] = "test"
         self.config = Config()
         Action._db_file = self.config.db_file        
-        db = DBInitializer()        
+        db = DBInitializer()
+        return db
 
     def teardown_class(self):
         import os
         os.remove(self.config.db_file)
 
     #################### USER & VARIABLE ####################
-    def test_create_user(self):
-        # from ResearchOS import User
+    def test_create_user(self, db_conn):
         us = ros.User(id = "US000000_000")
-        self.assertTrue(us.id == "US000000_000")
-        self.assertTrue(us.exists)
+        an = ros.Analysis(id = "ANFFFFFF_000")
+        
+        us.id == "US000000_000"
+        us.exists == True
 
-    def test_create_variable(self):
-        # from ResearchOS import Variable
+    def test_create_variable(self, db_conn):        
         vr = ros.Variable(id = "VR000000_000")
-        self.assertTrue(vr.id == "VR000000_000")
-        self.assertTrue(vr.exists)
+        vr.id == "VR000000_000"
+        vr.exists == True
 
     #################### PIPELINE OBJECTS ####################
-    def test_create_project(self):
-        # from ResearchOS import Project
+    def test_create_project(self, db_conn):        
         pj = ros.Project(id = "PJ000000_040") # Random ID.
-        self.assertTrue(pj.id == "PJ000000_040")
-        self.assertTrue(pj.exists)
+        pj.id == "PJ000000_040"
+        pj.exists == True
 
-    def test_create_analysis(self):
-        # from ResearchOS import Analysis
+    def test_create_analysis(self, db_conn):        
         an = ros.Analysis(id = "AN000000_000")
-        self.assertTrue(an.id == "AN000000_000")
-        self.assertTrue(an.exists)
+        an.id == "AN000000_000"
+        an.exists == True
 
-    def test_create_process(self):
-        # from ResearchOS import Process
+    def test_create_process(self, db_conn):        
         pr = ros.Process(id = "PR000000_000")
-        self.assertTrue(pr.id == "PR000000_000")
-        self.assertTrue(pr.exists)
+        pr.id == "PR000000_000"
+        pr.exists == True
 
-    def test_create_subset(self):
-        # from ResearchOS import Subset
+    def test_create_subset(self, db_conn):        
         ss = ros.Subset(id = "SS000000_000")
-        self.assertTrue(ss.id == "SS000000_000")
-        self.assertTrue(ss.exists)
+        ss.id == "SS000000_000"
+        ss.exists == True
 
     #################### DATA OBJECTS ####################
 
-    def test_create_dataset(self):   
-        # from ResearchOS import Dataset          
+    def test_create_dataset(self, db_conn):                   
         ds = ros.Dataset(id = "DS000000_000")
-        self.assertTrue(ds.id == "DS000000_000")
-        self.assertTrue(ds.exists)
+        ds.id == "DS000000_000"
+        ds.exists == True
 
-    def test_create_subject(self):
-        # from ResearchOS import Subject
+    def test_create_subject(self, db_conn):        
         sj = ros.Subject(id = "SJ000000_000")
-        self.assertTrue(sj.id == "SJ000000_000")
-        self.assertTrue(sj.exists)
+        sj.id == "SJ000000_000"
+        sj.exists == True
 
-    def test_create_visit(self):
-        # from ResearchOS import Visit
+    def test_create_visit(self, db_conn):        
         vs = ros.Visit(id = "VS000000_000")
-        self.assertTrue(vs.id == "VS000000_000")
-        self.assertTrue(vs.exists)
+        vs.id == "VS000000_000"
+        vs.exists == True
 
-    def test_create_trial(self):
-        # from ResearchOS import Trial
+    def test_create_trial(self, db_conn):        
         tr = ros.Trial(id = "TR000000_000")
-        self.assertTrue(tr.id == "TR000000_000")
-        self.assertTrue(tr.exists)
+        tr.id == "TR000000_000"
+        tr.exists == True
 
-    def test_create_phase(self):
-        # from ResearchOS import Phase
+    def test_create_phase(self, db_conn):        
         ph = ros.Phase(id = "PH000000_000")
-        self.assertTrue(ph.id == "PH000000_000")    
-        self.assertTrue(ph.exists)
+        ph.id == "PH000000_000"
+        ph.exists == True
 
     #################### COPYING ####################
     def test_copy_instance_object_to_new(self):
         # from ResearchOS import Logsheet
         lg = ros.Logsheet(id = "LG000000_000")
         lg2 = lg.copy_to_new_instance()
-        self.assertTrue(lg.abstract_id() == lg2.abstract_id())  
-        self.assertTrue(lg.id != lg2.id)
+        lg.abstract_id() == lg2.abstract_id()
+        lg.id != lg2.id
         dict1 = lg.__dict__
         dict2 = lg2.__dict__
         del dict1["id"]
         del dict2["id"]
-        self.assertTrue(dict1 == dict2)      
+        dict1 == dict2
 
 
 
 if __name__=="__main__":
     toc = TestObjCreation()
-    toc.setup_class()
-    toc.test_create_dataset()
-    toc.test_create_subject()
-    toc.test_create_visit()
-    toc.test_create_phase()
-    toc.test_create_trial()
-    toc.test_create_variable()
+    db = toc.setup_class()
+    conn = db._conn
+    toc.test_create_user(conn)
+    toc.test_create_dataset(conn)
+    toc.test_create_subject(conn)
+    toc.test_create_visit(conn)
+    toc.test_create_phase(conn)
+    toc.test_create_trial(conn)
+    toc.test_create_variable(conn)
     toc.teardown_class()

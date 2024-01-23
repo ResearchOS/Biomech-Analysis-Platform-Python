@@ -23,6 +23,8 @@ class Action():
                 timestamp = datetime.datetime.now(datetime.UTC)
             if not user_object_id:
                 user_object_id = User.get_current_user_object_id()
+                conn = Action.conn
+                cursor = conn.cursor()
             # Do not commit here! When the action is executed then the action and the other db changes will be committed.
             cursor.execute("INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?)", (id, user_object_id, name, timestamp, redo_of))
         else:

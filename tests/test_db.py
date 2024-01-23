@@ -4,22 +4,20 @@ from ResearchOS.config import Config
 from ResearchOS.action import Action
 from ResearchOS import DBInitializer
 
-@pytest.fixture(scope="function")
-def db_conn():
-    return Action.conn
+from fixtures import db_conn
 
 class TestDatabase:
 
     def setup_class(self):        
         self.config = Config()
-        db = DBInitializer()      
+        db = DBInitializer()
 
-    def teardown_class(self):
+    def teardown_class(self, db_conn):
         # os.remove(self.config.db_file)
         pass
 
-    def test_db_exists(self):
-        self.assertTrue(os.path.isfile(self.config.db_file))   
+    def test_db_exists(self, db_conn):
+        assert os.path.isfile(self.config.db_file)
 
 if __name__=="__main__":
     td = TestDatabase()
