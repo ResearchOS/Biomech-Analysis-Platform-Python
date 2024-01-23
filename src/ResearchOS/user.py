@@ -52,11 +52,15 @@ class User(DataObject, PipelineObject):
     @abstractmethod
     def get_current_user_object_id() -> str:
         """Get the ID of the current user."""
+        from ResearchOS import DBInitializer
         cursor = Action.conn.cursor()
         sqlquery = "SELECT action_id, current_user_object_id FROM current_user"        
         result = cursor.execute(sqlquery).fetchall()        
         if result is None or len(result) == 0:
-            raise ValueError("There is no current user. This should never happen!")
+            DBInitializer(remove = False).init_current_user_id() # But then what about if the database loses integrity after creation?
+            cursor = Action.conn.cursor()
+            result = cursor.execute(sqlquery).fetchall()  
+            # raise ValueError("There is no current user. This should never happen!")
         ordered_result = User._get_time_ordered_result(result, action_col_num = 0)
         return ordered_result[0][1]
 
