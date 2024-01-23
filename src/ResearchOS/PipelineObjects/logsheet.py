@@ -15,6 +15,8 @@ default_abstract_attrs = {}
 class Logsheet(PipelineObject):
 
     prefix = "LG"
+    _current_source_type_prefix = "AN"
+    _source_type_prefix = "AN"
 
     @abstractmethod
     def get_all_ids() -> list[str]:

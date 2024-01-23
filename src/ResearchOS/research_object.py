@@ -29,8 +29,8 @@ class ResearchObject():
 
     prefix = "RO" # Testing only
     _objects = weakref.WeakValueDictionary()
-    _current_source_type_prefixes = [] # Overwritten by subclasses that need it. For builtin "current_{cls}_id" attributes.
-    _source_type_prefixes = [] # Overwritten by subclasses that need it. For knowing which classes are valid target types.
+    _current_source_type_prefix = None # Overwritten by subclasses that need it. For builtin "current_{cls}_id" attributes.
+    _source_type_prefix = None # Overwritten by all subclasses except User. For knowing which classes are valid target types.
     
     def __hash__(self):
         return hash(self.id)
@@ -75,6 +75,7 @@ class ResearchObject():
     def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, default_attrs: dict = {}, action: Action = None, **kwargs) -> None:
         """id is required as either an arg or kwarg but will actually not be used here because it is assigned during __new__().
         action is only ever an input during initialization."""
+        import ResearchOS as ros
         id = self.id # self.id always exists by this point thanks to __new__()
         action = Action(name = name)
         if not self.is_id(id):
@@ -82,11 +83,27 @@ class ResearchObject():
         if "id" in kwargs:
             del kwargs["id"]
         if "parent" not in kwargs:
-            if len(self._current_source_type_prefixes) > 0:
+            if self._current_source_type_prefix is not None and not isinstance(self, ros.User):
                 # Need to auto-add the parent if it is not specified for the classes that support that.
-                parent = None
+                cls = self._prefix_to_class(self._current_source_type_prefix)
+                us = ros.User(id = ros.User.get_current_user_object_id())
+                if cls is ros.User:
+                    parent = us
+                else:
+                    pj = ros.Project(id = us.current_project_id)
+                    if cls is ros.Project:
+                        parent = pj
+                    else:
+                        an = ros.Analysis(id = pj.current_analysis_id)
+                        ds = ros.Dataset(id = pj.current_dataset_id)
+                        if cls is ros.Analysis:
+                            parent = an
+                        elif cls is ros.Dataset:
+                            parent = ds                                                
+            elif not isinstance(self, ros.User):
+                raise ValueError("parent is required as a kwarg")
             else:
-                raise ValueError("parent is required as a kwarg")            
+                parent = None
         else:
             parent = kwargs["parent"]
         if isinstance(parent, ResearchObject):
@@ -269,6 +286,13 @@ class ResearchObject():
         for subclass in subclasses:
             result.extend(self._get_subclasses(subclass))
         return result
+    
+    def _prefix_to_class(self, prefix: str) -> type:
+        """Convert a prefix to a class."""
+        for cls in self._get_subclasses(ResearchObject):
+            if cls.prefix == prefix:
+                return cls
+        raise ValueError("No class with that prefix exists.")
     
     def _is_orphan_with_removal(self, id: str) -> bool:
         """Check if the object would be orphaned if the specified object ID were removed from its list of parent ID's."""
@@ -494,7 +518,7 @@ class ResearchObject():
                 cls = c
                 break
         source_obj = cls(id = id)
-        attr_name = "current_" + type(cls).lower() + "_id"
+        attr_name = "current_" + cls.__name__.lower() + "_id"
         if prefix not in self._current_source_type_prefixes:
             raise ValueError("ID is of the wrong class, cannot be linked to this class type!")        
         source_obj.__setattr__(attr_name, self.id)
