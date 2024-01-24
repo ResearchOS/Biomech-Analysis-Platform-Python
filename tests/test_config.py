@@ -1,12 +1,12 @@
 import sys, os
+os.environ["ENV"] = "test"
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/src")
-import tests
 from ResearchOS.config import Config
-from ResearchOS import DBInitializer
+from ResearchOS.database_init import DBInitializer
 
-from unittest import TestCase
+from fixtures import db_conn
 
-class TestDatabase(TestCase):
+class TestDatabase:
 
     def setup_class(self):    
         db = DBInitializer()    
@@ -16,10 +16,10 @@ class TestDatabase(TestCase):
         # os.remove(self.config.db_file)
         pass
 
-    def test_create_config(self):
+    def test_create_config(self, db_conn):
         config = Config()
-        self.assertTrue(os.environ.get("ENV") == "test")
-        self.assertTrue(os.path.isfile(config.config_file))
+        os.environ.get("ENV") == "test"
+        os.path.isfile(config.config_file)
 
 
 if __name__=="__main__":

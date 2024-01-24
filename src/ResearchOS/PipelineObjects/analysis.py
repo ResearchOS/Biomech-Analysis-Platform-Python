@@ -11,6 +11,8 @@ default_abstract_attrs = {}
 class Analysis(PipelineObject):
 
     prefix = "AN"
+    _current_source_type_prefix = "PJ"
+    _source_type_prefix = "PJ"
 
     def get_default_attrs(self):
         """Return a dictionary of default instance or abstract attributes, as appropriate for this object."""

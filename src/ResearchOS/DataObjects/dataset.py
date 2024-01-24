@@ -1,12 +1,13 @@
 from abc import abstractmethod
-import json, uuid
+import json
 
 from ResearchOS import DataObject
 from ResearchOS.action import Action
 
-default_attrs = {}
-default_attrs["dataset_path"] = None
-default_attrs["schema"] = None
+default_abstract_attrs = {}
+default_instance_attrs = {}
+default_instance_attrs["dataset_path"] = None
+default_instance_attrs["schema"] = None
 
 
 class Dataset(DataObject):
@@ -16,23 +17,25 @@ class Dataset(DataObject):
     2. data schema: The schema of the dataset (specified as a list of classes)"""
 
     prefix: str = "DS"
+    _current_source_type_prefix = "PJ"
+    _source_type_prefix = "PJ"
 
     @abstractmethod
     def get_all_ids() -> list[str]:
         return super().get_all_ids(Dataset)
-
-    @abstractmethod
-    def new_current(name: str) -> "Dataset":
-        """Create a new dataset and set it as the current dataset for the current project."""        
-        from ResearchOS import Project
-        ds = Dataset(name = name)
-        pj = Project.get_current_project_id()
-        pj = Project(id = pj)
-        pj.set_current_dataset_id(ds.id)
-        return ds, pj
     
     def __str__(self):
-        return super().__str__(default_attrs.keys(), self.__dict__)
+        return super().__str__(default_instance_attrs.keys(), self.__dict__)
+    
+    def __init__(self, **kwargs):
+        """Initialize the attributes that are required by ResearchOS.
+        Other attributes can be added & modified later."""  
+        attrs = {}
+        if self.is_instance_object():
+            attrs = default_instance_attrs  
+        else:
+            attrs = default_abstract_attrs    
+        super().__init__(default_attrs = attrs, **kwargs)
     
     #################### Start class-specific attributes ###################
     def validate_dataset_path(self, path: str) -> None:
@@ -48,66 +51,48 @@ class Dataset(DataObject):
         # TODO: Check that every element is unique, no repeats.
         if not isinstance(schema, list):
             raise ValueError("Schema must be provided as a list!")
-        if len(schema) <= 1:
+        if len(schema) == 0:
+            return # They're resetting the schema.
+        if len(schema) == 1:
             raise ValueError("At least two elements required for the schema! Dataset is always first + one more")
         for x in schema:
             if not isinstance(x, type):
                 raise ValueError("Schema must be provided as a list of ResearchObject types!")
         if User in schema:
-            raise ValueError("Do not include the User object in the schema! It is assumed to be the first element in the list")
+            raise ValueError("Do not include the User object in the schema! It is implicitly assumed to be the first element in the list")
         if Variable in schema:
-            raise ValueError("Do not include the Variable object in the schema! It is assumed to be the last element in the list")
+            raise ValueError("Do not include the Variable object in the schema! It is implicitly assumed to be the last element in the list")
         if Dataset != schema[0]:
             raise ValueError("Dataset must be the first element in the list! Each type after that is in sequentially 'decreasing' order.")
         
-    def to_json_schema(self, schema):
-        """Placeholder to make the load happy."""
-        pass
-
-    def from_json_schema(self, schema):
-        """Placeholder to make the load happy."""
-        pass
-
-    def to_json_data_schema(self, schema) -> list:
-        """Translate the data schema to json because the default json translation fails with types
-        Returns a list of class prefixes."""
-        prefix_schema = []
-        for sch in schema:
-            prefix_schema.append(sch.prefix)
-        return prefix_schema
-
-    def from_json_data_schema(self, schema) -> list:
-        """Translate the data schema from json because the default json translation fails with this data structure.
-        Returns a list of class objects."""
-        classes = self._get_subclasses(DataObject)
-        json_schema = json.loads(schema) # Should return a list of prefixes.
-        types_schema = [] # Should return a list of DataObject classes.
-        for sch in json_schema:
-            for cls in classes:
-                if sch != cls.prefix:
-                    continue
-                types_schema.append(cls)
-        return types_schema
-
-    def store_schema(self, schema: list[str], action: Action) -> None:
-        """Method to custom store the data schema. Gets stored to multiple rows, one per class.
-        Adds the sql queries to the Action object. The Action is executed elsewhere."""
+    def to_json_schema(self, schema: list[type], action: Action) -> None:
+        """Placeholder to make the load happy so it doesn't try to use the default load."""
         # 1. Generate a new schema ID.
-        schema = self.to_json_data_schema(schema)
-        schema_id = Dataset._create_uuid() # Data schema ID is a UUID.                
-        for idx, sch in enumerate(schema):
-            sqlquery = f"INSERT INTO data_address_schemas (schema_id, level_name, level_num, dataset_id, action_id) VALUES ('{schema_id}', '{sch}', '{idx}', '{self.id}', '{action.id}')"
-            action.add_sql_query(sqlquery)
+        schema_id = Dataset._create_uuid() # Data schema ID is a UUID.
+        # 2. Convert the list of types to a list of str.
+        str_schema = []
+        if schema is None:
+            return str_schema         
+        for sch in schema:
+            str_schema.append(sch.prefix)
+        # 3. Convert the list of str to a json string.
+        json_schema = json.dumps(str_schema)
+        sqlquery = f"INSERT INTO data_address_schemas (schema_id, levels_ordered, dataset_id, action_id) VALUES ('{schema_id}', '{json_schema}', '{self.id}', '{action.id}')"
+        action.add_sql_query(sqlquery)
+        # Store the schema ID as an attribute of the dataset.
+        self._default_store_obj_attr("schema", schema, json_schema, action = action)
+        return json_schema
 
-    def load_schema(self, schema_id: str) -> list:
-        """Load the data schema from the database."""
-        cursor = Action.conn.cursor()
-        sqlquery = f"SELECT * FROM data_address_schemas WHERE schema_id = '{schema_id}'"
-        result = cursor.execute(sqlquery).fetchall()
-        schema = []
-        for row in result:
-            schema.append(row[1])
-        return self.from_json_data_schema(schema)
+    def from_json_schema(self, json_schema: str) -> list:
+        """Convert the data schema from json to list of types."""
+        str_schema = json.loads(json_schema)
+        classes = self._get_subclasses(DataObject)        
+        types_schema = [] # Should return a list of DataObject classes.
+        for sch in str_schema:
+            for cls in classes:
+                if sch == cls.prefix:                    
+                    types_schema.append(cls)
+        return types_schema      
 
     @abstractmethod
     def _create_uuid() -> str:
