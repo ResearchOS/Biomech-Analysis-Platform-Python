@@ -11,4 +11,6 @@ All Research Objects are one or both of the following:
 
 ![Research Object Class Hierarchy](research_objects_class_hierarchy.png)
 
+***We will now go over the different methods within the ResearchObject class***
+
 ::: src.ResearchOS.research_object.ResearchObject
