@@ -2,7 +2,7 @@
 
 # Set Python path
 import sys
-sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
+sys.path.append("C:\\Users\\14156\\Desktop\\Stevens\\UrsulaFolderResearchOS\\ResearchOS\\src")
 import ResearchOS as ros
 
 us = ros.User("US000000_000", name = "Mitchell Tillman", current_user = True)

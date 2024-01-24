@@ -2,7 +2,7 @@
 
 import sqlite3, os, datetime
 import sys
-sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
+sys.path.append("C:\\Users\\14156\\Desktop\\Stevens\\UrsulaFolderResearchOS\\ResearchOS\\src")
 import ResearchOS as ros
 from ResearchOS.action import Action
 from ResearchOS.research_object import DEFAULT_USER_ID
