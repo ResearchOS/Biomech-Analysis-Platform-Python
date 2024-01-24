@@ -4,32 +4,38 @@ import sqlite3, os, datetime
 import sys
 sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
 import ResearchOS as ros
+from ResearchOS.action import Action
+from ResearchOS.research_object import DEFAULT_USER_ID
 
-# from ResearchOS.config import Config
-config = ros.Config()
-
-DEFAULT_USER_ID = "US000000_000"
 
 intended_tables = [
     "research_objects", "actions", "attributes", "research_object_attributes", "data_values", "data_addresses", "data_address_schemas", "current_user", "settings"
 ]
 
 class DBInitializer():
-    def __init__(self):        
+    def __init__(self, remove: bool = True):     
+        config = ros.Config()   
         db_file = config.db_file
-        if os.path.exists(db_file):
-            os.remove(db_file)        
-        self._conn = sqlite3.connect(db_file)   
+        Action.conn.close()
+        self.remove = remove
+        if os.path.exists(db_file) and self.remove:
+            os.remove(db_file)
+        Action.conn = sqlite3.connect(db_file)
+        self._conn = Action.conn
+        # self._conn = sqlite3.connect(db_file)   
         full_file = os.path.abspath(db_file)         
         folder = os.path.dirname(full_file)
-        os.chmod(full_file, 0o755)
-        os.chmod(folder, 0o755)
+        # os.chmod(full_file, 0o755)
+        # os.chmod(folder, 0o755)
         self.create_database()
         self._conn.commit()
         self.check_tables_exist()
-        self.init_current_user_id()        
-        self._conn.cursor().close()
-        self._conn.close()
+        # self.init_current_user_id()
+        if not self.remove:
+            self._conn.cursor().close()
+            self._conn.close()
+            Action.conn = sqlite3.connect(db_file)
+            self._conn = Action.conn
 
     def check_tables_exist(self):
         """Check that all of the tables were created."""
@@ -53,6 +59,7 @@ class DBInitializer():
         cursor.execute(sqlquery)
         sqlquery = f"INSERT INTO actions (action_id, user_object_id, name, timestamp) VALUES ('{action_id}', '{user_id}', 'Initialize current user', '{datetime.datetime.now(datetime.UTC)}')"
         cursor.execute(sqlquery)
+        # Put the attributes into the research objects attributes table.
         self._conn.commit()             
 
     def create_database(self):
@@ -153,8 +160,7 @@ class DBInitializer():
                         action_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
                         dataset_id TEXT NOT NULL,
-                        level_name TEXT NOT NULL,
-                        level_index TEXT NOT NULL,
+                        levels_ordered TEXT NOT NULL,
                         FOREIGN KEY (dataset_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")

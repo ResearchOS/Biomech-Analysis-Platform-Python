@@ -1,5 +1,5 @@
 v0.0.6
-** Placeholder text **
+Implemented data schemas. ** Placeholder text **
 
 v0.0.5
 *Hopefully* finalized changes to config.py so it works in all envs.

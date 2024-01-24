@@ -6,12 +6,15 @@ from abc import abstractmethod
 
 default_instance_attrs = {}
 default_instance_attrs["current_user"] = None
+default_instance_attrs["current_project_id"] = None
 
 default_abstract_attrs = {}
 
 class User(DataObject, PipelineObject):
 
     prefix: str = "US"
+    # _current_source_type_prefixes = None # placeholder
+    _source_type_prefixes = None # placeholder    
 
     def get_default_attrs(self):
         """Return a dictionary of default instance or abstract attributes, as appropriate for this object."""
@@ -39,24 +42,27 @@ class User(DataObject, PipelineObject):
         if parsed_id[0] != "PJ":
             raise ValueError("Specified ID is not a Project!")
         if not self.object_exists(id):
-            raise ValueError("Project does not exist!")
-        
+            raise ValueError("Project does not exist!")    
 
-    @abstractmethod
-    def new_current(id: str = None, name: str = None):
-        """Create a new user and set it as the current one."""        
-        user = User(id = id, name = name)
-        User.set_current_user_object_id(id)        
-        return user
+    # @abstractmethod
+    # def new_current(id: str = None, name: str = None):
+    #     """Create a new user and set it as the current one."""        
+    #     user = User(id = id, name = name)
+    #     User.set_current_user_object_id(id)        
+    #     return user
 
     @abstractmethod
     def get_current_user_object_id() -> str:
         """Get the ID of the current user."""
+        from ResearchOS import DBInitializer
         cursor = Action.conn.cursor()
         sqlquery = "SELECT action_id, current_user_object_id FROM current_user"        
         result = cursor.execute(sqlquery).fetchall()        
         if result is None or len(result) == 0:
-            raise ValueError("There is no current user. This should never happen!")
+            DBInitializer(remove = False).init_current_user_id() # But then what about if the database loses integrity after creation?
+            cursor = Action.conn.cursor()
+            result = cursor.execute(sqlquery).fetchall()  
+            # raise ValueError("There is no current user. This should never happen!")
         ordered_result = User._get_time_ordered_result(result, action_col_num = 0)
         return ordered_result[0][1]
 

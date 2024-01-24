@@ -3,7 +3,6 @@ import re
 from abc import abstractmethod
 import weakref
 import json
-import inspect
 
 from ResearchOS.action import Action
 from ResearchOS import Config
@@ -19,12 +18,19 @@ DEFAULT_NAME_ATTRIBUTE_NAME = "name"
 DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation" 
 DEFAULT_ABSTRACT_KWARG_NAME = "abstract"
 
+DEFAULT_USER_ID = "US000000_000"
+
+# DEFAULT_USER_PARENT = "US000000_000"
+
+ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method (or no parent, for User).
+
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
 
     prefix = "RO" # Testing only
     _objects = weakref.WeakValueDictionary()
-    # _objects_count = {}   
+    _current_source_type_prefix = None # Overwritten by subclasses that need it. For builtin "current_{cls}_id" attributes.
+    _source_type_prefix = None # Overwritten by all subclasses except User. For knowing which classes are valid target types.
     
     def __hash__(self):
         return hash(self.id)
@@ -66,14 +72,45 @@ class ResearchObject():
             instance.__dict__['id'] = object_id
             return instance
 
-    def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, default_attrs: dict = {}, **kwargs) -> None:
-        """id is required as either an arg or kwarg but will actually not be used here because it is assigned during __new__"""
-        id = self.id # self.id always exists by this point thanks to __new__
+    def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, default_attrs: dict = {}, action: Action = None, **kwargs) -> None:
+        """id is required as either an arg or kwarg but will actually not be used here because it is assigned during __new__().
+        action is only ever an input during initialization."""
+        import ResearchOS as ros
+        id = self.id # self.id always exists by this point thanks to __new__()
         action = Action(name = name)
         if not self.is_id(id):
             raise ValueError("Not an ID!")
         if "id" in kwargs:
             del kwargs["id"]
+        if "parent" not in kwargs:
+            if self._current_source_type_prefix is not None and not isinstance(self, ros.User):
+                # Need to auto-add the parent if it is not specified for the classes that support that.
+                cls = self._prefix_to_class(self._current_source_type_prefix)
+                us = ros.User(id = ros.User.get_current_user_object_id())
+                if cls is ros.User:
+                    parent = us
+                else:
+                    pj = ros.Project(id = us.current_project_id)
+                    if cls is ros.Project:
+                        parent = pj
+                    else:
+                        an = ros.Analysis(id = pj.current_analysis_id)
+                        ds = ros.Dataset(id = pj.current_dataset_id)
+                        if cls is ros.Analysis:
+                            parent = an
+                        elif cls is ros.Dataset:
+                            parent = ds                                                
+            elif not isinstance(self, ros.User):
+                raise ValueError("parent is required as a kwarg")
+            else:
+                parent = None
+        else:
+            parent = kwargs["parent"]
+        if isinstance(parent, ResearchObject):
+            parent = parent.id
+            kwargs["parent"] = parent
+        if parent is not None and not self.object_exists(parent):
+            raise ValueError("parent is not a valid, pre-existing object ID!")        
         try:
             # Fails if the object does not exist.
             is_new = False
@@ -82,14 +119,12 @@ class ResearchObject():
             # Create the new object in the database.
             is_new = True            
             sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
-            action.add_sql_query(sqlquery)
+            if id is not DEFAULT_USER_ID: # Don't add the default user to the database, it's already in there.
+                action.add_sql_query(sqlquery)
             action.execute(commit = False)            
             default_attrs = {**default_attrs, **{DEFAULT_EXISTS_ATTRIBUTE_NAME: DEFAULT_EXISTS_ATTRIBUTE_VALUE, DEFAULT_NAME_ATTRIBUTE_NAME: name}} # Python 3.5 or later
         all_attrs = {**default_attrs, **kwargs} # Append kwargs to default attributes. Overwrites default attributes with same key.
-        # def_attrs = default_attrs.copy()
-        # for attr in def_attrs:
-        #     if attr in kwargs:
-        #         del default_attrs[attr] # Remove the default attribute if it is specified in kwargs.
+
         for attr in all_attrs:
             validate = True
             set_attr_flag = False
@@ -107,6 +142,9 @@ class ResearchObject():
                     set_attr_flag = True
             if set_attr_flag:
                 self.__setattr__(attr, all_attrs[attr], action = action, validate = validate)
+        # If the parent is not an existing parent, then add it as a parent.
+        if parent and not self._is_source(parent):
+            self._add_source_object_id(parent)
         if is_new:
             action.execute()
 
@@ -125,9 +163,7 @@ class ResearchObject():
         for action_id in ordered_action_ids:
             for i, unordered_action_id in enumerate(unordered_action_ids):
                 if unordered_action_id == action_id:
-                    indices.append(i)                    
-            # indices.append(unordered_action_ids.index(action_id))
-        # indices = [ordered_action_ids.index(action_id) for action_id in unordered_action_ids]
+                    indices.append(i)
         sorted_result = [result[index] for index in indices]
         return sorted_result
 
@@ -160,7 +196,13 @@ class ResearchObject():
                 from_json_method = eval("self.from_json_" + attr_name)
                 attr_value = from_json_method(attr_value_json)
             except AttributeError as e:
-                attr_value = json.loads(attr_value_json)            
+                attr_value = json.loads(attr_value_json)
+
+            try:
+                method = eval(f"self.load_{attr_name}")            
+                method(attr_value)
+            except AttributeError as e:
+                pass
             # Now that the value is loaded as the proper type/format (and is not None), validate it.
             try:
                 if attr_value is not None:
@@ -193,18 +235,18 @@ class ResearchObject():
             except AttributeError as e:
                 pass
 
-        to_json_method = None
-        try:
-            to_json_method = eval(f"self.to_json_{name}")
-            json_value = to_json_method(value)
-        except AttributeError as e:
-            json_value = json.dumps(value, indent = 4)
-        
         # Create an action.
         execute_action = False
         if action is None:
             execute_action = True
             action = Action(name = "attribute_changed")
+        to_json_method = None
+        try:
+            to_json_method = eval(f"self.to_json_{name}")
+            json_value = to_json_method(value, action = action)
+        except AttributeError as e:
+            json_value = json.dumps(value, indent = 4)
+                
         # Update the attribute in the database.
         try:
             # assert to_json_method is None # Cannot convert to json AND have a store method. Store method takes precedence.
@@ -234,16 +276,32 @@ class ResearchObject():
         """If no store_attr method exists for the object attribute, use this default method."""                                      
         sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(name, value)}', '{json_value}')"                
         action.add_sql_query(sqlquery)
-        return action
+        return action  
+
+    def _get_subclasses(self, cls):
+        """Get all subclasses of the provided class
+        Self argument is ignored."""        
+        subclasses = cls.__subclasses__()
+        result = subclasses[:]
+        for subclass in subclasses:
+            result.extend(self._get_subclasses(subclass))
+        return result
     
-    def _get_subclasses(mod, cls):
-        """Yield all subclasses of cls within module mod.
-        From here: https://stackoverflow.com/questions/44352/iterate-over-subclasses-of-a-given-class-in-a-given-module"""
-        objs = []
-        for name, obj in inspect.getmembers(mod):
-            if hasattr(obj, "__bases__") and cls in obj.__bases__:
-                objs.append(obj)
-        return objs
+    def _prefix_to_class(self, prefix: str) -> type:
+        """Convert a prefix to a class."""
+        for cls in self._get_subclasses(ResearchObject):
+            if cls.prefix == prefix:
+                return cls
+        raise ValueError("No class with that prefix exists.")
+    
+    def _is_orphan_with_removal(self, id: str) -> bool:
+        """Check if the object would be orphaned if the specified object ID were removed from its list of parent ID's."""
+        if not self.is_id(id):
+            raise ValueError("Invalid ID.")
+        if not self._is_source(id):
+            raise ValueError("ID is not a source object of the current object.")
+        if len(self._get_all_source_object_ids(type(self))) == 1:
+            return True
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
@@ -293,10 +351,12 @@ class ResearchObject():
     @abstractmethod
     def _get_attr_id(attr_name: str, attr_value: Any) -> int:
         """Get the ID of an attribute given its name. If it does not exist, create it."""
-        cursor = Action.conn.cursor()
+        conn = Action.conn
+        cursor = conn.cursor()
         sqlquery = f"SELECT attr_id FROM Attributes WHERE attr_name = '{attr_name}'"
         cursor.execute(sqlquery)            
         rows = cursor.fetchall()
+
         if len(rows) > 1:
             raise Exception("More than one attribute with the same name.")
         elif len(rows)==0:
@@ -384,13 +444,13 @@ class ResearchObject():
     
     def _get_all_target_object_ids(self, cls) -> list[str]:
         """Get all target object ids of the specified source object of the specified type. Immediate neighbors only, equivalent to successors() method"""
-        sql = f'SELECT target_object_id, attr_value FROM research_object_attributes WHERE object_id = "{self.id}"'
+        sql = f'SELECT target_object_id, attr_value FROM research_object_attributes WHERE object_id = "{self.id} AND target_object_id IS NOT NULL"'
         return self.__get_all_related_object_ids(cls, sql)
 
     def __get_all_related_object_ids(self, cls, sql) -> list[str]:
         """Called by _get_all_source_object_ids and _get_all_target_object_ids.
         Get all related object ids of the specified object of the specified type, either source of target objects."""
-        # TODO: Ensure that the edges are not outdated, check the "exists" property.
+        # TODO: Ensure that the edges are not outdated, check the "exists" property of the edge.
         cursor = Action.conn.cursor()
         cursor.execute(sql)
         data = []
@@ -425,7 +485,7 @@ class ResearchObject():
             return # Already exists.
         action = Action(name = "add_target_object_id")
         json_value = json.dumps(True)
-        sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{id}', {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME)}, '{json_value}')"        
+        sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{id}', {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME, True)}, '{json_value}')"        
         action.add_sql_query(sql)
         action.execute()
 
@@ -441,14 +501,30 @@ class ResearchObject():
         json_value = json.dumps(False)
         sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', {id}, {ResearchObject._get_attr_id(DEFAULT_NAME_ATTRIBUTE_NAME)}, '{json_value}')"        
         action.add_sql_query(sql)
-        action.execute()
+        action.execute()   
 
-    def _add_source_object_id(self, id: str, cls: type) -> None:
-        """Add a source object ID to the current target object in the database."""
-        if not self._is_id(id):
-            raise ValueError("Invalid ID.")      
-        if not self._is_id_of_class(id, cls):
-            raise ValueError("ID is of the wrong class!")
+    def _add_source_object_id(self, id: str) -> None:
+        """Add a source object ID to the current target object in the database.
+        NOTE: I really don't like the way that this method came out. Too many exceptions for too many classes."""   
+        import ResearchOS as ros     
+        if not self.is_id(id):
+            raise ValueError("Invalid ID.")
+        
+        prefix = self.parse_id(id)[0]
+        classes = self._get_subclasses(ResearchObject)
+        cls = None
+        for c in classes:
+            if c.prefix == prefix:
+                cls = c
+                break
+        source_obj = cls(id = id)
+        attr_name = "current_" + cls.__name__.lower() + "_id"
+        if prefix not in self._current_source_type_prefixes:
+            raise ValueError("ID is of the wrong class, cannot be linked to this class type!")        
+        source_obj.__setattr__(attr_name, self.id)
+        if prefix not in self._source_type_prefixes:
+            raise ValueError("ID is of the wrong class, cannot be linked to this class type!")
+
         if self._is_source(id):
             return # Already exists
         action = Action(name = "add_source_object_id")
@@ -457,7 +533,7 @@ class ResearchObject():
         action.add_sql_query(sql)
         action.execute()
 
-    def _remove_source_object_id(self, id: str, cls: type) -> None:
+    def _remove_source_object_id(self, id: str) -> None:
         """Remove a source object ID from the current target object in the database."""
         if not self._is_id(id):
             raise ValueError("Invalid ID.")      

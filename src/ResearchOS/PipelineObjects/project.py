@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Any
 
-from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS import PipelineObject
 
 # Defaults should be of the same type as the expected values.
 default_instance_attrs = {}
@@ -18,7 +18,9 @@ class Project(PipelineObject):
     2. current_dataset_id: The ID of the current dataset for this project.
     3. project path: The root folder location of the project."""
 
-    prefix: str = "PJ"      
+    prefix: str = "PJ"
+    _current_source_type_prefix = "US"
+    _source_type_prefix = "US"
 
     @abstractmethod
     def get_all_ids() -> list[str]:
@@ -85,10 +87,6 @@ class Project(PipelineObject):
         if not os.path.exists(path):
             raise ValueError("Specified path is not a path or does not currently exist!")        
 
-    def json_translate_XXX(self) -> Any:
-        """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
-        XXX is the exact name of the attribute. Method name must follow this format."""
-
     #################### Start Source objects ####################
     def get_users(self) -> list:
         """Return a list of user objects that belong to this project. Identical to Dataset.get_users()"""
@@ -121,7 +119,7 @@ class Project(PipelineObject):
     
 
 if __name__=="__main__":
-    from ResearchOS.PipelineObjects.analysis import Analysis
+    from ResearchOS import Analysis
     pj = Project(name = "Test")
     an1 = Analysis()      
     an2 = Analysis()
