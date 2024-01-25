@@ -5,6 +5,8 @@ import sys
 sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
 import ResearchOS as ros
 
+a = str(ros.User.__name__)
+
 us = ros.User("US000000_000", name = "Mitchell Tillman", current_user = True)
 ros.User.set_current_user_object_id(us.id)
 pj= ros.Project(id = "PJ000000_000")

@@ -13,6 +13,16 @@ Scientific computing is currently fractured, with many competing data standards 
 The primary innovation behind ResearchOS is to treat every single piece of the scientific data analysis workflow as an object, complete with ID and metadata. While this incurs some code overhead, the ability to have a standardized way to communicate between different parts of a pipeline and to share and integrate others' pipelines is invaluable, and sorely needed in the scientific computing community.
 
 # Roadmap
+## Minimum TODO to Process Data
+- [ ] Implement Logsheet
+    - [ ] Implement read logsheet.
+        - [ ] Populate the database with the logsheet data.
+- [ ] Implement saving participant data to disk/the database.
+    - [ ] Implement data schema for participant data
+- [ ] Implement Process
+    - [ ] Level
+    - [ ] How to structure the Process methods?
+- [ ] Implement Subset
 ## Version 0.1
 
 - [x] Do multiple things with one Action.

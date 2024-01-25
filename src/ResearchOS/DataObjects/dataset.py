@@ -109,6 +109,35 @@ class Dataset(DataObject):
                 is_unique = True
         return uuid_out
     
+    @abstractmethod
+    def get_current() -> "Dataset":
+        """Return the current dataset for the current project for the current user."""
+        from ResearchOS import User, Project
+        us = User(id = User.get_current_user_object_id())
+        pj = Project(id = us.current_project_id)
+        ds = Dataset(id = pj.current_dataset_id)
+        return ds
+    
+    @abstractmethod
+    def create_data_objects(self, hierarchy: dict, action: Action = None) -> None:
+        """Create the data objects that belong to this dataset."""
+        self.validate_schema(self.schema)
+        # Validate the keys of the hierarchy.
+        ordered_hierarchy = []
+        for sch in self.schema:
+            for level in hierarchy.keys():
+                if level is sch:
+                    if not isinstance(hierarchy[level], int):
+                        raise ValueError("Hierarchy must be provided as a dict of {level: int_objects}!")
+                    ordered_hierarchy.append(level)
+        # Validate the order of the hierarchy.
+        indices = []
+        for ord in ordered_hierarchy:
+            idx = self.schema.indexof(ord)
+            if any(idx < indices):
+                raise ValueError("Hierarchy is out of order!")
+                    
+    
     #################### Start Source objects ####################
     def get_users(self) -> list:
         """Return a list of user objects that belong to this project. Identical to Project.get_users()"""

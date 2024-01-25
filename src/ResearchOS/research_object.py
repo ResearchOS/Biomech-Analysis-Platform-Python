@@ -279,7 +279,7 @@ class ResearchObject():
         return action  
 
     def _get_subclasses(self, cls):
-        """Get all subclasses of the provided class
+        """Recursively get all subclasses of the provided class
         Self argument is ignored."""        
         subclasses = cls.__subclasses__()
         result = subclasses[:]

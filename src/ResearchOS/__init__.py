@@ -6,10 +6,11 @@ from .__init_helper__ import set_env
 # ALWAYS HERE, ALWAYS IN THIS ORDER!
 from .config import Config
 from .research_object import ResearchObject
-from .variable import Variable
-from .user import User
 from .DataObjects.data_object import DataObject
 from .PipelineObjects.pipeline_object import PipelineObject
+from .variable import Variable
+from .user import User
+
 
 # Any order?
 from .PipelineObjects.project import Project

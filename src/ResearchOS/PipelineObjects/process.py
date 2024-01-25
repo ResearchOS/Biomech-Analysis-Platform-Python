@@ -1,3 +1,4 @@
+import ResearchOS as ros
 from ResearchOS import PipelineObject
 from typing import Callable
 
@@ -23,10 +24,16 @@ class Process(PipelineObject):
     def validate_level(self, level: type) -> None:
         pass
 
-    def json_translate_method(self):
+    def from_json_method(self):
         pass
 
-    def json_translate_level(self):
+    def to_json_method(self):
+        pass
+
+    def from_json_level(self):
+        pass
+
+    def to_json_level(self):
         pass
 
     #################### Start Source objects ####################
@@ -91,7 +98,46 @@ class Process(PipelineObject):
 
     def run_method(self) -> None:
         """Execute the attached method."""
-        pass
+        # 1. Validate that the level & method have been properly set.
+        self.validate_method(self.method)
+        self.validate_level(self.level)
+
+        # 2. Validate that the input & output variables have been properly set.
+        self.validate_input_variables()
+        self.validate_output_variables()
+
+        # 3. Validate that the subsets have been properly set.
+        self.validate_subset()
+
+        # 4. Run the method.
+        # Get the subset of the data.
+        subset_dict = {} # Comes from Subset object.
+        # Get data schema
+        us = ros.User(id = ros.User.get_current_user_object_id())
+        pj = ros.Project(id = us.current_project_id)
+        ds = ros.Dataset(id = pj.current_dataset_id)
+        schema = ds.schema
+        # Preserves the hierarchy order, but only includes levels needed for this method.
+        curr_schema = [sch for sch in schema if sch in self.level]
+        self._run_index = -1 # Tells the run method which index we are on.
+        self._current_schema = [None for _ in range(len(curr_schema))] # Initialize with None.
+        self.run_recurse(curr_schema)
+
+    def run_recurse(self, full_schema: list[type]) -> None:
+        """Run the method, looping recursively."""        
+        self._run_index +=1
+        for sch in full_schema:
+            # If index is not at the lowest level, recurse.
+            self._current_schema[self._run_index] = sch
+            if self._run_index < len(full_schema) - 1:                
+                self.run_recurse(full_schema)
+                continue
+            # If index is at the lowest level, run the method.
+            # Get the input variables.            
+            self.method() 
+        self._current_schema[self._run_index] = None # Reset
+        self._run_index -=1
+            
 
 
 if __name__=="__main__":
