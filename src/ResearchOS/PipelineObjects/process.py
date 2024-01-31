@@ -1,5 +1,4 @@
 import ResearchOS as ros
-from ResearchOS import PipelineObject
 from typing import Callable
 
 from abc import abstractmethod
@@ -9,7 +8,7 @@ default_attrs["method"] = None
 default_attrs["level"] = None
 
 
-class Process(PipelineObject):
+class Process(ros.PipelineObject):
 
     prefix = "PR"
 
@@ -19,10 +18,12 @@ class Process(PipelineObject):
 
     #################### Start class-specific attributes ###################
     def validate_method(self, method: Callable) -> None:
-        pass
+        if not isinstance(method, Callable):
+            raise ValueError("Method must be a callable function!")
 
     def validate_level(self, level: type) -> None:
-        pass
+        if not isinstance(level, type):
+            raise ValueError("Level must be a type!")
 
     def from_json_method(self):
         pass
@@ -38,63 +39,53 @@ class Process(PipelineObject):
 
     #################### Start Source objects ####################
     def get_analyses(self) -> list:
-        """Return a list of analysis objects that belong to this process."""
-        from ResearchOS import Analysis
-        an_ids = self._get_all_source_object_ids(cls = Analysis)
-        return [Analysis(id = an_id) for an_id in an_ids]
+        """Return a list of analysis objects that belong to this process."""        
+        an_ids = self._get_all_source_object_ids(cls = ros.Analysis)
+        return [ros.Analysis(id = an_id) for an_id in an_ids]
     
     #################### Start Target objects ####################
 
     #################### Start class-specific methods ###################
     def get_input_variables(self) -> list:
-        """Return a list of variable IDs that belong to this process."""
-        from ResearchOS import Variable
-        vr_ids = self._get_all_source_object_ids(cls = Variable)
-        return self._gen_obj_or_none(vr_ids, Variable)
+        """Return a list of variable IDs that belong to this process."""        
+        vr_ids = self._get_all_source_object_ids(cls = ros.Variable)
+        return self._gen_obj_or_none(vr_ids, ros.Variable)
     
     def get_output_variables(self) -> list:
-        """Return a list of variable IDs that belong to this process."""
-        from ResearchOS import Variable
-        vr_ids = self._get_all_target_object_ids(cls = Variable)
-        return self._gen_obj_or_none(vr_ids, Variable)
+        """Return a list of variable IDs that belong to this process."""        
+        vr_ids = self._get_all_target_object_ids(cls = ros.Variable)
+        return self._gen_obj_or_none(vr_ids, ros.Variable)
     
     def get_subsets(self) -> list:
-        """Return a list of subset IDs that belong to this process."""
-        from ResearchOS import Subset
-        ss_ids = self._get_all_target_object_ids(cls = Subset)
-        return self._gen_obj_or_none(ss_ids, Subset)
+        """Return a list of subset IDs that belong to this process."""        
+        ss_ids = self._get_all_target_object_ids(cls = ros.Subset)
+        return self._gen_obj_or_none(ss_ids, ros.Subset)
     
     def add_input_variable_id(self, var_id):
         """Add an input variable to the process."""
-        # TODO: Need to add a mapping between variable ID and name in code.
-        from ResearchOS import Variable        
-        self._add_source_object_id(var_id, cls = Variable)
+        # TODO: Need to add a mapping between variable ID and name in code.        
+        self._add_source_object_id(var_id)
 
     def add_output_variable_id(self, var_id):
         """Add an output variable to the process."""
-        # TODO: Need to add a mapping between variable ID and name in code.
-        from ResearchOS import Variable        
-        self._add_target_object_id(var_id, cls = Variable)
+        # TODO: Need to add a mapping between variable ID and name in code.        
+        self._add_target_object_id(var_id)
 
     def remove_input_variable_id(self, var_id):
-        """Remove an input variable from the process."""
-        from ResearchOS import Variable        
-        self._remove_source_object_id(var_id, cls = Variable)
+        """Remove an input variable from the process."""        
+        self._remove_source_object_id(var_id)
 
     def remove_output_variable_id(self, var_id):
-        """Remove an output variable from the process."""
-        from ResearchOS import Variable        
-        self._remove_target_object_id(var_id, cls = Variable)
+        """Remove an output variable from the process."""        
+        self._remove_target_object_id(var_id)
 
     def add_subset_id(self, ss_id):
-        """Add a subset to the process."""
-        from ResearchOS import Subset
-        self._add_target_object_id(ss_id, cls = Subset)
+        """Add a subset to the process."""        
+        self._add_target_object_id(ss_id)
 
     def remove_subset_id(self, ss_id):
-        """Remove a subset from the process."""
-        from ResearchOS import Subset
-        self._remove_target_object_id(ss_id, cls = Subset)
+        """Remove a subset from the process."""        
+        self._remove_target_object_id(ss_id)
 
     def run_method(self) -> None:
         """Execute the attached method."""

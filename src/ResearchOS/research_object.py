@@ -83,6 +83,7 @@ class ResearchObject():
         if "id" in kwargs:
             del kwargs["id"]
         if "parent" not in kwargs:
+            # TODO: Opportunity to use better software design here. This is a hack.
             if self._current_source_type_prefix is not None and not isinstance(self, ros.User):
                 # Need to auto-add the parent if it is not specified for the classes that support that.
                 cls = self._prefix_to_class(self._current_source_type_prefix)
@@ -111,11 +112,10 @@ class ResearchObject():
             kwargs["parent"] = parent
         if parent is not None and not self.object_exists(parent):
             raise ValueError("parent is not a valid, pre-existing object ID!")        
-        try:
-            # Fails if the object does not exist.
+        if self.object_exists(id = id):
             is_new = False
             self.load()
-        except ValueError:
+        else:
             # Create the new object in the database.
             is_new = True            
             sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
@@ -169,52 +169,52 @@ class ResearchObject():
 
     def load(self) -> None:
         """Load the current state of a research object from the database."""        
-        cursor = Action.conn.cursor()
-        sqlquery = f"SELECT action_id, attr_id, attr_value, target_object_id FROM research_object_attributes WHERE object_id = '{self.id}'"
-        unordered_attr_result = cursor.execute(sqlquery).fetchall()
-        ordered_attr_result = ResearchObject._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
-        if len(unordered_attr_result) == 0:
-            raise ValueError("No object with that ID exists.")         
+        # cursor = Action.conn.cursor()
+        # sqlquery = f"SELECT action_id, attr_id, attr_value, target_object_id FROM research_object_attributes WHERE object_id = '{self.id}'"
+        # unordered_attr_result = cursor.execute(sqlquery).fetchall()
+        # ordered_attr_result = ResearchObject._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
+        # if len(unordered_attr_result) == 0:
+        #     raise ValueError("No object with that ID exists.")         
                              
-        curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
-        num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
-        used_attr_ids = []
-        attrs = {}
-        attrs["id"] = self.id
-        for row in ordered_attr_result:            
-            attr_id = row[1]
-            attr_value_json = row[2]
-            target_object_id = row[3]
-            if attr_id in used_attr_ids:
-                continue
-            else:
-                used_attr_ids.append(attr_id)                        
+        # curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
+        # num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
+        # used_attr_ids = []
+        # attrs = {}
+        # attrs["id"] = self.id
+        # for row in ordered_attr_result:            
+        #     attr_id = row[1]
+        #     attr_value_json = row[2]
+        #     target_object_id = row[3]
+        #     if attr_id in used_attr_ids:
+        #         continue
+        #     else:
+        #         used_attr_ids.append(attr_id)                        
 
-            attr_name = ResearchObject._get_attr_name(attr_id)
-            # Translate the attribute from string to the proper type/format.                     
-            try:
-                from_json_method = eval("self.from_json_" + attr_name)
-                attr_value = from_json_method(attr_value_json)
-            except AttributeError as e:
-                attr_value = json.loads(attr_value_json)
+        #     attr_name = ResearchObject._get_attr_name(attr_id)
+        #     # Translate the attribute from string to the proper type/format.                     
+        #     try:
+        #         from_json_method = eval("self.from_json_" + attr_name)
+        #         attr_value = from_json_method(attr_value_json)
+        #     except AttributeError as e:
+        #         attr_value = json.loads(attr_value_json)
 
-            try:
-                method = eval(f"self.load_{attr_name}")            
-                method(attr_value)
-            except AttributeError as e:
-                pass
-            # Now that the value is loaded as the proper type/format (and is not None), validate it.
-            try:
-                if attr_value is not None:
-                    validate_method = eval("self.validate_" + attr_name)
-                    validate_method(attr_value)
-            except AttributeError as e:
-                pass
-            attrs[attr_name] = attr_value
-            if len(used_attr_ids) == num_attrs:
-                break # Every attribute is accounted for.
+        #     try:
+        #         method = eval(f"self.load_{attr_name}")            
+        #         method(attr_value)
+        #     except AttributeError as e:
+        #         pass
+        #     # Now that the value is loaded as the proper type/format (and is not None), validate it.
+        #     try:
+        #         if attr_value is not None:
+        #             validate_method = eval("self.validate_" + attr_name)
+        #             validate_method(attr_value)
+        #     except AttributeError as e:
+        #         pass
+        #     attrs[attr_name] = attr_value
+        #     if len(used_attr_ids) == num_attrs:
+        #         break # Every attribute is accounted for.
                 
-        self.__dict__.update(attrs)
+        # self.__dict__.update(attrs)
 
     def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
@@ -505,8 +505,7 @@ class ResearchObject():
 
     def _add_source_object_id(self, id: str) -> None:
         """Add a source object ID to the current target object in the database.
-        NOTE: I really don't like the way that this method came out. Too many exceptions for too many classes."""   
-        import ResearchOS as ros     
+        NOTE: I really don't like the way that this method came out. Too many exceptions for too many classes."""           
         if not self.is_id(id):
             raise ValueError("Invalid ID.")
         
