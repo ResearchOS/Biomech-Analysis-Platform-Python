@@ -25,5 +25,8 @@ from .DataObjects.phase import Phase
 from .PipelineObjects.subset import Subset
 from .PipelineObjects.process import Process
 
+# Needs to be after PipelineObjects import.
+from .PipelineObjects import Static # This is a package, not a module.
+
 # Last
 from .database_init import DBInitializer
