@@ -6,4 +6,4 @@ class DataObject(ResearchObject):
     
     def load(self) -> None:
         """Load data values from the database."""
-        pass
+        ResearchObject.load(self)
