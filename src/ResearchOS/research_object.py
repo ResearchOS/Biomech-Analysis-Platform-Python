@@ -6,6 +6,8 @@ import json
 
 from ResearchOS.action import Action
 from ResearchOS import Config
+# from idcreator import IDCreator
+# from ResearchOS.DBHandlers.db_handler_sqlite import DBHandlerSQLite
 
 config = Config()
 
@@ -77,9 +79,26 @@ class ResearchObject():
         action is only ever an input during initialization."""
         import ResearchOS as ros
         id = self.id # self.id always exists by this point thanks to __new__()
-        action = Action(name = name)
         if not self.is_id(id):
             raise ValueError("Not an ID!")
+        # 1. Determine whether we are creating a new object or loading an object from the database.
+        is_new = False
+        if self.object_exists(id):
+            is_new = True
+
+        # 2. Load the object from the database, if it already exists.
+        # Need to leave room for arguments in the constructor to overwrite existing attributes (or create new ones).
+        if not is_new:
+            self.load() # Now all attributes are populated.
+        else:
+            pass
+
+
+
+
+        
+        action = Action(name = name)
+        
         if "id" in kwargs:
             del kwargs["id"]
         if "parent" not in kwargs:
@@ -168,7 +187,16 @@ class ResearchObject():
         return sorted_result
 
     def load(self) -> None:
-        """Load the current state of a research object from the database."""        
+        """Load the current state of a research object from the database."""
+        # 1. Get all of the attributes from the research_object_attributes table.
+
+        # 2. If DataObject, load the data values from the data_values table.
+        
+
+        # 3. If load_type_attrs() method exists, run that to load attributes in a type-specific way.
+
+
+
         # cursor = Action.conn.cursor()
         # sqlquery = f"SELECT action_id, attr_id, attr_value, target_object_id FROM research_object_attributes WHERE object_id = '{self.id}'"
         # unordered_attr_result = cursor.execute(sqlquery).fetchall()
@@ -319,34 +347,38 @@ class ResearchObject():
     @abstractmethod
     def create_id(cls, abstract: str = None, instance: str = None, is_abstract: bool = False) -> str:
         """Create a unique ID for the research object."""
-        import random
-        table_name = "research_objects"
-        is_unique = False
-        while not is_unique:
-            if not abstract:
-                abstract_new = str(hex(random.randrange(0, 16**abstract_id_len))[2:]).upper()
-                abstract_new = "0" * (abstract_id_len-len(abstract_new)) + abstract_new
-            else:
-                abstract_new = abstract
+        config = Config()
+        db_handler = DBHandlerSQLite(config.db_file_path)
+        id_creator = IDCreator(db_handler)
+        return id_creator.create_ro_id(cls, abstract = abstract, instance = instance, is_abstract = is_abstract)
+        # import random
+        # table_name = "research_objects"
+        # is_unique = False
+        # while not is_unique:
+        #     if not abstract:
+        #         abstract_new = str(hex(random.randrange(0, 16**abstract_id_len))[2:]).upper()
+        #         abstract_new = "0" * (abstract_id_len-len(abstract_new)) + abstract_new
+        #     else:
+        #         abstract_new = abstract
             
-            if not instance:
-                instance_new = str(hex(random.randrange(0, 16**instance_id_len))[2:]).upper()
-                instance_new = "0" * (instance_id_len-len(instance_new)) + instance_new
-            else:
-                instance_new = instance
-            if is_abstract:
-                instance_new = ""
+        #     if not instance:
+        #         instance_new = str(hex(random.randrange(0, 16**instance_id_len))[2:]).upper()
+        #         instance_new = "0" * (instance_id_len-len(instance_new)) + instance_new
+        #     else:
+        #         instance_new = instance
+        #     if is_abstract:
+        #         instance_new = ""
  
-            id = cls.prefix + abstract_new + "_" + instance_new
-            cursor = Action.conn.cursor()
-            sql = f'SELECT object_id FROM {table_name} WHERE object_id = "{id}"'
-            cursor.execute(sql)
-            rows = cursor.fetchall()
-            if len(rows) == 0:
-                is_unique = True
-            elif is_abstract:
-                raise ValueError("Abstract ID already exists.")
-        return id      
+        #     id = cls.prefix + abstract_new + "_" + instance_new
+        #     cursor = Action.conn.cursor()
+        #     sql = f'SELECT object_id FROM {table_name} WHERE object_id = "{id}"'
+        #     cursor.execute(sql)
+        #     rows = cursor.fetchall()
+        #     if len(rows) == 0:
+        #         is_unique = True
+        #     elif is_abstract:
+        #         raise ValueError("Abstract ID already exists.")
+        # return id      
 
     @abstractmethod
     def _get_attr_id(attr_name: str, attr_value: Any) -> int:

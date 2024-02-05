@@ -1,0 +1,130 @@
+<html>
+  <body>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+      <div class="mermaid">
+    
+        classDiagram
+          class ResearchOS {
+          }
+          class DataObjects {
+          }
+          class data_object {
+          }
+          class dataset {
+          }
+          class phase {
+          }
+          class subject {
+          }
+          class trial {
+          }
+          class visit {
+          }
+          class PipelineObjects {
+          }
+          class analysis {
+          }
+          class logsheet {
+          }
+          class pipeline_object {
+          }
+          class plot {
+          }
+          class process {
+          }
+          class process_group {
+          }
+          class project {
+          }
+          class subset {
+          }
+          class __init_helper__ {
+          }
+          class action {
+          }
+          class config {
+          }
+          class connection {
+          }
+          class database_init {
+          }
+          class db_handler {
+          }
+          class dev_env_file {
+          }
+          class idcreator {
+          }
+          class init_research {
+          }
+          class research_object {
+          }
+          class ro_graph {
+          }
+          class user {
+          }
+          class variable {
+          }
+          ResearchOS --> data_object
+          ResearchOS --> dataset
+          ResearchOS --> phase
+          ResearchOS --> subject
+          ResearchOS --> trial
+          ResearchOS --> visit
+          ResearchOS --> analysis
+          ResearchOS --> logsheet
+          ResearchOS --> pipeline_object
+          ResearchOS --> plot
+          ResearchOS --> process
+          ResearchOS --> project
+          ResearchOS --> subset
+          ResearchOS --> __init_helper__
+          ResearchOS --> config
+          ResearchOS --> database_init
+          ResearchOS --> research_object
+          ResearchOS --> user
+          ResearchOS --> variable
+          data_object --> ResearchOS
+          dataset --> ResearchOS
+          dataset --> action
+          dataset --> database_init
+          phase --> ResearchOS
+          subject --> ResearchOS
+          trial --> ResearchOS
+          trial --> phase
+          visit --> ResearchOS
+          analysis --> ResearchOS
+          analysis --> pipeline_object
+          analysis --> research_object
+          logsheet --> ResearchOS
+          logsheet --> analysis
+          logsheet --> action
+          pipeline_object --> ResearchOS
+          plot --> ResearchOS
+          plot --> pipeline_object
+          process --> ResearchOS
+          project --> ResearchOS
+          project --> analysis
+          project --> user
+          subset --> ResearchOS
+          __init_helper__ --> dev_env_file
+          action --> ResearchOS
+          action --> config
+          database_init --> ResearchOS
+          database_init --> action
+          database_init --> research_object
+          db_handler --> config
+          idcreator --> config
+          idcreator --> db_handler
+          init_research --> config
+          init_research --> database_init
+          research_object --> ResearchOS
+          research_object --> action
+          user --> ResearchOS
+          user --> data_object
+          user --> pipeline_object
+          user --> action
+          variable --> ResearchOS
+  
+       </div>
+  </body>
+</html>
