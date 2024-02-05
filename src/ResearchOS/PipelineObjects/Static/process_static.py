@@ -1,4 +1,4 @@
-import ResearchOS as ros
+from ResearchOS import PipelineObject
 
-class ProcessStatic(ros.PipelineObject):
+class ProcessStatic(PipelineObject):
     """The static attributes and methods for the Process class."""

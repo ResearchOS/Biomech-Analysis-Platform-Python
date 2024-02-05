@@ -5,8 +5,7 @@ import sys
 sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
 import ResearchOS as ros
 
-# a = str(ros.User.__name__)
-ros.Static.AnalysisStatic()
+st = ros.Static.AnalysisStatic()  # Create a new static analysis object
 ds = ros.Dataset(id = "DS000000_000")  # Create a new dataset
 
 us = ros.User("US000000_000", name = "Mitchell Tillman", current_user = True)
