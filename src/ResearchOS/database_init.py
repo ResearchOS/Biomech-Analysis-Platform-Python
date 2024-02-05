@@ -66,27 +66,37 @@ class DBInitializer():
         """Create the database and all of its tables."""
         cursor = self._conn.cursor()
 
-        # Objects table. Lists all research objects in the database.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS research_objects (
-                        object_id TEXT PRIMARY KEY
-                        )""")
-
-        # Current user table.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS current_user (
-                        action_id TEXT PRIMARY KEY,
-                        current_user_object_id TEXT,
-                        FOREIGN KEY (current_user_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+        # Action-tables one-to-many relation table. Lists all actions and which tables they had an effect on.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS action_tables (
+                        action_id TEXT NOT NULL,
+                        table_name TEXT NOT NULL,
+                        PRIMARY KEY (action_id, table_name),
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
 
+        # Objects table. Lists all research objects in the database.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS research_objects (
+                        object_id TEXT PRIMARY KEY,
+                        action_id TEXT NOT NULL,
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        )""")
+
+        # Current user table.
+        # cursor.execute("""CREATE TABLE IF NOT EXISTS current_user (
+        #                 action_id TEXT PRIMARY KEY,
+        #                 current_user_object_id TEXT,
+        #                 FOREIGN KEY (current_user_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+        #                 FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+        #                 )""")
+
         # Settings table. Contains all settings for the application.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS settings (
-                        setting_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        user_object_id TEXT NOT NULL,
-                        setting_name TEXT NOT NULL,
-                        setting_value TEXT NOT NULL,
-                        FOREIGN KEY (user_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE                        
-                        )""")        
+        # cursor.execute("""CREATE TABLE IF NOT EXISTS settings (
+        #                 setting_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        #                 user_object_id TEXT NOT NULL,
+        #                 setting_name TEXT NOT NULL,
+        #                 setting_value TEXT NOT NULL,
+        #                 FOREIGN KEY (user_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE                        
+        #                 )""")        
 
         # Actions table. Lists all actions that have been performed, and their timestamps.
         cursor.execute("""CREATE TABLE IF NOT EXISTS actions (

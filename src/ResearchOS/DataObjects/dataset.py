@@ -35,9 +35,10 @@ class Dataset(ros.DataObject):
     #     return super().__str__(default_instance_attrs.keys(), self.__dict__)
     
     #################### Start class-specific attributes ###################
-    def load_type_attrs(self) -> None:
-        """Load the dataset-specific attributes from the database in an attribute-specific way."""        
+    def load(self) -> None:
+        """Load the dataset-specific attributes from the database in an attribute-specific way."""
         self.load_schema() # Load the dataset schema.
+        ros.DataObject.load(self) # Load the attributes specific to it being a DataObject.
 
     def load_schema(self) -> None:
         """Load the schema from the database and convert it via json."""

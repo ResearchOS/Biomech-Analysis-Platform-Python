@@ -6,6 +6,7 @@ sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Bi
 import ResearchOS as ros
 
 # a = str(ros.User.__name__)
+ros.Static.AnalysisStatic()
 ds = ros.Dataset(id = "DS000000_000")  # Create a new dataset
 
 us = ros.User("US000000_000", name = "Mitchell Tillman", current_user = True)
