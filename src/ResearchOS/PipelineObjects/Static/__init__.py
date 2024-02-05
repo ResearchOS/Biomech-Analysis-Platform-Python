@@ -1,3 +1,3 @@
-from .analysis_static import AnalysisStatic
-from .process_static import ProcessStatic
-from .project_static import ProjectStatic
+from .analysis_static import Analysis
+from .process_static import Process
+from .project_static import Project

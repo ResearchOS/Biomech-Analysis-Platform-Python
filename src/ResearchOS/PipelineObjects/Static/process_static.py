@@ -1,4 +1,4 @@
 from ResearchOS import PipelineObject
 
-class ProcessStatic(PipelineObject):
+class Process(PipelineObject):
     """The static attributes and methods for the Process class."""
