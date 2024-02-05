@@ -1,0 +1,287 @@
+<html>
+  <body>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+      <div class="mermaid">
+    
+        classDiagram
+          class Action {
+            conn
+            id : Optional[str]
+            name : Optional[str]
+            redo_of : Optional[str]
+            sql_queries : list
+            timestamp : datetime
+            user_object_id : Optional[str]
+            add_sql_query(sqlquery: str) None
+            execute(commit: bool) None
+            get_latest_action()* 'Action'
+            next() 'Action'
+            previous() 'Action'
+            redo() None
+            restore() None
+            undo() None
+          }
+          class Analysis {
+            current_logsheet_id
+            prefix : str
+            add_logsheet(logsheet_id: str)
+            add_process(process_id: str)
+            get_all_ids()* list[str]
+            get_default_attrs()
+            get_logsheets() list
+            get_processes() list
+            get_projects() list
+            new_current()
+            remove_logsheet(logsheet_id: str)
+            remove_process(process_id: str)
+          }
+          class Config {
+            test : str
+          }
+          class ConfigHandler {
+            load_config(self: Config, config_file: str) None
+            save_config(self: Config, config_file: str) None
+          }
+          class Connection {
+            conn
+            close() None
+            commit(commit: bool) None
+            cursor() sqlite3.Cursor
+          }
+          class DBHandler {
+          }
+          class DBHandlerFactory {
+            create_db_handler(config: Config) DBHandler
+          }
+          class DBHandlerMySQL {
+            connection
+            cursor()
+          }
+          class DBHandlerSQLite {
+            connection
+            cursor()
+          }
+          class DBInitializer {
+            remove : bool
+            check_tables_exist()
+            create_database()
+            init_current_user_id(user_id: str)
+          }
+          class DataObject {
+            load()* None
+          }
+          class Dataset {
+            prefix : str
+            add_project_id(project_id: str)
+            add_subject_id(subject_id: str)
+            create_data_objects(hierarchy: dict, action: Action)* None
+            from_json_schema(json_schema: str) list
+            get_all_ids()* list[str]
+            get_current()* 'Dataset'
+            get_projects() list
+            get_subjects() list
+            get_users() list
+            load_schema() None
+            load_type_attrs() None
+            open_dataset_path() None
+            remove_project_id(project_id: str)
+            remove_subject_id(subject_id: str)
+            save_schema() None
+            to_json_schema(schema: list[type], action: Action) None
+            validate_dataset_path(path: str) None
+            validate_schema(schema: list) None
+          }
+          class DevConfig {
+            config_file : str
+            default_config_file : str
+          }
+          class GeneralConfig {
+          }
+          class IDCreator {
+            db_handler
+            create_action_id()* str
+            create_ro_id(cls, abstract: str, instance: str, is_abstract: bool) str
+          }
+          class Logsheet {
+            num_header_rows : int
+            prefix : str
+            add_variable_id(variable_id: str) None
+            from_json_class_column_names(json_var: dict, action: Action) dict
+            from_json_logsheet_headers(json_var: list, action: Action) list
+            get_all_ids()* list[str]
+            get_analyses() list
+            get_variable_ids() list
+            load_xlsx() list[list]
+            read_logsheet() None
+            remove_variable_id(variable_id: str) None
+            to_json_class_column_names(var: dict, action: Action) dict
+            to_json_logsheet_headers(var: list, action: Action) list
+            validate_class_column_names(class_column_names: dict) None
+            validate_logsheet() None
+            validate_logsheet_headers(headers: list) None
+            validate_logsheet_path(path: str) None
+            validate_num_header_rows(num_header_rows: int) None
+          }
+          class Phase {
+            logsheet_header : Optional[str]
+            prefix : str
+            add_variable_id(variable_id: str)
+            get_all_ids()* list[str]
+            get_conditions() list
+            get_trials() list
+            get_variable_ids() list
+            remove_variable_id(variable_id: str)
+          }
+          class PipelineObject {
+          }
+          class Plot {
+            prefix : str
+            add_variable_id(variable_id: str)
+            get_all_ids()* list[str]
+            get_projects() list
+            get_variable_ids() list
+            remove_variable_id(variable_id: str)
+          }
+          class Process {
+            prefix : str
+            add_input_variable_id(var_id)
+            add_output_variable_id(var_id)
+            add_subset_id(ss_id)
+            from_json_level()*
+            from_json_method()*
+            get_all_ids()* list[str]
+            get_analyses() list
+            get_input_variables() list
+            get_output_variables() list
+            get_subsets() list
+            remove_input_variable_id(var_id)
+            remove_output_variable_id(var_id)
+            remove_subset_id(ss_id)
+            run_method() None
+            run_recurse(full_schema: list[type]) None
+            to_json_level()*
+            to_json_method()*
+            validate_level(level: type) None
+            validate_method(method: Callable) None
+          }
+          class ProcessGroup {
+          }
+          class ProdConfig {
+            config_file
+            default_config_file : str
+          }
+          class Project {
+            current_analysis_id
+            prefix : str
+            project_path : str
+            add_analysis_id(analysis_id: str)
+            get_all_ids()* list[str]
+            get_analyses() list['Analysis']
+            get_users() list
+            new_current()* 'Project'
+            open_project_path() None
+            remove_analysis_id(analysis_id: str)
+            validate_current_analysis_id(id: str) None
+            validate_current_dataset_id(id: str) None
+            validate_project_path(path: str) None
+          }
+          class ROGraph {
+          }
+          class ResearchObject {
+            prefix : str
+            abstract_id() str
+            copy_to_new_instance(new_id: str) 'ResearchObject'
+            create_id(abstract: str, instance: str, is_abstract: bool)* str
+            get_abstract_object() 'ResearchObject'
+            get_all_ids()* list[str]
+            is_id(id: str) bool
+            is_instance_object() bool
+            load()* None
+            object_exists(id: str) bool
+            parse_id(id: str) tuple
+          }
+          class Subject {
+            logsheet_header : Optional[str]
+            prefix : str
+            add_visit_id(visit_id: str)
+            get_all_ids()* list[str]
+            get_datasets() list
+            get_visits() list
+            remove_visit_id(visit_id: str)
+          }
+          class Subset {
+            prefix : str
+            get_all_ids()* list[str]
+            get_plots() list
+            get_processes() list
+            get_subset() dict[dict]
+            get_trials() list
+            validate_conditions(conditions: dict) None
+          }
+          class TestConfig {
+            config_file : str
+            default_config_file : str
+          }
+          class Trial {
+            logsheet_header : Optional[str]
+            prefix : str
+            add_phase_id(phase_id: str)
+            get_all_ids()* list[str]
+            get_condition() list
+            get_phase_ids() list
+            get_visits() list
+            remove_phase_id(phase_id: str)
+          }
+          class User {
+            prefix : str
+            get_all_ids()* list[str]
+            get_current_user_object_id()* str
+            get_default_attrs()
+            set_current_user_object_id()* None
+            validate_current_project_id(id: str) bool
+          }
+          class Variable {
+            prefix : str
+            get_all_ids()* list[str]
+            get_source_object_ids(cls: type) list
+            validate_level(level: type) None
+          }
+          class Visit {
+            logsheet_header : Optional[str]
+            prefix : str
+            add_condition_id(condition_id: str)
+            add_trial_id(trial_id: str)
+            get_all_ids()* list[str]
+            get_conditions() list
+            get_subjects() list
+            get_trials() list
+            remove_condition_id(condition_id: str)
+            remove_trial_id(trial_id: str)
+          }
+          DataObject --|> ResearchObject
+          Dataset --|> DataObject
+          Phase --|> DataObject
+          Subject --|> DataObject
+          Trial --|> DataObject
+          Visit --|> DataObject
+          Analysis --|> PipelineObject
+          Logsheet --|> PipelineObject
+          PipelineObject --|> ResearchObject
+          Plot --|> PipelineObject
+          Process --|> PipelineObject
+          Project --|> PipelineObject
+          Subset --|> PipelineObject
+          DevConfig --|> GeneralConfig
+          ProdConfig --|> GeneralConfig
+          TestConfig --|> GeneralConfig
+          DBHandlerMySQL --|> DBHandler
+          DBHandlerSQLite --|> DBHandler
+          User --|> DataObject
+          User --|> PipelineObject
+          Variable --|> DataObject
+          Variable --|> PipelineObject
+          DBHandler --o IDCreator : db_handler
+  
+       </div>
+  </body>
+</html>

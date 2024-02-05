@@ -1,16 +1,17 @@
 from abc import abstractmethod
 import json
 
-from ResearchOS import DataObject
+import ResearchOS as ros
+# from ResearchOS import DataObject
 from ResearchOS.action import Action
 
-default_abstract_attrs = {}
-default_instance_attrs = {}
-default_instance_attrs["dataset_path"] = None
-default_instance_attrs["schema"] = None
+# default_abstract_attrs = {}
+# default_instance_attrs = {}
+# default_instance_attrs["dataset_path"] = None
+# default_instance_attrs["schema"] = None
 
 
-class Dataset(DataObject):
+class Dataset(ros.DataObject):
     """A dataset is one set of data.
     Class-specific Attributes:
     1. data path: The root folder location of the dataset.
@@ -20,24 +21,74 @@ class Dataset(DataObject):
     _current_source_type_prefix = "PJ"
     _source_type_prefix = "PJ"
 
+    # def get_default_attrs(self):
+    #     """Return a dictionary of default instance or abstract attributes, as appropriate for this object."""
+    #     if self.is_instance_object():
+    #         return default_instance_attrs
+    #     return default_abstract_attrs
+
     @abstractmethod
     def get_all_ids() -> list[str]:
         return super().get_all_ids(Dataset)
     
-    def __str__(self):
-        return super().__str__(default_instance_attrs.keys(), self.__dict__)
-    
-    def __init__(self, **kwargs):
-        """Initialize the attributes that are required by ResearchOS.
-        Other attributes can be added & modified later."""  
-        attrs = {}
-        if self.is_instance_object():
-            attrs = default_instance_attrs  
-        else:
-            attrs = default_abstract_attrs    
-        super().__init__(default_attrs = attrs, **kwargs)
+    # def __str__(self):
+    #     return super().__str__(default_instance_attrs.keys(), self.__dict__)
     
     #################### Start class-specific attributes ###################
+    def load_type_attrs(self) -> None:
+        """Load the dataset-specific attributes from the database in an attribute-specific way."""        
+        self.load_schema() # Load the dataset schema.
+
+    def load_schema(self) -> None:
+        """Load the schema from the database and convert it via json."""
+        prefix_schema = None # Initialize the schema as None.
+        # 1. Get the dataset ID
+        id = self.id
+        # 2. Get the most recent action ID for the dataset in the data_address_schemas table.
+        sqlquery = f"SELECT action_id FROM data_address_schemas WHERE dataset_id = '{id}'"
+        result = conn.execute(sqlquery).fetchall()
+        ordered_result = self._get_time_ordered_result(result, action_col_num = 0)
+        if len(ordered_result) > 0:
+            most_recent_action_id = ordered_result[0][0]
+            # 3. Get the schema from the levels_ordered column in the data_address_schemas table.
+            sqlquery = f"SELECT levels_ordered FROM data_address_schemas WHERE action_id = '{most_recent_action_id}'"
+            result = conn.execute(sqlquery).fetchall()
+            prefix_schema = json.loads(result[0][0])
+
+        # 5. If the schema is not None, convert the string to a list of types.
+        schema = prefix_schema
+        if prefix_schema is not None:
+            schema = []
+            for prefix in prefix_schema:
+                schema.append(self._prefix_to_class(prefix))
+
+        # 6. Store the schema as an attribute of the dataset.
+        self.__dict__["schema"] = schema
+
+    def save_schema(self) -> None:
+        """Save the schema to the database."""
+        # 1. Get the schema from the dataset object.
+        schema = self.schema
+
+        # 2. Convert the list of types to a list of str.
+        str_schema = []
+        if schema is None:
+            str_schema = schema
+        else:
+            for sch in schema:
+                str_schema.append(sch.prefix)
+
+        # 3. Convert the list of str to a json string.
+        json_schema = json.dumps(str_schema)
+
+        # 4. Create a new action for the schema change.
+        action = Action(name = "Change schema for dataset " + self.id)
+
+        # 5. Save the schema to the database.
+        sqlquery = f"INSERT INTO data_address_schemas (schema_id, levels_ordered, dataset_id, action_id) VALUES ('{self._create_uuid()}', '{json_schema}', '{self.id}', '{action.id}')"
+        action.add_sql_query(sqlquery)
+
+
     def validate_dataset_path(self, path: str) -> None:
         """Validate the dataset path."""
         import os
@@ -45,9 +96,7 @@ class Dataset(DataObject):
             raise ValueError("Specified path is not a path or does not currently exist!")        
         
     def validate_schema(self, schema: list) -> None:
-        """Validate the data schema follows the proper format."""
-        from ResearchOS import User
-        from ResearchOS import Variable
+        """Validate that the data schema follows the proper format."""
         # TODO: Check that every element is unique, no repeats.
         if not isinstance(schema, list):
             raise ValueError("Schema must be provided as a list!")
@@ -58,9 +107,9 @@ class Dataset(DataObject):
         for x in schema:
             if not isinstance(x, type):
                 raise ValueError("Schema must be provided as a list of ResearchObject types!")
-        if User in schema:
+        if ros.User in schema:
             raise ValueError("Do not include the User object in the schema! It is implicitly assumed to be the first element in the list")
-        if Variable in schema:
+        if ros.Variable in schema:
             raise ValueError("Do not include the Variable object in the schema! It is implicitly assumed to be the last element in the list")
         if Dataset != schema[0]:
             raise ValueError("Dataset must be the first element in the list! Each type after that is in sequentially 'decreasing' order.")
@@ -86,13 +135,13 @@ class Dataset(DataObject):
     def from_json_schema(self, json_schema: str) -> list:
         """Convert the data schema from json to list of types."""
         str_schema = json.loads(json_schema)
-        classes = self._get_subclasses(DataObject)        
+        classes = self._get_subclasses(ros.DataObject)        
         types_schema = [] # Should return a list of DataObject classes.
         for sch in str_schema:
             for cls in classes:
                 if sch == cls.prefix:                    
                     types_schema.append(cls)
-        return types_schema      
+        return types_schema
 
     @abstractmethod
     def _create_uuid() -> str:

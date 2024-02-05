@@ -1,0 +1,102 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="381px" height="798px" viewBox="-0.5 -0.5 381 798" content="&lt;mxfile&gt;&lt;diagram id=&quot;yzeYVBs7ADxMWyjAg52R&quot; name=&quot;Page-1&quot;&gt;7VjbbtswDP0aA91DCl/iNH1skl0eWqxYB+zRUGzW1iaLnqQsyb5+lC0ncex06eWxQIBYh6Rk6hxTtL1oXm4+K1YVd5iB8EI/23jRwgvDIJ5E9GeRbYOEweS6QXLFM+e1Bx74X3Cg79AVz0B3HA2iMLzqgilKCanpYEwpXHfdHlF0V61YDj3gIWWij/7gmSkadBr7e/wL8LxoVw58ZylZ6+wAXbAM1wdQ9NGL5grRNFflZg7C7l67L03cpxPW3Y0pkOacgLAJ+MPEyuX2DTQwlRZflz/t1jV3abZt6nrNS8EkjWaPKM2DswQ0ZoLnkq5TWhsUAX9AGU67duMMBitC04KL7JZtcWXvUBuW/mpHswIV/0vTMuHmJLMyTgDhpOPxYCMJ9glVoMnnvk07OILu2KbjeMu0cUCKQrBK8+UujZKpnMsZGoOlc3KbROnA5uRGBzv6SPiAJRi1JRcXMIoc407zo6trB6z3CgonDisO1BOHU6dcp9p8N/meWLpw3A7zHPV49kJKy5espPFNzbHyaIfDKGgytlZ6yNLTVjv3zuZfKGAZ/aMU2w8935SsBrJkuT09n2G5bqyCEz/xzDrFi54EiQRTS0PhL5ijQNLaQmKjSS7EEdTKUsCjOSlKXbGUy/y29lmM98g3R4SFkGIfRf24FjzLQFpBoWGGNeqxqVTIpamJimf0Iz7n/mVcpzGncbAf08+6KzNHSbkwXgsJSJprsPI8T3XhsOrayjo5T2PBePx6jY0HNHZEneA1JQ11bekMXsRbSQwI2BP13fK4GAU9MqM+mdEAcYItQdyj5oajnV81vkeE/o+zrii5LEDxN+IyuDqzYLxBuYh7VI68eejd0Gp+knDJTZJcHD7lo9pQMF0MGuD3IEy7NYhLWA/7A3E2GCOQZRZ8LxUvl9f0PHlFbZvzGoFNegK75xXY8tD0HRfdNqTP7Hsf8sI+JD7qQ4KBPiSaDp0R129wRkzfz4jXnRGT5573g1y+wRFxfaKj1AWuqYDTWktUBaIty7apO2r2cjDJqqKtAFY6D19uLu9W9Ba34PWL42AMvS3J50WlWG3pyEo0tboJk0xsNddtcLfqDMcarA+kZ4bam01XyjLXC71x4yeDKoV1JWyXa4ZPhuQKV9VBQApaf7bY0Wl5GJPaIkZpqIvdVZIKpvVBo/6pBk7k/X7kvvRpjcZnVt7J809cGu6/ItS2g48x0cd/&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs>
+        <clipPath id="mx-clip-24-31-252-144-0">
+            <rect x="24" y="31" width="252" height="144"/>
+        </clipPath>
+        <clipPath id="mx-clip-24-183-252-350-0">
+            <rect x="24" y="183" width="252" height="350"/>
+        </clipPath>
+        <clipPath id="mx-clip-4-639-372-160-0">
+            <rect x="4" y="639" width="372" height="160"/>
+        </clipPath>
+    </defs>
+    <g>
+        <path d="M 20 26 L 20 0 L 280 0 L 280 26" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 20 26 L 20 528 L 280 528 L 280 26" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 20 26 L 280 26" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" font-weight="bold" pointer-events="none" text-anchor="middle" font-size="12px">
+            <text x="149.5" y="17.5">
+                ResearchObject
+            </text>
+        </g>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-24-31-252-144-0)" font-size="12px">
+            <text x="25.5" y="43.5">
+                + name: str
+            </text>
+            <text x="25.5" y="57.5">
+                + desc: str
+            </text>
+            <text x="25.5" y="71.5">
+                + id: str (read only)
+            </text>
+            <text x="25.5" y="85.5">
+                + created_by: str
+            </text>
+            <text x="25.5" y="99.5">
+                + tags: list[str]
+            </text>
+        </g>
+        <path d="M 20 174 L 280 174" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-24-183-252-350-0)" font-size="12px">
+            <text x="25.5" y="195.5">
+                -  __init__()
+            </text>
+            <text x="25.5" y="209.5">
+                - __hash__()
+            </text>
+            <text x="25.5" y="223.5">
+                - __eq__()
+            </text>
+            <text x="25.5" y="237.5">
+                - __str__()
+            </text>
+            <text x="25.5" y="251.5">
+                - __new__()
+            </text>
+            <text x="25.5" y="265.5">
+                - __setattr__()
+            </text>
+            <text x="25.5" y="279.5">
+                - load()
+            </text>
+        </g>
+        <path d="M 0 626 L 0 600 L 380 600 L 380 626" fill="rgb(255, 255, 255)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 0 626 L 0 794 L 380 794 L 380 626" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 0 626 L 380 626" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" font-weight="bold" pointer-events="none" text-anchor="middle" font-size="12px">
+            <text x="189.5" y="617.5">
+                PipelineObject(ResearchObject)
+            </text>
+        </g>
+        <path d="M 0 630 L 380 630" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-4-639-372-160-0)" font-size="12px">
+            <text x="5.5" y="651.5">
+                + show_neighborhood():
+            </text>
+            <text x="5.5" y="665.5">
+                + get_upstream(): nx.MultiDiGraph
+            </text>
+            <text x="5.5" y="679.5">
+                + get_downstream(): nx.MultiDiGraph
+            </text>
+            <text x="5.5" y="693.5">
+                + copy_in_same_analysis(): PipelineObject
+            </text>
+            <text x="5.5" y="707.5">
+                + copy_to_new_analysis(): PipelineObject
+            </text>
+            <text x="5.5" y="721.5">
+                + get_current_analysis(): Analysis
+            </text>
+            <text x="5.5" y="735.5">
+                + get_current_project(): Project
+            </text>
+            <text x="5.5" y="749.5">
+                + get_current_group(): ProcessGroup
+            </text>
+            <text x="5.5" y="763.5">
+                - get_current_container(container_class: str/class): PipelineObject
+            </text>
+        </g>
+    </g>
+</svg>

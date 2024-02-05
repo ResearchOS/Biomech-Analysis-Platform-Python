@@ -70,6 +70,8 @@ class Config():
             config = TestConfig()
         elif os.environ.get("ENV") == "prod":
             config = ProdConfig()
+        else:
+            raise ValueError("Environment variable ENV must be set to either dev, test, or prod.")
         self.__dict__.update({**config.__dict__, **{"config_file": config.config_file}})    
 
     def __setattr__(self, name, value) -> None:
@@ -84,6 +86,7 @@ class Config():
 
 class ConfigHandler():
 
+    @staticmethod
     def load_config(self: Config, config_file: str) -> None:
         """Load all of the attributes from the config file."""
         if not os.path.exists(config_file):
@@ -91,6 +94,7 @@ class ConfigHandler():
         attrs = json.load(open(config_file, "r"))
         self.__dict__.update(attrs)
 
+    @staticmethod
     def save_config(self: Config, config_file: str) -> None:
         """Save all of the attributes to the config file."""
         folder = os.path.dirname(config_file)
