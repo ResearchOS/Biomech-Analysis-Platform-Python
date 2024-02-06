@@ -26,6 +26,9 @@ jobs:
               continue-on-error: true
             - name: Deploy mkdocs
               run: |
+                git fetch origin gh-pages
+                git rebase origin/gh-pages
+                git push origin gh-pages
                 mkdocs gh-deploy
             - name: Test with pytest
               run: |
