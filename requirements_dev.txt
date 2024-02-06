@@ -82,7 +82,7 @@ MarkupSafe==2.1.3
 matlab==0.1
 matplotlib==3.7.0
 matplotlib-inline==0.1.6
-mdurl==0.1.2
+mdurl==0.1.2 
 mercurial==6.5.3
 mergedeep==1.3.4
 mistune==3.0.1
