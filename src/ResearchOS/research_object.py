@@ -33,6 +33,19 @@ class ResearchObject():
     _objects = weakref.WeakValueDictionary()
     _current_source_type_prefix = None # Overwritten by subclasses that need it. For builtin "current_{cls}_id" attributes.
     _source_type_prefix = None # Overwritten by all subclasses except User. For knowing which classes are valid target types.
+
+    def load(self) -> None:
+        """Load "simple" attributes from the database."""
+        # 1. Get the database cursor.
+
+        # 2. Get the attributes from the database.
+        # Make sure to only get the attributes from action ID's that have not been overwritten.
+
+        # 3. Set the attributes of the object.
+
+    def new(self) -> None:
+        """Initialize the class-independent attributes of a new research object."""
+        self.name = "Default Name"
     
     def __hash__(self):
         return hash(self.id)
