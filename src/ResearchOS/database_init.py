@@ -1,72 +1,41 @@
 """Initialize a database to handle all of the data for the application."""
 
-import sqlite3
-import os
-import datetime
-import sys
-sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
+import sqlite3, os, json
 import ResearchOS as ros
 from ResearchOS.action import Action
 from ResearchOS.research_object import DEFAULT_USER_ID
 
 
-intended_tables = [
-    "research_objects", "actions", "attributes", "research_object_attributes", "data_values", "data_addresses", "data_address_schemas", "current_user", "settings"
-]
+sql_settings_path = os.path.abspath("src/ResearchOS/config/sql.json")
+with open(sql_settings_path, "r") as file:
+    data = json.load(file)
+intended_tables = data["intended_tables"]
 
 class DBInitializer():
-    def __init__(self, remove: bool = True):     
-        config = ros.Config()   
-        db_file = config.db_file
-        Action.conn.close()
-        self.remove = remove
-        if os.path.exists(db_file) and self.remove:
-            os.remove(db_file)
-        Action.conn = sqlite3.connect(db_file)
-        self._conn = Action.conn
-        # self._conn = sqlite3.connect(db_file)   
-        full_file = os.path.abspath(db_file)         
-        folder = os.path.dirname(full_file)
-        # os.chmod(full_file, 0o755)
-        # os.chmod(folder, 0o755)
-        self.create_database()
-        self._conn.commit()
-        self.check_tables_exist()
-        # self.init_current_user_id()
-        if not self.remove:
-            self._conn.cursor().close()
-            self._conn.close()
-            Action.conn = sqlite3.connect(db_file)
-            self._conn = Action.conn
+    """Initializes the database when the Python package is run for the first time using ros-quickstart."""
 
-    def check_tables_exist(self):
-        """Check that all of the tables were created."""
-        cursor = self._conn.cursor()
+    def __init__(self, db_file: str) -> None:
+        """Initialize the database."""
+        self.db_file = db_file
+        self.conn = sqlite3.connect(db_file)
+        self.create_tables()
+        self.check_tables_exist(intended_tables)
+
+    def check_tables_exist(self, intended_tables: list):
+        """Check that all of the tables were created."""        
+        cursor = self.conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = cursor.fetchall()
-        table_names = [table[0] for table in tables]
-        for table in intended_tables:
-            if table not in table_names:
-                raise Exception(f"Table {table} was not created.")
-            
-    def init_current_user_id(self, user_id: str = DEFAULT_USER_ID):
-        """Initialize the current user ID."""
-        from ResearchOS.action import Action
-        cursor = self._conn.cursor()
-        sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{user_id}')"
-        cursor.execute(sqlquery)
-        self._conn.commit()
-        action_id = Action._create_uuid()
-        sqlquery = f"INSERT INTO current_user (action_id, current_user_object_id) VALUES ('{action_id}', '{user_id}')"        
-        cursor.execute(sqlquery)
-        sqlquery = f"INSERT INTO actions (action_id, user_object_id, name, timestamp) VALUES ('{action_id}', '{user_id}', 'Initialize current user', '{datetime.datetime.now(datetime.UTC)}')"
-        cursor.execute(sqlquery)
-        # Put the attributes into the research objects attributes table.
-        self._conn.commit()             
+        table_names = sorted([table[0] for table in tables])
+        intended_tables = sorted(intended_tables)
+        missing_tables = [table for table in intended_tables if table not in table_names]
+        if missing_tables:
+            print(missing_tables)
+            raise Exception("At least one table missing!")
 
-    def create_database(self):
+    def create_tables(self):
         """Create the database and all of its tables."""
-        cursor = self._conn.cursor()
+        cursor = self.conn.cursor()
 
         # Action-tables one-to-many relation table. Lists all actions and which tables they had an effect on.
         cursor.execute("""CREATE TABLE IF NOT EXISTS action_tables (
@@ -82,23 +51,6 @@ class DBInitializer():
                         action_id TEXT NOT NULL,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
-
-        # Current user table.
-        # cursor.execute("""CREATE TABLE IF NOT EXISTS current_user (
-        #                 action_id TEXT PRIMARY KEY,
-        #                 current_user_object_id TEXT,
-        #                 FOREIGN KEY (current_user_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-        #                 FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
-        #                 )""")
-
-        # Settings table. Contains all settings for the application.
-        # cursor.execute("""CREATE TABLE IF NOT EXISTS settings (
-        #                 setting_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        #                 user_object_id TEXT NOT NULL,
-        #                 setting_name TEXT NOT NULL,
-        #                 setting_value TEXT NOT NULL,
-        #                 FOREIGN KEY (user_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE                        
-        #                 )""")        
 
         # Actions table. Lists all actions that have been performed, and their timestamps.
         cursor.execute("""CREATE TABLE IF NOT EXISTS actions (
@@ -120,7 +72,7 @@ class DBInitializer():
                         )""")
 
         # Research objects attributes table. Lists all attributes that have been associated with research objects.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS research_object_attributes (
+        cursor.execute("""CREATE TABLE IF NOT EXISTS simple_attributes (
                         action_row_id INTEGER PRIMARY KEY AUTOINCREMENT,
                         action_id TEXT NOT NULL,
                         object_id TEXT NOT NULL,
@@ -176,6 +128,53 @@ class DBInitializer():
                         FOREIGN KEY (dataset_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
+
+    
+
+# class DBInitializer():
+#     def __init__(self, remove: bool = True):     
+#         config = ros.Config()   
+#         db_file = config.db_file
+#         Action.conn.close()
+#         self.remove = remove
+#         if os.path.exists(db_file) and self.remove:
+#             os.remove(db_file)
+#         Action.conn = sqlite3.connect(db_file)
+#         self._conn = Action.conn
+#         # self._conn = sqlite3.connect(db_file)   
+#         full_file = os.path.abspath(db_file)         
+#         folder = os.path.dirname(full_file)
+#         # os.chmod(full_file, 0o755)
+#         # os.chmod(folder, 0o755)
+#         self.create_database()
+#         self._conn.commit()
+#         self.check_tables_exist()
+#         # self.init_current_user_id()
+#         if not self.remove:
+#             self._conn.cursor().close()
+#             self._conn.close()
+#             Action.conn = sqlite3.connect(db_file)
+#             self._conn = Action.conn
+
+    
+            
+#     def init_current_user_id(self, user_id: str = DEFAULT_USER_ID):
+#         """Initialize the current user ID."""
+#         from ResearchOS.action import Action
+#         cursor = self._conn.cursor()
+#         sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{user_id}')"
+#         cursor.execute(sqlquery)
+#         self._conn.commit()
+#         action_id = Action._create_uuid()
+#         sqlquery = f"INSERT INTO current_user (action_id, current_user_object_id) VALUES ('{action_id}', '{user_id}')"        
+#         cursor.execute(sqlquery)
+#         sqlquery = f"INSERT INTO actions (action_id, user_object_id, name, timestamp) VALUES ('{action_id}', '{user_id}', 'Initialize current user', '{datetime.datetime.now(datetime.UTC)}')"
+#         cursor.execute(sqlquery)
+#         # Put the attributes into the research objects attributes table.
+#         self._conn.commit()             
+
+#     def create_database(self):
+
 
         
 if __name__ == '__main__':    

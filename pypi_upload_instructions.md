@@ -1,4 +1,5 @@
 From here: https://packaging.python.org/en/latest/tutorials/packaging-projects/
+# Build the package.
 1. python3 -m pip install --upgrade build
 2. python3 -m build
 3. python3 -m pip install --upgrade twine

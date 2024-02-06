@@ -1,25 +1,24 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/src")
-from ResearchOS.config import Config
-from ResearchOS import DBInitializer
+import os, json
 
+import pytest
 
-class TestDatabase:
+from ResearchOS.database_init import DBInitializer
 
-    def setup_class(self):        
-        self.config = Config()
-        db = DBInitializer()
+sql_settings_path = os.path.abspath("src/ResearchOS/config/sql.json")
 
-    def teardown_class(self, db_conn):
-        # os.remove(self.config.db_file)
-        pass
+def test_db_file_exists(temp_db_file):
+    assert not os.path.isfile(temp_db_file)
 
-    def test_db_exists(self, db_conn):
-        assert os.path.isfile(self.config.db_file)
+    db = DBInitializer(temp_db_file)
+
+    assert db.db_file == temp_db_file
+    assert os.path.isfile(temp_db_file)
+
+def test_tables_exist(db):
+    with open(sql_settings_path, "r") as file:
+        data = json.load(file)
+    intended_tables = data["intended_tables"]
+    db.check_tables_exist(intended_tables)
 
 if __name__=="__main__":
-    td = TestDatabase()
-    td.setup_class()
-    td.test_db_exists()
-    td.teardown_class()
+    test_tables_exist(DBInitializer("test.db"))
