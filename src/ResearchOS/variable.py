@@ -36,7 +36,6 @@ class Variable(DataObject, PipelineObject):
     #################### Start Source objects ####################
     def get_source_object_ids(self, cls: type) -> list:
         """Return a list of all source objects for the Variable."""
-        from ResearchOS import Variable
         ids = self._get_all_source_object_ids(cls = cls)
         return [cls(id = id) for id in ids]
     

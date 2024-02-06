@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QGridLayout
+from PySide6.QtWidgets import QApplication, QMainWindow
 from login import LoginDialog
 from createWidgets import createWidgets
 

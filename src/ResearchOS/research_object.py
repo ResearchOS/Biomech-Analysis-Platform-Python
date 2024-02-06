@@ -273,7 +273,7 @@ class ResearchObject():
             try:
                 validate_method = eval(f"self.validate_{name}")
                 validate_method(value)
-            except AttributeError as e:
+            except AttributeError:
                 pass
 
         # Create an action.
@@ -285,7 +285,7 @@ class ResearchObject():
         try:
             to_json_method = eval(f"self.to_json_{name}")
             json_value = to_json_method(value, action = action)
-        except AttributeError as e:
+        except AttributeError:
             json_value = json.dumps(value, indent = 4)
                 
         # Update the attribute in the database.
@@ -294,7 +294,7 @@ class ResearchObject():
             method = eval(f"self.store_{name}")            
             method(value, action = action)
             execute_action = True # Just in case.
-        except AttributeError as e:
+        except AttributeError:
             self._default_store_obj_attr(name, value, json_value, action = action)            
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
         pattern = r"^current_[\w\d]+_id$"
@@ -352,7 +352,7 @@ class ResearchObject():
     def get_all_ids(cls) -> list[str]:
         """Get all object IDs of the specified class."""
         cursor = Action.conn.cursor()
-        sqlquery = f"SELECT object_id FROM research_objects"
+        sqlquery = "SELECT object_id FROM research_objects"
         cursor.execute(sqlquery)
         rows = cursor.fetchall()
         return [row[0] for row in rows if (row[0] is not None and row[0].startswith(cls.prefix))]
@@ -642,7 +642,8 @@ class ResearchObject():
     
     def _open_path(self, path: str) -> None:
         """Open a file or directory in the default application."""
-        import os, subprocess
+        import os
+        import subprocess
         if os.path.isdir(path):
             subprocess.Popen(["open", path])
         else:

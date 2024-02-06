@@ -9,10 +9,10 @@
 # 1. The two appropriate config files are both loaded into memory.
 # 2. Saves the config file to the OS's standard location.
 
-import json, os
+import json
+import os
 from pathlib import Path
 import platform
-from typing import Any
 
 class GeneralConfig():    
 

@@ -36,20 +36,20 @@ class DefaultStrategy(LoadSaveStrategy):
             try:
                 from_json_method = eval("self.from_json_" + attr_name)
                 attr_value = from_json_method(attr_value_json)
-            except AttributeError as e:
+            except AttributeError:
                 attr_value = json.loads(attr_value_json)
 
             try:
                 method = eval(f"self.load_{attr_name}")            
                 method(attr_value)
-            except AttributeError as e:
+            except AttributeError:
                 pass
             # Now that the value is loaded as the proper type/format (and is not None), validate it.
             try:
                 if attr_value is not None:
                     validate_method = eval("self.validate_" + attr_name)
                     validate_method(attr_value)
-            except AttributeError as e:
+            except AttributeError:
                 pass
             attrs[attr_name] = attr_value
             if len(used_attr_ids) == num_attrs:

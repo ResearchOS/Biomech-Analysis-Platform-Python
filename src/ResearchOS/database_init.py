@@ -1,6 +1,8 @@
 """Initialize a database to handle all of the data for the application."""
 
-import sqlite3, os, datetime
+import sqlite3
+import os
+import datetime
 import sys
 sys.path.append("/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/Biomech-Analysis-Platform-Python/src")
 import ResearchOS as ros

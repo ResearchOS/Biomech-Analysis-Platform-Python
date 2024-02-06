@@ -1,7 +1,6 @@
 from PySide6.QtWidgets import (
-    QTabWidget, QPushButton, 
-    QGridLayout, QWidget, 
-    QStackedWidget, QLabel, 
+    QTabWidget, QGridLayout, QWidget, 
+    QLabel, 
     QSizePolicy
 )
 

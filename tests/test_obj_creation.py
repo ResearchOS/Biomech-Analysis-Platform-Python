@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/src")
 os.environ["ENV"] = "test"
 from ResearchOS.config import Config
@@ -7,7 +8,6 @@ from ResearchOS.database_init import DBInitializer
 import ResearchOS as ros
 from ResearchOS.action import Action
 
-from fixtures import db_conn
 
 class TestObjCreation:    
     
