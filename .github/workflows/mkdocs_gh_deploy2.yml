@@ -26,6 +26,8 @@ jobs:
               continue-on-error: true
             - name: Deploy mkdocs
               run: |
+                git config --global user.email "mtillman14@gmail.com"
+                git config --global user.name "Mitchell Tillman"
                 git fetch origin gh-pages
                 git rebase origin/gh-pages
                 git push origin gh-pages
