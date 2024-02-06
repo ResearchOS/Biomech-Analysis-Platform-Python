@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QMessageBox
 
 def sendEmail(sender_email, app_password, receiver_email, message):
-    import smtplib, ssl    
+    import smtplib
     
     try:
         # creates SMTP session

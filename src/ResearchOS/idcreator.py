@@ -1,4 +1,4 @@
-from ResearchOS.db_handler import DBHandlerFactory, DBHandler
+from ResearchOS.db_handler import DBHandler
 from config import Config
 import random
 

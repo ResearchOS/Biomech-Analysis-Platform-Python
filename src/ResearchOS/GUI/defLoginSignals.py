@@ -1,10 +1,10 @@
 # Define the methods for the login signals
 import re
 
-from PySide6.QtWidgets import QInputDialog, QMessageBox, QDialog, QDialogButtonBox
+from PySide6.QtWidgets import QInputDialog, QMessageBox
 
 from sendEmails import sendEmail
-from csvDB import loadDB, getUserInfo, addToDatabase
+from csvDB import getUserInfo
 import credentials
 
 def handleLogin(self, username, password, db_filename=None):

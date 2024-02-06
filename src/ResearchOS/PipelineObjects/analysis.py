@@ -1,4 +1,3 @@
-from ResearchOS.research_object import DEFAULT_NAME_ATTRIBUTE_NAME
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from abc import abstractmethod

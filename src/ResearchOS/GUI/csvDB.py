@@ -1,7 +1,8 @@
 from initLoginSettings import getLoginInfoPath
 
 def loadDB(csvPath=getLoginInfoPath()):    
-    import csv, os    
+    import csv
+    import os    
 
     if os.path.exists(csvPath) == False:
         with open(csvPath, 'w', newline='') as f:
