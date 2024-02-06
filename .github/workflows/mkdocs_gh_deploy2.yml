@@ -30,7 +30,7 @@ jobs:
             - name: Deploy mkdocs
               run: |
                 git config --global user.email "mtillman14@gmail.com"
-                git config --global user.name "Mitchell Tillman"
+                git config --global user.name "mtillman14"
                 git fetch origin gh-pages
                 git rebase origin/gh-pages
                 git push origin gh-pages
