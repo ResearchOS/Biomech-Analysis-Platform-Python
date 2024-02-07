@@ -1,79 +1,51 @@
-import sqlite3
-
-from config import Config
+from ResearchOS.action import Action
+from ResearchOS.db_connection import DBConnection
 
 class DBHandler():
-    """Handle database operations."""
+    """Handle database interactions."""
 
-    _instance = None
+    def __init__(self, db: DBConnection) -> None:
+        """Initialize the DBHandler."""
+        self.conn = db.conn
 
-    # def _get_time_ordered_result(unordered_result, action_col_num):
-    #     """Return the result ordered by time."""
-    #     return sorted(unordered_result, key=lambda x: x[action_col_num])
+    def isolate_most_recent(self, result: list, action_col_num: int, duplicate_col_num: int) -> list:
+        """Return the result with only the most recent entries (no overwritten attributes)."""
+        # 1. Sort the result by the action column with most recent first.
+        cursor = self.conn.cursor()
+        user_id = self.get_current_user_object_id()
+        sqlquery = f"SELECT action_id FROM actions WHERE user_object_id = '{user_id}' ORDER BY timestamp DESC"
+        result = cursor.execute(sqlquery).fetchall()
+        sorted_result = sorted(result, key=lambda x: x[action_col_num])
+        # 2. Iterate through the result and add the most recent entries to a new list. 
+        # If a duplicate is found in the duplicate_col_num, skip it.
+
+    def get_current_user_object_id(self) -> str:
+        """Get the current user object ID from the database."""
+        cursor = self.conn.cursor()
+        
     
-    # def _get_attr_name(attr_id):
-    #     """Return the attribute name."""
-    #     cursor = Action.conn.cursor()
-    #     sqlquery = f"SELECT attr_name FROM attributes WHERE attr_id = '{attr_id}'"
-    #     result = cursor.execute(sqlquery).fetchone()
-    #     return result[0]
-    
-class DBHandlerSQLite(DBHandler):
-    """Concrete class to interface with the SQLite database.
-    Responsible for:
-    1. Keeping track of the connection to the database (self.connection)
-    2. Providing a cursor object (self.connection.cursor())
-    3. Ensuring that only one instance of the class (one connection) is created.
-    4. Closing the connection to the database when the object is destroyed."""    
+    def set_current_user_object_id(self, user_object_id: str) -> None:
+        """Set the current user object ID in the database."""
+        cursor = self.conn.cursor()
+        sqlquery = f"INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES ('{action_id}', '{user_object_id}', '{name}', '{timestamp}', '{redo_of}')"
+        cursor.execute(sqlquery)
+        self.conn.commit()
+        
 
-    def __new__(cls, db_file: str) -> "DBHandlerSQLite":
-        """Create a new instance of the DBHandlerSQLite."""
-        if not cls._instance:
-            cls._instance = super(DBHandlerSQLite, cls).__new__(cls)
-            cls._instance.connection = sqlite3.connect(db_file)
-        return cls._instance
+    def add_setting(self, setting: str, value: str) -> None:
+        """Add a setting to the settings table."""
+        cursor = self.conn.cursor()
+        action = Action(name = "create setting")
+        sqlquery = f"INSERT INTO settings (action_id name, value) VALUES ('{setting}', '{value}')"
+        action.add_sql_query(sqlquery)
+        action.execute()
 
-    def __del__(self) -> None:
-        """Close the connection to the database."""
-        self.connection.close()
-
-    def cursor(self):
-        """Return a cursor object."""
-        return self.connection.cursor()
-    
-class DBHandlerMySQL(DBHandler):
-    """Concrete class to interface with the MySQL database."""
-
-    def __new__(cls, host: str, user: str, password: str, db_name: str) -> "DBHandlerMySQL":
-        """Create a new instance of the DBHandlerMySQL."""
-        if not cls._instance:
-            cls._instance = super(DBHandlerMySQL, cls).__new__(cls)
-            cls._instance.connection = mysql.connector.connect(
-                host = host,
-                user = user,
-                password = password,
-                database = db_name
-            )
-        return super(DBHandlerMySQL, cls).__new__(cls)
-
-    def __del__(self) -> None:
-        """Close the connection to the database."""
-        self.connection.close()
-
-    def cursor(self):
-        """Return a cursor object."""
-        return self.connection.cursor()
-    
-class DBHandlerFactory():
-    """Create the appropriate DBHandler concrete class based on the database type in the config."""
-
-    @staticmethod
-    def create_db_handler(config: Config) -> DBHandler:
-        """Create the appropriate DBHandler concrete class based on the database type in the config."""
-        db_type = config.db_type
-        if db_type == "sqlite":
-            return DBHandlerSQLite(config.db_file)
-        elif db_type == "mysql":
-            return DBHandlerMySQL(config.db_host, config.db_user, config.db_password, config.db_name)
-        else:
-            raise ValueError(f"Database type {db_type} not supported.")
+    def get_setting(self, setting: str) -> str:
+        """Get a setting from the settings table."""
+        cursor = self.conn.cursor()
+        sqlquery = f"SELECT action_id, name, value FROM settings WHERE setting = '{setting}'"
+        result = cursor.execute(sqlquery).fetchall()
+        result = self.isolate_most_recent(result, 1, )
+        if len(result) == 0:
+            raise ValueError(f"Setting {setting} does not exist.")
+        return result[0][0]
