@@ -1,6 +1,5 @@
-import random, os, uuid
+import random, os, uuid, sqlite3
 
-from ResearchOS.db_connection import DBConnection
 from ResearchOS.config import Config
 
 config = Config()
@@ -11,9 +10,9 @@ instance_id_len = config.immutable["instance_id_len"]
 class IDCreator():
     """Creates all ID's for the ResearchOS database."""
 
-    def __init__(self, db_handler: DBConnection) -> None:
+    def __init__(self, conn: sqlite3.Connection) -> None:
         """Initialize the IDCreator."""
-        self.db = db_handler
+        self.conn = conn
     
     def create_ro_id(self, cls, abstract: str = None, instance: str = None, is_abstract: bool = False) -> str:
         """Create a ResearchObject ID following [prefix]XXXXXX_XXX."""
@@ -49,7 +48,7 @@ class IDCreator():
     def create_action_id(self) -> str:
         """Create an Action ID using Python's builtin uuid4."""
         is_unique = False        
-        conn = self.db.conn
+        conn = self.conn
         cursor = conn.cursor()
         while not is_unique:
             uuid_out = str(uuid.uuid4()) # For testing dataset creation.

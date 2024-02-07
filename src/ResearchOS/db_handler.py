@@ -1,12 +1,13 @@
+import sqlite3
+
 from ResearchOS.action import Action
-from ResearchOS.db_connection import DBConnection
 
 class DBHandler():
     """Handle database interactions."""
 
-    def __init__(self, db: DBConnection) -> None:
+    def __init__(self, conn: sqlite3.Connection) -> None:
         """Initialize the DBHandler."""
-        self.conn = db.conn
+        self.conn = conn
 
     def isolate_most_recent(self, result: list, action_col_num: int, duplicate_col_num: int) -> list:
         """Return the result with only the most recent entries (no overwritten attributes)."""
@@ -18,11 +19,6 @@ class DBHandler():
         sorted_result = sorted(result, key=lambda x: x[action_col_num])
         # 2. Iterate through the result and add the most recent entries to a new list. 
         # If a duplicate is found in the duplicate_col_num, skip it.
-
-    def get_current_user_object_id(self) -> str:
-        """Get the current user object ID from the database."""
-        cursor = self.conn.cursor()
-        
     
     def set_current_user_object_id(self, user_object_id: str) -> None:
         """Set the current user object ID in the database."""
@@ -30,7 +26,6 @@ class DBHandler():
         sqlquery = f"INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES ('{action_id}', '{user_object_id}', '{name}', '{timestamp}', '{redo_of}')"
         cursor.execute(sqlquery)
         self.conn.commit()
-        
 
     def add_setting(self, setting: str, value: str) -> None:
         """Add a setting to the settings table."""

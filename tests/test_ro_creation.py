@@ -45,5 +45,5 @@ def test_happy_create_new_ro_with_id_kwarg_only(cls, id):
 
     # Check the contents of the SQL tables.
         
-if __name__=="__main__":    
-    test_happy_create_new_ro_with_id_kwarg_only()    
+if __name__=="__main__":
+    test_happy_create_new_ro_with_id_kwarg_only(classes_and_ids[0][0], classes_and_ids[0][1])    
