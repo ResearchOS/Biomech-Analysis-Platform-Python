@@ -1,14 +1,13 @@
 """Initialize a database to handle all of the data for the application."""
 
 import sqlite3, os, json
-import ResearchOS as ros
+
 from ResearchOS.action import Action
-from ResearchOS.research_object import DEFAULT_USER_ID
 
 
 sql_settings_path = os.path.abspath("src/ResearchOS/config/sql.json")
 with open(sql_settings_path, "r") as file:
-    data = json.load(file)
+    data = json.load(file) 
 intended_tables = data["intended_tables"]
 
 class DBInitializer():
@@ -16,10 +15,28 @@ class DBInitializer():
 
     def __init__(self, db_file: str) -> None:
         """Initialize the database."""
+        if os.path.exists(db_file):
+            os.remove(db_file)
         self.db_file = db_file
         self.conn = sqlite3.connect(db_file)
         self.create_tables()
         self.check_tables_exist(intended_tables)
+        self.init_current_user_id()
+
+    def init_current_user_id(self, user_id: str = "US000000_000"):
+        """Initialize the current user ID in the settings table."""
+        action = Action(name = "Initialize current user")
+        cursor = self.conn.cursor()
+        sqlquery = f"INSERT INTO settings (setting_name) VALUES ('{user_id}')"
+        cursor.execute(sqlquery)
+        self.conn.commit()
+        action_id = self._create_uuid()
+        sqlquery = f"INSERT INTO current_user (action_id, current_user_object_id) VALUES ('{action_id}', '{user_id}')"        
+        cursor.execute(sqlquery)
+        sqlquery = f"INSERT INTO actions (action_id, user_object_id, name, timestamp) VALUES ('{action_id}', '{user_id}', 'Initialize current user', '{datetime.datetime.now(datetime.UTC)}')"
+        cursor.execute(sqlquery)
+        # Put the attributes into the research objects attributes table.
+        self.conn.commit()
 
     def check_tables_exist(self, intended_tables: list):
         """Check that all of the tables were created."""        
@@ -36,6 +53,14 @@ class DBInitializer():
     def create_tables(self):
         """Create the database and all of its tables."""
         cursor = self.conn.cursor()
+
+        # Settings table. Lists all settings for the application.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS settings (                       
+                        action_id TEXT PRIMARY KEY,
+                        setting_name TEXT NOT NULL,
+                        setting_value TEXT,
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        )""")
 
         # Action-tables one-to-many relation table. Lists all actions and which tables they had an effect on.
         cursor.execute("""CREATE TABLE IF NOT EXISTS action_tables (

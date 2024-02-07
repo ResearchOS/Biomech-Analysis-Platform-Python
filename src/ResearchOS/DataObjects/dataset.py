@@ -237,7 +237,7 @@ if __name__=="__main__":
     from DataObjects.subject import Subject
     from DataObjects.trial import Trial
     from DataObjects.phase import Phase
-    from ResearchOS.database_init import DBInitializer
+    from ResearchOS.db_initializer import DBInitializer
     db = DBInitializer()
     
     d1 = Dataset("DS1")

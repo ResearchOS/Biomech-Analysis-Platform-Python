@@ -1,30 +1,22 @@
-"""Comprised of one set of GUI widget states, and one set of research object states."""
-import datetime
-import sqlite3
-from abc import abstractmethod
+import datetime, sqlite3
 
-from ResearchOS.config import Config
-
-config = Config()
+from ResearchOS.db_connection_factory import DBConnectionFactory
+from ResearchOS.idcreator import IDCreator
+from ResearchOS.db_handler import DBHandler
 
 class Action():
+    """An action is a set of SQL queries that are executed together."""
 
-    _db_file: str = config.db_file
-    # Create a connection to the SQL database.  
-    conn: sqlite3.Connection = sqlite3.connect(_db_file)    
+    conn: sqlite3.Connection = DBConnectionFactory.create_db_connection().conn
     
     def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None):                           
-        from ResearchOS import User
-        conn = Action.conn
-        cursor = conn.cursor()
+        cursor = Action.conn.cursor()
         if not id:
-            id = Action._create_uuid()            
+            id = IDCreator.create_action_id()            
             if not timestamp:
                 timestamp = datetime.datetime.now(datetime.UTC)
             if not user_object_id:
-                user_object_id = User.get_current_user_object_id()
-                conn = Action.conn
-                cursor = conn.cursor()
+                user_object_id = DBHandler.get_current_user_object_id()
             # Do not commit here! When the action is executed then the action and the other db changes will be committed.
             cursor.execute("INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?)", (id, user_object_id, name, timestamp, redo_of))
         else:
@@ -50,40 +42,13 @@ class Action():
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
-    ###############################################################################################################################
-
-    @abstractmethod
-    def _create_uuid() -> str:
-        """Create the action_id (as uuid.uuid4()) for the action."""
-        import uuid
-        is_unique = False
-        cursor = Action.conn.cursor()
-        while not is_unique:
-            uuid_out = str(uuid.uuid4()) # For testing dataset creation.
-            sql = f'SELECT action_id FROM actions WHERE action_id = "{uuid_out}"'
-            cursor.execute(sql)
-            rows = cursor.fetchall()
-            if len(rows) == 0:
-                is_unique = True
-        return uuid_out
+    ###############################################################################################################################             
     
-    @abstractmethod
-    def _is_action_id(uuid: str) -> bool:
-        """Check if a string is a valid UUID."""
-        import uuid as uuid_module
-        try:
-            uuid_module.UUID(str(uuid))
-        except ValueError:
-            return False
-        return True    
-    
-    @abstractmethod
     def get_latest_action(user_id: str = None) -> "Action":
         """Get the most recent action performed chronologically for the current user."""
         cursor = Action.conn.cursor()
         if not user_id:
-            from ResearchOS import User
-            user_id = User.get_current_user_object_id()
+            user_id = DBHandler.get_current_user_object_id()
         sqlquery = f"SELECT action_id FROM actions WHERE user_object_id = '{user_id}' ORDER BY timestamp DESC LIMIT 1"
         try:
             result = cursor.execute(sqlquery).fetchone()
@@ -128,15 +93,14 @@ class Action():
 
     def execute(self, commit: bool = True) -> None:
         """Run all of the sql queries in the action."""
-        conn = Action.conn
-        cursor = conn.cursor()
+        cursor = Action.conn.cursor()
         # Execute all of the SQL queries        
         for query in self.sql_queries:
             cursor.execute(query)
         self.sql_queries = []
         # Log the action to the Actions table        
         if commit:            
-            conn.commit()
+            Action.conn.commit()
 
     def restore(self) -> None:
         """Restore the action, restoring the state of the referenced research objects to be the state in this Action."""        

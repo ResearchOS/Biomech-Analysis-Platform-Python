@@ -1,5 +1,5 @@
 """The base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage.""" 
-from ResearchOS import ResearchObject
+from ResearchOS.research_object import ResearchObject
 
 class DataObject(ResearchObject):
     """The abstract base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage."""    

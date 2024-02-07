@@ -1,6 +1,0 @@
-{
-    "abstract_id_len": 6,
-    "instance_id_len": 3,
-    "db_file": "src/ResearchOS/dev_database.db",
-    "test": "test"
-}
