@@ -2,7 +2,7 @@ import datetime, sqlite3
 
 from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.idcreator import IDCreator
-from ResearchOS.db_handler import DBHandler
+from ResearchOS.current_user import CurrentUser
 
 class Action():
     """An action is a set of SQL queries that are executed together."""
@@ -12,11 +12,11 @@ class Action():
     def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None):                           
         cursor = Action.conn.cursor()
         if not id:
-            id = IDCreator.create_action_id()            
+            id = IDCreator(Action.conn).create_action_id()            
             if not timestamp:
                 timestamp = datetime.datetime.now(datetime.UTC)
             if not user_object_id:
-                user_object_id = DBHandler.get_current_user_object_id()
+                user_object_id = CurrentUser(Action.conn).get_current_user_object_id()
             # Do not commit here! When the action is executed then the action and the other db changes will be committed.
             cursor.execute("INSERT INTO actions (action_id, user_object_id, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?)", (id, user_object_id, name, timestamp, redo_of))
         else:
@@ -48,7 +48,7 @@ class Action():
         """Get the most recent action performed chronologically for the current user."""
         cursor = Action.conn.cursor()
         if not user_id:
-            user_id = DBHandler.get_current_user_object_id()
+            user_id = CurrentUser(Action.conn).get_current_user_object_id()
         sqlquery = f"SELECT action_id FROM actions WHERE user_object_id = '{user_id}' ORDER BY timestamp DESC LIMIT 1"
         try:
             result = cursor.execute(sqlquery).fetchone()

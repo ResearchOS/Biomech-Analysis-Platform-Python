@@ -29,4 +29,4 @@ from .PipelineObjects.process import Process
 # from .PipelineObjects import Static # This is a package, not a module.
 
 # Last
-# from .database_init import DBInitializer
+from .db_initializer import DBInitializer
