@@ -3,11 +3,10 @@
         "action_tables",
         "research_objects",
         "actions",
-        "attributes",
+        "attributes_list",
         "simple_attributes",
         "data_values",
         "data_addresses",
-        "data_address_schemas",
-        "settings"
+        "data_address_schemas"
     ]
 }
