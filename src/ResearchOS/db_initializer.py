@@ -1,11 +1,11 @@
 """Initialize a database to handle all of the data for the application."""
 
-import sqlite3, os, json
+import sqlite3, os, json, datetime
 
 from ResearchOS.action import Action
 
 
-sql_settings_path = os.path.abspath("src/ResearchOS/config/sql.json")
+sql_settings_path = os.path.dirname(__file__) + "/config/sql.json"
 with open(sql_settings_path, "r") as file:
     data = json.load(file) 
 intended_tables = data["intended_tables"]
