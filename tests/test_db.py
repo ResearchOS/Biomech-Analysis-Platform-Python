@@ -22,7 +22,7 @@ def test_tables_exist(db_init):
     db_init.check_tables_exist(intended_tables)
 
 def test_dbconnection_singleton(db_connection, temp_db_file):
-    """Make sure that only one instance of the DBconnectionSQLite is created."""
+    """Make sure that only one instance of the DBconnectionSQLite can be created."""
     db_connection2 = DBConnectionSQLite(temp_db_file)
     assert db_connection is db_connection2
     conn1 = db_connection.conn
