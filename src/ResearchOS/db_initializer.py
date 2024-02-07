@@ -1,22 +1,23 @@
 """Initialize a database to handle all of the data for the application."""
 
-import sqlite3, os, json, datetime
+import sqlite3, os, json
 
-from ResearchOS.action import Action
-
+from ResearchOS.current_user import CurrentUser
 
 sql_settings_path = os.path.dirname(__file__) + "/config/sql.json"
-with open(sql_settings_path, "r") as file:
-    data = json.load(file) 
-intended_tables = data["intended_tables"]
 
 class DBInitializer():
     """Initializes the database when the Python package is run for the first time using ros-quickstart."""
 
     def __init__(self, db_file: str) -> None:
         """Initialize the database."""
+        with open(sql_settings_path, "r") as file:
+            data = json.load(file) 
+        intended_tables = data["intended_tables"]
+
         if os.path.exists(db_file):
             os.remove(db_file)
+
         self.db_file = db_file
         self.conn = sqlite3.connect(db_file)
         self.create_tables()
@@ -25,27 +26,15 @@ class DBInitializer():
 
     def init_current_user_id(self, user_id: str = "US000000_000"):
         """Initialize the current user ID in the settings table."""
-        action = Action(name = "Initialize current user")
-        cursor = self.conn.cursor()
-        sqlquery = f"INSERT INTO settings (setting_name) VALUES ('{user_id}')"
-        cursor.execute(sqlquery)
-        self.conn.commit()
-        action_id = self._create_uuid()
-        sqlquery = f"INSERT INTO current_user (action_id, current_user_object_id) VALUES ('{action_id}', '{user_id}')"        
-        cursor.execute(sqlquery)
-        sqlquery = f"INSERT INTO actions (action_id, user_object_id, name, timestamp) VALUES ('{action_id}', '{user_id}', 'Initialize current user', '{datetime.datetime.now(datetime.UTC)}')"
-        cursor.execute(sqlquery)
-        # Put the attributes into the research objects attributes table.
-        self.conn.commit()
+        CurrentUser(self.conn).set_current_user_id(user_id)
 
     def check_tables_exist(self, intended_tables: list):
         """Check that all of the tables were created."""        
         cursor = self.conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = cursor.fetchall()
-        table_names = sorted([table[0] for table in tables])
-        intended_tables = sorted(intended_tables)
-        missing_tables = [table for table in intended_tables if table not in table_names]
+        tables = [table[0] for table in tables]
+        missing_tables = [table for table in intended_tables if table not in tables]
         if missing_tables:
             print(missing_tables)
             raise Exception("At least one table missing!")
@@ -53,14 +42,6 @@ class DBInitializer():
     def create_tables(self):
         """Create the database and all of its tables."""
         cursor = self.conn.cursor()
-
-        # Settings table. Lists all settings for the application.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS settings (                       
-                        action_id TEXT PRIMARY KEY,
-                        setting_name TEXT NOT NULL,
-                        setting_value TEXT,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
-                        )""")
 
         # Action-tables one-to-many relation table. Lists all actions and which tables they had an effect on.
         cursor.execute("""CREATE TABLE IF NOT EXISTS action_tables (
@@ -70,7 +51,7 @@ class DBInitializer():
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
 
-        # Objects table. Lists all research objects in the database.
+        # Objects table. Lists all research objects in the database, and which action created them.
         cursor.execute("""CREATE TABLE IF NOT EXISTS research_objects (
                         object_id TEXT PRIMARY KEY,
                         action_id TEXT NOT NULL,
@@ -80,20 +61,19 @@ class DBInitializer():
         # Actions table. Lists all actions that have been performed, and their timestamps.
         cursor.execute("""CREATE TABLE IF NOT EXISTS actions (
                         action_id TEXT PRIMARY KEY,
-                        user_object_id TEXT NOT NULL,
+                        user TEXT NOT NULL,
                         name TEXT NOT NULL,
                         timestamp TEXT NOT NULL,                        
                         redo_of TEXT,
-                        FOREIGN KEY (user_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
+                        FOREIGN KEY (user) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         FOREIGN KEY (redo_of) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
 
         # Attributes table. Lists all attributes that have been added to objects.
         # NOTE: attr_type is NOT JSON, it is just a str representation of a class name.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS attributes (
+        cursor.execute("""CREATE TABLE IF NOT EXISTS attributes_list (
                         attr_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        attr_name TEXT NOT NULL,
-                        attr_type TEXT
+                        attr_name TEXT NOT NULL
                         )""")
 
         # Research objects attributes table. Lists all attributes that have been associated with research objects.
@@ -203,4 +183,4 @@ class DBInitializer():
 
         
 if __name__ == '__main__':    
-    db = DBInitializer()
+    db = DBInitializer("dev_database.db")

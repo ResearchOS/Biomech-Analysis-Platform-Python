@@ -2,13 +2,10 @@ from abc import abstractmethod
 
 from ResearchOS import PipelineObject
 
-# Defaults should be of the same type as the expected values.
-default_instance_attrs = {}
-default_instance_attrs["current_analysis_id"] = None
-default_instance_attrs["current_dataset_id"] = None
-default_instance_attrs["project_path"] = None
-
-default_abstract_attrs = {}
+default_attrs = {}
+default_attrs["current_analysis_id"] = None
+default_attrs["current_dataset_id"] = None
+default_attrs["project_path"] = None
 
 class Project(PipelineObject):
     """A project is a collection of analyses.
@@ -36,24 +33,19 @@ class Project(PipelineObject):
         return pj, an
     
     # TODO: Should I use __str__ or __repr__?
-    def __str__(self):        
-        if self.is_instance_object():
-            return super().__str__(default_instance_attrs.keys(), self.__dict__)
-        return super().__str__(default_abstract_attrs.keys(), self.__dict__)
+    # def __str__(self):        
+    #     if self.is_instance_object():
+    #         return super().__str__(default_instance_attrs.keys(), self.__dict__)
+    #     return super().__str__(default_abstract_attrs.keys(), self.__dict__)
 
-    def __repr__(self):
-        pass    
+    # def __repr__(self):
+    #     pass    
     
     #################### Start class-specific attributes ###################
     def __init__(self, **kwargs):
         """Initialize the attributes that are required by ResearchOS.
-        Other attributes can be added & modified later."""  
-        attrs = {}
-        if self.is_instance_object():
-            attrs = default_instance_attrs  
-        else:
-            attrs = default_abstract_attrs    
-        super().__init__(default_attrs = attrs, **kwargs)
+        Other attributes can be added & modified later."""
+        super().__init__(default_attrs, **kwargs)
     
     def validate_current_analysis_id(self, id: str) -> None:
         """Validate the current analysis ID. If it is not valid, the value is rejected."""        
