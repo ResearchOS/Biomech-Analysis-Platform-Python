@@ -55,8 +55,8 @@ class Logsheet(ros.PipelineObject):
         if not path.endswith(("csv", "xlsx", "xls")):
             raise ValueError("Specified file is not a CSV!")
         # 4. Check that the file is not empty.
-        if os.stat(path).st_size == 0:
-            raise ValueError("Specified file is empty!")
+        # if os.stat(path).st_size == 0:
+        #     raise ValueError("Specified file is empty!")
         
     ### Logsheet headers
     
