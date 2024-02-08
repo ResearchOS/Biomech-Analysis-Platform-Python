@@ -56,7 +56,7 @@ class Dataset(ros.DataObject):
 
     def load_schema(self) -> None:
         """Load the schema from the database and convert it via json."""
-        prefix_schema = None # Initialize the schema as None.
+        prefix_schema = [] # Initialize the schema as an empty list.
         # 1. Get the dataset ID
         id = self.id
         # 2. Get the most recent action ID for the dataset in the data_address_schemas table.

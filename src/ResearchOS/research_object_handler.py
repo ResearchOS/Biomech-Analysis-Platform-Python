@@ -134,12 +134,13 @@ class ResearchObjectHandler:
     @staticmethod
     def _setattr_type_specific(research_object, name: str, value: Any, action: Action, validate: bool, complex_attrs: list) -> None:
         """Set the attribute value for the specified attribute. This method is called after the attribute value has been validated."""
-        ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate)        
+        ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate)           
+
         if name not in complex_attrs:
             ResearchObjectHandler._setattr(research_object, name, value, action, validate)
             return
         
-        # Create an action.
+        # Create an action. Must be after the ResearchObjectHandler._setattr() method.
         execute_action = False
         if action is None:
             execute_action = True
@@ -158,7 +159,6 @@ class ResearchObjectHandler:
         """If no store_attr method exists for the object attribute, use this default method."""                                      
         sqlquery = f"INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{id}', '{ResearchObjectHandler._get_attr_id(name)}', '{json_value}')"                
         action.add_sql_query(sqlquery)
-        return action
     
     @staticmethod
     def _get_attr_name(attr_id: int) -> str:
@@ -233,13 +233,13 @@ class ResearchObjectHandler:
         # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.        
         ResearchObjectHandler._set_attr_validator(self, attr_name=name, attr_value=value, validate=validate) # Validate the attribute.        
         
-        json_value = ResearchObjectHandler.to_json(self, name, value) # Convert the value to JSON.
-                
-        # Create an action.
+        json_value = ResearchObjectHandler.to_json(self, name, value) # Convert the value to JSON
+        
+        # Create an Action. Must be before the ResearchObjectHandler.save_simple_attribute() method.
         execute_action = False
         if action is None:
             execute_action = True
-            action = Action(name = "attribute_changed")
+            action = Action(name = "attribute_changed")      
 
         ResearchObjectHandler.save_simple_attribute(self.id, name, json_value, action = action)            
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.

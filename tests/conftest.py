@@ -9,8 +9,8 @@ def temp_db_file_function(tmp_path):
 
 # Session scoped
 @pytest.fixture(scope="session")
-def temp_db_file_session(tmpdir_factory):   
-    return str(tmpdir_factory.mktemp("data").join("test.db"))
+def temp_db_file_session(tmp_path_factory):   
+    return str(tmp_path_factory.mktemp("test").joinpath("test.db"))
   
 @pytest.fixture(scope="session")
 def db_init_session(temp_db_file_session):
@@ -21,3 +21,5 @@ def db_connection_session(temp_db_file_session):
     return DBConnectionSQLite(temp_db_file_session)
 
 
+if __name__ == "__main__":
+    pytest.main(["-v", "tests/"])
