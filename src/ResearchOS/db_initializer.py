@@ -76,7 +76,7 @@ class DBInitializer():
                         attr_name TEXT NOT NULL
                         )""")
 
-        # Research objects attributes table. Lists all attributes that have been associated with research objects.
+        # Simple attributes table. Lists all "simple" (i.e. json-serializable) attributes that have been associated with research objects.
         cursor.execute("""CREATE TABLE IF NOT EXISTS simple_attributes (
                         action_row_id INTEGER PRIMARY KEY AUTOINCREMENT,
                         action_id TEXT NOT NULL,
@@ -110,16 +110,16 @@ class DBInitializer():
                         action_id TEXT NOT NULL,
                         address_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
-                        level0_value TEXT,
-                        level1_value TEXT,
-                        level2_value TEXT,
-                        level3_value TEXT,
-                        level4_value TEXT,
-                        level5_value TEXT,
-                        level6_value TEXT,
-                        level7_value TEXT,
-                        level8_value TEXT,
-                        level9_value TEXT,
+                        level0_id TEXT,
+                        level1_id TEXT,
+                        level2_id TEXT,
+                        level3_id TEXT,
+                        level4_id TEXT,
+                        level5_id TEXT,
+                        level6_id TEXT,
+                        level7_id TEXT,
+                        level8_id TEXT,
+                        level9_id TEXT,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
