@@ -4,9 +4,9 @@ import ResearchOS as ros
 
 from abc import abstractmethod
 
-default_instance_attrs = {}
-default_instance_attrs["hard_coded_value"] = None
-default_instance_attrs["level"] = None
+default_attrs = {}
+default_attrs["hard_coded_value"] = None
+default_attrs["level"] = None
 
 class Variable(DataObject, PipelineObject):
     """Variable class."""
@@ -16,6 +16,11 @@ class Variable(DataObject, PipelineObject):
     @abstractmethod
     def get_all_ids() -> list[str]:
         return super().get_all_ids(Variable)
+    
+    def __init__(self, **kwargs):
+        """Initialize the attributes that are required by ResearchOS.
+        Other attributes can be added & modified later."""
+        super().__init__(default_attrs, **kwargs)
     
     #################### Start class-specific attributes ###################
     def validate_level(self, level: type) -> None:

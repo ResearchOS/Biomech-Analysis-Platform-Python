@@ -4,8 +4,8 @@ import ResearchOS as ros
 from abc import abstractmethod
 import json
 
-default_instance_attrs = {}
-default_instance_attrs["conditions"] = {}
+default_attrs = {}
+default_attrs["conditions"] = {}
 
 numeric_logic_options = (">", "<", ">=", "<=", )
 any_type_logic_options = ("==", "!=", "in", "not in", "is", "is not", "contains", "not contains")
@@ -19,6 +19,11 @@ class Subset(PipelineObject):
     @abstractmethod
     def get_all_ids() -> list[str]:
         return super().get_all_ids(Subset)
+    
+    def __init__(self, **kwargs):
+        """Initialize the attributes that are required by ResearchOS.
+        Other attributes can be added & modified later."""
+        super().__init__(default_attrs, **kwargs)
     
     def validate_conditions(self, conditions: dict) -> None:
         """Validate the condition recursively.

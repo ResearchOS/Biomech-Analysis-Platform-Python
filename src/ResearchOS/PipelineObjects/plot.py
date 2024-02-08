@@ -2,6 +2,8 @@ from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from abc import abstractmethod
 
+default_attrs = {}
+
 class Plot(PipelineObject):
     
         prefix = "PL"    
@@ -12,6 +14,11 @@ class Plot(PipelineObject):
         @abstractmethod
         def get_all_ids() -> list[str]:
             return super().get_all_ids(Plot)
+        
+        def __init__(self, **kwargs):
+            """Initialize the attributes that are required by ResearchOS.
+            Other attributes can be added & modified later."""
+            super().__init__(default_attrs, **kwargs)
     
         #################### Start class-specific attributes ###################
 

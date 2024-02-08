@@ -5,10 +5,7 @@ import ResearchOS as ros
 # from ResearchOS import DataObject
 from ResearchOS.action import Action
 
-# default_abstract_attrs = {}
-# default_instance_attrs = {}
-# default_instance_attrs["dataset_path"] = None
-# default_instance_attrs["schema"] = None
+default_attrs = {}
 
 
 class Dataset(ros.DataObject):
@@ -18,14 +15,11 @@ class Dataset(ros.DataObject):
     2. data schema: The schema of the dataset (specified as a list of classes)"""
 
     prefix: str = "DS"
-    _current_source_type_prefix = "PJ"
-    _source_type_prefix = "PJ"
 
-    # def get_default_attrs(self):
-    #     """Return a dictionary of default instance or abstract attributes, as appropriate for this object."""
-    #     if self.is_instance_object():
-    #         return default_instance_attrs
-    #     return default_abstract_attrs
+    def __init__(self, **kwargs):
+        """Initialize the attributes that are required by ResearchOS.
+        Other attributes can be added & modified later."""
+        super().__init__(default_attrs, **kwargs)
 
     @abstractmethod
     def get_all_ids() -> list[str]:

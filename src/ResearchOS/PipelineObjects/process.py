@@ -15,6 +15,11 @@ class Process(ros.PipelineObject):
     @abstractmethod
     def get_all_ids() -> list[str]:
         return super().get_all_ids(Process)
+    
+    def __init__(self, **kwargs):
+        """Initialize the attributes that are required by ResearchOS.
+        Other attributes can be added & modified later."""
+        super().__init__(default_attrs, **kwargs)
 
     #################### Start class-specific attributes ###################
     def validate_method(self, method: Callable) -> None:

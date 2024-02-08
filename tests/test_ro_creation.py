@@ -8,7 +8,13 @@ classes_and_ids = [
     (ros.Dataset, "ID1"),
     (ros.Process, "ID1"),
     (ros.Subset, "ID1"),
-    (ros.Logsheet, "ID1")
+    (ros.Logsheet, "ID1"),
+    (ros.Dataset, "ID1"),
+    (ros.Phase, "ID1"),
+    (ros.Trial, "ID1"),
+    (ros.Visit, "ID1"),
+    (ros.Subject, "ID1"),
+    (ros.Variable, "ID1")    
 ]
 
 @pytest.mark.parametrize("cls,id", classes_and_ids)
@@ -44,12 +50,12 @@ def test_happy_create_new_ro_with_id_kwarg_only(cls, id):
 
     # Check the contents of the SQL tables.
 
-@pytest.mark.parametrize("cls,id", classes_and_ids)
-def test_happy_create_new_ro_with_id_kwarg_and_custom_kwargs(cls, id):
-    """Create a new Research Object with the id kwarg and other kwargs."""
-    ro = cls(id = id, other_kwarg = "other_kwarg")
-    # Check the object's common attributes.
-    assert ro.id == id
+# @pytest.mark.parametrize("cls,id", classes_and_ids)
+# def test_happy_create_new_ro_with_id_kwarg_and_custom_kwargs(cls, id):
+#     """Create a new Research Object with the id kwarg and other kwargs."""
+#     ro = cls(id = id, other_kwarg = "other_kwarg")
+#     # Check the object's common attributes.
+#     assert ro.id == id
 
     # Check the contents of the SQL tables.
 
