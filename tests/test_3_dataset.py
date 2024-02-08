@@ -10,23 +10,22 @@ def test_dataset_exists():
 def test_dataset_schema():
     """Make sure that the schema is correct."""
     ds = ros.Dataset(id = "ID1")
-    ds.schema = [
+    schema = [
         [ros.Dataset, ros.Subject],
         [ros.Subject, ros.Trial]
     ]
+    ds.schema = schema
     del ds
     ds = ros.Dataset(id = "ID1")
-    assert ds.schema == [
-        [ros.Dataset, ros.Subject],
-        [ros.Subject, ros.Trial]
-    ]
+    assert ds.schema == schema
 
 def test_dataset_addresses():
     ds = ros.Dataset(id = "DS1")
-    ds.schema = [
+    schema = [
         [ros.Dataset, ros.Subject],
         [ros.Subject, ros.Trial]
     ]
+    ds.schema = schema
     addresses = [
         ["DS1"],
         ["DS1", "SJ1"],
