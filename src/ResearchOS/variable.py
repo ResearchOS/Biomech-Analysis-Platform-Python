@@ -1,26 +1,38 @@
-from ResearchOS import DataObject
-from ResearchOS import PipelineObject
+from typing import Any
+
 import ResearchOS as ros
+from ResearchOS.action import Action
+from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.idcreator import IDCreator
+from ResearchOS.db_connection_factory import DBConnectionFactory
 
-from abc import abstractmethod
+all_default_attrs = {}
+all_default_attrs["hard_coded_value"] = None
+all_default_attrs["level"] = None # Eventually needs to be a complex attr.
 
-default_attrs = {}
-default_attrs["hard_coded_value"] = None
-default_attrs["level"] = None
+complex_attrs_list = []
 
-class Variable(DataObject, PipelineObject):
+class Variable(ros.DataObject, ros.PipelineObject):
     """Variable class."""
 
-    prefix: str = "VR"           
-
-    @abstractmethod
-    def get_all_ids() -> list[str]:
-        return super().get_all_ids(Variable)
+    prefix: str = "VR"
     
     def __init__(self, **kwargs):
         """Initialize the attributes that are required by ResearchOS.
         Other attributes can be added & modified later."""
-        super().__init__(default_attrs, **kwargs)
+        super().__init__(all_default_attrs, **kwargs)
+
+    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        if name == "value":
+            # Set variable value.
+            pass
+        else:
+            ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
+
+    def load(self) -> None:
+        """Load the variable-specific attributes from the database in an attribute-specific way."""
+        pass
     
     #################### Start class-specific attributes ###################
     def validate_level(self, level: type) -> None:

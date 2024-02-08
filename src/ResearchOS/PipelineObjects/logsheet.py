@@ -1,37 +1,41 @@
-from ResearchOS import PipelineObject, DataObject, Variable
-from ResearchOS.action import Action
+from typing import Any
 import json
 
-from abc import abstractmethod
+import ResearchOS as ros
+from ResearchOS.action import Action
+from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.idcreator import IDCreator
+from ResearchOS.db_connection_factory import DBConnectionFactory
 
 # Defaults should be of the same type as the expected values.
-default_attrs = {}
-default_attrs["logsheet_path"] = None
-default_attrs["logsheet_headers"] = None
-default_attrs["num_header_rows"] = None
-default_attrs["class_column_names"] = None
+all_default_attrs = {}
+all_default_attrs["logsheet_path"] = None
+all_default_attrs["logsheet_headers"] = None
+all_default_attrs["num_header_rows"] = None
+all_default_attrs["class_column_names"] = None
 
-class Logsheet(PipelineObject):
+complex_attrs_list = []
+
+class Logsheet(ros.PipelineObject):
 
     prefix = "LG"
-
-    @abstractmethod
-    def get_all_ids() -> list[str]:
-        return super().get_all_ids(Logsheet)
 
     #################### Start class-specific attributes ###################
     def __init__(self, **kwargs):
         """Initialize the attributes that are required by ResearchOS.
         Other attributes can be added & modified later."""
-        super().__init__(default_attrs, **kwargs)
+        super().__init__(all_default_attrs, **kwargs)
 
-    # def __str__(self):
-    #     if self.is_instance_object():
-    #         return super().__str__(default_attrs.keys(), self.__dict__)
-    #     return super().__str__(default_abstract_attrs.keys(), self.__dict__)
-    
-    # def __repr__(self) -> str:
-    #     pass
+    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        if name == "vr":
+            raise ValueError("The attribute 'vr' is not allowed to be set for Pipeline Objects.")
+        else:
+            ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
+
+    def load(self) -> None:
+        """Load the dataset-specific attributes from the database in an attribute-specific way."""
+        ros.PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
 
     def from_json_logsheet_headers(self, json_var: list, action: Action) -> list:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.

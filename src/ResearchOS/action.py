@@ -94,6 +94,8 @@ class Action():
         """Run all of the sql queries in the action."""
         cursor = self.conn.cursor()
         # Execute all of the SQL queries.
+        if len(self.sql_queries) == 0:
+            return
         for query in self.sql_queries:
             cursor.execute(query)
         self.sql_queries = []

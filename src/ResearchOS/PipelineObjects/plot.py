@@ -1,47 +1,34 @@
-from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from typing import Any
 
-from abc import abstractmethod
+import ResearchOS as ros
+from ResearchOS.action import Action
+from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.idcreator import IDCreator
+from ResearchOS.db_connection_factory import DBConnectionFactory
 
-default_attrs = {}
+all_default_attrs = {}
 
-class Plot(PipelineObject):
+complex_attrs_list = []
+
+class Plot(ros.PipelineObject):
     
-        prefix = "PL"    
+    prefix = "PL"    
 
-        # TODO: Plot name/other metadata for saving.
-        # TODO: For variables, need to allow ability to specify which analysis to pull from.
+    # TODO: Plot name/other metadata for saving.
+    # TODO: For variables, need to allow ability to specify which analysis to pull from.
 
-        @abstractmethod
-        def get_all_ids() -> list[str]:
-            return super().get_all_ids(Plot)
-        
-        def __init__(self, **kwargs):
-            """Initialize the attributes that are required by ResearchOS.
-            Other attributes can be added & modified later."""
-            super().__init__(default_attrs, **kwargs)
-    
-        #################### Start class-specific attributes ###################
+    def __init__(self, **kwargs):
+        """Initialize the attributes that are required by ResearchOS.
+        Other attributes can be added & modified later."""
+        super().__init__(all_default_attrs, **kwargs)
 
-        #################### Start Source objects ####################
-        def get_projects(self) -> list:
-            """Return a list of project objects that belong to this plot."""
-            from ResearchOS import Project
-            pj_ids = self._get_all_source_object_ids(cls = Project)
-            return [Project(id = pj_id) for pj_id in pj_ids]
-        
-        #################### Start Target objects ####################
-        def get_variable_ids(self) -> list:
-            """Return a list of variable IDs that belong to this plot."""
-            from ResearchOS import Variable
-            return self._get_all_target_object_ids(cls = Variable)
-        
-        def add_variable_id(self, variable_id: str):
-            """Add a variable to the plot."""
-            # TODO: Need to add a mapping between variable ID and name in code.
-            from ResearchOS import Variable        
-            self._add_target_object_id(variable_id, cls = Variable)
+    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        if name == "vr":
+            raise ValueError("The attribute 'vr' is not allowed to be set for Pipeline Objects.")
+        else:
+            ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
 
-        def remove_variable_id(self, variable_id: str):
-            """Remove a variable from the plot."""
-            from ResearchOS import Variable        
-            self._remove_target_object_id(variable_id, cls = Variable)
+    def load(self) -> None:
+        """Load the dataset-specific attributes from the database in an attribute-specific way."""
+        ros.PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
