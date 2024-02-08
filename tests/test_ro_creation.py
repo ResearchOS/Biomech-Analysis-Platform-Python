@@ -50,23 +50,30 @@ def test_happy_create_new_ro_with_id_kwarg_only(cls, id):
 
     # Check the contents of the SQL tables.
 
-# @pytest.mark.parametrize("cls,id", classes_and_ids)
-# def test_happy_create_new_ro_with_id_kwarg_and_custom_kwargs(cls, id):
-#     """Create a new Research Object with the id kwarg and other kwargs."""
-#     ro = cls(id = id, other_kwarg = "other_kwarg")
-#     # Check the object's common attributes.
-#     assert ro.id == id
+@pytest.mark.parametrize("cls,id", classes_and_ids)
+def test_happy_create_new_ro_with_id_kwarg_and_custom_kwargs(cls, id):
+    """Create a new Research Object with the id kwarg and other kwargs."""
+    ro = cls(id = id, other_kwarg = "other_kwarg")
+    # Check the object's common attributes.
+    assert ro.id == id
+    assert ro.other_kwarg == "other_kwarg"
+    assert ro.prefix == cls.prefix
 
     # Check the contents of the SQL tables.
 
-# @pytest.mark.parametrize("cls,id", classes_and_ids)
-# def test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(cls, id):
-#     """Create a new Research Object with the id kwarg and other builtin kwargs."""
-#     ro = cls(id = id, other_kwarg = "other_kwarg")
-#     # Check the object's common attributes.
-#     assert ro.id == id
+project_builtin_args = [
+    (ros.Project, "ID1", "AN1", "DS1")
+]
+
+@pytest.mark.parametrize("cls,id,current_analysis_id,current_dataset_id", project_builtin_args)
+def test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(cls, id, current_analysis_id, current_dataset_id):
+    """Create a new Research Object with the id kwarg and other builtin kwargs."""
+    ro = cls(id = id, other_kwarg = "other_kwarg", current_analysis_id = current_analysis_id, current_dataset_id = current_dataset_id)
+    # Check the object's common attributes.
+    assert ro.id == id
 
 #     # Check the contents of the SQL tables.
         
 if __name__=="__main__":
-    test_happy_create_new_ro_with_id_kwarg_only(classes_and_ids[0][0], classes_and_ids[0][1])    
+    # test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(classes_and_ids[0][0], classes_and_ids[0][1])  
+    test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(project_builtin_args[0][0], project_builtin_args[0][1], project_builtin_args[0][2], project_builtin_args[0][3])
