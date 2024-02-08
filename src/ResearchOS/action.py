@@ -13,11 +13,11 @@ class Action():
         if not id:
             id = IDCreator(self.conn).create_action_id()            
             if not timestamp:
-                timestamp = datetime.datetime.now(datetime.UTC)
+                timestamp = datetime.datetime.now(tz = datetime.UTC)
             if not user_object_id:
                 user_object_id = CurrentUser(self.conn).get_current_user_id()
             # Do not commit here! When the action is executed then the action and the other db changes will be committed.
-            cursor.execute("INSERT INTO actions (action_id, user, name, timestamp, redo_of) VALUES (?, ?, ?, ?, ?)", (id, user_object_id, name, timestamp, redo_of))
+            cursor.execute("INSERT INTO actions (action_id, user, name, datetime, redo_of) VALUES (?, ?, ?, ?, ?)", (id, user_object_id, name, timestamp, redo_of))
         else:
             # Loading an existing action.
             sqlquery = f"SELECT * FROM actions WHERE action_id = '{id}'"

@@ -1,9 +1,20 @@
-import os, sqlite3
+import os, sqlite3, datetime
 
 class DBConnection():
     """Store the connection to the database."""
 
     _instance = None
+
+def adapt_datetime_iso(datetime: datetime.datetime) -> str:
+    """Adapt datetime.datetime to timezone-naive ISO 8601 date."""
+    return datetime.isoformat()
+
+def convert_datetime_iso(iso_date) -> datetime.datetime:
+    """Convert timezone-naive ISO 8601 date to datetime.datetime."""
+    return datetime.datetime.fromisoformat(iso_date.decode())
+
+sqlite3.register_adapter(datetime.datetime, adapt_datetime_iso)
+sqlite3.register_converter("datetime", convert_datetime_iso)
     
 class DBConnectionSQLite(DBConnection):
     """Concrete class to interface with the SQLite database.
@@ -19,7 +30,8 @@ class DBConnectionSQLite(DBConnection):
         if not cls._instance:
             cls._instance = super(DBConnectionSQLite, cls).__new__(cls)
             if os.path.exists(cls.db_file):
-                cls._instance.conn = sqlite3.connect(cls.db_file)
+                # Details on detect_types: https://docs.python.org/3/library/sqlite3.html#sqlite3.PARSE_DECLTYPES
+                cls._instance.conn = sqlite3.connect(cls.db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
             else:
                 raise FileNotFoundError(f"Database file {cls.db_file} does not exist.")
         return cls._instance
