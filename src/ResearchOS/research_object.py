@@ -73,182 +73,13 @@ class ResearchObject():
                 validate = False
             self.__setattr__(key, kwargs[key], action = action, validate = validate)
         action.execute(commit = True)    
-    
-#     def __str__(self, class_attr_names: list[str], attrs: dict) -> str:
-#         #         return_str = "current_analysis_id: " + self.current_analysis_id + "\n" + ...
-#         # "current_dataset_id: " + self.current_dataset_id + "\n" + ...
-#         # "project_path: " + self.project_path
-#         pass
 
-#     def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, default_attrs: dict = {}, action: Action = None, **kwargs) -> None:
-#         """id is required as either an arg or kwarg but will actually not be used here because it is assigned during __new__().
-#         action is only ever an input during initialization."""
-#         import ResearchOS as ros
-#         id = self.id # self.id always exists by this point thanks to __new__()
-#         if not self.is_id(id):
-#             raise ValueError("Not an ID!")
-#         # 1. Determine whether we are creating a new object or loading an object from the database.
-#         is_new = False
-#         if self.object_exists(id):
-#             is_new = True
-
-#         # 2. Load the object from the database, if it already exists.
-#         # Need to leave room for arguments in the constructor to overwrite existing attributes (or create new ones).
-#         if not is_new:
-#             self.load() # Now all attributes are populated.
-#         else:
-#             pass
 
 
 
 
         
-#         action = Action(name = name)
-        
-#         if "id" in kwargs:
-#             del kwargs["id"]
-#         if "parent" not in kwargs:
-#             # TODO: Opportunity to use better software design here. This is a hack.
-#             if self._current_source_type_prefix is not None and not isinstance(self, ros.User):
-#                 # Need to auto-add the parent if it is not specified for the classes that support that.
-#                 cls = self._prefix_to_class(self._current_source_type_prefix)
-#                 us = ros.User(id = ros.User.get_current_user_object_id())
-#                 if cls is ros.User:
-#                     parent = us
-#                 else:
-#                     pj = ros.Project(id = us.current_project_id)
-#                     if cls is ros.Project:
-#                         parent = pj
-#                     else:
-#                         an = ros.Analysis(id = pj.current_analysis_id)
-#                         ds = ros.Dataset(id = pj.current_dataset_id)
-#                         if cls is ros.Analysis:
-#                             parent = an
-#                         elif cls is ros.Dataset:
-#                             parent = ds                                                
-#             elif not isinstance(self, ros.User):
-#                 raise ValueError("parent is required as a kwarg")
-#             else:
-#                 parent = None
-#         else:
-#             parent = kwargs["parent"]
-#         if isinstance(parent, ResearchObject):
-#             parent = parent.id
-#             kwargs["parent"] = parent
-#         if parent is not None and not self.object_exists(parent):
-#             raise ValueError("parent is not a valid, pre-existing object ID!")        
-#         if self.object_exists(id = id):
-#             is_new = False
-#             self.load()
-#         else:
-#             # Create the new object in the database.
-#             is_new = True            
-#             sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{id}')"
-#             if id is not DEFAULT_USER_ID: # Don't add the default user to the database, it's already in there.
-#                 action.add_sql_query(sqlquery)
-#             action.execute(commit = False)            
-#             default_attrs = {**default_attrs, **{DEFAULT_EXISTS_ATTRIBUTE_NAME: DEFAULT_EXISTS_ATTRIBUTE_VALUE, DEFAULT_NAME_ATTRIBUTE_NAME: name}} # Python 3.5 or later
-#         all_attrs = {**default_attrs, **kwargs} # Append kwargs to default attributes. Overwrites default attributes with same key.
 
-#         for attr in all_attrs:
-#             validate = True
-#             set_attr_flag = False
-#             if attr in default_attrs:
-#                 if attr not in self.__dict__:
-#                     set_attr_flag = True
-#                 if attr not in kwargs:
-#                     validate = False
-#             if attr in kwargs:
-#                 if attr not in default_attrs:
-#                     validate = False
-#                 if attr not in self.__dict__:                    
-#                     set_attr_flag = True
-#                 elif self.__dict__[attr] != kwargs[attr]:
-#                     set_attr_flag = True
-#             if set_attr_flag:
-#                 self.__setattr__(attr, all_attrs[attr], action = action, validate = validate)
-#         # If the parent is not an existing parent, then add it as a parent.
-#         if parent and not self._is_source(parent):
-#             self._add_source_object_id(parent)
-#         if is_new:
-#             action.execute()
-
-#     @abstractmethod
-#     def _get_time_ordered_result(result: list, action_col_num: int) -> list[str]:
-#         """Return the result array from conn.cursor().execute() in reverse chronological order (e.g. latest first)."""
-#         unordered_action_ids = [row[action_col_num] for row in result] # A list of action ID's in no particular order.
-#         action_ids_str = ', '.join([f'"{action_id}"' for action_id in unordered_action_ids])
-#         sqlquery = f"SELECT action_id FROM actions WHERE action_id IN ({action_ids_str}) ORDER BY timestamp DESC"
-#         cursor = Action.conn.cursor()
-#         ordered_action_ids = cursor.execute(sqlquery).fetchall()
-#         if ordered_action_ids is None or len(ordered_action_ids) == 0:
-#             raise ValueError("No actions found.")
-#         ordered_action_ids = [action_id[0] for action_id in ordered_action_ids]
-#         indices = []
-#         for action_id in ordered_action_ids:
-#             for i, unordered_action_id in enumerate(unordered_action_ids):
-#                 if unordered_action_id == action_id:
-#                     indices.append(i)
-#         sorted_result = [result[index] for index in indices]
-#         return sorted_result
-
-#     def load(self) -> None:
-#         """Load the current state of a research object from the database."""
-#         # 1. Get all of the attributes from the research_object_attributes table.
-
-#         # 2. If DataObject, load the data values from the data_values table.
-        
-
-#         # 3. If load_type_attrs() method exists, run that to load attributes in a type-specific way.
-
-
-
-#         # cursor = Action.conn.cursor()
-#         # sqlquery = f"SELECT action_id, attr_id, attr_value, target_object_id FROM research_object_attributes WHERE object_id = '{self.id}'"
-#         # unordered_attr_result = cursor.execute(sqlquery).fetchall()
-#         # ordered_attr_result = ResearchObject._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
-#         # if len(unordered_attr_result) == 0:
-#         #     raise ValueError("No object with that ID exists.")         
-                             
-#         # curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
-#         # num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
-#         # used_attr_ids = []
-#         # attrs = {}
-#         # attrs["id"] = self.id
-#         # for row in ordered_attr_result:            
-#         #     attr_id = row[1]
-#         #     attr_value_json = row[2]
-#         #     target_object_id = row[3]
-#         #     if attr_id in used_attr_ids:
-#         #         continue
-#         #     else:
-#         #         used_attr_ids.append(attr_id)                        
-
-#         #     attr_name = ResearchObject._get_attr_name(attr_id)
-#         #     # Translate the attribute from string to the proper type/format.                     
-#         #     try:
-#         #         from_json_method = eval("self.from_json_" + attr_name)
-#         #         attr_value = from_json_method(attr_value_json)
-#         #     except AttributeError as e:
-#         #         attr_value = json.loads(attr_value_json)
-
-#         #     try:
-#         #         method = eval(f"self.load_{attr_name}")            
-#         #         method(attr_value)
-#         #     except AttributeError as e:
-#         #         pass
-#         #     # Now that the value is loaded as the proper type/format (and is not None), validate it.
-#         #     try:
-#         #         if attr_value is not None:
-#         #             validate_method = eval("self.validate_" + attr_name)
-#         #             validate_method(attr_value)
-#         #     except AttributeError as e:
-#         #         pass
-#         #     attrs[attr_name] = attr_value
-#         #     if len(used_attr_ids) == num_attrs:
-#         #         break # Every attribute is accounted for.
-                
-#         # self.__dict__.update(attrs)
 
 #     def _default_store_edge_attr(self, target_object_id: str, name: str, value: Any, action: Action) -> None:
 #         """Create a digraph edge between the current object and the target object with the specified attribute."""
@@ -257,21 +88,6 @@ class ResearchObject():
 #         action.add_sql_query(sqlquery)
 #         return action
 
-#     def _get_subclasses(self, cls):
-#         """Recursively get all subclasses of the provided class
-#         Self argument is ignored."""        
-#         subclasses = cls.__subclasses__()
-#         result = subclasses[:]
-#         for subclass in subclasses:
-#             result.extend(self._get_subclasses(subclass))
-#         return result
-    
-#     def _prefix_to_class(self, prefix: str) -> type:
-#         """Convert a prefix to a class."""
-#         for cls in self._get_subclasses(ResearchObject):
-#             if cls.prefix == prefix:
-#                 return cls
-#         raise ValueError("No class with that prefix exists.")
     
 #     def _is_orphan_with_removal(self, id: str) -> bool:
 #         """Check if the object would be orphaned if the specified object ID were removed from its list of parent ID's."""
@@ -294,43 +110,6 @@ class ResearchObject():
 #         cursor.execute(sqlquery)
 #         rows = cursor.fetchall()
 #         return [row[0] for row in rows if (row[0] is not None and row[0].startswith(cls.prefix))] 
-
-#     @abstractmethod
-#     def _get_attr_id(attr_name: str, attr_value: Any) -> int:
-#         """Get the ID of an attribute given its name. If it does not exist, create it."""
-#         conn = Action.conn
-#         cursor = conn.cursor()
-#         sqlquery = f"SELECT attr_id FROM Attributes WHERE attr_name = '{attr_name}'"
-#         cursor.execute(sqlquery)            
-#         rows = cursor.fetchall()
-
-#         if len(rows) > 1:
-#             raise Exception("More than one attribute with the same name.")
-#         elif len(rows)==0:
-#             ResearchObject._create_attr(attr_name, attr_value)
-#             return ResearchObject._get_attr_id(attr_name, attr_value)
-#         return rows[0][0]
-    
-#     @abstractmethod
-#     def _create_attr(attr_name: str, attr_value) -> int:
-#         """Create a new attribute with the specified name and return its ID."""
-#         cursor = Action.conn.cursor()
-#         attr_type = str(type(attr_value)).split("'")[1]
-#         sqlquery = f"INSERT INTO Attributes (attr_name, attr_type) VALUES {attr_name, attr_type}"
-#         # sqlquery = f"INSERT INTO Attributes (attr_name, attr_type) VALUES ('{attr_name}', '{attr_type}')"
-#         cursor.execute(sqlquery)
-#         return cursor.lastrowid
-    
-#     @abstractmethod
-#     def _get_attr_name(attr_id: int) -> str:
-#         """Get the name of an attribute given the attribute's ID. If it does not exist, return an error."""
-#         cursor = Action.conn.cursor()
-#         sqlquery = f"SELECT attr_name FROM Attributes WHERE attr_id = '{attr_id}'"
-#         cursor.execute(sqlquery)
-#         rows = cursor.fetchall()
-#         if len(rows) == 0:
-#             raise Exception("No attribute with that ID exists.")
-#         return rows[0][0]  
     
 #     ###############################################################################################################################
 #     #################################################### end of abstract methods ##################################################

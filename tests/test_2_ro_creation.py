@@ -5,11 +5,10 @@ import ResearchOS as ros
 classes_and_ids = [
     (ros.Project, "ID1"),
     (ros.Analysis, "ID1"),
-    (ros.Dataset, "ID1"),
     (ros.Process, "ID1"),
     (ros.Subset, "ID1"),
     (ros.Logsheet, "ID1"),
-    (ros.Dataset, "ID1"),
+    (ros.Dataset, "DS1"),
     (ros.Phase, "ID1"),
     (ros.Trial, "ID1"),
     (ros.Visit, "ID1"),
