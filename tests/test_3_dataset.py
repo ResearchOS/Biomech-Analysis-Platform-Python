@@ -21,5 +21,25 @@ def test_dataset_schema():
         [ros.Subject, ros.Trial]
     ]
 
+def test_dataset_addresses():
+    ds = ros.Dataset(id = "DS1")
+    ds.schema = [
+        [ros.Dataset, ros.Subject],
+        [ros.Subject, ros.Trial]
+    ]
+    addresses = [
+        ["DS1"],
+        ["DS1", "SJ1"],
+        ["DS1", "SJ1", "TR1"],
+        ["DS1", "SJ1", "TR2"],
+        ["DS1", "SJ2"],
+        ["DS1", "SJ2", "TR1"],
+        ["DS1", "SJ2", "TR2"]
+    ]
+    ds.addresses = addresses
+    del ds
+    ds = ros.Dataset(id = "DS1")
+    ds.addresses == addresses
+
 if __name__ == "__main__":
     test_dataset_exists(id = "ID1")
