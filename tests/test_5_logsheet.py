@@ -61,6 +61,8 @@ def test_read_logsheet(temp_logsheet_file):
         ("Subject Codename", ros.Subject, vr1.id),
         ("Trial", ros.Trial, vr2.id)
     ]
+    ss = ros.Subset(id = "SS1")
+    lg.subset_id = ss.id
     lg.headers = headers
     lg.num_header_rows = 3
     lg.read_logsheet()

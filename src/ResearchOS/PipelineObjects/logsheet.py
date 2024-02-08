@@ -66,6 +66,7 @@ class Logsheet(ros.PipelineObject):
         if not isinstance(headers, list):
             raise ValueError("Headers must be a list!")
         # 2. Check that the headers are a list of tuples.
+        conn = DBConnectionFactory.create_db_connection().conn
         for header in headers:
             if not isinstance(header, tuple):
                 raise ValueError("Headers must be a list of tuples!")
@@ -79,7 +80,7 @@ class Logsheet(ros.PipelineObject):
             if not isinstance(header[1], type):
                 raise ValueError("Second element of each header tuple must be a Python type!")        
             # 6. Check that the third element of each header tuple is a valid variable ID.                
-            if not ResearchObjectHandler.is_ro_id(header[2]) or not header.startswith(ros.Variable.prefix):
+            if not IDCreator(conn).is_ro_id(header[2]) or not header[2].startswith(ros.Variable.prefix):
                 raise ValueError("Third element of each header tuple must be a valid variable ID!")
             
     def to_json_headers(self, headers: list) -> str:
@@ -168,7 +169,7 @@ class Logsheet(ros.PipelineObject):
         self.validate_num_header_rows(self.num_header_rows)
         self.validate_path(self.path)
         self.validate_subset_id(self.subset_id)
-        
+
         # 1. Load the logsheet (using built-in Python libraries)
         if self.path.endswith(("xlsx", "xls")):
             full_logsheet = self.load_xlsx()
