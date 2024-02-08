@@ -1,6 +1,8 @@
 from typing import Any
 import json
 
+# import pandas as pd
+
 import ResearchOS as ros
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
@@ -9,10 +11,11 @@ from ResearchOS.db_connection_factory import DBConnectionFactory
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
-all_default_attrs["logsheet_path"] = None
-all_default_attrs["logsheet_headers"] = None
+all_default_attrs["path"] = None
+all_default_attrs["headers"] = None
 all_default_attrs["num_header_rows"] = None
-all_default_attrs["class_column_names"] = None
+all_default_attrs["class_column_names"] = {}
+all_default_attrs["subset_id"] = None
 
 complex_attrs_list = []
 
@@ -37,40 +40,9 @@ class Logsheet(ros.PipelineObject):
         """Load the dataset-specific attributes from the database in an attribute-specific way."""
         ros.PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
 
-    def from_json_logsheet_headers(self, json_var: list, action: Action) -> list:
-        """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
-        XXX is the exact name of the attribute. Method name must follow this format."""        
-        var = json.loads(None)
-        return var
-    
-    def to_json_logsheet_headers(self, var: list, action: Action) -> list:
-        """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
-        XXX is the exact name of the attribute. Method name must follow this format."""        
-        json_var = json.dumps(None)
-        return json_var
-
-    def from_json_class_column_names(self, json_var: dict, action: Action) -> dict:
-        """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
-        XXX is the exact name of the attribute. Method name must follow this format."""        
-        var = None
-        return var
-    
-    def to_json_class_column_names(self, var: dict, action: Action) -> dict:
-        """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.
-        XXX is the exact name of the attribute. Method name must follow this format."""        
-        json_var = None
-        return json_var
-
-    def validate_num_header_rows(self, num_header_rows: int) -> None:
-        """Validate the number of header rows. If it is not valid, the value is rejected."""        
-        if not isinstance(num_header_rows, int):
-            raise ValueError("Num header rows must be an integer!")
-        if num_header_rows<0:
-            raise ValueError("Num header rows must be positive!")
-        if num_header_rows % 1 != 0:
-            raise ValueError("Num header rows must be an integer!")
+    ### Logsheet path
         
-    def validate_logsheet_path(self, path: str) -> None:
+    def validate_path(self, path: str) -> None:
         """Validate the logsheet path."""
         # 1. Check that the path exists in the file system.
         import os
@@ -86,7 +58,9 @@ class Logsheet(ros.PipelineObject):
         if os.stat(path).st_size == 0:
             raise ValueError("Specified file is empty!")
         
-    def validate_logsheet_headers(self, headers: list) -> None:
+    ### Logsheet headers
+    
+    def validate_headers(self, headers: list) -> None:
         """Validate the logsheet headers."""
         # 1. Check that the headers are a list.
         if not isinstance(headers, list):
@@ -105,8 +79,40 @@ class Logsheet(ros.PipelineObject):
             if not isinstance(header[1], type):
                 raise ValueError("Second element of each header tuple must be a Python type!")        
             # 6. Check that the third element of each header tuple is a valid variable ID.                
-            if not self.is_id(header[2]) or not header.startswith(Variable.prefix):
+            if not self.is_id(header[2]) or not header.startswith(ros.Variable.prefix):
                 raise ValueError("Third element of each header tuple must be a valid variable ID!")
+            
+    ### Num header rows
+            
+    def validate_num_header_rows(self, num_header_rows: int) -> None:
+        """Validate the number of header rows. If it is not valid, the value is rejected."""        
+        if not isinstance(num_header_rows, int):
+            raise ValueError("Num header rows must be an integer!")
+        if num_header_rows<0:
+            raise ValueError("Num header rows must be positive!")
+        if num_header_rows % 1 != 0:
+            raise ValueError("Num header rows must be an integer!")  
+        
+    ### Class column names
+
+    def from_json_class_column_names(self, json_var: dict) -> dict:
+        """Convert the dict from JSON string where values are class prefixes to a dict where keys are column names and values are DataObject subclasses."""     
+        prefix_var = json.loads(json_var)
+        class_column_names = {}
+        all_classes = ResearchObjectHandler._get_subclasses(ros.ResearchObject)
+        for key, prefix in prefix_var.items():
+            for cls in all_classes:
+                if hasattr(cls, "prefix") and cls.prefix == prefix:
+                    class_column_names[key] = cls
+                    break
+        return class_column_names
+    
+    def to_json_class_column_names(self, var: dict) -> dict:
+        """Convert the dict from a dict where keys are column names and values are DataObject subclasses to a JSON string where values are class prefixes."""        
+        prefix_var = {}
+        for key in var:
+            prefix_var[key] = var[key].prefix
+        return json.dumps(prefix_var)
             
     def validate_class_column_names(self, class_column_names: dict) -> None:
         """Validate the class column names."""
@@ -114,60 +120,25 @@ class Logsheet(ros.PipelineObject):
         # 1. Check that the class column names are a dict.
         if not isinstance(class_column_names, dict):
             raise ValueError("Class column names must be a dict!")
-        # 2. Check that the class column names are a dict of str to type.
+        # 2. Check that the class column names are a dict of str to type.        
         for key, value in class_column_names.items():
             if not isinstance(key, str):
                 raise ValueError("Keys of class column names must be strings!")
-            if not isinstance(value, DataObject):
+            if not issubclass(value, ros.DataObject):
                 raise ValueError("Values of class column names must be Python types that subclass DataObject!")
-
-    #################### Start Source objects ####################
-    def get_analyses(self) -> list:
-        """Return a list of analysis objects that belong to this logsheet."""
-        from ResearchOS.PipelineObjects.analysis import Analysis
-        an_ids = self._get_all_source_object_ids(cls = Analysis)
-        return self._gen_obj_or_none(an_ids, Analysis)
-    
-    #################### Start Target objects ####################
-    def get_variable_ids(self) -> list:
-        """Return a list of variable IDs that belong to this logsheet."""
-        from ResearchOS import Variable
-        vr_ids = self._get_all_target_object_ids(cls = Variable)
-        return self._gen_obj_or_none(vr_ids, Variable)
-    
-    def add_variable_id(self, variable_id: str) -> None:
-        """Add a variable to the logsheet."""
-        # TODO: Mapping between variable ID and column header.
-        from ResearchOS import Variable
-        self._add_target_object_id(variable_id, cls = Variable)
-
-    def remove_variable_id(self, variable_id: str) -> None:
-        """Remove a variable from the logsheet."""
-        from ResearchOS import Variable
-        self._remove_target_object_id(variable_id, cls = Variable)
-
-    def validate_logsheet(self) -> None:
-        """Run all validation methods to ensure that the logsheet is properly set up to be used."""
-        from ResearchOS import Project, Dataset, User        
-        # 1. Validate that each attribute of this logsheet and the other object types follows the proper format.
-        self.validate_logsheet_headers(self.logsheet_headers)
-        self.validate_class_column_names(self.class_column_names)
-        self.validate_logsheet_path(self.logsheet_path)
-        self.validate_num_header_rows(self.num_header_rows)
-
-        us = User(id = User.get_current_user_object_id())
-        pj = Project(id = us.current_project_id)
-        us.validate_current_project_id(pj.id)
-        ds = Dataset(id = pj.current_dataset_id)
-        ds.validate_dataset_path(ds.dataset_path)
-        ds.validate_schema(ds.schema)
-
-        # 2. TODO: Check that the length of logsheet headers list equals the number of columns in the logsheet.
+            
+    ### Subset ID
+            
+    def validate_subset_id(self, subset_id: str) -> None:
+        """Validate the subset ID."""
+        if not ResearchObjectHandler.object_exists(subset_id):
+            raise ValueError("Subset ID must be a valid ID!")
+        if not subset_id.startswith(ros.Subset.prefix):
+            raise ValueError("Subset ID must start with the correct prefix!")
 
     #################### Start class-specific methods ####################
     def load_xlsx(self) -> list[list]:
-        """Load the logsheet as a list of lists using Pandas."""
-        import pandas as pd
+        """Load the logsheet as a list of lists using Pandas."""        
         df = pd.read_excel(self.logsheet_path, header = None)
         return df.values.tolist()
     

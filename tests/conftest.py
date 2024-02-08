@@ -20,6 +20,5 @@ def db_init_session(temp_db_file_session):
 def db_connection_session(temp_db_file_session):
     return DBConnectionSQLite(temp_db_file_session)
 
-
 if __name__ == "__main__":
     pytest.main(["-v", "tests/"])
