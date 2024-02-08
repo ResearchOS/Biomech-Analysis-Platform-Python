@@ -1,13 +1,19 @@
-from abc import abstractmethod
+from typing import Any
 
-from ResearchOS import PipelineObject
+import ResearchOS as ros
+from ResearchOS.action import Action
+from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.idcreator import IDCreator
+from ResearchOS.db_connection_factory import DBConnectionFactory
 
-default_attrs = {}
-default_attrs["current_analysis_id"] = None
-default_attrs["current_dataset_id"] = None
-default_attrs["project_path"] = None
+all_default_attrs = {}
+all_default_attrs["current_analysis_id"] = None
+all_default_attrs["current_dataset_id"] = None
+all_default_attrs["project_path"] = None
 
-class Project(PipelineObject):
+complex_attrs_list = []
+
+class Project(ros.PipelineObject):
     """A project is a collection of analyses.
     Class-specific Attributes:
     1. current_analysis_id: The ID of the current analysis for this project.
@@ -16,34 +22,21 @@ class Project(PipelineObject):
 
     prefix: str = "PJ"
 
-    @abstractmethod
-    def get_all_ids() -> list[str]:
-        return super().get_all_ids(Project)
-    
-    @abstractmethod
-    def new_current(name: str = "New Project") -> "Project":
-        """Create a new analysis and set it as the current analysis for the current project.
-        Returns the project & analysis objects as a tuple."""
-        from ResearchOS import Analysis
-        pj = Project(name = name)
-        an = Analysis(name = pj.name + "_Default_Analysis")
-        pj.current_analysis_id = an.id
-        return pj, an
-    
-    # TODO: Should I use __str__ or __repr__?
-    # def __str__(self):        
-    #     if self.is_instance_object():
-    #         return super().__str__(default_instance_attrs.keys(), self.__dict__)
-    #     return super().__str__(default_abstract_attrs.keys(), self.__dict__)
-
-    # def __repr__(self):
-    #     pass    
-    
-    #################### Start class-specific attributes ###################
     def __init__(self, **kwargs):
         """Initialize the attributes that are required by ResearchOS.
         Other attributes can be added & modified later."""
-        super().__init__(default_attrs, **kwargs)
+        super().__init__(all_default_attrs, **kwargs)
+
+    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        if name == "vr":
+            raise ValueError("The attribute 'vr' is not allowed to be set for Pipeline Objects.")
+        else:
+            ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
+
+    def load(self) -> None:
+        """Load the dataset-specific attributes from the database in an attribute-specific way."""
+        ros.PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
     
     def validate_current_analysis_id(self, id: str) -> None:
         """Validate the current analysis ID. If it is not valid, the value is rejected."""        

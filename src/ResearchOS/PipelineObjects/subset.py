@@ -1,29 +1,40 @@
-from ResearchOS import PipelineObject
+from typing import Any
+
 import ResearchOS as ros
+from ResearchOS.action import Action
+from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.idcreator import IDCreator
+from ResearchOS.db_connection_factory import DBConnectionFactory
 
-from abc import abstractmethod
-import json
+all_default_attrs = {}
+all_default_attrs["conditions"] = {}
 
-default_attrs = {}
-default_attrs["conditions"] = {}
+complex_attrs_list = []
 
 numeric_logic_options = (">", "<", ">=", "<=", )
 any_type_logic_options = ("==", "!=", "in", "not in", "is", "is not", "contains", "not contains")
 logic_options = numeric_logic_options + any_type_logic_options
 
-class Subset(PipelineObject):
+class Subset(ros.PipelineObject):
     """Provides rules to select a subset of data from a dataset."""
     
     prefix = "SS"
 
-    @abstractmethod
-    def get_all_ids() -> list[str]:
-        return super().get_all_ids(Subset)
-    
     def __init__(self, **kwargs):
         """Initialize the attributes that are required by ResearchOS.
         Other attributes can be added & modified later."""
-        super().__init__(default_attrs, **kwargs)
+        super().__init__(all_default_attrs, **kwargs)
+
+    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        if name == "vr":
+            raise ValueError("The attribute 'vr' is not allowed to be set for Pipeline Objects.")
+        else:
+            ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
+
+    def load(self) -> None:
+        """Load the dataset-specific attributes from the database in an attribute-specific way."""
+        ros.PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
     
     def validate_conditions(self, conditions: dict) -> None:
         """Validate the condition recursively.

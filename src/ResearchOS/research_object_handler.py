@@ -1,6 +1,6 @@
 import weakref
 from typing import Any
-import json
+import json, re
 
 from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.action import Action
@@ -10,6 +10,21 @@ class ResearchObjectHandler:
 
     instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
     counts = {} # Keep track of the number of instances of each ID.
+
+    @staticmethod
+    def _set_attr_validator(research_object, attr_name: str, attr_value: Any, validate: bool = True) -> None:
+        """Set the attribute validator for the specified attribute."""
+        if not attr_name.isidentifier():
+            raise ValueError(f"{attr_name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.
+        if attr_name in research_object.__dict__ and research_object.__dict__.get(attr_name, None) == attr_value:
+            return # No change.
+        if attr_name == "id":
+            raise ValueError("Cannot change the ID of a research object.")
+        if attr_name[0] == "_":
+            return # Don't log private attributes.
+        # Validate the value        
+        if validate:                                                      
+            ResearchObjectHandler.validator(research_object, attr_name, attr_value)
 
     @staticmethod
     def check_inputs(tmp_kwargs: dict) -> None:
@@ -74,6 +89,7 @@ class ResearchObjectHandler:
         action.add_sql_query(sqlquery)
         action.execute(commit = False)  
 
+    @staticmethod
     def _load_ro(research_object, default_attrs: dict) -> None:
         """Load "simple" attributes from the database."""
         # 1. Get the database cursor.
@@ -84,14 +100,13 @@ class ResearchObjectHandler:
         sqlquery = f"SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = '{research_object.id}'"
         unordered_attr_result = cursor.execute(sqlquery).fetchall()
         ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
-        if len(unordered_attr_result) == 0:
-            raise ValueError("No object with that ID exists.")          
+        # if len(unordered_attr_result) == 0:
+        #     raise ValueError("No object with that ID exists.")          
                              
         curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
         used_attr_ids = []
         attrs = {}
-        attrs["id"] = research_object.id
         for row in ordered_attr_result:            
             attr_id = row[1]
             attr_value_json = row[2]
@@ -112,6 +127,31 @@ class ResearchObjectHandler:
 
         # 3. Set the attributes of the object.
         research_object.__dict__.update(attrs)
+
+        # 4. Load the class-specific attributes.
+        research_object.load()
+
+    @staticmethod
+    def _setattr_type_specific(research_object, name: str, value: Any, action: Action, validate: bool, complex_attrs: list) -> None:
+        """Set the attribute value for the specified attribute. This method is called after the attribute value has been validated."""
+        ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate)        
+        if name not in complex_attrs:
+            ResearchObjectHandler._setattr(research_object, name, value, action, validate)
+            return
+        
+        # Create an action.
+        execute_action = False
+        if action is None:
+            execute_action = True
+            action = Action(name = "attribute_changed")
+
+        # Save the attribute to the database.
+        save_method = eval("research_object.save_" + name)
+        save_method(value, action = action)
+
+        if execute_action:
+            action.execute()
+        research_object.__dict__[name] = value 
     
     @staticmethod
     def save_simple_attribute(id: str, name: str, json_value: Any, action: Action) -> Action:
@@ -157,7 +197,7 @@ class ResearchObjectHandler:
         cursor = db.conn.cursor()
         ordered_action_ids = cursor.execute(sqlquery).fetchall()
         if ordered_action_ids is None or len(ordered_action_ids) == 0:
-            raise ValueError("No actions found.")
+            return ordered_action_ids # Sometimes it's ok that there's no "simple" attributes?
         ordered_action_ids = [action_id[0] for action_id in ordered_action_ids]
         indices = []
         for action_id in ordered_action_ids:
@@ -175,4 +215,41 @@ class ResearchObjectHandler:
         for subclass in subclasses:
             result.extend(ResearchObjectHandler._get_subclasses(subclass))
         return result
+    
+    @staticmethod
+    def _prefix_to_class(research_object, prefix: str) -> type:
+        """Convert a prefix to a class."""
+        from ResearchOS.research_object import ResearchObject
+        for cls in ResearchObjectHandler._get_subclasses(ResearchObject):
+            if hasattr(cls, "prefix") and cls.prefix == prefix:
+                return cls
+        raise ValueError("No class with that prefix exists.")
+    
+    @staticmethod
+    def _setattr(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+        """Set the attributes of a research object in memory and in the SQL database.
+        Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it).
+        If it is not a built-in ResearchOS attribute, then no validation occurs."""
+        # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.        
+        ResearchObjectHandler._set_attr_validator(self, attr_name=name, attr_value=value, validate=validate) # Validate the attribute.        
+        
+        json_value = ResearchObjectHandler.to_json(self, name, value) # Convert the value to JSON.
+                
+        # Create an action.
+        execute_action = False
+        if action is None:
+            execute_action = True
+            action = Action(name = "attribute_changed")
+
+        ResearchObjectHandler.save_simple_attribute(self.id, name, json_value, action = action)            
+        # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
+        pattern = r"^current_[\w\d]+_id$"
+        if re.match(pattern, name):
+            pass
+            # action = self._default_store_edge_attr(target_object_id = value, name = name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
+            # if self.__dict__.get(name, None) != value:
+            #     execute_action = True # Need to execute an action if adding an edge.
+        if execute_action:
+            action.execute()
+        self.__dict__[name] = value
     

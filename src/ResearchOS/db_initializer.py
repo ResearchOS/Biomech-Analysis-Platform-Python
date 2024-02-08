@@ -129,56 +129,10 @@ class DBInitializer():
                         action_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
                         dataset_id TEXT NOT NULL,
-                        levels_ordered TEXT NOT NULL,
+                        levels_edge_list TEXT NOT NULL,
                         FOREIGN KEY (dataset_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
-
-    
-
-# class DBInitializer():
-#     def __init__(self, remove: bool = True):     
-#         config = ros.Config()   
-#         db_file = config.db_file
-#         Action.conn.close()
-#         self.remove = remove
-#         if os.path.exists(db_file) and self.remove:
-#             os.remove(db_file)
-#         Action.conn = sqlite3.connect(db_file)
-#         self._conn = Action.conn
-#         # self._conn = sqlite3.connect(db_file)   
-#         full_file = os.path.abspath(db_file)         
-#         folder = os.path.dirname(full_file)
-#         # os.chmod(full_file, 0o755)
-#         # os.chmod(folder, 0o755)
-#         self.create_database()
-#         self._conn.commit()
-#         self.check_tables_exist()
-#         # self.init_current_user_id()
-#         if not self.remove:
-#             self._conn.cursor().close()
-#             self._conn.close()
-#             Action.conn = sqlite3.connect(db_file)
-#             self._conn = Action.conn
-
-    
-            
-#     def init_current_user_id(self, user_id: str = DEFAULT_USER_ID):
-#         """Initialize the current user ID."""
-#         from ResearchOS.action import Action
-#         cursor = self._conn.cursor()
-#         sqlquery = f"INSERT INTO research_objects (object_id) VALUES ('{user_id}')"
-#         cursor.execute(sqlquery)
-#         self._conn.commit()
-#         action_id = Action._create_uuid()
-#         sqlquery = f"INSERT INTO current_user (action_id, current_user_object_id) VALUES ('{action_id}', '{user_id}')"        
-#         cursor.execute(sqlquery)
-#         sqlquery = f"INSERT INTO actions (action_id, user_object_id, name, timestamp) VALUES ('{action_id}', '{user_id}', 'Initialize current user', '{datetime.datetime.now(datetime.UTC)}')"
-#         cursor.execute(sqlquery)
-#         # Put the attributes into the research objects attributes table.
-#         self._conn.commit()             
-
-#     def create_database(self):
 
 
         

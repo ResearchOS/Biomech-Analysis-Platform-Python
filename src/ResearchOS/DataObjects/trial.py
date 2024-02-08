@@ -1,51 +1,32 @@
-from ResearchOS import DataObject
+from typing import Any
 
-from abc import abstractmethod
+import ResearchOS as ros
+from ResearchOS.action import Action
+from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.idcreator import IDCreator
+from ResearchOS.db_connection_factory import DBConnectionFactory
 
-default_attrs = {}
+all_default_attrs = {}
 
-class Trial(DataObject):
+complex_attrs_list = []
+
+class Trial(ros.DataObject):
 
     prefix = "TR"
-    logsheet_header: str = None
-
-    @abstractmethod
-    def get_all_ids() -> list[str]:
-        return super().get_all_ids(Trial)
 
     def __init__(self, **kwargs):
         """Initialize the attributes that are required by ResearchOS.
         Other attributes can be added & modified later."""
-        super().__init__(default_attrs, **kwargs)
+        super().__init__(all_default_attrs, **kwargs)
 
-    #################### Start class-specific attributes ###################
+    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        if name == "vr":
+            ros.DataObject.__setattr__(self, name, value, action, validate)
+        else:
+            ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
 
-    #################### Start Source objects ####################
-    def get_visits(self) -> list:
-        """Return a list of visit objects that belong to this trial."""
-        from ResearchOS import Visit
-        vs_ids = self._get_all_source_object_ids(cls = Visit)
-        return [Visit(id = vs_id) for vs_id in vs_ids]
+    def load(self) -> None:
+        """Load the dataset-specific attributes from the database in an attribute-specific way."""
+        ros.DataObject.load(self) # Load the attributes specific to it being a DataObject.
     
-    def get_condition(self) -> list:
-        """Return the condition object that belongs to this trial."""
-        from ResearchOS import Condition
-        cn_id = self._get_all_source_object_ids(cls = Condition)
-        return Condition(id = cn_id)
-    
-    #################### Start Target objects ####################
-    def get_phase_ids(self) -> list:
-        """Return a list of phase object IDs that belong to this trial."""
-        from ResearchOS.DataObjects.phase import Phase
-        ph_ids = self._get_all_target_object_ids(cls = Phase)
-        return [Phase(id = ph_id) for ph_id in ph_ids]
-    
-    def add_phase_id(self, phase_id: str):
-        """Add a phase to the trial."""
-        from ResearchOS.DataObjects.phase import Phase        
-        self._add_target_object_id(phase_id, cls = Phase)
-
-    def remove_phase_id(self, phase_id: str):
-        """Remove a phase from the trial."""
-        from ResearchOS.DataObjects.phase import Phase        
-        self._remove_target_object_id(phase_id, cls = Phase)

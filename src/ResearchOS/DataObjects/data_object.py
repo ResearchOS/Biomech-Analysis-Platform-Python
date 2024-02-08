@@ -6,4 +6,8 @@ class DataObject(ResearchObject):
     
     def load(self) -> None:
         """Load data values from the database."""
-        ResearchObject.load(self)
+        # 1. Identify which rows in the database are associated with this data object and have not been overwritten.
+
+        # 2. Load the data values from the database.
+
+        # 3. Set the data values in the data object's "vr" attribute.

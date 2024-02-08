@@ -72,47 +72,7 @@ class ResearchObject():
             if key in default_attrs and kwargs[key] == default_attrs[key]:
                 validate = False
             self.__setattr__(key, kwargs[key], action = action, validate = validate)
-        action.execute(commit = True)                      
-
-    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
-        """Set the attributes of a research object in memory and in the SQL database.
-        Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it).
-        If it is not a built-in ResearchOS attribute, then no validation occurs."""
-        # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.        
-        if name in self.__dict__ and self.__dict__.get(name, None) == value:
-            return # No change.
-        if name == "id":
-            raise ValueError("Cannot change the ID of a research object.")
-        if name[0] == "_":
-            return # Don't log private attributes.
-        # Validate the value        
-        if validate:                                                      
-            ResearchObjectHandler.validator(self, name, value)        
-        json_value = ResearchObjectHandler.to_json(self, name, value) # Convert the value to JSON.
-                
-        # Create an action.
-        execute_action = False
-        if action is None:
-            execute_action = True
-            action = Action(name = "attribute_changed")
-        
-        # Update the attribute in the database.
-        try:            
-            method = eval(f"self.store_{name}")            
-            method(value, action = action)
-            execute_action = True # Just in case.
-        except AttributeError:
-            ResearchObjectHandler.save_simple_attribute(self.id, name, json_value, action = action)            
-        # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
-        pattern = r"^current_[\w\d]+_id$"
-        if re.match(pattern, name):
-            pass
-            # action = self._default_store_edge_attr(target_object_id = value, name = name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
-            # if self.__dict__.get(name, None) != value:
-            #     execute_action = True # Need to execute an action if adding an edge.
-        if execute_action:
-            action.execute()
-        self.__dict__[name] = value    
+        action.execute(commit = True)    
     
 #     def __str__(self, class_attr_names: list[str], attrs: dict) -> str:
 #         #         return_str = "current_analysis_id: " + self.current_analysis_id + "\n" + ...
