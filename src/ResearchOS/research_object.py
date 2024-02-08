@@ -48,7 +48,7 @@ class ResearchObject():
         del kwargs["id"]
         if ResearchObjectHandler.object_exists(self.id):
             # Load the existing object's attributes from the database.
-            self._load_ro() 
+            self._load_ro(default_attrs) 
             action = Action(name = f"set object attributes")
         else:
             # Create a new object.
@@ -73,15 +73,42 @@ class ResearchObject():
         action.add_sql_query(sqlquery)
         action.execute(commit = False)        
 
-    def _load_ro(self) -> None:
+    def _load_ro(self, default_attrs: dict) -> None:
         """Load "simple" attributes from the database."""
         # 1. Get the database cursor.
         db = DBConnectionFactory.create_db_connection()
         cursor = db.conn.cursor()
 
         # 2. Get the attributes from the database.
-        # TODO: Make sure to only get the attributes from action ID's that have not been overwritten.
+        # TODO: Make sure to only get the attributes from action ID's that have not been overwritten.        
+        sqlquery = f"SELECT attr_id, attr_value FROM simple_attributes WHERE object_id = '{self.id}'"
+        unordered_attr_result = cursor.execute(sqlquery).fetchall()
+        ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
+        if len(unordered_attr_result) == 0:
+            raise ValueError("No object with that ID exists.")          
+                             
+        curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
+        num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
+        used_attr_ids = []
         attrs = {}
+        attrs["id"] = self.id
+        for row in ordered_attr_result:            
+            attr_id = row[1]
+            attr_value_json = row[2]
+            # target_object_id = row[3]
+            if attr_id in used_attr_ids:
+                continue
+            
+            used_attr_ids.append(attr_id)                        
+            attr_name = ResearchObject._get_attr_name(attr_id)            
+            attr_value = ResearchObjectHandler.from_json(attr_name, attr_value_json) # Translate the attribute from string to the proper type/format.
+            
+            # Now that the value is loaded as the proper type/format, validate it, if it is not the default value.
+            if not (attr_name in default_attrs and attr_value == default_attrs[attr_name]):
+                ResearchObjectHandler.validator(attr_name, attr_value)
+            attrs[attr_name] = attr_value
+            if len(used_attr_ids) == num_attrs:
+                break # Every attribute is accounted for.      
 
         # 3. Set the attributes of the object.
         self.__dict__.update(attrs)
@@ -135,6 +162,8 @@ class ResearchObject():
         if execute_action:
             action.execute()
         self.__dict__[name] = value
+
+    
     
 #     def __hash__(self):
 #         return hash(self.id)

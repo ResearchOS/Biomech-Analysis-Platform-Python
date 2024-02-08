@@ -1,5 +1,6 @@
 import weakref
 from typing import Any
+import json
 
 from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.action import Action
@@ -23,6 +24,24 @@ class ResearchObjectHandler:
         # Ensure that the ID is a string and is properly formatted.
 
         return kwargs
+    
+    @staticmethod
+    def validator(attr_name: str, attr_value: Any)  -> Any:
+        """Validate the attribute value. If the attribute value is not valid, an error is thrown."""
+        try:            
+            validate_method = eval("self.validate_" + attr_name)
+            validate_method(attr_value)
+        except AttributeError as e:
+            pass
+
+    @staticmethod
+    def from_json(attr_name: str, attr_value_json: Any) -> Any:
+        try:
+            from_json_method = eval("self.from_json_" + attr_name)
+            attr_value = from_json_method(attr_value_json)
+        except AttributeError as e:
+            attr_value = json.loads(attr_value_json)
+        return attr_value
     
     @staticmethod
     def object_exists(id: str) -> bool:
@@ -56,3 +75,23 @@ class ResearchObjectHandler:
             cursor.execute(sqlquery)
             db.conn.commit()
             return cursor.lastrowid
+        
+    @staticmethod
+    def _get_time_ordered_result(result: list, action_col_num: int) -> list[str]:
+        """Return the result array from conn.cursor().execute() in reverse chronological order (e.g. latest first)."""
+        unordered_action_ids = [row[action_col_num] for row in result] # A list of action ID's in no particular order.
+        action_ids_str = ', '.join([f'"{action_id}"' for action_id in unordered_action_ids])
+        sqlquery = f"SELECT action_id FROM actions WHERE action_id IN ({action_ids_str}) ORDER BY timestamp DESC"
+        db = DBConnectionFactory.create_db_connection()
+        cursor = db.conn.cursor()
+        ordered_action_ids = cursor.execute(sqlquery).fetchall()
+        if ordered_action_ids is None or len(ordered_action_ids) == 0:
+            raise ValueError("No actions found.")
+        ordered_action_ids = [action_id[0] for action_id in ordered_action_ids]
+        indices = []
+        for action_id in ordered_action_ids:
+            for i, unordered_action_id in enumerate(unordered_action_ids):
+                if unordered_action_id == action_id:
+                    indices.append(i)
+        sorted_result = [result[index] for index in indices]
+        return sorted_result
