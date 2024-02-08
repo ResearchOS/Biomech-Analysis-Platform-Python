@@ -19,6 +19,12 @@ def test_logsheet_path_fails_if_not_exist():
     except ValueError:
         assert True
 
+def test_logsheet_path(temp_logsheet_file):
+    """Make sure that the path is correct."""
+    lg = ros.Logsheet(id = "LG1")
+    lg.path = temp_logsheet_file
+    assert lg.path == temp_logsheet_file
+
 def test_class_column_names():
     """Make sure that the class column names are correct."""
     lg = ros.Logsheet(id = "LG1")
