@@ -2,6 +2,8 @@ from ResearchOS import DataObject
 
 from abc import abstractmethod
 
+default_attrs = {}
+
 class Trial(DataObject):
 
     prefix = "TR"
@@ -10,6 +12,11 @@ class Trial(DataObject):
     @abstractmethod
     def get_all_ids() -> list[str]:
         return super().get_all_ids(Trial)
+
+    def __init__(self, **kwargs):
+        """Initialize the attributes that are required by ResearchOS.
+        Other attributes can be added & modified later."""
+        super().__init__(default_attrs, **kwargs)
 
     #################### Start class-specific attributes ###################
 

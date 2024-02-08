@@ -5,18 +5,15 @@ import json
 from abc import abstractmethod
 
 # Defaults should be of the same type as the expected values.
-default_instance_attrs = {}
-default_instance_attrs["logsheet_path"] = None
-default_instance_attrs["logsheet_headers"] = None
-default_instance_attrs["num_header_rows"] = None
-default_instance_attrs["class_column_names"] = None
-default_abstract_attrs = {}
+default_attrs = {}
+default_attrs["logsheet_path"] = None
+default_attrs["logsheet_headers"] = None
+default_attrs["num_header_rows"] = None
+default_attrs["class_column_names"] = None
 
 class Logsheet(PipelineObject):
 
     prefix = "LG"
-    _current_source_type_prefix = "AN"
-    _source_type_prefix = "AN"
 
     @abstractmethod
     def get_all_ids() -> list[str]:
@@ -25,21 +22,16 @@ class Logsheet(PipelineObject):
     #################### Start class-specific attributes ###################
     def __init__(self, **kwargs):
         """Initialize the attributes that are required by ResearchOS.
-        Other attributes can be added & modified later."""  
-        attrs = {}
-        if self.is_instance_object():
-            attrs = default_instance_attrs  
-        else:
-            attrs = default_abstract_attrs    
-        super().__init__(default_attrs = attrs, **kwargs)
+        Other attributes can be added & modified later."""
+        super().__init__(default_attrs, **kwargs)
 
-    def __str__(self):
-        if self.is_instance_object():
-            return super().__str__(default_instance_attrs.keys(), self.__dict__)
-        return super().__str__(default_abstract_attrs.keys(), self.__dict__)
+    # def __str__(self):
+    #     if self.is_instance_object():
+    #         return super().__str__(default_attrs.keys(), self.__dict__)
+    #     return super().__str__(default_abstract_attrs.keys(), self.__dict__)
     
-    def __repr__(self) -> str:
-        pass
+    # def __repr__(self) -> str:
+    #     pass
 
     def from_json_logsheet_headers(self, json_var: list, action: Action) -> list:
         """Convert the attribute from JSON to the proper data type/format, if json.loads is not sufficient.

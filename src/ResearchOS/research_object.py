@@ -48,12 +48,12 @@ class ResearchObject():
         del kwargs["id"]
         if ResearchObjectHandler.object_exists(self.id):
             # Load the existing object's attributes from the database.
-            self._load_ro(default_attrs) 
+            ResearchObjectHandler._load_ro(self, default_attrs) 
             action = Action(name = f"set object attributes")
         else:
             # Create a new object.
             action = Action(name = f"created object")
-            self._create_ro(action = action) # Create the object in the database.
+            ResearchObjectHandler._create_ro(self, action = action) # Create the object in the database.
             # Add the default attributes to the kwargs to be set, only if they're not being overwritten by a kwarg.
             for key in default_attrs:
                 if key not in kwargs:
@@ -64,54 +64,7 @@ class ResearchObject():
             if key in default_attrs and kwargs[key] == default_attrs[key]:
                 validate = False
             self.__setattr__(key, kwargs[key], action = action, validate = validate)
-        action.execute(commit = True)        
-
-    def _create_ro(self, action: Action) -> None:
-        """Create the research object in the research_objects table of the database."""
-        db = DBConnectionFactory.create_db_connection()
-        sqlquery = f"INSERT INTO research_objects (object_id, action_id) VALUES ('{self.id}', '{action.id}')"
-        action.add_sql_query(sqlquery)
-        action.execute(commit = False)        
-
-    def _load_ro(self, default_attrs: dict) -> None:
-        """Load "simple" attributes from the database."""
-        # 1. Get the database cursor.
-        db = DBConnectionFactory.create_db_connection()
-        cursor = db.conn.cursor()
-
-        # 2. Get the attributes from the database.
-        # TODO: Make sure to only get the attributes from action ID's that have not been overwritten.        
-        sqlquery = f"SELECT attr_id, attr_value FROM simple_attributes WHERE object_id = '{self.id}'"
-        unordered_attr_result = cursor.execute(sqlquery).fetchall()
-        ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
-        if len(unordered_attr_result) == 0:
-            raise ValueError("No object with that ID exists.")          
-                             
-        curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
-        num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
-        used_attr_ids = []
-        attrs = {}
-        attrs["id"] = self.id
-        for row in ordered_attr_result:            
-            attr_id = row[1]
-            attr_value_json = row[2]
-            # target_object_id = row[3]
-            if attr_id in used_attr_ids:
-                continue
-            
-            used_attr_ids.append(attr_id)                        
-            attr_name = ResearchObject._get_attr_name(attr_id)            
-            attr_value = ResearchObjectHandler.from_json(attr_name, attr_value_json) # Translate the attribute from string to the proper type/format.
-            
-            # Now that the value is loaded as the proper type/format, validate it, if it is not the default value.
-            if not (attr_name in default_attrs and attr_value == default_attrs[attr_name]):
-                ResearchObjectHandler.validator(attr_name, attr_value)
-            attrs[attr_name] = attr_value
-            if len(used_attr_ids) == num_attrs:
-                break # Every attribute is accounted for.      
-
-        # 3. Set the attributes of the object.
-        self.__dict__.update(attrs)
+        action.execute(commit = True)                      
 
     def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
@@ -126,32 +79,22 @@ class ResearchObject():
             return # Don't log private attributes.
         # Validate the value        
         if validate:                                                      
-            try:
-                validate_method = eval(f"self.validate_{name}")
-                validate_method(value)
-            except AttributeError:
-                pass
-
+            ResearchObjectHandler.validator(name, value)        
+        json_value = ResearchObjectHandler.to_json(self, name, value) # Convert the value to JSON.
+                
         # Create an action.
         execute_action = False
         if action is None:
             execute_action = True
             action = Action(name = "attribute_changed")
-        to_json_method = None
-        try:
-            to_json_method = eval(f"self.to_json_{name}")
-            json_value = to_json_method(value, action = action)
-        except AttributeError:
-            json_value = json.dumps(value, indent = 4)
-                
+        
         # Update the attribute in the database.
-        try:
-            # assert to_json_method is None # Cannot convert to json AND have a store method. Store method takes precedence.
+        try:            
             method = eval(f"self.store_{name}")            
             method(value, action = action)
             execute_action = True # Just in case.
         except AttributeError:
-            ResearchObjectHandler.save_simple_attribute(self.id, name, value, json_value, action = action)            
+            ResearchObjectHandler.save_simple_attribute(self.id, name, json_value, action = action)            
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
         pattern = r"^current_[\w\d]+_id$"
         if re.match(pattern, name):
@@ -418,43 +361,7 @@ class ResearchObject():
 #         sqlquery = "SELECT object_id FROM research_objects"
 #         cursor.execute(sqlquery)
 #         rows = cursor.fetchall()
-#         return [row[0] for row in rows if (row[0] is not None and row[0].startswith(cls.prefix))]
-
-#     @abstractmethod
-#     def create_id(cls, abstract: str = None, instance: str = None, is_abstract: bool = False) -> str:
-#         """Create a unique ID for the research object."""
-#         config = Config()
-#         db_handler = DBHandlerSQLite(config.db_file_path)
-#         id_creator = IDCreator(db_handler)
-#         return id_creator.create_ro_id(cls, abstract = abstract, instance = instance, is_abstract = is_abstract)
-#         # import random
-#         # table_name = "research_objects"
-#         # is_unique = False
-#         # while not is_unique:
-#         #     if not abstract:
-#         #         abstract_new = str(hex(random.randrange(0, 16**abstract_id_len))[2:]).upper()
-#         #         abstract_new = "0" * (abstract_id_len-len(abstract_new)) + abstract_new
-#         #     else:
-#         #         abstract_new = abstract
-            
-#         #     if not instance:
-#         #         instance_new = str(hex(random.randrange(0, 16**instance_id_len))[2:]).upper()
-#         #         instance_new = "0" * (instance_id_len-len(instance_new)) + instance_new
-#         #     else:
-#         #         instance_new = instance
-#         #     if is_abstract:
-#         #         instance_new = ""
- 
-#         #     id = cls.prefix + abstract_new + "_" + instance_new
-#         #     cursor = Action.conn.cursor()
-#         #     sql = f'SELECT object_id FROM {table_name} WHERE object_id = "{id}"'
-#         #     cursor.execute(sql)
-#         #     rows = cursor.fetchall()
-#         #     if len(rows) == 0:
-#         #         is_unique = True
-#         #     elif is_abstract:
-#         #         raise ValueError("Abstract ID already exists.")
-#         # return id      
+#         return [row[0] for row in rows if (row[0] is not None and row[0].startswith(cls.prefix))] 
 
 #     @abstractmethod
 #     def _get_attr_id(attr_name: str, attr_value: Any) -> int:
@@ -492,18 +399,6 @@ class ResearchObject():
 #         if len(rows) == 0:
 #             raise Exception("No attribute with that ID exists.")
 #         return rows[0][0]  
-
-#     @abstractmethod
-#     def _get_attr_type(attr_id: int) -> str:
-#         """Get the type of an attribute given the attribute's ID. If it does not exist, return an error."""
-#         from pydoc import locate
-#         cursor = Action.conn.cursor()
-#         sqlquery = f"SELECT attr_type FROM Attributes WHERE attr_id = '{attr_id}'"
-#         cursor.execute(sqlquery)
-#         rows = cursor.fetchall()
-#         if len(rows) == 0:
-#             raise Exception("No attribute with that ID exists.")
-#         return locate(rows[0][0])
     
 #     ###############################################################################################################################
 #     #################################################### end of abstract methods ##################################################

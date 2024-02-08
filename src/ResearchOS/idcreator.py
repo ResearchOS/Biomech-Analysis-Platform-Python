@@ -67,3 +67,13 @@ class IDCreator():
         except ValueError:
             return False
         return True   
+    
+    def is_ro_id(self, id: str) -> bool:
+        """Check if the given ID matches the pattern of a valid research object ID."""              
+        instance_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
+        abstract_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}$"
+        if not isinstance(id, str):
+            raise ValueError("id must be a str!")
+        if re.match(instance_pattern, id) or re.match(abstract_pattern, id):
+            return True
+        return False  

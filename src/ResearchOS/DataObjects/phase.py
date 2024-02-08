@@ -2,6 +2,8 @@ from ResearchOS import DataObject
 
 from abc import abstractmethod
 
+default_attrs = {}
+
 class Phase(DataObject):
     """Phase class."""
 
@@ -11,6 +13,11 @@ class Phase(DataObject):
     @abstractmethod
     def get_all_ids() -> list[str]:
         return super().get_all_ids(Phase)
+    
+    def __init__(self, **kwargs):
+        """Initialize the attributes that are required by ResearchOS.
+        Other attributes can be added & modified later."""
+        super().__init__(default_attrs, **kwargs)
 
     #################### Start class-specific attributes ###################
 
