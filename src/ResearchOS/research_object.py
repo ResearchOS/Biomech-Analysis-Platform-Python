@@ -29,6 +29,14 @@ from ResearchOS.action import Action
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
 
+    def __hash__(self):
+        return hash(self.id)
+    
+    def __eq__(self, other):
+        if isinstance(other, ResearchObject):
+            return self.id == other.id
+        return NotImplemented
+
     def __new__(cls, **kwargs):
         """Create a new research object in memory. If the object already exists in memory with this ID, return the existing object."""
         kwargs = ResearchObjectHandler.check_inputs(kwargs)
@@ -104,49 +112,13 @@ class ResearchObject():
             #     execute_action = True # Need to execute an action if adding an edge.
         if execute_action:
             action.execute()
-        self.__dict__[name] = value
-
-    
-    
-#     def __hash__(self):
-#         return hash(self.id)
-    
-#     def __eq__(self, other):
-#         if isinstance(other, ResearchObject):
-#             return self.id == other.id
-#         return NotImplemented
+        self.__dict__[name] = value    
     
 #     def __str__(self, class_attr_names: list[str], attrs: dict) -> str:
 #         #         return_str = "current_analysis_id: " + self.current_analysis_id + "\n" + ...
 #         # "current_dataset_id: " + self.current_dataset_id + "\n" + ...
 #         # "project_path: " + self.project_path
 #         pass
-
-#     def __new__(cls, *args, **kwargs):
-#         """Create a new research object. If the object already exists, return the existing object.
-#         If abstract is True, returns an abstract object that does not have an instance ID.
-#         Otherwise, returns an instance object that has an instance ID."""
-#         if DEFAULT_ABSTRACT_KWARG_NAME not in kwargs.keys():
-#             abstract = False
-#         object_id = None
-#         if len(args)==1:
-#             object_id = args[0]
-#         elif len(args) > 1:
-#             raise ValueError("Only id can be a positional argument")
-#         if object_id is None:
-#             object_id = kwargs.get("id", None)        
-#         if object_id is None:
-#             raise ValueError("id is required as either an arg or kwarg") # Temporary - not inherently necessary, but maybe should be when running headless for idempotency?
-#             # object_id = cls.create_id(cls, is_abstract = abstract) # Uncomment if/when 0 args/kwargs in constructor is ok.
-#         if object_id in ResearchObject._objects:
-#             # ResearchObject._objects_count[object_id] += 1
-#             return ResearchObject._objects[object_id]
-#         else: # Create a new object.
-#             instance = super(ResearchObject, cls).__new__(cls)
-#             ResearchObject._objects[object_id] = instance
-#             # ResearchObject._objects_count[object_id] = 1
-#             instance.__dict__['id'] = object_id
-#             return instance
 
 #     def __init__(self, name: str = DEFAULT_NAME_ATTRIBUTE_NAME, default_attrs: dict = {}, action: Action = None, **kwargs) -> None:
 #         """id is required as either an arg or kwarg but will actually not be used here because it is assigned during __new__().

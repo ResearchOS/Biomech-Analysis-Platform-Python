@@ -63,7 +63,7 @@ class DBInitializer():
                         action_id TEXT PRIMARY KEY,
                         user TEXT NOT NULL,
                         name TEXT NOT NULL,
-                        timestamp TEXT NOT NULL,                        
+                        datetime TEXT NOT NULL,                        
                         redo_of TEXT,
                         FOREIGN KEY (user) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         FOREIGN KEY (redo_of) REFERENCES actions(action_id) ON DELETE CASCADE

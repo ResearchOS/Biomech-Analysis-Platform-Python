@@ -152,7 +152,7 @@ class ResearchObjectHandler:
         """Return the result array from conn.cursor().execute() in reverse chronological order (e.g. latest first)."""
         unordered_action_ids = [row[action_col_num] for row in result] # A list of action ID's in no particular order.
         action_ids_str = ', '.join([f'"{action_id}"' for action_id in unordered_action_ids])
-        sqlquery = f"SELECT action_id FROM actions WHERE action_id IN ({action_ids_str}) ORDER BY timestamp DESC"
+        sqlquery = f"SELECT action_id FROM actions WHERE action_id IN ({action_ids_str}) ORDER BY datetime DESC"
         db = DBConnectionFactory.create_db_connection()
         cursor = db.conn.cursor()
         ordered_action_ids = cursor.execute(sqlquery).fetchall()
@@ -167,12 +167,12 @@ class ResearchObjectHandler:
         sorted_result = [result[index] for index in indices]
         return sorted_result
     
-    def _get_subclasses(self, cls):
-        """Recursively get all subclasses of the provided class
-        Self argument is ignored."""        
+    @staticmethod
+    def _get_subclasses(cls):
+        """Recursively get all subclasses of the provided class."""        
         subclasses = cls.__subclasses__()
         result = subclasses[:]
         for subclass in subclasses:
-            result.extend(self._get_subclasses(subclass))
+            result.extend(ResearchObjectHandler._get_subclasses(subclass))
         return result
     

@@ -74,7 +74,7 @@ def test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(cls, id, current_a
     assert ro.current_analysis_id == current_analysis_id
     assert ro.current_dataset_id == current_dataset_id
 
-#     # Check the contents of the SQL tables.
+    # Check the contents of the SQL tables.
         
 if __name__=="__main__":
     # test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(classes_and_ids[0][0], classes_and_ids[0][1])  

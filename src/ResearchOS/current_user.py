@@ -14,7 +14,7 @@ class CurrentUser():
         Reads the most recent action (by timestamp) and returns the user. User will always exist if an action exists because user is NOT NULL in SQLite table.
         If no actions exist, raise an error."""        
         cursor = self.conn.cursor()
-        sqlquery = "SELECT user FROM actions ORDER BY timestamp DESC LIMIT 1"
+        sqlquery = "SELECT user FROM actions ORDER BY datetime DESC LIMIT 1"
         result = cursor.execute(sqlquery).fetchone()
         if result is None:
             raise ValueError("current user does not exist because there are no actions")
@@ -26,6 +26,6 @@ class CurrentUser():
         cursor = self.conn.cursor()
         action_id = IDCreator(self.conn).create_action_id()
         name = "Set current user"
-        sqlquery = f"INSERT INTO actions (action_id, user, name, timestamp) VALUES ('{action_id}', '{user}', '{name}', '{datetime.datetime.now(datetime.UTC)}')"
+        sqlquery = f"INSERT INTO actions (action_id, user, name, datetime) VALUES ('{action_id}', '{user}', '{name}', '{datetime.datetime.now(datetime.UTC)}')"
         cursor.execute(sqlquery)
         self.conn.commit()
