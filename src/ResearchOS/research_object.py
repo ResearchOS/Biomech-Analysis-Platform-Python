@@ -79,7 +79,7 @@ class ResearchObject():
             return # Don't log private attributes.
         # Validate the value        
         if validate:                                                      
-            ResearchObjectHandler.validator(name, value)        
+            ResearchObjectHandler.validator(self, name, value)        
         json_value = ResearchObjectHandler.to_json(self, name, value) # Convert the value to JSON.
                 
         # Create an action.
