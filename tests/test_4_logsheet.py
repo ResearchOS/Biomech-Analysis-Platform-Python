@@ -37,11 +37,16 @@ def test_class_column_names():
     lg = ros.Logsheet(id = "LG1")
     assert lg.class_column_names == class_column_names
 
-# def test_logsheet_header_names():
-#     """Make sure that the header names are correct."""
-#     lg = ros.Logsheet(id = "LG1")
-#     header_names = ["ID", "Name", "Age"]
-#     lg.header_names = header_names
-#     del lg
-#     lg = ros.Logsheet(id = "LG1")
-#     assert lg.header_names == header_names
+def test_logsheet_headers():
+    """Make sure that the header names are correct."""
+    lg = ros.Logsheet(id = "LG1")
+    vr1 = ros.Variable(id = "VR1")
+    vr2 = ros.Variable(id = "VR2")
+    headers = [
+        ("Subject Codename", ros.Subject, vr1.id),
+        ("Trial", ros.Trial, vr2.id)
+    ]
+    lg.headers = headers
+    del lg
+    lg = ros.Logsheet(id = "LG1")
+    assert lg.headers == headers

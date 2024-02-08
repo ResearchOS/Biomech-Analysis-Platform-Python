@@ -12,7 +12,7 @@ from ResearchOS.db_connection_factory import DBConnectionFactory
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
 all_default_attrs["path"] = None
-all_default_attrs["headers"] = None
+all_default_attrs["headers"] = []
 all_default_attrs["num_header_rows"] = None
 all_default_attrs["class_column_names"] = {}
 all_default_attrs["subset_id"] = None
@@ -79,8 +79,27 @@ class Logsheet(ros.PipelineObject):
             if not isinstance(header[1], type):
                 raise ValueError("Second element of each header tuple must be a Python type!")        
             # 6. Check that the third element of each header tuple is a valid variable ID.                
-            if not self.is_id(header[2]) or not header.startswith(ros.Variable.prefix):
+            if not ResearchObjectHandler.is_ro_id(header[2]) or not header.startswith(ros.Variable.prefix):
                 raise ValueError("Third element of each header tuple must be a valid variable ID!")
+            
+    def to_json_headers(self, headers: list) -> str:
+        """Convert the headers to a JSON string."""
+        str_headers = []
+        for header in headers:
+            str_headers.append((header[0], header[1].prefix, header[2]))
+        return json.dumps(str_headers)
+
+    def from_json_headers(self, json_var: str) -> list:
+        """Convert the JSON string to a list of headers."""
+        str_var = json.loads(json_var)
+        headers = []
+        all_classes = ResearchObjectHandler._get_subclasses(ros.ResearchObject)
+        for header in str_var:
+            for cls in all_classes:
+                if hasattr(cls, "prefix") and cls.prefix == header[1]:
+                    headers.append((header[0], cls, header[2]))
+                    break
+        return headers
             
     ### Num header rows
             
