@@ -71,6 +71,8 @@ def test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(cls, id, current_a
     ro = cls(id = id, other_kwarg = "other_kwarg", current_analysis_id = current_analysis_id, current_dataset_id = current_dataset_id)
     # Check the object's common attributes.
     assert ro.id == id
+    assert ro.current_analysis_id == current_analysis_id
+    assert ro.current_dataset_id == current_dataset_id
 
 #     # Check the contents of the SQL tables.
         
