@@ -50,3 +50,18 @@ def test_logsheet_headers():
     del lg
     lg = ros.Logsheet(id = "LG1")
     assert lg.headers == headers
+
+def test_read_logsheet(temp_logsheet_file):
+    """Make sure that the logsheet can be read."""
+    lg = ros.Logsheet(id = "LG1")
+    lg.path = temp_logsheet_file
+    vr1 = ros.Variable(id = "VR1")
+    vr2 = ros.Variable(id = "VR2")
+    headers = [
+        ("Subject Codename", ros.Subject, vr1.id),
+        ("Trial", ros.Trial, vr2.id)
+    ]
+    lg.headers = headers
+    lg.num_header_rows = 3
+    lg.read_logsheet()
+    assert lg.logsheet_data == []

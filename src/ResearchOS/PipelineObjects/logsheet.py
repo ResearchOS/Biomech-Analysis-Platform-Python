@@ -158,21 +158,33 @@ class Logsheet(ros.PipelineObject):
     #################### Start class-specific methods ####################
     def load_xlsx(self) -> list[list]:
         """Load the logsheet as a list of lists using Pandas."""        
-        df = pd.read_excel(self.logsheet_path, header = None)
+        df = pd.read_excel(self.path, header = None)
         return df.values.tolist()
     
     def read_logsheet(self) -> None:
-        """Run the logsheet import process."""        
+        """Run the logsheet import process."""
+        self.validate_class_column_names(self.class_column_names)
+        self.validate_headers(self.headers)
+        self.validate_num_header_rows(self.num_header_rows)
+        self.validate_path(self.path)
+        self.validate_subset_id(self.subset_id)
+        
         # 1. Load the logsheet (using built-in Python libraries)
-        if self.logsheet_path.endswith(("xlsx", "xls")):
+        if self.path.endswith(("xlsx", "xls")):
             full_logsheet = self.load_xlsx()
         else:
-            with open(self.logsheet_path, "r") as f:
+            with open(self.path, "r") as f:
                 full_logsheet = f.readlines()
+
+        if len(full_logsheet) < self.num_header_rows:
+            raise ValueError("The number of header rows is greater than the number of rows in the logsheet!")
 
         # Run the logsheet import.
         headers = full_logsheet[0:self.num_header_rows]
-        logsheet = full_logsheet[self.num_header_rows:]
+        if len(full_logsheet) == self.num_header_rows:
+            logsheet = []
+        else:
+            logsheet = full_logsheet[self.num_header_rows + 1:]
 
         # Runtime checks.
         # a. Check that all of the logsheet headers match what is in the logsheet_headers attribute.
