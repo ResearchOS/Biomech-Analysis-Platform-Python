@@ -3,17 +3,21 @@ import pytest
 from ResearchOS.db_initializer import DBInitializer
 from ResearchOS.db_connection import DBConnectionSQLite
 
+# Function scoped
+def temp_db_file_function(tmp_path):
+    return str(tmp_path / "test.db")
+
 # Session scoped
 @pytest.fixture(scope="session")
-def temp_db_file(tmpdir_factory):   
-    return tmpdir_factory.mktemp("data").join("test.db")
+def temp_db_file_session(tmpdir_factory):   
+    return str(tmpdir_factory.mktemp("data").join("test.db"))
   
 @pytest.fixture(scope="session")
-def db_init(temp_db_file):
-    return DBInitializer(temp_db_file)    
+def db_init_session(temp_db_file_session):
+    return DBInitializer(temp_db_file_session)    
             
 @pytest.fixture(scope="session")
-def db_connection(temp_db_file):
-    return DBConnectionSQLite(str(temp_db_file))
+def db_connection_session(temp_db_file_session):
+    return DBConnectionSQLite(temp_db_file_session)
 
 
