@@ -29,41 +29,38 @@ def test_class_column_names():
     """Make sure that the class column names are correct."""
     lg = ros.Logsheet(id = "LG1")
     class_column_names = {
-        "Subject Codename": ros.Subject,
-        "Trial": ros.Trial
+        "Subject_Codename": ros.Subject,
+        "Trial_Name_Number": ros.Trial
     }
     lg.class_column_names = class_column_names
     del lg
     lg = ros.Logsheet(id = "LG1")
     assert lg.class_column_names == class_column_names
 
-def test_logsheet_headers():
+def test_logsheet_headers(logsheet_headers):
     """Make sure that the header names are correct."""
-    lg = ros.Logsheet(id = "LG1")
-    vr1 = ros.Variable(id = "VR1")
-    vr2 = ros.Variable(id = "VR2")
-    headers = [
-        ("Subject Codename", ros.Subject, vr1.id),
-        ("Trial", ros.Trial, vr2.id)
-    ]
-    lg.headers = headers
+    lg = ros.Logsheet(id = "LG1")    
+    lg.headers = logsheet_headers
     del lg
     lg = ros.Logsheet(id = "LG1")
-    assert lg.headers == headers
+    assert lg.headers == logsheet_headers
 
-def test_read_logsheet(temp_logsheet_file):
+def test_logsheet_num_header_rows():
+    """Make sure that the number of header rows is correct."""
+    lg = ros.Logsheet(id = "LG1")
+    num_header_rows = 3
+    lg.num_header_rows = num_header_rows
+    del lg
+    lg = ros.Logsheet(id = "LG1")
+    assert lg.num_header_rows == num_header_rows
+
+def test_read_logsheet(temp_logsheet_file, logsheet_headers):
     """Make sure that the logsheet can be read."""
     lg = ros.Logsheet(id = "LG1")
     lg.path = temp_logsheet_file
-    vr1 = ros.Variable(id = "VR1")
-    vr2 = ros.Variable(id = "VR2")
-    headers = [
-        ("Subject Codename", ros.Subject, vr1.id),
-        ("Trial", ros.Trial, vr2.id)
-    ]
     ss = ros.Subset(id = "SS1")
     lg.subset_id = ss.id
-    lg.headers = headers
+    lg.headers = logsheet_headers
     lg.num_header_rows = 3
     lg.read_logsheet()
     assert lg.logsheet_data == []

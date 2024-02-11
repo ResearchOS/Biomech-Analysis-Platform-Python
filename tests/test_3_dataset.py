@@ -42,3 +42,33 @@ def test_dataset_addresses():
 
 if __name__ == "__main__":
     test_dataset_exists(id = "ID1")
+
+    pr1 = ros.Process(id = "PR1", name = "derivative1")
+    pr2 = ros.Process(id = "PR2", name = "derivative2")
+
+    pr1.input_variables = [position.id, fs.id]
+    pr1.output_variables = [velocity.id]
+
+    pr2.input_variables = [velocity.id, fs.id]
+    pr2.output_variables = [acceleration.id]
+
+    pr_static = ros.Static.Process(id = "PR", name = "derivative")
+    pr_static.level = ros.Trial
+    pr_static.method = derivative.derivative
+
+    # Alternatives:
+    # 1. Reimplement everything twice
+    # 2. This
+    # 3. More opaque, have "pr" and have some other way of keeping track of inputs.
+
+
+    sj = ros.Subject(id = "SJ1")
+    vr = ros.Variable(id = "VR1", parent = sj.id)    
+    sj.name = "test"
+
+    # Get data out
+    vr1, vr2 = sj.get(vr1 = vr1.id, vr2 = vr2.id)
+    # Put data in
+    sj.assign(height = vr)
+    # Builtin
+    sj.builtin1 = 1
