@@ -88,8 +88,7 @@ class Logsheet(ros.PipelineObject):
         if not isinstance(headers, list):
             raise ValueError("Headers must be a list!")
         
-        # 2. Check that the headers are a list of tuples and meet the other requirements.
-        conn = DBConnectionFactory.create_db_connection().conn
+        # 2. Check that the headers are a list of tuples and meet the other requirements.        
         for header in headers:
             if not isinstance(header, tuple):
                 raise ValueError("Headers must be a list of tuples!")
@@ -207,6 +206,8 @@ class Logsheet(ros.PipelineObject):
         self.validate_path(self.path)
         self.validate_subset_id(self.subset_id)
 
+        conn = DBConnectionFactory.create_db_connection().conn
+
         # 1. Load the logsheet (using built-in Python libraries)
         if self.path.endswith(("xlsx", "xls")):
             full_logsheet = self.load_xlsx()
@@ -229,37 +230,27 @@ class Logsheet(ros.PipelineObject):
         header_types = [header[1] for header in self.headers]
         header_vrids = [header[2] for header in self.headers]
         # Load/create all of the Variables
-        vr_dict = {}
-        for vrid in header_vrids:
-            vr = ros.Variable(id = vrid)
-            vr_dict[vrid] = vr
+        vr_list = []
+        for idx, vrid in enumerate(header_vrids):
+            vr = ros.Variable(id = vrid, name = header_names[idx])
+            vr_list.append(vr.id)
         # Order the class column names by precedence in the schema so that higher level objects always exist before lower level, so they can be attached.
-        schema_ordered_col_names = self.order_class_column_names()
+        # schema_ordered_col_names = self.order_class_column_names()
+        idcreator = IDCreator(conn)
         for row in logsheet:            
             # Create a new instance of the appropriate DataObject subclass(es) and store it in the database.
             # TODO: How to order the data objects?
             for header, cls in self.class_column_names.items():
                 col_idx = headers_in_logsheet.index(header)
                 raw_value = row[col_idx]
-                value = header_types[header_names.index(header)](raw_value)
+                value = header_types[col_idx](raw_value)
 
                 # Create the DataObject instance.
-                new_dobj = cls(id = IDCreator.create_ro_id(cls))
-                
+                new_dobj = cls(id = idcreator.create_ro_id(cls))
 
+                new_dobj.vr[vr_list[col_idx]] = value
 
-            dobjs = []
-            for dobj in self.class_column_names:
-                dobjs.append(dobj()) # Create a new instance of the DataObject subclass.
-            # How do I know which data objects can connect to which others?
-            for idx, cell in enumerate(row):
-                header = self.logsheet_headers[idx]
-                type_curr = header[1]
-                # Convert the cell to the appropriate type.
-                conv_header = type_curr(cell)
-                # Get the Variable to assign the value to.
-                var = Variable(id = header[2], parent = dobjs_instances[-1])
-                # Assign the value to the Variable.
+                # Attach the DataObject instance to its parent DataObject instance.
 
 
 
