@@ -136,7 +136,7 @@ class ResearchObjectHandler:
         """Set the attribute value for the specified attribute. This method is called after the attribute value has been validated."""
         ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate)           
 
-        if name not in complex_attrs:
+        if name not in complex_attrs:            
             ResearchObjectHandler._setattr(research_object, name, value, action, validate)
             return
         

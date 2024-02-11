@@ -3,17 +3,17 @@ import pytest
 import ResearchOS as ros
 
 classes_and_ids = [
-    (ros.Project, "ID1"),
-    (ros.Analysis, "ID1"),
-    (ros.Process, "ID1"),
-    (ros.Subset, "ID1"),
-    (ros.Logsheet, "ID1"),
+    (ros.Project, "PJ1"),
+    (ros.Analysis, "AN1"),
+    (ros.Process, "PR1"),
+    (ros.Subset, "SS1"),
+    (ros.Logsheet, "LG1"),
     (ros.Dataset, "DS1"),
-    (ros.Phase, "ID1"),
-    (ros.Trial, "ID1"),
-    (ros.Visit, "ID1"),
-    (ros.Subject, "ID1"),
-    (ros.Variable, "ID1")    
+    (ros.Phase, "PH1"),
+    (ros.Trial, "TR1"),
+    (ros.Visit, "VT1"),
+    (ros.Subject, "SJ1"),
+    (ros.Variable, "VR1")    
 ]
 
 @pytest.mark.parametrize("cls,id", classes_and_ids)

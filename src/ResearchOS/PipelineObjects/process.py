@@ -1,5 +1,6 @@
 from typing import Any
 from typing import Callable
+import json
 
 import ResearchOS as ros
 from ResearchOS.action import Action
@@ -43,25 +44,30 @@ class Process(ros.PipelineObject):
         if not isinstance(level, type):
             raise ValueError("Level must be a type!")
 
-    def from_json_method(self):
-        pass
+    def from_json_method(self, json_method: str) -> Callable:
+        """Convert a JSON string to a method.
+        Returns None if the method name is not found (e.g. if code changed locations or something)"""
+        method_name = json.loads(json_method)
+        if method_name in globals():
+            method = globals()[method_name]
+        else:
+           print(f"Method {method_name} not found in globals.")
+           method = None
 
-    def to_json_method(self):
-        pass
+    def to_json_method(self, method: Callable) -> str:
+        """Convert a method to a JSON string."""
+        return json.dumps(method.__name__)
 
-    def from_json_level(self):
-        pass
+    def from_json_level(self, level: str) -> type:
+        """Convert a JSON string to a Process level."""
+        classes = ResearchObjectHandler._get_subclasses(ros.ResearchObject)
+        for cls in classes:
+            if hasattr(cls, "prefix") and cls.prefix == level:
+                return cls
 
-    def to_json_level(self):
-        pass
-
-    #################### Start Source objects ####################
-    def get_analyses(self) -> list:
-        """Return a list of analysis objects that belong to this process."""        
-        an_ids = self._get_all_source_object_ids(cls = ros.Analysis)
-        return [ros.Analysis(id = an_id) for an_id in an_ids]
-    
-    #################### Start Target objects ####################
+    def to_json_level(self, level: type) -> str:
+        """Convert a Process level to a JSON string."""
+        return json.dumps(level.prefix)
 
     #################### Start class-specific methods ###################
     def get_input_variables(self) -> list:
