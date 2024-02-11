@@ -34,7 +34,7 @@ class IDCreator():
                 instance_new = ""
  
             id = cls.prefix + abstract_new + "_" + instance_new
-            cursor = self.db.conn.cursor()
+            cursor = self.conn.cursor()
             sql = f'SELECT object_id FROM {table_name} WHERE object_id = "{id}"'
             cursor.execute(sql)
             rows = cursor.fetchall()

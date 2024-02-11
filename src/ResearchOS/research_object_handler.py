@@ -87,22 +87,10 @@ class ResearchObjectHandler:
         """Create the research object in the research_objects table of the database."""        
         sqlquery = f"INSERT INTO research_objects (object_id, action_id) VALUES ('{research_object.id}', '{action.id}')"
         action.add_sql_query(sqlquery)
-        action.execute(commit = False)  
+        action.execute(commit = False)
 
     @staticmethod
-    def _load_ro(research_object, default_attrs: dict) -> None:
-        """Load "simple" attributes from the database."""
-        # 1. Get the database cursor.
-        db = DBConnectionFactory.create_db_connection()
-        cursor = db.conn.cursor()
-
-        # 2. Get the attributes from the database.        
-        sqlquery = f"SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = '{research_object.id}'"
-        unordered_attr_result = cursor.execute(sqlquery).fetchall()
-        ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
-        # if len(unordered_attr_result) == 0:
-        #     raise ValueError("No object with that ID exists.")          
-                             
+    def _get_most_recent_attrs(research_object, ordered_attr_result: list, default_attrs: dict = {}) -> dict:
         curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
         used_attr_ids = []
@@ -123,7 +111,23 @@ class ResearchObjectHandler:
                 ResearchObjectHandler.validator(research_object, attr_name, attr_value)
             attrs[attr_name] = attr_value
             if len(used_attr_ids) == num_attrs:
-                break # Every attribute is accounted for.      
+                break # Every attribute is accounted for.   
+
+    @staticmethod
+    def _load_ro(research_object, default_attrs: dict) -> None:
+        """Load "simple" attributes from the database."""
+        # 1. Get the database cursor.
+        db = DBConnectionFactory.create_db_connection()
+        cursor = db.conn.cursor()
+
+        # 2. Get the attributes from the database.        
+        sqlquery = f"SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = '{research_object.id}'"
+        unordered_attr_result = cursor.execute(sqlquery).fetchall()
+        ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
+        # if len(unordered_attr_result) == 0:
+        #     raise ValueError("No object with that ID exists.")          
+                             
+        attrs = ResearchObjectHandler._get_most_recent_attrs(ordered_attr_result)   
 
         # 3. Set the attributes of the object.
         research_object.__dict__.update(attrs)
