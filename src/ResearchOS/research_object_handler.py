@@ -46,8 +46,7 @@ class ResearchObjectHandler:
     
     @staticmethod
     def validator(research_object: "ResearchObject", attr_name: str, attr_value: Any)  -> Any:
-        """Validate the attribute value. If the attribute value is not valid, an error is thrown.
-        The "research_object" argument can't currently be type hinted because it would create a circular import."""
+        """Validate the attribute value. If the attribute value is not valid, an error is thrown."""
         try:            
             validate_method = eval("research_object.validate_" + attr_name)
             validate_method(attr_value)
@@ -56,8 +55,7 @@ class ResearchObjectHandler:
 
     @staticmethod
     def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any) -> Any:
-        """Convert the JSON string to an attribute value. If there is no class-specific way to do it, then use the builtin json.loads
-        The "research_object" argument can't currently be type hinted because it would create a circular import."""
+        """Convert the JSON string to an attribute value. If there is no class-specific way to do it, then use the builtin json.loads"""
         try:
             from_json_method = eval("research_object.from_json_" + attr_name)
             attr_value = from_json_method(attr_value_json)
@@ -67,8 +65,7 @@ class ResearchObjectHandler:
     
     @staticmethod
     def to_json(research_object: "ResearchObject", attr_name: str, attr_value: Any) -> Any:        
-        """Convert the attribute value to a JSON string. If there is no class-specific way to do it, then use the builtin json.dumps
-        The "research_object" argument can't currently be type hinted because it would create a circular import."""
+        """Convert the attribute value to a JSON string. If there is no class-specific way to do it, then use the builtin json.dumps"""
         try:
             to_json_method = eval("research_object.to_json_" + attr_name)
             attr_value_json = to_json_method(attr_value)
