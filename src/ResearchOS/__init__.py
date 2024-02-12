@@ -1,7 +1,7 @@
-import os
+# import os
 # For production, this is expected to raise an error. 
 # For development, this will set the environment to dev.
-from .__init_helper__ import set_env
+# from .__init_helper__ import set_env
 
 # ALWAYS HERE, ALWAYS IN THIS ORDER!
 from .config import Config
@@ -10,8 +10,11 @@ from .variable import Variable
 from .user import User
 from .DataObjects.data_object import DataObject
 from .PipelineObjects.pipeline_object import PipelineObject
+from .variable import Variable
+from .user import User
 
-# Any order?
+
+# # Any order?
 from .PipelineObjects.project import Project
 from .PipelineObjects.analysis import Analysis
 from .PipelineObjects.logsheet import Logsheet
@@ -24,5 +27,8 @@ from .DataObjects.phase import Phase
 from .PipelineObjects.subset import Subset
 from .PipelineObjects.process import Process
 
+# # Needs to be after PipelineObjects import.
+# from .PipelineObjects import Static # This is a package, not a module.
+
 # Last
-from .database_init import DBInitializer
+from .db_initializer import DBInitializer

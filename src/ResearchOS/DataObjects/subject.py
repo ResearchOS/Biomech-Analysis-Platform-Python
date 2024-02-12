@@ -1,39 +1,32 @@
-from ResearchOS import DataObject
+from typing import Any
 
-from abc import abstractmethod
+import ResearchOS as ros
+from ResearchOS.action import Action
+from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.idcreator import IDCreator
+from ResearchOS.db_connection_factory import DBConnectionFactory
 
-class Subject(DataObject):
+all_default_attrs = {}
+
+complex_attrs_list = []
+
+class Subject(ros.DataObject):
     """Subject class."""
 
     prefix: str = "SJ"
-    logsheet_header: str = None
-
-    @abstractmethod
-    def get_all_ids() -> list[str]:
-        return super().get_all_ids(Subject)
-
-    #################### Start class-specific attributes ###################
-
-    #################### Start Source objects ####################
-    def get_datasets(self) -> list:
-        """Return a list of dataset objects that belong to this subject."""
-        from ResearchOS import Dataset
-        ds_ids = self._get_all_source_object_ids(cls = Dataset)
-        return [Dataset(id = ds_id) for ds_id in ds_ids]
     
-    #################### Start Target objects ####################
-    def get_visits(self) -> list:
-        """Return a list of visit objects that belong to this subject."""
-        from ResearchOS import Visit
-        vs_ids = self._get_all_target_object_ids(cls = Visit)
-        return [Visit(id = vs_id) for vs_id in vs_ids]
-    
-    def add_visit_id(self, visit_id: str):
-        """Add a visit to the subject."""
-        from ResearchOS import Visit        
-        self._add_target_object_id(visit_id, cls = Visit)
+    def __init__(self, **kwargs):
+        """Initialize the attributes that are required by ResearchOS.
+        Other attributes can be added & modified later."""
+        super().__init__(all_default_attrs, **kwargs)
 
-    def remove_visit_id(self, visit_id: str):
-        """Remove a visit from the subject."""
-        from ResearchOS import Visit        
-        self._remove_target_object_id(visit_id, cls = Visit)
+    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        if name == "vr":
+            ros.DataObject.__setattr__(self, name, value, action, validate)
+        else:
+            ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
+
+    def load(self) -> None:
+        """Load the dataset-specific attributes from the database in an attribute-specific way."""
+        ros.DataObject.load(self) # Load the attributes specific to it being a DataObject.
