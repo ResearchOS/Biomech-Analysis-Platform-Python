@@ -62,6 +62,8 @@ class Logsheet(ros.PipelineObject):
         """Validate the logsheet path."""
         # 1. Check that the path exists in the file system.
         import os
+        if not isinstance(path, str):
+            raise ValueError("Path must be a string!")
         if not os.path.exists(path):
             raise ValueError("Specified path does not exist!")
         # 2. Check that the path is a file.
@@ -138,7 +140,7 @@ class Logsheet(ros.PipelineObject):
     ### Num header rows
             
     def validate_num_header_rows(self, num_header_rows: int) -> None:
-        """Validate the number of header rows. If it is not valid, the value is rejected."""        
+        """Validate the number of header rows. If it is not valid, the value is rejected."""                
         if not isinstance(num_header_rows, int | float):
             raise ValueError("Num header rows must be numeric!")
         if num_header_rows<0:

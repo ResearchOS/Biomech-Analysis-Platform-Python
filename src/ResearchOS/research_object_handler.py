@@ -1,6 +1,10 @@
 import weakref
 from typing import Any
 import json, re
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ResearchOS.research_object import ResearchObject
 
 from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.action import Action
@@ -12,7 +16,7 @@ class ResearchObjectHandler:
     counts = {} # Keep track of the number of instances of each ID.
 
     @staticmethod
-    def _set_attr_validator(research_object, attr_name: str, attr_value: Any, validate: bool = True) -> None:
+    def _set_attr_validator(research_object: "ResearchObject", attr_name: str, attr_value: Any, validate: bool = True) -> None:
         """Set the attribute validator for the specified attribute."""
         if not attr_name.isidentifier():
             raise ValueError(f"{attr_name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.
@@ -41,7 +45,7 @@ class ResearchObjectHandler:
         return kwargs
     
     @staticmethod
-    def validator(research_object, attr_name: str, attr_value: Any)  -> Any:
+    def validator(research_object: "ResearchObject", attr_name: str, attr_value: Any)  -> Any:
         """Validate the attribute value. If the attribute value is not valid, an error is thrown.
         The "research_object" argument can't currently be type hinted because it would create a circular import."""
         try:            
@@ -51,7 +55,7 @@ class ResearchObjectHandler:
             pass
 
     @staticmethod
-    def from_json(research_object, attr_name: str, attr_value_json: Any) -> Any:
+    def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any) -> Any:
         """Convert the JSON string to an attribute value. If there is no class-specific way to do it, then use the builtin json.loads
         The "research_object" argument can't currently be type hinted because it would create a circular import."""
         try:
@@ -62,7 +66,7 @@ class ResearchObjectHandler:
         return attr_value
     
     @staticmethod
-    def to_json(research_object, attr_name: str, attr_value: Any) -> Any:        
+    def to_json(research_object: "ResearchObject", attr_name: str, attr_value: Any) -> Any:        
         """Convert the attribute value to a JSON string. If there is no class-specific way to do it, then use the builtin json.dumps
         The "research_object" argument can't currently be type hinted because it would create a circular import."""
         try:
@@ -83,14 +87,14 @@ class ResearchObjectHandler:
         return len(rows) > 0
     
     @staticmethod
-    def _create_ro(research_object, action: Action) -> None:
+    def _create_ro(research_object: "ResearchObject", action: Action) -> None:
         """Create the research object in the research_objects table of the database."""        
         sqlquery = f"INSERT INTO research_objects (object_id, action_id) VALUES ('{research_object.id}', '{action.id}')"
         action.add_sql_query(sqlquery)
         action.execute(commit = False)
 
     @staticmethod
-    def _get_most_recent_attrs(research_object, ordered_attr_result: list, default_attrs: dict = {}) -> dict:
+    def _get_most_recent_attrs(research_object: "ResearchObject", ordered_attr_result: list, default_attrs: dict) -> dict:
         curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
         used_attr_ids = []
@@ -111,10 +115,11 @@ class ResearchObjectHandler:
                 ResearchObjectHandler.validator(research_object, attr_name, attr_value)
             attrs[attr_name] = attr_value
             if len(used_attr_ids) == num_attrs:
-                break # Every attribute is accounted for.   
+                break # Every attribute is accounted for.
+        return attrs
 
     @staticmethod
-    def _load_ro(research_object, default_attrs: dict) -> None:
+    def _load_ro(research_object: "ResearchObject", default_attrs: dict) -> None:
         """Load "simple" attributes from the database."""
         # 1. Get the database cursor.
         db = DBConnectionFactory.create_db_connection()
@@ -127,7 +132,10 @@ class ResearchObjectHandler:
         # if len(unordered_attr_result) == 0:
         #     raise ValueError("No object with that ID exists.")          
                              
-        attrs = ResearchObjectHandler._get_most_recent_attrs(ordered_attr_result)   
+        attrs = ResearchObjectHandler._get_most_recent_attrs(research_object, ordered_attr_result, default_attrs)   
+
+        if attrs is None:
+            raise ValueError("No object with that ID exists.")
 
         # 3. Set the attributes of the object.
         research_object.__dict__.update(attrs)
@@ -136,7 +144,7 @@ class ResearchObjectHandler:
         research_object.load()
 
     @staticmethod
-    def _setattr_type_specific(research_object, name: str, value: Any, action: Action, validate: bool, complex_attrs: list) -> None:
+    def _setattr_type_specific(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, complex_attrs: list) -> None:
         """Set the attribute value for the specified attribute. This method is called after the attribute value has been validated."""
         ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate)           
 
@@ -221,7 +229,7 @@ class ResearchObjectHandler:
         return result
     
     @staticmethod
-    def _prefix_to_class(research_object, prefix: str) -> type:
+    def _prefix_to_class(research_object: "ResearchObject", prefix: str) -> type:
         """Convert a prefix to a class."""
         from ResearchOS.research_object import ResearchObject
         for cls in ResearchObjectHandler._get_subclasses(ResearchObject):

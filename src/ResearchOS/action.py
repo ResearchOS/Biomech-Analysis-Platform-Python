@@ -43,14 +43,15 @@ class Action():
     #################################################### end of dunder methods ####################################################
     ###############################################################################################################################             
     
-    def get_latest_action(self, user_id: str = None) -> "Action":
+    @staticmethod
+    def get_latest_action(user_id: str = None) -> "Action":
         """Get the most recent action performed chronologically for the current user."""
-        cursor = self.conn.cursor()
+        conn = DBConnectionFactory.create_db_connection().conn
         if not user_id:
-            user_id = CurrentUser(self.conn).get_current_user_id()
+            user_id = CurrentUser(conn).get_current_user_id()
         sqlquery = f"SELECT action_id FROM actions WHERE user_object_id = '{user_id}' ORDER BY timestamp DESC LIMIT 1"
         try:
-            result = cursor.execute(sqlquery).fetchone()
+            result = conn.cursor().execute(sqlquery).fetchone()
         except sqlite3.OperationalError:
             raise AssertionError(f"User {user_id} does not exist.")
         if result is None:
