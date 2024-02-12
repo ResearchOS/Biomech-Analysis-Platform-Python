@@ -94,7 +94,7 @@ class ResearchObjectHandler:
         action.execute(commit = False)
 
     @staticmethod
-    def _get_most_recent_attrs(research_object: "ResearchObject", ordered_attr_result: list, default_attrs: dict) -> dict:
+    def _get_most_recent_attrs(research_object: "ResearchObject", ordered_attr_result: list, default_attrs: dict = {}) -> dict:
         curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
         used_attr_ids = []
@@ -111,7 +111,7 @@ class ResearchObjectHandler:
             attr_value = ResearchObjectHandler.from_json(research_object, attr_name, attr_value_json) # Translate the attribute from string to the proper type/format.
             
             # Now that the value is loaded as the proper type/format, validate it, if it is not the default value.
-            if not (attr_name in default_attrs and attr_value == default_attrs[attr_name]):
+            if not (len(default_attrs) > 0 and attr_name in default_attrs and attr_value == default_attrs[attr_name]):
                 ResearchObjectHandler.validator(research_object, attr_name, attr_value)
             attrs[attr_name] = attr_value
             if len(used_attr_ids) == num_attrs:

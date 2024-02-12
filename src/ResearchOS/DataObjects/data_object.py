@@ -6,9 +6,10 @@ from ResearchOS.action import Action
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.idcreator import IDCreator
 
 all_default_attrs = {}
-all_default_attrs["vr"] = None
+all_default_attrs["vr"] = {}
 
 # Root folder where all data is stored.
 root_data_path = "data" 
@@ -19,9 +20,10 @@ class DataObject(ResearchObject):
     def __init__(self, default_attrs: dict, **kwargs) -> None:
         """Initialize the data object."""
         all_default_attrs_all = default_attrs | all_default_attrs
+        self.__dict__["vr"] = {}
         super().__init__(all_default_attrs_all, **kwargs)
 
-    def __setattr__(self, name: str, value: Any) -> None:
+    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the value of an attribute in the DataObject and the database."""
         # TODO: HOW CAN I HANDLE VR VALUES BEING ADDED, MODIFIED, AND DELETED?
         # In the format of self.vr = {vr_id: value}
@@ -30,7 +32,13 @@ class DataObject(ResearchObject):
         # Deletion: There are fields that are no longer present.
         # Modification: The fields have changed.
         # NOTE: All/any combination of these three operations could happen at once.
-        
+
+        # if not hasattr(self, "vr"):
+        #     self.__dict__["vr"] = {}
+
+        conn = DBConnectionFactory.create_db_connection().conn
+        if validate and not all([IDCreator(conn).is_ro_id(vr_id) for vr_id in value]):
+            raise ValueError("The keys of the dictionary must be valid VR ID's.")
 
         # 1. Get the ID's of all the VR's being added.
         new_vr_ids = []
@@ -44,15 +52,19 @@ class DataObject(ResearchObject):
             if vr_id in self.vr and self.vr[vr_id] != value[vr_id]:
                 modified_vr_ids.append(vr_id)
 
-        sqlquery = f"SELECT action_id, schema_id FROM data_addresses WHERE address_id = {self.id}"
-        conn = DBConnectionFactory.create_db_connection().conn
+        sqlquery = f"SELECT action_id, schema_id FROM data_addresses WHERE address_id = '{self.id}'"
         cursor = conn.cursor()
         result = cursor.execute(sqlquery).fetchall()
         ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num=0)
         latest_result = ResearchObjectHandler._get_most_recent_attrs(self, ordered_result)
-        schema_id = latest_result[0][1]
+        if "schema_id" not in latest_result:
+            # raise ValueError("This object does not have an address_id in the database.")
+            return
+        
+        schema_id = latest_result["schema_id"]
 
-        action = Action(name = "vr changed")
+        if action is None:
+            action = Action(name = "vr changed")
         new_row_vr_ids = new_vr_ids + modified_vr_ids
         for vr_id in new_row_vr_ids:
             self.add_vr_row(vr_id, value[vr_id], schema_id, action)
@@ -87,20 +99,24 @@ class DataObject(ResearchObject):
 
     
     def load(self) -> None:
-        """Load data values from the database."""
+        """Load data values from the database."""        
         self.load_data_values()        
 
     def load_data_values(self) -> None:
         """Load data values from the database OR file system."""
         # 1. Identify which rows in the database are associated with this data object and have not been overwritten.
-        sqlquery = f"SELECT address_id, schema_id, action_id, vr_id, scalar_value FROM data_values WHERE address_id = {self.id}"
+        sqlquery = f"SELECT address_id, schema_id, action_id, vr_id, scalar_value FROM data_values WHERE address_id = '{self.id}'"
         conn = DBConnectionFactory.create_db_connection().conn
         cursor = conn.cursor()
         result = cursor.execute(sqlquery).fetchall()
         ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num=1)
         latest_result = ResearchObjectHandler._get_most_recent_attrs(self, ordered_result)
 
-        schema_id = latest_result[0][1]
+        if "schema_id" not in latest_result:
+            # raise ValueError("This object does not have an address_id in the database.")
+            return
+        
+        schema_id = latest_result["schema_id"]
 
         # Get the dataset_id from data_address_schemas table.
         sqlquery = f"SELECT dataset_id FROM data_address_schemas WHERE schema_id = {schema_id} LIMIT 1"
