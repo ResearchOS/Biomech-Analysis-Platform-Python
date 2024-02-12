@@ -24,11 +24,13 @@ class Variable(ros.DataObject, ros.PipelineObject):
 
     def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        if name == "value":
-            # Set variable value.
-            pass
-        else:
+        if name is "vr":
+            raise ValueError("Cannot set 'vr' attribute for a Variable.")
+        if name is not "value":
             ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
+        # Set variable value.
+        
+            
 
     def load(self) -> None:
         """Load the variable-specific attributes from the database in an attribute-specific way."""

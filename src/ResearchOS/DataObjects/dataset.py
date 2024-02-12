@@ -21,13 +21,16 @@ class Dataset(ros.DataObject):
     2. data schema: The schema of the dataset (specified as a list of classes)"""
 
     prefix: str = "DS"
-    _current_source_type_prefix = "PJ"
-    _source_type_prefix = "PJ"
 
     def __init__(self, **kwargs):
         """Initialize the attributes that are required by ResearchOS.
         Other attributes can be added & modified later."""
-        super().__init__(all_default_attrs, **kwargs)
+        is_new = False
+        if not ResearchObjectHandler.object_exists(kwargs.get("id")):
+            is_new = True
+        super().__init__(all_default_attrs, **kwargs)   
+        if is_new:     
+            self.schema = all_default_attrs["schema"]
 
     def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
@@ -50,8 +53,6 @@ class Dataset(ros.DataObject):
         # TODO: Check that every element is unique, no repeats.
         if not isinstance(schema, list):
             raise ValueError("Schema must be provided as a list!")
-        # if len(schema) == 0:
-        #     return # They're resetting the schema.
         for idx, _ in enumerate(schema):
             if not isinstance(_, list):
                 raise ValueError("Schema must be provided as a list of lists!")
@@ -189,10 +190,10 @@ class Dataset(ros.DataObject):
         conn = DBConnectionFactory.create_db_connection().conn
 
         # 1. Get the schema_id for the current dataset_id that has not been overwritten by an Action.        
-        sqlquery = f"SELECT action_id FROM data_address_schemas WHERE schema_id = '{self.id}'"
+        sqlquery = f"SELECT action_id FROM data_address_schemas WHERE dataset_id = '{self.id}'"
         action_ids = conn.execute(sqlquery).fetchall()
         action_ids = ResearchObjectHandler._get_time_ordered_result(action_ids, action_col_num=0)
-        action_id = action_ids[0] if action_ids else None
+        action_id = action_ids[0][0] if action_ids else None
 
         sqlquery = f"SELECT schema_id FROM data_address_schemas WHERE dataset_id = '{self.id}' AND action_id = '{action_id}'"
         schema_id = conn.execute(sqlquery).fetchone()
@@ -202,16 +203,10 @@ class Dataset(ros.DataObject):
         sqlquery = f"SELECT action_id FROM data_addresses WHERE schema_id = '{schema_id}'"
         action_ids = conn.execute(sqlquery).fetchall()
         action_ids = ResearchObjectHandler._get_time_ordered_result(action_ids, action_col_num=0)
-        action_id = action_ids[0] if action_ids else None
+        action_id = action_ids[0][0] if action_ids else None
 
-        sqlquery = f"""SELECT level0_id, level1_id, level2_id, level3_id, level4_id, level5_id, level6_id, level7_id, level8_id, level9_id FROM data_addresses WHERE schema_id = '{schema_id}' AND action_id = '{action_id}'"""
-        result = conn.execute(sqlquery).fetchall()
-        # Remove the None components from each row of the result.
-        trimmed_result = []
-        for row in result:
-            trimmed_result.append([x for x in row if x is not None])
-
-        self.__dict__["addresses"] = trimmed_result
+        levels = self.get_levels(schema_id)
+        self.__dict__["addresses"] = levels
     
 if __name__=="__main__":
     pass

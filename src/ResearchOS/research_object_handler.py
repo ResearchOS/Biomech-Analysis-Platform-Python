@@ -20,8 +20,8 @@ class ResearchObjectHandler:
         """Set the attribute validator for the specified attribute."""
         if not attr_name.isidentifier():
             raise ValueError(f"{attr_name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.
-        if attr_name in research_object.__dict__ and research_object.__dict__.get(attr_name, None) == attr_value:
-            return # No change.
+        # if attr_name in research_object.__dict__ and research_object.__dict__.get(attr_name, None) == attr_value:
+        #     return # No change.
         if attr_name == "id":
             raise ValueError("Cannot change the ID of a research object.")
         if attr_name[0] == "_":
