@@ -91,18 +91,17 @@ class DBInitializer():
                         )""")
         
         # Data objects data values. Lists all data values for all data objects.
+        # address_id is just the lowest level data object ID (the lowest level of the address).
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values (
                         action_id TEXT NOT NULL,
                         address_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
                         VR_id TEXT NOT NULL,
-                        PR_id TEXT NOT NULL,
                         scalar_value TEXT,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
                         FOREIGN KEY (address_id) REFERENCES data_addresses(address_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
-                        FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (PR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE                        
+                        FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE                    
                         )""")
         
         # Data addresses. Lists all data addresses for all data.
