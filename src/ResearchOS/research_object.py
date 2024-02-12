@@ -26,6 +26,12 @@ from ResearchOS.action import Action
 
 # ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method (or no parent, for User).
 
+DEFAULT_USER_ID = "US000000_000"
+
+# DEFAULT_USER_PARENT = "US000000_000"
+
+ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method (or no parent, for User).
+
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
 
