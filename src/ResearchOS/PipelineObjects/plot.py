@@ -1,6 +1,6 @@
 from typing import Any
 
-import ResearchOS as ros
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
@@ -10,7 +10,7 @@ all_default_attrs = {}
 
 complex_attrs_list = []
 
-class Plot(ros.PipelineObject):
+class Plot(PipelineObject):
     
     prefix = "PL"    
 
@@ -31,4 +31,4 @@ class Plot(ros.PipelineObject):
 
     def load(self) -> None:
         """Load the dataset-specific attributes from the database in an attribute-specific way."""
-        ros.PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
+        PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.

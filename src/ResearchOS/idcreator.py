@@ -1,4 +1,7 @@
 import random, os, uuid, sqlite3, re
+import uuid
+import argparse
+import sys
 
 from ResearchOS.config import Config
 
@@ -79,3 +82,24 @@ class IDCreator():
         # if re.match(instance_pattern, id) or re.match(abstract_pattern, id):
         #     return True
         # return False  
+
+def main():
+    parser = argparse.ArgumentParser(description='Generate a UUID based on the specified version.')
+    parser.add_argument('-a', '--action', action='store_const', const='3', help='Generate a UUID using uuid3 (requires -a or -r argument).')
+    parser.add_argument('-r', '--researchobject', action='store_const', const='4', help='Generate a UUID using uuid4 (requires -a or -r argument).')
+    args = parser.parse_args()
+
+    # Check which argument is provided
+    if args.action:
+        id = IDCreator(conn).create_action_id()
+    elif args.researchobject:
+        id = IDCreator(conn).create_ro_id()
+    else:
+        parser.print_help()
+        sys.exit(1)
+    
+
+if __name__ == "__main__":
+    from ResearchOS.db_connection_factory import DBConnectionFactory
+    conn = DBConnectionFactory.create_db_connection().conn
+    main()

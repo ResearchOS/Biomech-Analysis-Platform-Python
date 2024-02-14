@@ -1,7 +1,8 @@
 from typing import Any
 import json
 
-import ResearchOS as ros
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
@@ -16,7 +17,7 @@ numeric_logic_options = (">", "<", ">=", "<=", )
 any_type_logic_options = ("==", '=', "!=", "in", "not in", "is", "is not", "contains", "not contains")
 logic_options = numeric_logic_options + any_type_logic_options
 
-class Subset(ros.PipelineObject):
+class Subset(PipelineObject):
     """Provides rules to select a subset of data from a dataset."""
     
     prefix = "SS"
@@ -35,7 +36,7 @@ class Subset(ros.PipelineObject):
 
     def load(self) -> None:
         """Load the dataset-specific attributes from the database in an attribute-specific way."""
-        ros.PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
+        PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
     
     def validate_conditions(self, conditions: dict) -> None:
         """Validate the condition recursively.
@@ -146,7 +147,7 @@ class Subset(ros.PipelineObject):
                 }
             }
         }"""
-        ds = ros.Dataset.get_current()
+        ds = Dataset.get_current()
         schema_id = ds.get_schema_id()
             
 
@@ -165,19 +166,16 @@ class Subset(ros.PipelineObject):
     #################### Start Source objects ####################
     def get_processes(self) -> list:
         """Return a list of process objects that belong to this subset."""
-        from ResearchOS import Process
         pr_ids = self._get_all_source_object_ids(cls = Process)
         return [Process(id = pr_id) for pr_id in pr_ids]
     
     def get_plots(self) -> list:
         """Return a list of plot objects that belong to this subset."""
-        from ResearchOS import Plot
         pl_ids = self._get_all_source_object_ids(cls = Plot)
         return [Plot(id = pl_id) for pl_id in pl_ids]
     
     def get_trials(self) -> list:
         """Return a list of trial objects that belong to this subset."""
-        from ResearchOS import Trial
         tr_ids = self._get_all_source_object_ids(cls = Trial)
         return [Trial(id = tr_id) for tr_id in tr_ids]
     

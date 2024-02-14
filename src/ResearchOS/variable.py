@@ -1,6 +1,10 @@
 from typing import Any
 
-import ResearchOS as ros
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS.DataObjects.data_object import DataObject
+from ResearchOS.user import User
+from ResearchOS.PipelineObjects.project import Project
+from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
@@ -13,7 +17,7 @@ all_default_attrs["value"] = None
 
 complex_attrs_list = []
 
-class Variable(ros.DataObject, ros.PipelineObject):
+class Variable(DataObject,  PipelineObject):
     """Variable class."""
 
     prefix: str = "VR"
@@ -43,13 +47,13 @@ class Variable(ros.DataObject, ros.PipelineObject):
         """Check that the level is of a valid type."""
         if not isinstance(level, type):
             raise ValueError("Level must be a type.")
-        if not isinstance(level, ros.DataObject):
+        if not isinstance(level, DataObject):
             raise ValueError("Level must be a DataObject.")
-        us = ros.User(id = ros.User.get_current_user_object_id())
+        us = User(id = User.get_current_user_object_id())
         us.validate_current_project_id(id = us.current_project_id)
-        pj = ros.Project(id = us.current_project_id)
+        pj = Project(id = us.current_project_id)
         pj.validate_current_dataset_id(id = pj.current_dataset_id)
-        ds = ros.Dataset(id = pj.current_dataset_id)
+        ds = Dataset(id = pj.current_dataset_id)
         ds.validate_schema(schema = ds.schema)
         if level not in ds.schema:
             raise ValueError("Level must be in the dataset schema.")

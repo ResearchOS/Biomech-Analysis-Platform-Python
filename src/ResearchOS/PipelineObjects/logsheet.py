@@ -2,8 +2,11 @@ from typing import Any
 import json, csv
 
 # import pandas as pd
-
-import ResearchOS as ros
+from ResearchOS.DataObjects.data_object import DataObject
+from ResearchOS.variable import Variable
+from ResearchOS.research_object import ResearchObject
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
@@ -19,7 +22,7 @@ all_default_attrs["subset_id"] = None
 
 complex_attrs_list = []
 
-class Logsheet(ros.PipelineObject):
+class Logsheet(PipelineObject):
 
     prefix = "LG"
 
@@ -38,7 +41,7 @@ class Logsheet(ros.PipelineObject):
 
     def load(self) -> None:
         """Load the dataset-specific attributes from the database in an attribute-specific way."""
-        ros.PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
+        PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
 
     def read_and_clean_logsheet(self, nrows: int = None) -> None:
         """Read the logsheet (CSV only) and clean it."""
@@ -106,7 +109,7 @@ class Logsheet(ros.PipelineObject):
             if header[1] not in [str, int, float]:
                 raise ValueError("Second element of each header tuple must be a Python type!")
             # 6. Check that the third element of each header tuple is a valid variable ID.                
-            if not header[2].startswith(ros.Variable.prefix) or not ResearchObjectHandler.object_exists(header[2]):
+            if not header[2].startswith(Variable.prefix) or not ResearchObjectHandler.object_exists(header[2]):
                 raise ValueError("Third element of each header tuple must be a valid pre-existing variable ID!")
             
         logsheet = self.read_and_clean_logsheet(nrows = 1)
@@ -159,7 +162,7 @@ class Logsheet(ros.PipelineObject):
         for key, value in class_column_names.items():
             if not isinstance(key, str):
                 raise ValueError("Keys of class column names must be strings!")
-            if not issubclass(value, ros.DataObject):
+            if not issubclass(value, DataObject):
                 raise ValueError("Values of class column names must be Python types that subclass DataObject!")
             
         headers = self.read_and_clean_logsheet(nrows = 1)[0]
@@ -170,7 +173,7 @@ class Logsheet(ros.PipelineObject):
         """Convert the dict from JSON string where values are class prefixes to a dict where keys are column names and values are DataObject subclasses."""     
         prefix_var = json.loads(json_var)
         class_column_names = {}
-        all_classes = ResearchObjectHandler._get_subclasses(ros.ResearchObject)
+        all_classes = ResearchObjectHandler._get_subclasses(ResearchObject)
         for key, prefix in prefix_var.items():
             for cls in all_classes:
                 if hasattr(cls, "prefix") and cls.prefix == prefix:
@@ -191,7 +194,7 @@ class Logsheet(ros.PipelineObject):
         """Validate the subset ID."""
         if not ResearchObjectHandler.object_exists(subset_id):
             raise ValueError("Subset ID must be a valid ID!")
-        if not subset_id.startswith(ros.Subset.prefix):
+        if not subset_id.startswith(Subset.prefix):
             raise ValueError("Subset ID must start with the correct prefix!")
 
     #################### Start class-specific methods ####################
@@ -234,7 +237,7 @@ class Logsheet(ros.PipelineObject):
         # Load/create all of the Variables
         vr_list = []
         for idx, vrid in enumerate(header_vrids):
-            vr = ros.Variable(id = vrid, name = header_names[idx])
+            vr = Variable(id = vrid, name = header_names[idx])
             vr_list.append(vr.id)
         # Order the class column names by precedence in the schema so that higher level objects always exist before lower level, so they can be attached.
         # schema_ordered_col_names = self.order_class_column_names()

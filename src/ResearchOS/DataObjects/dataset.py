@@ -1,7 +1,7 @@
 from typing import Any
 import json
 
-import ResearchOS as ros
+from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
@@ -14,7 +14,7 @@ all_default_attrs["addresses"] = []
 
 complex_attrs_list = ["schema", "addresses"]
 
-class Dataset(ros.DataObject):
+class Dataset(DataObject):
     """A dataset is one set of data.
     Class-specific Attributes:
     1. data path: The root folder location of the dataset.
@@ -35,7 +35,7 @@ class Dataset(ros.DataObject):
     def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
         if name == "vr":
-            ros.DataObject.__setattr__(self, name, value, action, validate)
+            DataObject.__setattr__(self, name, value, action, validate)
         else:
             ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
 
@@ -43,13 +43,14 @@ class Dataset(ros.DataObject):
         """Load the dataset-specific attributes from the database in an attribute-specific way."""
         self.load_schema() # Load the dataset schema.
         self.load_addresses() # Load the dataset addresses.
-        ros.DataObject.load(self) # Load the attributes specific to it being a DataObject.
+        DataObject.load(self) # Load the attributes specific to it being a DataObject.
 
     ### Schema Methods
         
     def validate_schema(self, schema: list) -> None:
         """Validate that the data schema follows the proper format.
         Must be an edge list [source, target], which is a list of lists (of length 2)."""
+        from ResearchOS.variable import Variable
         # TODO: Check that every element is unique, no repeats.
         if not isinstance(schema, list):
             raise ValueError("Schema must be provided as a list!")
@@ -60,7 +61,7 @@ class Dataset(ros.DataObject):
                 raise ValueError("Schema must be provided as a list of lists of length 2!")
             if not isinstance(_[0], type) or not isinstance(_[1], type):
                 raise ValueError("Schema must be provided as a list of lists of ResearchObject types!")
-            if isinstance(_[0], ros.Variable) or isinstance(_[1], ros.Variable):
+            if isinstance(_[0], Variable) or isinstance(_[1], Variable):
                 raise ValueError("Do not include the Variable object in the schema! It is implicitly assumed to be the last element in the list")                
             if idx == 0 and _[0] != Dataset:
                 raise ValueError("Dataset must be the first element in the first list as the origin/source node of the schema.")
