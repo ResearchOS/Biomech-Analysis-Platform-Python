@@ -9,6 +9,7 @@ from ResearchOS.db_connection_factory import DBConnectionFactory
 all_default_attrs = {}
 all_default_attrs["hard_coded_value"] = None
 all_default_attrs["level"] = None # Eventually needs to be a complex attr.
+all_default_attrs["value"] = None
 
 complex_attrs_list = []
 
@@ -24,12 +25,13 @@ class Variable(ros.DataObject, ros.PipelineObject):
 
     def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        if name is "vr":
-            raise ValueError("Cannot set 'vr' attribute for a Variable.")
-        if name is not "value":
+        if name == "vr":
+            return
+            # raise ValueError("Cannot set 'vr' attribute for a Variable.")
+        if name != "value":
             ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
         # Set variable value.
-        
+
             
 
     def load(self) -> None:
@@ -41,7 +43,7 @@ class Variable(ros.DataObject, ros.PipelineObject):
         """Check that the level is of a valid type."""
         if not isinstance(level, type):
             raise ValueError("Level must be a type.")
-        if not isinstance(level, DataObject):
+        if not isinstance(level, ros.DataObject):
             raise ValueError("Level must be a DataObject.")
         us = ros.User(id = ros.User.get_current_user_object_id())
         us.validate_current_project_id(id = us.current_project_id)

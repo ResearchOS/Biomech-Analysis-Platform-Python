@@ -1,34 +1,8 @@
-from typing import Any
-import json, re
-
 from ResearchOS.research_object_handler import ResearchObjectHandler
-from ResearchOS.db_connection_factory import DBConnectionFactory
+# from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.action import Action
 
-# from ResearchOS import Config
-# from idcreator import IDCreator
-# from ResearchOS.DBHandlers.db_handler_sqlite import DBHandlerSQLite
-
-# config = Config()
-
-# abstract_id_len = config.abstract_id_len
-# instance_id_len = config.instance_id_len
-
-# DEFAULT_EXISTS_ATTRIBUTE_NAME = "exists"
-# DEFAULT_EXISTS_ATTRIBUTE_VALUE = True
-# DEFAULT_NAME_ATTRIBUTE_NAME = "name"
-# DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation" 
-# DEFAULT_ABSTRACT_KWARG_NAME = "abstract"
-
-# DEFAULT_USER_ID = "US000000_000"
-
-# # DEFAULT_USER_PARENT = "US000000_000"
-
-# ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method (or no parent, for User).
-
 DEFAULT_USER_ID = "US000000_000"
-
-# DEFAULT_USER_PARENT = "US000000_000"
 
 ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method (or no parent, for User).
 
@@ -128,16 +102,6 @@ class ResearchObject():
 #     def is_instance_object(self) -> bool:
 #         """Return true if the object is an instance object, false if it is an abstract object."""
 #         return self.parse_id(self.id)[2] is not None
-        
-#     def is_id(self, id: str) -> bool:
-#         """Check if the given ID matches the pattern of a valid research object ID."""              
-#         instance_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
-#         abstract_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}$"
-#         if not isinstance(id, str):
-#             raise ValueError("id must be a str!")
-#         if re.match(instance_pattern, id) or re.match(abstract_pattern, id):
-#             return True
-#         return False    
     
 #     def _is_id_of_class(self, id: str, cls: type) -> bool:
 #         """True if the ID is of the proper type, False if not."""
@@ -294,18 +258,6 @@ class ResearchObject():
 #     ###############################################################################################################################
 #     ############################################ end of abstract/instance relation methods ########################################
 #     ###############################################################################################################################     
-    
-#     def parse_id(self, id: str) -> tuple:
-#         """Parse an ID into its prefix, abstract, and instance parts."""
-#         if not self.is_id(id):
-#             raise ValueError("Invalid ID.")
-#         prefix = id[0:2]
-#         abstract = id[2:2+abstract_id_len]
-#         num_underscores = id.count("_")
-#         instance = None
-#         if num_underscores == 1:            
-#             instance = id[-instance_id_len:]
-#         return (prefix, abstract, instance)
     
 #     def _open_path(self, path: str) -> None:
 #         """Open a file or directory in the default application."""

@@ -12,15 +12,17 @@ all_default_attrs = {}
 all_default_attrs["vr"] = {}
 
 # Root folder where all data is stored.
-root_data_path = "data" 
+root_data_path = "data"
 
 class DataObject(ResearchObject):
     """The abstract base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage."""    
 
     def __init__(self, default_attrs: dict, **kwargs) -> None:
         """Initialize the data object."""
+        from ResearchOS.variable import Variable
         all_default_attrs_all = default_attrs | all_default_attrs
-        self.__dict__["vr"] = {}
+        if not isinstance(self, Variable):
+            self.__dict__["vr"] = {}
         super().__init__(all_default_attrs_all, **kwargs)
 
     def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:

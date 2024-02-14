@@ -46,7 +46,7 @@ def test_happy_create_new_ro_with_id_kwarg_only(cls, id):
     ro = cls(id = id)
     # Check the object's common attributes.
     assert ro.id == id
-    if isinstance(ro, ros.DataObject):
+    if isinstance(ro, ros.DataObject) and not isinstance(ro, ros.Variable):
         assert hasattr(ro, "vr")
 
     # Check the contents of the SQL tables.
@@ -59,7 +59,7 @@ def test_happy_create_new_ro_with_id_kwarg_and_custom_kwargs(cls, id):
     assert ro.id == id
     assert ro.other_kwarg == "other_kwarg"
     assert ro.prefix == cls.prefix
-    if isinstance(ro, ros.DataObject):
+    if isinstance(ro, ros.DataObject) and not isinstance(ro, ros.Variable):
         assert hasattr(ro, "vr")
 
     # Check the contents of the SQL tables.

@@ -43,6 +43,8 @@ def test_add_data():
     ds.addresses = addresses
     vr1 = ros.Variable(id = "VR1")
     ds.vr[vr1.id] = 1
+    del ds
+    ds = ros.Dataset(id = "DS1")
     assert ds.vr[vr1.id] == 1
 
 
