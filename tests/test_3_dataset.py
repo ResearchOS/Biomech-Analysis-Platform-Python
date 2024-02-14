@@ -1,18 +1,30 @@
 import ResearchOS as ros
 
-addresses = [
-        ["DS1"],
-        ["DS1", "SJ1"],
-        ["DS1", "SJ1", "TR1"],
-        ["DS1", "SJ1", "TR2"],
-        ["DS1", "SJ2"],
-        ["DS1", "SJ2", "TR1"],
-        ["DS1", "SJ2", "TR2"]
-    ]
-schema = [
-        [ros.Dataset, ros.Subject],
-        [ros.Subject, ros.Trial]
-    ]
+addresses = {}
+addresses['DS1'] = {}
+addresses['DS1']['SJ1'] = {}
+addresses['DS1']['SJ2'] = {}
+addresses['DS1']['SJ1']['TR1'] = {}
+addresses['DS1']['SJ1']['TR2'] = {}
+addresses['DS1']['SJ2']['TR1'] = {}
+addresses['DS1']['SJ2']['TR2'] = {}
+# addresses = [
+#         ["DS1"],
+#         ["DS1", "SJ1"],
+#         ["DS1", "SJ1", "TR1"],
+#         ["DS1", "SJ1", "TR2"],
+#         ["DS1", "SJ2"],
+#         ["DS1", "SJ2", "TR1"],
+#         ["DS1", "SJ2", "TR2"]
+#     ]
+schema = {}
+schema[ros.Dataset] = {}
+schema[ros.Dataset][ros.Subject] = {}
+schema[ros.Dataset][ros.Subject][ros.Trial] = {}
+# schema = [
+#         [ros.Dataset, ros.Subject],
+#         [ros.Subject, ros.Trial]
+#     ]
 
 def test_dataset_exists():
     """Make sure that the dataset exists in the database after the dataset is first created."""
@@ -36,6 +48,12 @@ def test_dataset_addresses():
     del ds
     ds = ros.Dataset(id = "DS1")
     ds.addresses == addresses
+
+def test_dataset_load_address_objects():
+    ds = ros.Dataset(id = "DS1")
+    ds.schema = schema
+    ds.addresses = addresses
+    address_objects = ds.load_address_objects()
 
 def test_add_data():
     ds = ros.Dataset(id = "DS1")

@@ -9,7 +9,7 @@ from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
 
 all_default_attrs = {}
-all_default_attrs["vr"] = {}
+# all_default_attrs["vr"] = {}
 
 # Root folder where all data is stored.
 root_data_path = "data"
@@ -19,10 +19,7 @@ class DataObject(ResearchObject):
 
     def __init__(self, default_attrs: dict, **kwargs) -> None:
         """Initialize the data object."""
-        from ResearchOS.variable import Variable
-        all_default_attrs_all = default_attrs | all_default_attrs
-        if not isinstance(self, Variable):
-            self.__dict__["vr"] = {}
+        all_default_attrs_all = all_default_attrs | default_attrs # Class-specific default attributes take precedence.
         super().__init__(all_default_attrs_all, **kwargs)
 
     def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
@@ -147,9 +144,12 @@ class DataObject(ResearchObject):
 
         self.__dict__["vr"] = vrs
 
-    def get_levels(self, schema_id: str) -> list:
+    def get_levels(self, schema_id: str, object_id: str = None) -> list:
         """Get the levels of the data object."""
-        sqlquery = f"SELECT level0_id, level1_id, level2_id, level3_id, level4_id, level5_id, level6_id, level7_id, level8_id, level9_id FROM data_addresses WHERE address_id = '{self.id}' AND schema_id = '{schema_id}' LIMIT 1"
+        if object_id is not None:
+            sqlquery = f"SELECT level0_id, level1_id, level2_id, level3_id, level4_id, level5_id, level6_id, level7_id, level8_id, level9_id FROM data_addresses WHERE address_id = '{object_id}' AND schema_id = '{schema_id}' LIMIT 1"
+        else:
+            sqlquery = f"SELECT level0_id, level1_id, level2_id, level3_id, level4_id, level5_id, level6_id, level7_id, level8_id, level9_id FROM data_addresses WHERE schema_id = '{schema_id}'"
         conn = DBConnectionFactory.create_db_connection().conn
         cursor = conn.cursor()
         levels = cursor.execute(sqlquery).fetchall()
@@ -160,6 +160,14 @@ class DataObject(ResearchObject):
             raise ValueError("There are multiple addresses with the same ID in the database.")
         # Remove the None components from each row of the result.
         trimmed_levels = []
+        levels_dict = {}
+        for row_num in range(len(levels)):
+            for col_num in range(10):
+                object_id = levels[row_num][col_num]
+                if object_id is not None and object_id not in levels_dict:
+                    levels_dict[object_id] = {}
+        return levels_dict
+
         for row in levels:
             trimmed_levels.append([x for x in row if x is not None])
         return trimmed_levels[0]
@@ -173,7 +181,7 @@ class DataObject(ResearchObject):
         return root_data_path + os.sep + dataset_id + subfolder + vr_id + ".json"
     
     def get_dataset_id(self, schema_id: str) -> str:
-        """Get the dataset ID."""
+        """Get the current dataset ID."""
         sqlquery = f"SELECT dataset_id FROM dataset_schemas WHERE schema_id = {schema_id} LIMIT 1"
         conn = DBConnectionFactory.create_db_connection().conn
         cursor = conn.cursor()
@@ -183,3 +191,11 @@ class DataObject(ResearchObject):
         if len(dataset_id) > 1:
             raise ValueError("There are multiple schemas with the same ID in the database.")
         return dataset_id[0][0]
+    
+    def get_address(self, attr_name: str) -> list:
+        """Get the address for a specific attribute."""
+        conn = DBConnectionFactory.create_db_connection().conn
+        schema_id = self.get_schema_id()
+        sqlquery = f"SELECT {attr_name} FROM data_addresses WHERE schema_id = '{schema_id}'"
+        result = conn.execute(sqlquery).fetchone()
+        return result

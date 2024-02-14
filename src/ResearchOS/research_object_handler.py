@@ -24,8 +24,10 @@ class ResearchObjectHandler:
         #     return # No change.
         if attr_name == "id":
             raise ValueError("Cannot change the ID of a research object.")
-        if attr_name[0] == "_":
-            return # Don't log private attributes.
+        if attr_name == "prefix":
+            raise ValueError("Cannot change the prefix of a research object.")
+        # if attr_name[0] == "_":
+        #     return # Don't log private attributes.
         # Validate the value        
         if validate:                                                      
             ResearchObjectHandler.validator(research_object, attr_name, attr_value)

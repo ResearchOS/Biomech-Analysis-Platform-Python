@@ -1,10 +1,13 @@
 from ResearchOS.research_object_handler import ResearchObjectHandler
-# from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.action import Action
 
-DEFAULT_USER_ID = "US000000_000"
+all_default_attrs = {}
+all_default_attrs["name"] = None
+all_default_attrs["notes"] = None
 
-ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method (or no parent, for User).
+# DEFAULT_USER_ID = "US000000_000"
+
+# ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method (or no parent, for User).
 
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
@@ -29,23 +32,23 @@ class ResearchObject():
         ResearchObjectHandler.instances[id] = instance
         return instance
     
-    def __init__(self, default_attrs: dict, **kwargs):
+    def __init__(self, orig_default_attrs: dict, **orig_kwargs):
         """Initialize the research object."""
         action = None # Initialize the action.
-        self.__dict__["id"] = kwargs["id"] # Put the ID in the __dict__ so that it is not overwritten by the __setattr__ method.
-        del kwargs["id"]
+        self.__dict__["id"] = orig_kwargs["id"] # Put the ID in the __dict__ so that it is not overwritten by the __setattr__ method.
+        del orig_kwargs["id"]
+        default_attrs = all_default_attrs | orig_default_attrs # Merge the default attributes, with class-specific attributes taking precedence (if any conflict)
         if ResearchObjectHandler.object_exists(self.id):
             # Load the existing object's attributes from the database.
             ResearchObjectHandler._load_ro(self, default_attrs) 
             action = Action(name = f"set object attributes")
+            kwargs = {}
         else:
             # Create a new object.
             action = Action(name = f"created object")
             ResearchObjectHandler._create_ro(self, action = action) # Create the object in the database.
             # Add the default attributes to the kwargs to be set, only if they're not being overwritten by a kwarg.
-            for key in default_attrs:
-                if key not in kwargs:
-                    kwargs[key] = default_attrs[key]        
+            kwargs = default_attrs | orig_kwargs
         for key in kwargs:
             validate = True # Default is to validate any attribute.
             # If the attribute value is a default value, don't validate it.

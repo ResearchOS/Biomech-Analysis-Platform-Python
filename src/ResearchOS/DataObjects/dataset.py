@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, TYPE_CHECKING
 import json
 
 from ResearchOS.DataObjects.data_object import DataObject
@@ -8,9 +8,9 @@ from ResearchOS.idcreator import IDCreator
 from ResearchOS.db_connection_factory import DBConnectionFactory
 
 all_default_attrs = {}
-all_default_attrs["schema"]  = []
-all_default_attrs["dataset_path"] = None
-all_default_attrs["addresses"] = []
+all_default_attrs["schema"] = {} # Dict of empty dicts, where each key is the class and the value is a dict with subclass type(s).
+all_default_attrs["dataset_path"] = None # str
+all_default_attrs["addresses"] = {} # Dict of empty dicts, where each key is the ID of the object and the value is a dict with the subclasses' ID's.
 
 complex_attrs_list = ["schema", "addresses"]
 
@@ -24,13 +24,16 @@ class Dataset(DataObject):
 
     def __init__(self, **kwargs):
         """Initialize the attributes that are required by ResearchOS.
-        Other attributes can be added & modified later."""
+        Other attributes can be added & modified later."""        
         is_new = False
         if not ResearchObjectHandler.object_exists(kwargs.get("id")):
             is_new = True
         super().__init__(all_default_attrs, **kwargs)   
         if is_new:     
-            self.schema = all_default_attrs["schema"]
+            schema = {
+                Dataset: {}
+            }
+            self.schema = schema
 
     def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
@@ -50,21 +53,21 @@ class Dataset(DataObject):
     def validate_schema(self, schema: list) -> None:
         """Validate that the data schema follows the proper format.
         Must be an edge list [source, target], which is a list of lists (of length 2)."""
-        from ResearchOS.variable import Variable
-        # TODO: Check that every element is unique, no repeats.
-        if not isinstance(schema, list):
-            raise ValueError("Schema must be provided as a list!")
-        for idx, _ in enumerate(schema):
-            if not isinstance(_, list):
-                raise ValueError("Schema must be provided as a list of lists!")
-            if len(_) != 2:
-                raise ValueError("Schema must be provided as a list of lists of length 2!")
-            if not isinstance(_[0], type) or not isinstance(_[1], type):
-                raise ValueError("Schema must be provided as a list of lists of ResearchObject types!")
-            if isinstance(_[0], Variable) or isinstance(_[1], Variable):
-                raise ValueError("Do not include the Variable object in the schema! It is implicitly assumed to be the last element in the list")                
-            if idx == 0 and _[0] != Dataset:
-                raise ValueError("Dataset must be the first element in the first list as the origin/source node of the schema.")
+        # from ResearchOS.variable import Variable
+        # # TODO: Check that every element is unique, no repeats.
+        # if not isinstance(schema, list):
+        #     raise ValueError("Schema must be provided as a list!")
+        # for idx, _ in enumerate(schema):
+        #     if not isinstance(_, list):
+        #         raise ValueError("Schema must be provided as a list of lists!")
+        #     if len(_) != 2:
+        #         raise ValueError("Schema must be provided as a list of lists of length 2!")
+        #     if not isinstance(_[0], type) or not isinstance(_[1], type):
+        #         raise ValueError("Schema must be provided as a list of lists of ResearchObject types!")
+        #     if isinstance(_[0], Variable) or isinstance(_[1], Variable):
+        #         raise ValueError("Do not include the Variable object in the schema! It is implicitly assumed to be the last element in the list")                
+        #     if idx == 0 and _[0] != Dataset:
+        #         raise ValueError("Dataset must be the first element in the first list as the origin/source node of the schema.")
 
     def save_schema(self, schema: list, action: Action) -> None:
         """Save the schema to the database."""
@@ -128,33 +131,33 @@ class Dataset(DataObject):
     def validate_addresses(self, addresses: list) -> None:
         """Validate that the addresses are in the correct format."""
         self.validate_schema(self.schema) # Ensure that the schema is valid before doing the addresses.
-        conn = DBConnectionFactory.create_db_connection().conn
-        if not isinstance(addresses, list):
-            raise ValueError("Addresses must be provided as a list!")
+        # conn = DBConnectionFactory.create_db_connection().conn
+        # if not isinstance(addresses, list):
+        #     raise ValueError("Addresses must be provided as a list!")
         
-        for address in addresses:
-            if not isinstance(address, list):
-                raise ValueError("Addresses must be provided as a list of lists!")            
-            if len(address) > 10:
-                raise ValueError("Addresses must be provided as a list of lists of length 10 or less!")
-            for level in address:
-                if not isinstance(level, str):
-                    raise ValueError("Addresses must be provided as a list of lists of strings!")
-                if not IDCreator(conn).is_ro_id(level):
-                    raise ValueError("Addresses must be provided as a list of lists of ResearchObject IDs!")
-            # Ensure that the addresses are of the proper type according to the schema.
-            if len(address) == 1:
-                if not address[0].startswith(self.prefix):
-                    raise ValueError("This address be a dataset ID!")
-                continue
-            for idx, level in enumerate(address[1:]):                
-                follows_schema = False
-                for _ in self.schema:
-                    if address[idx].startswith(_[0].prefix) and address[idx+1].startswith( _[1].prefix):
-                        follows_schema = True
-                        break       
-                if not follows_schema:
-                    raise ValueError("Addresses must follow the schema of the dataset!")
+        # for address in addresses:
+        #     if not isinstance(address, list):
+        #         raise ValueError("Addresses must be provided as a list of lists!")            
+        #     if len(address) > 10:
+        #         raise ValueError("Addresses must be provided as a list of lists of length 10 or less!")
+        #     for level in address:
+        #         if not isinstance(level, str):
+        #             raise ValueError("Addresses must be provided as a list of lists of strings!")
+        #         if not IDCreator(conn).is_ro_id(level):
+        #             raise ValueError("Addresses must be provided as a list of lists of ResearchObject IDs!")
+        #     # Ensure that the addresses are of the proper type according to the schema.
+        #     if len(address) == 1:
+        #         if not address[0].startswith(self.prefix):
+        #             raise ValueError("This address be a dataset ID!")
+        #         continue
+        #     for idx, level in enumerate(address[1:]):                
+        #         follows_schema = False
+        #         for _ in self.schema:
+        #             if address[idx].startswith(_[0].prefix) and address[idx+1].startswith( _[1].prefix):
+        #                 follows_schema = True
+        #                 break       
+        #         if not follows_schema:
+        #             raise ValueError("Addresses must follow the schema of the dataset!")
                 
     def save_addresses(self, addresses: list, action: Action) -> None:
         """Save the addresses to the data_addresses table in the database."""
@@ -186,7 +189,7 @@ class Dataset(DataObject):
             sqlquery += ")"
             action.add_sql_query(sqlquery)
 
-    def load_addresses(self) -> list:
+    def load_addresses(self) -> list[list]:
         """Load the addresses from the database."""
         conn = DBConnectionFactory.create_db_connection().conn
 
@@ -201,13 +204,31 @@ class Dataset(DataObject):
         schema_id = schema_id[0] if schema_id else None
 
         # 2. Get the addresses for the current schema_id.
-        sqlquery = f"SELECT action_id FROM data_addresses WHERE schema_id = '{schema_id}'"
-        action_ids = conn.execute(sqlquery).fetchall()
-        action_ids = ResearchObjectHandler._get_time_ordered_result(action_ids, action_col_num=0)
-        action_id = action_ids[0][0] if action_ids else None
+        # sqlquery = f"SELECT action_id FROM data_addresses WHERE schema_id = '{schema_id}'"
+        # action_ids = conn.execute(sqlquery).fetchall()
+        # action_ids = ResearchObjectHandler._get_time_ordered_result(action_ids, action_col_num=0)
+        # action_id = action_ids[0][0] if action_ids else None
 
-        levels = self.get_levels(schema_id)
+        levels = self.get_levels(schema_id, self.id)
         self.__dict__["addresses"] = levels
+
+    def load_address_objects(self, address_objects: dict = {}, address_dict: dict = {}) -> list:
+        """Using the self.addresses property, load the addressed objects from the database."""
+        dataobject_subclasses = DataObject.__subclasses__()
+        if not address_dict:
+            address_dict = self.addresses
+        for address in address_dict:
+            for cls in dataobject_subclasses:
+                if not address.startswith(cls.prefix):
+                    continue                
+                break
+            cls_object = cls(id = address)
+            if cls_object in address_objects:
+                continue
+            address_objects[cls_object] = {}
+            self.load_address_objects(address_objects = address_objects[cls_object], address_dict = address_dict[address])
+            
+        return address_objects
     
 if __name__=="__main__":
     pass
