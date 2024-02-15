@@ -237,8 +237,8 @@ class Logsheet(PipelineObject):
         header_vrids = [header[2] for header in self.headers]
         # Load/create all of the Variables
         vr_list = []
-        for idx, vrid in enumerate(header_vrids):
-            vr = Variable(id = vrid, name = header_names[idx])
+        for vr_id in header_vrids:
+            vr = Variable(id = vr_id)
             vr_list.append(vr.id)
         # Order the class column names by precedence in the schema so that higher level objects always exist before lower level, so they can be attached.
         # schema_ordered_col_names = self.order_class_column_names()

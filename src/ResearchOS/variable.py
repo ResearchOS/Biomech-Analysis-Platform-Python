@@ -5,6 +5,7 @@ from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.user import User
 from ResearchOS.PipelineObjects.project import Project
 from ResearchOS.DataObjects.dataset import Dataset
+from ResearchOS.DataObjects.trial import Trial
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
@@ -12,7 +13,7 @@ from ResearchOS.db_connection_factory import DBConnectionFactory
 
 all_default_attrs = {}
 all_default_attrs["hard_coded_value"] = None
-all_default_attrs["level"] = None # Eventually needs to be a complex attr.
+all_default_attrs["level"] = Trial # Eventually needs to be a complex attr.
 all_default_attrs["value"] = None
 
 complex_attrs_list = []
