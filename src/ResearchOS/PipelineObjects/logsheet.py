@@ -120,7 +120,8 @@ class Logsheet(PipelineObject):
             raise ValueError(f"The headers {missing} do not match between logsheet and code!")
             
     def to_json_headers(self, headers: list) -> str:
-        """Convert the headers to a JSON string."""
+        """Convert the headers to a JSON string.
+        Also sets the VR's name and level."""
         str_headers = []
         for header in headers:
             # Update the Variable object with the name if it is not already set, and the level.
@@ -244,13 +245,15 @@ class Logsheet(PipelineObject):
         # Load/create all of the Variables
         vr_list = []
         vr_obj_list = []
-        for vr_id in header_vrids:
+        for idx, vr_id in enumerate(header_vrids):
             vr = Variable(id = vr_id)
+            assert vr.level == header_levels[idx]
             vr_obj_list.append(vr)
             vr_list.append(vr.id)
         # Order the class column names by precedence in the schema so that higher level objects always exist before lower level, so they can be attached.
         # schema_ordered_col_names = self.order_class_column_names()
         idcreator = IDCreator(conn)
+        action = Action(name = "read logsheet")
         for row in logsheet:            
             # Create a new instance of the appropriate DataObject subclass(es) and store it in the database.
             # TODO: How to order the data objects?
@@ -260,12 +263,12 @@ class Logsheet(PipelineObject):
                 value = header_types[col_idx](raw_value)
                 level = header_levels[col_idx]                
                 vr = vr_obj_list[col_idx]
-
+                
                 # Create the DataObject instance.
                 new_dobj = cls(id = idcreator.create_ro_id(cls))
 
                 if level is cls:
-                    new_dobj.__dict__[vr.name] = vr
+                    new_dobj.__setattr__(vr.name, value, action = action)
 
                 # Attach the DataObject instance to its parent DataObject instance.
 

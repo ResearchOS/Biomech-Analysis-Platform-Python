@@ -3,6 +3,7 @@
 import sqlite3, os, json
 
 from ResearchOS.current_user import CurrentUser
+from ResearchOS.db_connection_factory import DBConnectionFactory
 
 sql_settings_path = os.path.dirname(__file__) + "/config/sql.json"
 
@@ -19,7 +20,9 @@ class DBInitializer():
             os.remove(db_file)
 
         self.db_file = db_file
-        self.conn = sqlite3.connect(db_file)
+        conn = sqlite3.connect(db_file)
+        self.conn = DBConnectionFactory.create_db_connection(db_file).conn
+        # self.conn = sqlite3.connect(db_file)
         self.create_tables()
         self.check_tables_exist(intended_tables)
         self.init_current_user_id()

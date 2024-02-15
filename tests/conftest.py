@@ -3,24 +3,25 @@ import pytest, shutil
 import ResearchOS as ros
 
 from ResearchOS.db_initializer import DBInitializer
-from ResearchOS.db_connection import DBConnectionSQLite
+from ResearchOS.db_connection_factory import DBConnectionFactory
 
 # Function scoped
-def temp_db_file_function(tmp_path):
+@pytest.fixture
+def temp_db_file(tmp_path):
     return str(tmp_path / "test.db")
 
 # Session scoped
-@pytest.fixture(scope="session")
-def temp_db_file_session(tmp_path_factory):   
-    return str(tmp_path_factory.mktemp("test").joinpath("test.db"))
+# @pytest.fixture(scope="session")
+# def temp_db_file(tmp_path_factory):   
+#     return str(tmp_path_factory.mktemp("test").joinpath("test.db"))
   
-@pytest.fixture(scope="session")
-def db_init_session(temp_db_file_session):
-    return DBInitializer(temp_db_file_session)    
+@pytest.fixture
+def db_init(temp_db_file):
+    return DBInitializer(temp_db_file)    
             
-@pytest.fixture(scope="module")
-def db_connection_session(temp_db_file_session):
-    return DBConnectionSQLite(temp_db_file_session)
+@pytest.fixture
+def db_connection(temp_db_file, db_init):
+    return DBConnectionFactory().create_db_connection(temp_db_file)
 
 @pytest.fixture(scope="session")
 def temp_logsheet_file(tmp_path_factory):
@@ -29,7 +30,7 @@ def temp_logsheet_file(tmp_path_factory):
     return logsheet_path
 
 # Logsheet
-@pytest.fixture(scope="module")
+@pytest.fixture
 def logsheet_headers():
     incomplete_headers = [
         ("Date", str),

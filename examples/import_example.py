@@ -7,7 +7,7 @@ from importer import import_example
 ds = ros.Dataset(id = "DS1")
 
 ds.schema = {
-    ros.Subject: {
+    ros.Subject: {        
         ros.Trial: {}
     }
 }
@@ -48,7 +48,12 @@ ss = ros.Subset(id = "SS1")
 lg.subset_id = ss.id
 lg.read_logsheet() # Puts addresses in the dataset object.
 
-vr_data_path = ros.Variable(id = "VRP", name = "raw data path", level = ros.Dataset)
+tr1 = ros.Trial(id = "TR1")
+vr_trial = ros.Variable(id = "VR1", name = "test")
+tr1.set_value(vr_trial, 1)
+a = tr1.test
+
+vr_data_path = ros.Variable(id = "VR0", name = "raw data path", level = ros.Dataset)
 vr1 = ros.Variable(id = "VR1", name = "raw mocap data", level = ros.Trial)
 vr2 = ros.Variable(id = "VR2", name = "sampling rate", level = ros.Trial)
 # TODO: Show hard-coded??

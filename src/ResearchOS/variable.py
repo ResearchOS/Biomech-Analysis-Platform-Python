@@ -30,12 +30,12 @@ class Variable(DataObject,  PipelineObject):
         super().__init__(all_default_attrs, **kwargs)
 
     def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""        
         ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
 
     def load(self) -> None:
         """Load the variable-specific attributes from the database in an attribute-specific way."""
-        super().load_data_values()
+        pass
     
     ## Level methods
 

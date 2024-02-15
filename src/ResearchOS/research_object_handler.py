@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
+    from ResearchOS.DataObjects.data_object import DataObject
 
 from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.action import Action
@@ -175,6 +176,12 @@ class ResearchObjectHandler:
     @staticmethod
     def _setattr_type_specific(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, complex_attrs: list) -> None:
         """Set the attribute value for the specified attribute. This method is called after the attribute value has been validated."""
+        if name == "value":
+            if research_object.__class__ in DataObject.__subclasses__():            
+                raise ValueError("Use self.set_value() method to set the value.")
+            else:
+                raise ValueError("""PipelineObjects cannot have a "value" attribute.""")
+
         ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate)           
 
         if name not in complex_attrs:            

@@ -1,15 +1,14 @@
 # Purpose: Configuration files for the application
 
 # How this works:
-# 1. There are two "default" config file templates in this project's config folder: dev/prod/test and general.
-#   The general config file contains attributes that are common to all environments.
-# When the application is run:
-# 1. Checks the OS's standard location for the config file's existence. If it exists, it loads it into memory.
-# If it does not exist:
-# 1. The two appropriate config files are both loaded into memory.
-# 2. Saves the config file to the OS's standard location.
+# 1. The Config class is instantiated.
+# 2. The "immutable" config is loaded into memory.
+# 3. The "mutable" config is loaded into memory.
 
-import json, os
+# 1. Can change the "mutable" config, but not the "immutable" config.
+
+from typing import Any
+import json, os, copy
 
 config_path = os.path.join(os.path.dirname(__file__), "config/config.json")
 immutable_config_path = os.path.join(os.path.dirname(__file__), "config/immutable_config.json")
@@ -17,8 +16,8 @@ immutable_config_path = os.path.join(os.path.dirname(__file__), "config/immutabl
 class Config():
     
     def __init__(self) -> None:
-        self._config_path = config_path
-        self._immutable_config_path = immutable_config_path
+        self.__dict__["_config_path"] = config_path
+        self.__dict__["_immutable_config_path"] = immutable_config_path
         self.load_config(self._config_path, None)
         self.load_config(self._immutable_config_path, "immutable")
 
@@ -32,6 +31,20 @@ class Config():
             self.__dict__.update(key_dict)
         else:
             self.__dict__.update(attrs)
+
+    def save_config(self, config_path: str) -> None:
+        """Save all of the attributes to the config file."""
+        attrs = copy.deepcopy(self.__dict__)
+        del attrs["immutable"]
+        del attrs["_config_path"]
+        del attrs["_immutable_config_path"]
+        with open(config_path, "w") as f:
+            json.dump(attrs, f, indent = 4)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Set the attribute and save the config file."""
+        self.__dict__[name] = value
+        self.save_config(self._config_path)
 
 
 # class GeneralConfig():    
