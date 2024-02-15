@@ -91,16 +91,20 @@ class Action():
         """Add a sql query to the action."""
         self.sql_queries.append(sqlquery)
 
-    def execute(self, commit: bool = True) -> None:
+    def execute(self, commit: bool = True, rollback: bool = False) -> None:
         """Run all of the sql queries in the action."""
         cursor = self.conn.cursor()
         # Execute all of the SQL queries.
         if len(self.sql_queries) == 0:
+            self.conn.rollback()
             return
         for query in self.sql_queries:
             cursor.execute(query)
-        self.sql_queries = []
-        # Log the action to the Actions table        
+        self.sql_queries = []   
+        if rollback:
+            commit = False
+            self.conn.rollback()              
+        # Log the action to the Actions table   
         if commit:            
             self.conn.commit()
 

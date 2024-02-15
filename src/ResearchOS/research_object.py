@@ -42,20 +42,22 @@ class ResearchObject():
             # Load the existing object's attributes from the database.
             ResearchObjectHandler._load_ro(self, default_attrs) 
             action = Action(name = f"set object attributes")
-            kwargs = orig_kwargs
+            kwargs = orig_kwargs # Because the defaults will have all been set, so don't include them.
+            rollback = not kwargs # To undo the Action created when loading, if no changes are made during the loading process.
         else:
             # Create a new object.
             action = Action(name = f"created object")
             ResearchObjectHandler._create_ro(self, action = action) # Create the object in the database.
             # Add the default attributes to the kwargs to be set, only if they're not being overwritten by a kwarg.
-            kwargs = default_attrs | orig_kwargs
+            kwargs = default_attrs | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs. 
+            rollback = False # No need to rollback if the object is being created, the defaults always need to be applied.       
         for key in kwargs:
             validate = True # Default is to validate any attribute.
             # If the attribute value is a default value, don't validate it.
             if key in default_attrs and kwargs[key] == default_attrs[key]:
                 validate = False
             self.__setattr__(key, kwargs[key], action = action, validate = validate)
-        action.execute(commit = True)    
+        action.execute(commit = True, rollback = rollback)    
 
 
 

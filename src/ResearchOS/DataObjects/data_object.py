@@ -104,45 +104,7 @@ class DataObject(ResearchObject):
 
     def load(self) -> None:
         """Load data values from the database."""        
-        self.load_data_values()     
-
-    def load_data_values(self) -> None:
-        """Load data values from the database OR file system."""
-        # 1. Identify which rows in the database are associated with this data object and have not been overwritten.
-        sqlquery = f"SELECT address_id, schema_id, action_id, vr_id, scalar_value FROM data_values WHERE address_id = '{self.id}'"
-        conn = DBConnectionFactory.create_db_connection().conn
-        cursor = conn.cursor()
-        result = cursor.execute(sqlquery).fetchall()
-        ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num=1)
-        latest_result = ResearchObjectHandler._get_most_recent_attrs(self, ordered_result)
-
-        if not latest_result:
-            # raise ValueError("This object does not have an address_id in the database.")
-            return
-        
-        schema_id = latest_result["schema_id"]
-
-        dataset_id = self.get_dataset_id(schema_id)
-
-        # Get the list of levels for this address and dataset schema.
-        levels = self.get_levels(schema_id)
-
-        # "latest_result" is a list containing each of the attrs. There should be no repetition of attr names between elements of the list.
-        vrs = {}
-        for row in latest_result:
-            vr_id = row[3]
-            scalar_value = json.loads(row[4])
-            if scalar_value is not None:
-                vrs[vr_id] = scalar_value
-                continue
-
-            # TODO: correct this, this is a placeholder.
-            path = self.get_vr_file_path(vr_id, dataset_id, levels)
-            with open(path, "r") as f:
-                # Is it json? Or a binary format?
-                vrs[vr_id] = json.load(f)
-
-        self.__dict__["vr"] = vrs
+        pass    
 
     def get_levels(self, schema_id: str, object_id: str = None) -> list:
         """Get the levels of the data object."""
@@ -155,7 +117,7 @@ class DataObject(ResearchObject):
         levels = cursor.execute(sqlquery).fetchall()
         if len(levels) < 1:
             # raise ValueError("The address does not exist in the database.")
-            return []
+            return {}
         # if len(levels) > 1:
         #     raise ValueError("There are multiple addresses with the same ID in the database.")
         # Remove the None components from each row of the result.

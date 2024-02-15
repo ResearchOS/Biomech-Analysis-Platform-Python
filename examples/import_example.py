@@ -2,6 +2,8 @@ import ResearchOS as ros
 from derivative import derivative
 from importer import import_example
 
+## DELETE THE DATABASE FILE AND RUN DB_INITIALIZER FIRST.
+
 ds = ros.Dataset(id = "DS1")
 
 ds.schema = {
@@ -35,7 +37,7 @@ incomplete_headers = [
 headers = []
 for i in range(0, len(incomplete_headers)):
     vr = ros.Variable(id = f"VR{i}")
-    headers.append((incomplete_headers[i][0], incomplete_headers[i][1], vr.id))
+    headers.append((incomplete_headers[i][0], incomplete_headers[i][1], incomplete_headers[i][2], vr.id))
 lg.headers = headers
 lg.num_header_rows = 3
 lg.class_column_names = {

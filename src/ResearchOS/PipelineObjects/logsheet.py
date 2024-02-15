@@ -95,7 +95,7 @@ class Logsheet(PipelineObject):
             if not isinstance(header, tuple):
                 raise ValueError("Headers must be a list of tuples!")
             # 3. Check that each header tuple has 3 elements.        
-            if len(header) != 3:
+            if len(header) != 4:
                 raise ValueError("Each header tuple must have 3 elements!")
             # 4. Check that the first element of each header tuple is a string.        
             if not isinstance(header[0], str):
@@ -105,8 +105,10 @@ class Logsheet(PipelineObject):
             #     raise ValueError("Second element of each header tuple must be a Python type!")
             if header[1] not in [str, int, float]:
                 raise ValueError("Second element of each header tuple must be a Python type!")
+            if header[2] not in DataObject.__subclasses__():
+                raise ValueError("Third element of each header tuple must be a ResearchObject subclass!")
             # 6. Check that the third element of each header tuple is a valid variable ID.                
-            if not header[2].startswith(Variable.prefix) or not ResearchObjectHandler.object_exists(header[2]):
+            if not header[3].startswith(Variable.prefix) or not ResearchObjectHandler.object_exists(header[3]):
                 raise ValueError("Third element of each header tuple must be a valid pre-existing variable ID!")
             
         logsheet = self.read_and_clean_logsheet(nrows = 1)
@@ -121,15 +123,17 @@ class Logsheet(PipelineObject):
         """Convert the headers to a JSON string."""
         str_headers = []
         for header in headers:
-            # Update the Variable object with the name if it is not already set.
-            vr = Variable(id = header[2])
+            # Update the Variable object with the name if it is not already set, and the level.
+            vr = Variable(id = header[3])
             if vr.name is None:
                 vr.name = header[0]
-            str_headers.append((header[0], str(header[1])[8:-2], header[2]))
+            vr.level = header[2]
+            str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, header[3]))
         return json.dumps(str_headers)
 
     def from_json_headers(self, json_var: str) -> list:
         """Convert the JSON string to a list of headers."""
+        subclasses = DataObject.__subclasses__()
         str_var = json.loads(json_var)
         headers = []
         mapping = {
@@ -138,7 +142,8 @@ class Logsheet(PipelineObject):
             "float": float
         }
         for header in str_var:
-            headers.append((header[0], mapping[header[1]], header[2]))                
+            cls_header = [cls for cls in subclasses if cls.prefix == header[2]][0]
+            headers.append((header[0], mapping[header[1]], cls_header, header[3]))                
         return headers
             
     ### Num header rows
@@ -234,11 +239,14 @@ class Logsheet(PipelineObject):
         headers_in_logsheet = full_logsheet[0]
         header_names = [header[0] for header in self.headers]
         header_types = [header[1] for header in self.headers]
-        header_vrids = [header[2] for header in self.headers]
+        header_levels = [header[2] for header in self.headers]
+        header_vrids = [header[3] for header in self.headers]
         # Load/create all of the Variables
         vr_list = []
+        vr_obj_list = []
         for vr_id in header_vrids:
             vr = Variable(id = vr_id)
+            vr_obj_list.append(vr)
             vr_list.append(vr.id)
         # Order the class column names by precedence in the schema so that higher level objects always exist before lower level, so they can be attached.
         # schema_ordered_col_names = self.order_class_column_names()
@@ -248,13 +256,16 @@ class Logsheet(PipelineObject):
             # TODO: How to order the data objects?
             for header, cls in self.class_column_names.items():
                 col_idx = headers_in_logsheet.index(header)
-                raw_value = row[col_idx]
+                raw_value = row[col_idx]                
                 value = header_types[col_idx](raw_value)
+                level = header_levels[col_idx]                
+                vr = vr_obj_list[col_idx]
 
                 # Create the DataObject instance.
                 new_dobj = cls(id = idcreator.create_ro_id(cls))
 
-                new_dobj.vr[vr_list[col_idx]] = value
+                if level is cls:
+                    new_dobj.__dict__[vr.name] = vr
 
                 # Attach the DataObject instance to its parent DataObject instance.
 
