@@ -116,7 +116,7 @@ class DataObject(ResearchObject):
         ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num=1)
         latest_result = ResearchObjectHandler._get_most_recent_attrs(self, ordered_result)
 
-        if "schema_id" not in latest_result:
+        if not latest_result:
             # raise ValueError("This object does not have an address_id in the database.")
             return
         
@@ -156,10 +156,13 @@ class DataObject(ResearchObject):
         if len(levels) < 1:
             # raise ValueError("The address does not exist in the database.")
             return []
-        if len(levels) > 1:
-            raise ValueError("There are multiple addresses with the same ID in the database.")
+        # if len(levels) > 1:
+        #     raise ValueError("There are multiple addresses with the same ID in the database.")
         # Remove the None components from each row of the result.
         trimmed_levels = []
+        for row in levels:
+            trimmed_levels.append([x for x in row if x is not None])
+        levels = ResearchObjectHandler.list_to_dict(trimmed_levels)
         levels_dict = {}
         for row_num in range(len(levels)):
             for col_num in range(10):
@@ -167,10 +170,7 @@ class DataObject(ResearchObject):
                 if object_id is not None and object_id not in levels_dict:
                     levels_dict[object_id] = {}
         return levels_dict
-
-        for row in levels:
-            trimmed_levels.append([x for x in row if x is not None])
-        return trimmed_levels[0]
+                
 
     def get_vr_file_path(self, vr_id: str, dataset_id: str, levels: list) -> str:
         """Get the file path for a VR."""
@@ -199,3 +199,17 @@ class DataObject(ResearchObject):
         sqlquery = f"SELECT {attr_name} FROM data_addresses WHERE schema_id = '{schema_id}'"
         result = conn.execute(sqlquery).fetchone()
         return result
+    
+    def get_current_schema_id(self, dataset_id: str) -> str:
+        conn = DBConnectionFactory.create_db_connection().conn
+        sqlquery = f"SELECT action_id FROM data_address_schemas WHERE dataset_id = '{dataset_id}'"
+        action_ids = conn.cursor().execute(sqlquery).fetchall()
+        action_ids = ResearchObjectHandler._get_time_ordered_result(action_ids, action_col_num=0)
+        action_id_schema = action_ids[0][0] if action_ids else None
+        if action_id_schema is None and not self.schema:
+            return # If the schema is empty and the addresses are empty, this is likely initialization so just return.
+
+        sqlquery = f"SELECT schema_id FROM data_address_schemas WHERE dataset_id = '{dataset_id}' AND action_id = '{action_id_schema}'"
+        schema_id = conn.execute(sqlquery).fetchone()
+        schema_id = schema_id[0] if schema_id else None
+        return schema_id

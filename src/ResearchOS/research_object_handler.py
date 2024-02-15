@@ -15,6 +15,38 @@ class ResearchObjectHandler:
     instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
     counts = {} # Keep track of the number of instances of each ID.
 
+    def dict_to_list(d: dict, full_list: list = []) -> list:
+        """Convert a dictionary to a flat list."""        
+        for k, v in d.items():
+            full_list.append(k)
+            full_list = ResearchObjectHandler.dict_to_list(v, full_list)
+        return full_list
+    
+    def list_to_dict(l: list, d: dict = {}) -> dict:
+        """Convert a list of lists to a nested dictionary."""                
+        nested_dict = {}
+        for row in l:
+            # Relies on there being only one new value per row compared to the row above. Should always be the case the way I've done this.
+            def add_to_dict(d: dict, row: list):
+                for idx, elem in enumerate(row):
+                    if idx < len(row)-1:
+                        continue
+                    if elem not in d:
+                        d[elem] = {}
+                    if elem != row[-1]:
+                        d[elem] = add_to_dict(d[elem], row[1:])
+                return d
+            nested_dict = add_to_dict(nested_dict, row)
+            # for elem in row:
+            #     if elem not in nested_dict:
+            #         nested_dict[elem] = {}
+            #     else:
+            #         nested_dict_tmp = nested_dict[elem]
+            #     if elem not in current_level:
+            #         current_level[elem] = {}
+            #     current_level = ResearchObjectHandler.list_to_dict(current_level[elem])
+        return nested_dict
+
     @staticmethod
     def _set_attr_validator(research_object: "ResearchObject", attr_name: str, attr_value: Any, validate: bool = True) -> None:
         """Set the attribute validator for the specified attribute."""
@@ -228,11 +260,11 @@ class ResearchObjectHandler:
         return result
     
     @staticmethod
-    def _prefix_to_class(research_object: "ResearchObject", prefix: str) -> type:
+    def _prefix_to_class(prefix: str) -> type:
         """Convert a prefix to a class."""
         from ResearchOS.research_object import ResearchObject
         for cls in ResearchObjectHandler._get_subclasses(ResearchObject):
-            if hasattr(cls, "prefix") and cls.prefix == prefix:
+            if hasattr(cls, "prefix") and prefix.startswith(cls.prefix):
                 return cls
         raise ValueError("No class with that prefix exists.")
     

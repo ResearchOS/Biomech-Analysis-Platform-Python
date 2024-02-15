@@ -1,5 +1,7 @@
 import ResearchOS as ros
 
+from ResearchOS.research_object_handler import ResearchObjectHandler
+
 addresses = {}
 addresses['DS1'] = {}
 addresses['DS1']['SJ1'] = {}
@@ -44,6 +46,10 @@ def test_dataset_schema():
 def test_dataset_addresses():
     ds = ros.Dataset(id = "DS1")
     ds.schema = schema    
+    address_list = ResearchObjectHandler.dict_to_list(addresses)
+    for address in address_list:
+        cls = ResearchObjectHandler._prefix_to_class(address[0:2])
+        ro = cls(id = address)
     ds.addresses = addresses
     del ds
     ds = ros.Dataset(id = "DS1")

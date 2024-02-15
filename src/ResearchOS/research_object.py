@@ -42,7 +42,7 @@ class ResearchObject():
             # Load the existing object's attributes from the database.
             ResearchObjectHandler._load_ro(self, default_attrs) 
             action = Action(name = f"set object attributes")
-            kwargs = {}
+            kwargs = orig_kwargs
         else:
             # Create a new object.
             action = Action(name = f"created object")

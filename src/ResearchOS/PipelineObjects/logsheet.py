@@ -34,10 +34,7 @@ class Logsheet(PipelineObject):
 
     def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        if name == "vr":
-            raise ValueError("The attribute 'vr' is not allowed to be set for Pipeline Objects.")
-        else:
-            ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
+        ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
 
     def load(self) -> None:
         """Load the dataset-specific attributes from the database in an attribute-specific way."""

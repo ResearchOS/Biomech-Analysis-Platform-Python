@@ -120,7 +120,18 @@ class DBInitializer():
                         level8_id TEXT,
                         level9_id TEXT,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
+                        FOREIGN KEY (address_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (level0_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (level1_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (level2_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (level3_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (level4_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (level5_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (level6_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (level7_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (level8_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (level9_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         )""")
         
         # Data address schemas. Lists all data address schemas for all data.

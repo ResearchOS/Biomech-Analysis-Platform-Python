@@ -73,9 +73,14 @@ class IDCreator():
     
     def is_ro_id(self, id: str) -> bool:
         """Check if the given ID matches the pattern of a valid research object ID."""    
-        # TODO: Re-implement this when I decide on what the ResearchObject ID's look like.          
+        # TODO: Re-implement this when I decide on what the ResearchObject ID's look like.
+        from ResearchOS.research_object import ResearchObject
+        from ResearchOS.research_object_handler import ResearchObjectHandler
         instance_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
         abstract_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}$"
+        subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
+        if not any(id.startswith(cls.prefix) for cls in subclasses if hasattr(cls, "prefix")):
+            return False
         return True
         # if not isinstance(id, str):
         #     raise ValueError("id must be a str!")
