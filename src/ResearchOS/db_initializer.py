@@ -21,7 +21,7 @@ class DBInitializer():
 
         self.db_file = db_file
         conn = sqlite3.connect(db_file)
-        self.conn = DBConnectionFactory.create_db_connection(db_file).conn
+        self.conn = DBConnectionFactory.create_db_connection(db_file).conn # Sets the Config db_file path too.
         # self.conn = sqlite3.connect(db_file)
         self.create_tables()
         self.check_tables_exist(intended_tables)
