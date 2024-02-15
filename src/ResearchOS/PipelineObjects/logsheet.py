@@ -121,6 +121,10 @@ class Logsheet(PipelineObject):
         """Convert the headers to a JSON string."""
         str_headers = []
         for header in headers:
+            # Update the Variable object with the name if it is not already set.
+            vr = Variable(id = header[2])
+            if vr.name is None:
+                vr.name = header[0]
             str_headers.append((header[0], str(header[1])[8:-2], header[2]))
         return json.dumps(str_headers)
 
@@ -151,7 +155,7 @@ class Logsheet(PipelineObject):
     ### Class column names
         
     def validate_class_column_names(self, class_column_names: dict) -> None:
-        """Validate the class column names."""
+        """Validate the class column names. Must be a dict where the keys are the column names in the logsheet and the values are the DataObject subclasses."""
         # 1. Check that the class column names are a dict.
         if not isinstance(class_column_names, dict):
             raise ValueError("Class column names must be a dict!")

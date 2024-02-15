@@ -14,13 +14,34 @@ ds.dataset_path = "examples/data"
 
 lg = ros.Logsheet(id = "LG1")
 lg.path = "Spr23TWW_OA_AllSubjects_032323.csv"
-lg.headers = []
+
+incomplete_headers = [
+    ("Date", str),
+    ("Subject_Codename", str),
+    ("Cohort", str),
+    ("Age", int),
+    ("Gender", str),
+    ("FPs_Used", str),
+    ("Visit_Number", int),
+    ("Trial_Name_Number", str),
+    ("Trial_Type_Task", str),
+    ("Side_Of_Interest", str),
+    ("Perfect_Trial", int),
+    ("Subject_Comments", str),
+    ("Researcher_Comments", str),
+    ("Motive_Initial_Frame", int),
+    ("Motive_Final_Frame", int)
+]
+headers = []
+for i in range(0, 15):
+    vr = ros.Variable(id = f"VR{i}")
+    headers.append((incomplete_headers[i][0], incomplete_headers[i][1], vr.id))
+lg.headers = headers
 lg.num_header_rows = 3
 lg.class_column_names = []
 ss = ros.Subset(id = "SS1")
 lg.subset_id = ss.id
-lg.run()
-# TODO: ADDRESSES IN DATASET
+lg.read_logsheet() # Puts addresses in the dataset object.
 
 vr_data_path = ros.Variable(id = "VRP", name = "raw data path", level = ros.Dataset)
 vr1 = ros.Variable(id = "VR1", name = "raw mocap data", level = ros.Trial)
