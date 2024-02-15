@@ -65,7 +65,7 @@ project_builtin_args = [
 ]
 
 @pytest.mark.parametrize("cls,id,current_analysis_id,current_dataset_id", project_builtin_args)
-def test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(cls, id, current_analysis_id, current_dataset_id):
+def test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(cls, id, current_analysis_id, current_dataset_id, db_connection):
     """Create a new Research Object with the id kwarg and other builtin kwargs."""
     ro = cls(id = id, other_kwarg = "other_kwarg", current_analysis_id = current_analysis_id, current_dataset_id = current_dataset_id)
     # Check the object's common attributes.

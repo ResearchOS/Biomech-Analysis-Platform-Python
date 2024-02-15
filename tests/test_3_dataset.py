@@ -28,14 +28,14 @@ schema[ros.Dataset][ros.Subject][ros.Trial] = {}
 #         [ros.Subject, ros.Trial]
 #     ]
 
-def test_dataset_exists():
+def test_dataset_exists(db_connection):
     """Make sure that the dataset exists in the database after the dataset is first created."""
     ds = ros.Dataset(id = "ID1")
     assert isinstance(ds, ros.Dataset)
     assert ds.id == "ID1"
     assert ds.prefix == "DS"
 
-def test_dataset_schema():
+def test_dataset_schema(db_connection):
     """Make sure that the schema is correct."""
     ds = ros.Dataset(id = "ID1")    
     ds.schema = schema
@@ -43,7 +43,7 @@ def test_dataset_schema():
     ds = ros.Dataset(id = "ID1")
     assert ds.schema == schema
 
-def test_dataset_addresses():
+def test_dataset_addresses(db_connection):
     ds = ros.Dataset(id = "DS1")
     ds.schema = schema    
     address_list = ResearchObjectHandler.dict_to_list(addresses)
@@ -55,13 +55,13 @@ def test_dataset_addresses():
     ds = ros.Dataset(id = "DS1")
     ds.addresses == addresses
 
-def test_dataset_load_address_objects():
+def test_dataset_load_address_objects(db_connection):
     ds = ros.Dataset(id = "DS1")
     ds.schema = schema
     ds.addresses = addresses
     address_objects = ds.load_address_objects()
 
-def test_add_data():
+def test_add_data(db_connection):
     ds = ros.Dataset(id = "DS1")
     ds.schema = schema
     ds.addresses = addresses
