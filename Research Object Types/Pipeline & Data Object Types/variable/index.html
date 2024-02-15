@@ -756,9 +756,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#src.ResearchOS.variable.Variable.__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __init__
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.variable.Variable.__setattr__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __setattr__
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#src.ResearchOS.variable.Variable.get_source_object_ids" class="md-nav__link">
     <span class="md-ellipsis">
       get_source_object_ids
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.variable.Variable.load" class="md-nav__link">
+    <span class="md-ellipsis">
+      load
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.variable.Variable.validate_level" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_level
     </span>
   </a>
   
@@ -909,27 +945,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Pipeline%20Object%20Types/process_group/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ProcessGroup
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../Pipeline%20Object%20Types/project/" class="md-nav__link">
         
   
@@ -1016,9 +1031,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#src.ResearchOS.variable.Variable.__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __init__
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.variable.Variable.__setattr__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __setattr__
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#src.ResearchOS.variable.Variable.get_source_object_ids" class="md-nav__link">
     <span class="md-ellipsis">
       get_source_object_ids
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.variable.Variable.load" class="md-nav__link">
+    <span class="md-ellipsis">
+      load
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.variable.Variable.validate_level" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_level
     </span>
   </a>
   
@@ -1059,37 +1110,95 @@
 
             <details class="quote">
               <summary>Source code in <code>src/ResearchOS/variable.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span>
-<span class="normal">17</span>
-<span class="normal">18</span>
-<span class="normal">19</span>
-<span class="normal">20</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">20</span>
 <span class="normal">21</span>
 <span class="normal">22</span>
 <span class="normal">23</span>
 <span class="normal">24</span>
-<span class="normal">25</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Variable</span><span class="p">(</span><span class="n">DataObject</span><span class="p">,</span> <span class="n">PipelineObject</span><span class="p">):</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Variable</span><span class="p">(</span><span class="n">DataObject</span><span class="p">,</span>  <span class="n">PipelineObject</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Variable class.&quot;&quot;&quot;</span>
 
-    <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VR&quot;</span>           
+    <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VR&quot;</span>
 
-    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">get_all_ids</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_all_ids</span><span class="p">(</span><span class="n">Variable</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the attributes that are required by ResearchOS.</span>
+<span class="sd">        Other attributes can be added &amp; modified later.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">all_default_attrs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the attribute value. If the attribute value is not valid, an error is thrown.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;vr&quot;</span><span class="p">:</span>
+            <span class="k">return</span>
+            <span class="c1"># raise ValueError(&quot;Cannot set &#39;vr&#39; attribute for a Variable.&quot;)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span>
+            <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_setattr_type_specific</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">validate</span><span class="p">,</span> <span class="n">complex_attrs_list</span><span class="p">)</span>
+        <span class="c1"># Set variable value.</span>
+
+
+
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the variable-specific attributes from the database in an attribute-specific way.&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
 
     <span class="c1">#################### Start class-specific attributes ###################</span>
+    <span class="k">def</span> <span class="nf">validate_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check that the level is of a valid type.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Level must be a type.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">DataObject</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Level must be a DataObject.&quot;</span><span class="p">)</span>
+        <span class="n">us</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">get_current_user_object_id</span><span class="p">())</span>
+        <span class="n">us</span><span class="o">.</span><span class="n">validate_current_project_id</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">us</span><span class="o">.</span><span class="n">current_project_id</span><span class="p">)</span>
+        <span class="n">pj</span> <span class="o">=</span> <span class="n">Project</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">us</span><span class="o">.</span><span class="n">current_project_id</span><span class="p">)</span>
+        <span class="n">pj</span><span class="o">.</span><span class="n">validate_current_dataset_id</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">pj</span><span class="o">.</span><span class="n">current_dataset_id</span><span class="p">)</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">pj</span><span class="o">.</span><span class="n">current_dataset_id</span><span class="p">)</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">validate_schema</span><span class="p">(</span><span class="n">schema</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">schema</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">level</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">schema</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Level must be in the dataset schema.&quot;</span><span class="p">)</span>
 
     <span class="c1">#################### Start Source objects ####################</span>
     <span class="k">def</span> <span class="nf">get_source_object_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of all source objects for the Variable.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>
         <span class="n">ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="bp">cls</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">)</span> <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
@@ -1112,6 +1221,73 @@
 
 
 
+<h2 id="src.ResearchOS.variable.Variable.__init__" class="doc doc-heading">
+          <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Initialize the attributes that are required by ResearchOS.
+Other attributes can be added &amp; modified later.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/variable.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the attributes that are required by ResearchOS.</span>
+<span class="sd">    Other attributes can be added &amp; modified later.&quot;&quot;&quot;</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">all_default_attrs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="src.ResearchOS.variable.Variable.__setattr__" class="doc doc-heading">
+          <code class="highlight language-python"><span class="fm">__setattr__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Set the attribute value. If the attribute value is not valid, an error is thrown.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/variable.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the attribute value. If the attribute value is not valid, an error is thrown.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;vr&quot;</span><span class="p">:</span>
+        <span class="k">return</span>
+        <span class="c1"># raise ValueError(&quot;Cannot set &#39;vr&#39; attribute for a Variable.&quot;)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span>
+        <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_setattr_type_specific</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">validate</span><span class="p">,</span> <span class="n">complex_attrs_list</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
 <h2 id="src.ResearchOS.variable.Variable.get_source_object_ids" class="doc doc-heading">
           <code class="highlight language-python"><span class="n">get_source_object_ids</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span></code>
 
@@ -1124,15 +1300,91 @@
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/variable.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">21</span>
-<span class="normal">22</span>
-<span class="normal">23</span>
-<span class="normal">24</span>
-<span class="normal">25</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_source_object_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_source_object_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of all source objects for the Variable.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>
     <span class="n">ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="bp">cls</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">)</span> <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="src.ResearchOS.variable.Variable.load" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">load</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Load the variable-specific attributes from the database in an attribute-specific way.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/variable.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the variable-specific attributes from the database in an attribute-specific way.&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="src.ResearchOS.variable.Variable.validate_level" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">validate_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Check that the level is of a valid type.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/variable.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">validate_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check that the level is of a valid type.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Level must be a type.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">DataObject</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Level must be a DataObject.&quot;</span><span class="p">)</span>
+    <span class="n">us</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">get_current_user_object_id</span><span class="p">())</span>
+    <span class="n">us</span><span class="o">.</span><span class="n">validate_current_project_id</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">us</span><span class="o">.</span><span class="n">current_project_id</span><span class="p">)</span>
+    <span class="n">pj</span> <span class="o">=</span> <span class="n">Project</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">us</span><span class="o">.</span><span class="n">current_project_id</span><span class="p">)</span>
+    <span class="n">pj</span><span class="o">.</span><span class="n">validate_current_dataset_id</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">pj</span><span class="o">.</span><span class="n">current_dataset_id</span><span class="p">)</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">pj</span><span class="o">.</span><span class="n">current_dataset_id</span><span class="p">)</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">validate_schema</span><span class="p">(</span><span class="n">schema</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">schema</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">level</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">schema</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Level must be in the dataset schema.&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>

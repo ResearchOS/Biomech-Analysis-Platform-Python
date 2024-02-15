@@ -863,6 +863,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.pipeline_object.PipelineObject.load" class="md-nav__link">
+    <span class="md-ellipsis">
+      load
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -884,27 +893,6 @@
   
   <span class="md-ellipsis">
     Process
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../process_group/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ProcessGroup
   </span>
   
 
@@ -1006,6 +994,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.pipeline_object.PipelineObject.load" class="md-nav__link">
+    <span class="md-ellipsis">
+      load
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1034,7 +1031,7 @@
 <a id="src.ResearchOS.PipelineObjects.pipeline_object.PipelineObject"></a>
   <div class="doc doc-contents first">
           <p class="doc doc-class-bases">
-            Bases: <code><span title="ResearchOS.ResearchObject">ResearchObject</span></code></p>
+            Bases: <code><span title="ResearchOS.research_object.ResearchObject">ResearchObject</span></code></p>
 
   
       <p>Parent class of all pipeline objects: Projects, Analyses, Logsheets, Process Groups, Processes, Variables, SpecifyTrials, Views</p>
@@ -1042,10 +1039,62 @@
             <details class="quote">
               <summary>Source code in <code>src/ResearchOS/PipelineObjects/pipeline_object.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineObject</span><span class="p">(</span><span class="n">ResearchObject</span><span class="p">):</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span>
+<span class="normal">8</span>
+<span class="normal">9</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineObject</span><span class="p">(</span><span class="n">ResearchObject</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parent class of all pipeline objects: Projects, Analyses, Logsheets, Process Groups, Processes, Variables, SpecifyTrials, Views&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the dataset-specific attributes from the database in an attribute-specific way.&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="src.ResearchOS.PipelineObjects.pipeline_object.PipelineObject.load" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">load</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Load the dataset-specific attributes from the database in an attribute-specific way.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/pipeline_object.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">7</span>
+<span class="normal">8</span>
+<span class="normal">9</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the dataset-specific attributes from the database in an attribute-specific way.&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+
+  </div>
 
   </div>
 

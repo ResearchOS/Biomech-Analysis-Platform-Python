@@ -606,45 +606,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.DataObjects.phase.Phase.add_variable_id" class="md-nav__link">
+  <a href="#src.ResearchOS.DataObjects.phase.Phase.__init__" class="md-nav__link">
     <span class="md-ellipsis">
-      add_variable_id
+      __init__
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.DataObjects.phase.Phase.get_conditions" class="md-nav__link">
+  <a href="#src.ResearchOS.DataObjects.phase.Phase.__setattr__" class="md-nav__link">
     <span class="md-ellipsis">
-      get_conditions
+      __setattr__
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.DataObjects.phase.Phase.get_trials" class="md-nav__link">
+  <a href="#src.ResearchOS.DataObjects.phase.Phase.load" class="md-nav__link">
     <span class="md-ellipsis">
-      get_trials
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.DataObjects.phase.Phase.get_variable_ids" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_variable_ids
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.DataObjects.phase.Phase.remove_variable_id" class="md-nav__link">
-    <span class="md-ellipsis">
-      remove_variable_id
+      load
     </span>
   </a>
   
@@ -945,27 +927,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Pipeline%20Object%20Types/process_group/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ProcessGroup
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../Pipeline%20Object%20Types/project/" class="md-nav__link">
         
   
@@ -1052,45 +1013,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.DataObjects.phase.Phase.add_variable_id" class="md-nav__link">
+  <a href="#src.ResearchOS.DataObjects.phase.Phase.__init__" class="md-nav__link">
     <span class="md-ellipsis">
-      add_variable_id
+      __init__
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.DataObjects.phase.Phase.get_conditions" class="md-nav__link">
+  <a href="#src.ResearchOS.DataObjects.phase.Phase.__setattr__" class="md-nav__link">
     <span class="md-ellipsis">
-      get_conditions
+      __setattr__
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.DataObjects.phase.Phase.get_trials" class="md-nav__link">
+  <a href="#src.ResearchOS.DataObjects.phase.Phase.load" class="md-nav__link">
     <span class="md-ellipsis">
-      get_trials
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.DataObjects.phase.Phase.get_variable_ids" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_variable_ids
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#src.ResearchOS.DataObjects.phase.Phase.remove_variable_id" class="md-nav__link">
-    <span class="md-ellipsis">
-      remove_variable_id
+      load
     </span>
   </a>
   
@@ -1124,22 +1067,14 @@
 <a id="src.ResearchOS.DataObjects.phase.Phase"></a>
   <div class="doc doc-contents first">
           <p class="doc doc-class-bases">
-            Bases: <code><span title="ResearchOS.DataObject">DataObject</span></code></p>
+            Bases: <code><span title="ResearchOS.DataObjects.data_object.DataObject">DataObject</span></code></p>
 
   
       <p>Phase class.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/ResearchOS/DataObjects/phase.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">13</span>
 <span class="normal">14</span>
 <span class="normal">15</span>
 <span class="normal">16</span>
@@ -1155,61 +1090,23 @@
 <span class="normal">26</span>
 <span class="normal">27</span>
 <span class="normal">28</span>
-<span class="normal">29</span>
-<span class="normal">30</span>
-<span class="normal">31</span>
-<span class="normal">32</span>
-<span class="normal">33</span>
-<span class="normal">34</span>
-<span class="normal">35</span>
-<span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
-<span class="normal">39</span>
-<span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span>
-<span class="normal">44</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Phase</span><span class="p">(</span><span class="n">DataObject</span><span class="p">):</span>
+<span class="normal">29</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Phase</span><span class="p">(</span><span class="n">DataObject</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Phase class.&quot;&quot;&quot;</span>
 
     <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;PH&quot;</span>
-    <span class="n">logsheet_header</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">get_all_ids</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_all_ids</span><span class="p">(</span><span class="n">Phase</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the attributes that are required by ResearchOS.</span>
+<span class="sd">        Other attributes can be added &amp; modified later.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">all_default_attrs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="c1">#################### Start class-specific attributes ###################</span>
+    <span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the attribute value. If the attribute value is not valid, an error is thrown.&quot;&quot;&quot;</span>
+        <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_setattr_type_specific</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">validate</span><span class="p">,</span> <span class="n">complex_attrs_list</span><span class="p">)</span>
 
-    <span class="c1">#################### Start Source objects ####################</span>
-    <span class="k">def</span> <span class="nf">get_trials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of trial objects that belong to this phase.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Trial</span>
-        <span class="n">tr_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Trial</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">Trial</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">tr_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr_id</span> <span class="ow">in</span> <span class="n">tr_ids</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="nf">get_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of condition objects that belong to this phase.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Condition</span>
-        <span class="n">cn_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Condition</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">Condition</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">cn_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">cn_id</span> <span class="ow">in</span> <span class="n">cn_ids</span><span class="p">]</span>
-
-    <span class="c1">#################### Start Target objects ####################</span>
-    <span class="k">def</span> <span class="nf">get_variable_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of variable IDs that belong to this phase.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_target_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">add_variable_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a variable to the phase.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>        
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_target_object_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">remove_variable_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a variable from the phase.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>        
-        <span class="bp">self</span><span class="o">.</span><span class="n">_remove_target_object_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the dataset-specific attributes from the database in an attribute-specific way.&quot;&quot;&quot;</span>
+        <span class="n">DataObject</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="c1"># Load the attributes specific to it being a DataObject.</span>
 </code></pre></div></td></tr></table></div>
             </details>
 
@@ -1230,89 +1127,26 @@
 
 
 
-<h2 id="src.ResearchOS.DataObjects.phase.Phase.add_variable_id" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">add_variable_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">)</span></code>
+<h2 id="src.ResearchOS.DataObjects.phase.Phase.__init__" class="doc doc-heading">
+          <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 </h2>
 
 
   <div class="doc doc-contents ">
   
-      <p>Add a variable to the phase.</p>
-
-          <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/DataObjects/phase.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
-<span class="normal">39</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">add_variable_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a variable to the phase.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>        
-    <span class="bp">self</span><span class="o">.</span><span class="n">_add_target_object_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-          </details>
-  </div>
-
-</div>
-
-
-<div class="doc doc-object doc-function">
-
-
-
-<h2 id="src.ResearchOS.DataObjects.phase.Phase.get_conditions" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">get_conditions</span><span class="p">()</span></code>
-
-</h2>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Return a list of condition objects that belong to this phase.</p>
-
-          <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/DataObjects/phase.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">24</span>
-<span class="normal">25</span>
-<span class="normal">26</span>
-<span class="normal">27</span>
-<span class="normal">28</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of condition objects that belong to this phase.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Condition</span>
-    <span class="n">cn_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Condition</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">Condition</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">cn_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">cn_id</span> <span class="ow">in</span> <span class="n">cn_ids</span><span class="p">]</span>
-</code></pre></div></td></tr></table></div>
-          </details>
-  </div>
-
-</div>
-
-
-<div class="doc doc-object doc-function">
-
-
-
-<h2 id="src.ResearchOS.DataObjects.phase.Phase.get_trials" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">get_trials</span><span class="p">()</span></code>
-
-</h2>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Return a list of trial objects that belong to this phase.</p>
+      <p>Initialize the attributes that are required by ResearchOS.
+Other attributes can be added &amp; modified later.</p>
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/DataObjects/phase.py</code></summary>
             <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">18</span>
 <span class="normal">19</span>
 <span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_trials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of trial objects that belong to this phase.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Trial</span>
-    <span class="n">tr_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Trial</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">Trial</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">tr_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr_id</span> <span class="ow">in</span> <span class="n">tr_ids</span><span class="p">]</span>
+<span class="normal">21</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the attributes that are required by ResearchOS.</span>
+<span class="sd">    Other attributes can be added &amp; modified later.&quot;&quot;&quot;</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">all_default_attrs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -1324,25 +1158,23 @@
 
 
 
-<h2 id="src.ResearchOS.DataObjects.phase.Phase.get_variable_ids" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">get_variable_ids</span><span class="p">()</span></code>
+<h2 id="src.ResearchOS.DataObjects.phase.Phase.__setattr__" class="doc doc-heading">
+          <code class="highlight language-python"><span class="fm">__setattr__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
 
 </h2>
 
 
   <div class="doc doc-contents ">
   
-      <p>Return a list of variable IDs that belong to this phase.</p>
+      <p>Set the attribute value. If the attribute value is not valid, an error is thrown.</p>
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/DataObjects/phase.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">31</span>
-<span class="normal">32</span>
-<span class="normal">33</span>
-<span class="normal">34</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_variable_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of variable IDs that belong to this phase.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>
-    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_target_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the attribute value. If the attribute value is not valid, an error is thrown.&quot;&quot;&quot;</span>
+    <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_setattr_type_specific</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">validate</span><span class="p">,</span> <span class="n">complex_attrs_list</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -1354,25 +1186,23 @@
 
 
 
-<h2 id="src.ResearchOS.DataObjects.phase.Phase.remove_variable_id" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">remove_variable_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">)</span></code>
+<h2 id="src.ResearchOS.DataObjects.phase.Phase.load" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">load</span><span class="p">()</span></code>
 
 </h2>
 
 
   <div class="doc doc-contents ">
   
-      <p>Remove a variable from the phase.</p>
+      <p>Load the dataset-specific attributes from the database in an attribute-specific way.</p>
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/DataObjects/phase.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span>
-<span class="normal">44</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">remove_variable_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a variable from the phase.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>        
-    <span class="bp">self</span><span class="o">.</span><span class="n">_remove_target_object_id</span><span class="p">(</span><span class="n">variable_id</span><span class="p">,</span> <span class="bp">cls</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">)</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the dataset-specific attributes from the database in an attribute-specific way.&quot;&quot;&quot;</span>
+    <span class="n">DataObject</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="c1"># Load the attributes specific to it being a DataObject.</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>

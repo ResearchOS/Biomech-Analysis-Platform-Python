@@ -849,27 +849,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../process_group/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    ProcessGroup
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../project/" class="md-nav__link">
         
   
@@ -946,9 +925,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.add_criteria" class="md-nav__link">
+  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.__init__" class="md-nav__link">
     <span class="md-ellipsis">
-      add_criteria
+      __init__
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.__setattr__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __setattr__
     </span>
   </a>
   
@@ -973,9 +961,36 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.get_subset" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_subset
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#src.ResearchOS.PipelineObjects.subset.Subset.get_trials" class="md-nav__link">
     <span class="md-ellipsis">
       get_trials
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.load" class="md-nav__link">
+    <span class="md-ellipsis">
+      load
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.validate_conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_conditions
     </span>
   </a>
   
@@ -1041,9 +1056,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.add_criteria" class="md-nav__link">
+  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.__init__" class="md-nav__link">
     <span class="md-ellipsis">
-      add_criteria
+      __init__
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.__setattr__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __setattr__
     </span>
   </a>
   
@@ -1068,9 +1092,36 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.get_subset" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_subset
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#src.ResearchOS.PipelineObjects.subset.Subset.get_trials" class="md-nav__link">
     <span class="md-ellipsis">
       get_trials
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.load" class="md-nav__link">
+    <span class="md-ellipsis">
+      load
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#src.ResearchOS.PipelineObjects.subset.Subset.validate_conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_conditions
     </span>
   </a>
   
@@ -1112,81 +1163,319 @@
 
             <details class="quote">
               <summary>Source code in <code>src/ResearchOS/PipelineObjects/subset.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span>
-<span class="normal">17</span>
-<span class="normal">18</span>
-<span class="normal">19</span>
-<span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span>
-<span class="normal">23</span>
-<span class="normal">24</span>
-<span class="normal">25</span>
-<span class="normal">26</span>
-<span class="normal">27</span>
-<span class="normal">28</span>
-<span class="normal">29</span>
-<span class="normal">30</span>
-<span class="normal">31</span>
-<span class="normal">32</span>
-<span class="normal">33</span>
-<span class="normal">34</span>
-<span class="normal">35</span>
-<span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
-<span class="normal">39</span>
-<span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span>
-<span class="normal">44</span>
-<span class="normal">45</span>
-<span class="normal">46</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Subset</span><span class="p">(</span><span class="n">PipelineObject</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 20</span>
+<span class="normal"> 21</span>
+<span class="normal"> 22</span>
+<span class="normal"> 23</span>
+<span class="normal"> 24</span>
+<span class="normal"> 25</span>
+<span class="normal"> 26</span>
+<span class="normal"> 27</span>
+<span class="normal"> 28</span>
+<span class="normal"> 29</span>
+<span class="normal"> 30</span>
+<span class="normal"> 31</span>
+<span class="normal"> 32</span>
+<span class="normal"> 33</span>
+<span class="normal"> 34</span>
+<span class="normal"> 35</span>
+<span class="normal"> 36</span>
+<span class="normal"> 37</span>
+<span class="normal"> 38</span>
+<span class="normal"> 39</span>
+<span class="normal"> 40</span>
+<span class="normal"> 41</span>
+<span class="normal"> 42</span>
+<span class="normal"> 43</span>
+<span class="normal"> 44</span>
+<span class="normal"> 45</span>
+<span class="normal"> 46</span>
+<span class="normal"> 47</span>
+<span class="normal"> 48</span>
+<span class="normal"> 49</span>
+<span class="normal"> 50</span>
+<span class="normal"> 51</span>
+<span class="normal"> 52</span>
+<span class="normal"> 53</span>
+<span class="normal"> 54</span>
+<span class="normal"> 55</span>
+<span class="normal"> 56</span>
+<span class="normal"> 57</span>
+<span class="normal"> 58</span>
+<span class="normal"> 59</span>
+<span class="normal"> 60</span>
+<span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Subset</span><span class="p">(</span><span class="n">PipelineObject</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Provides rules to select a subset of data from a dataset.&quot;&quot;&quot;</span>
 
     <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;SS&quot;</span>
 
-    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">get_all_ids</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_all_ids</span><span class="p">(</span><span class="n">Subset</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the attributes that are required by ResearchOS.</span>
+<span class="sd">        Other attributes can be added &amp; modified later.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">all_default_attrs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the attribute value. If the attribute value is not valid, an error is thrown.&quot;&quot;&quot;</span>
+        <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_setattr_type_specific</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">validate</span><span class="p">,</span> <span class="n">complex_attrs_list</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the dataset-specific attributes from the database in an attribute-specific way.&quot;&quot;&quot;</span>
+        <span class="n">PipelineObject</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="c1"># Load the attributes specific to it being a PipelineObject.</span>
+
+    <span class="k">def</span> <span class="nf">validate_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conditions</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate the condition recursively.</span>
+<span class="sd">        Example usage:</span>
+<span class="sd">        conditions = {</span>
+<span class="sd">            &quot;and&quot;: [</span>
+<span class="sd">                [vr1.id, &quot;&lt;&quot;, 4],</span>
+<span class="sd">                {</span>
+<span class="sd">                    &quot;or&quot;: [</span>
+<span class="sd">                        [vr1.id, &quot;&gt;&quot;, 2],</span>
+<span class="sd">                        [vr1.id, &quot;=&quot;, 7]</span>
+<span class="sd">                    ]</span>
+<span class="sd">                }</span>
+<span class="sd">            ]</span>
+<span class="sd">        }</span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="c1"># Validate a single condition.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conditions</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">conn</span> <span class="o">=</span> <span class="n">DBConnectionFactory</span><span class="o">.</span><span class="n">create_db_connection</span><span class="p">()</span><span class="o">.</span><span class="n">conn</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">conditions</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Condition must be a list of length 3.&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">IDCreator</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span><span class="o">.</span><span class="n">is_ro_id</span><span class="p">(</span><span class="n">conditions</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Variable ID must be a valid Variable ID.&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">conditions</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">logic_options</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid logic.&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">conditions</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">numeric_logic_options</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conditions</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Numeric logical symbols must have an int value.&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">conditions</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be JSON serializable.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Validate the &quot;and&quot;/&quot;or&quot; keys.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conditions</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Condition must be a dict.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;and&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">conditions</span> <span class="ow">and</span> <span class="s2">&quot;or&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Condition must contain an &#39;and&#39; or &#39;or&#39; key.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;and&quot;</span> <span class="ow">in</span> <span class="n">conditions</span> <span class="ow">and</span> <span class="s2">&quot;or&quot;</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Condition cannot contain both &#39;and&#39; and &#39;or&#39; keys.&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">conditions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;and&quot;</span><span class="p">,</span> <span class="s2">&quot;or&quot;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid key in condition.&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a list.&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a list of lists or dicts.&quot;</span><span class="p">)</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">validate_conditions</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span> <span class="k">for</span> <span class="n">cond</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span> <span class="c1"># Assigned to a just to make interpreter happy.</span>
+
+
+        <span class="c1"># # Check format for &quot;and&quot;/&quot;or&quot; keys.</span>
+        <span class="c1"># if isinstance(conditions, dict):</span>
+        <span class="c1">#     if not (&quot;and&quot; in conditions or &quot;or&quot; in conditions):</span>
+        <span class="c1">#         validate_single_condition(conditions)</span>
+        <span class="c1">#     if &quot;and&quot; in conditions and &quot;or&quot; in conditions:</span>
+        <span class="c1">#         raise ValueError(&quot;Condition cannot contain both &#39;and&#39; and &#39;or&#39; keys.&quot;)</span>
+        <span class="c1">#     if &quot;and&quot; in conditions:</span>
+        <span class="c1">#         if not isinstance(conditions[&quot;and&quot;], list) or not all(isinstance(cond, dict) for cond in conditions[&quot;and&quot;]):</span>
+        <span class="c1">#             raise ValueError(&quot;Condition must be a list of dicts.&quot;)</span>
+        <span class="c1">#         return all(self.validate_conditions(cond) for cond in conditions[&quot;and&quot;])                    </span>
+        <span class="c1">#     if &quot;or&quot; in conditions:</span>
+        <span class="c1">#         if not isinstance(conditions[&quot;or&quot;], list) or not all(isinstance(cond, dict) for cond in conditions[&quot;or&quot;]):</span>
+        <span class="c1">#             raise ValueError(&quot;Condition must be a list of dicts.&quot;)</span>
+        <span class="c1">#         return all(self.validate_conditions(cond) for cond in conditions[&quot;or&quot;])</span>
+        <span class="c1"># elif isinstance(conditions, list):</span>
+        <span class="c1">#     return all(self.validate_conditions(cond) for cond in conditions)</span>
+        <span class="c1"># else:</span>
+        <span class="c1">#     raise ValueError(&quot;Condition must be a dict or a list.&quot;)</span>
+
+    <span class="c1"># def validate_single_condition(condition: dict) -&gt; None:</span>
+    <span class="c1">#     &quot;&quot;&quot;Validate a single condition, inside of an and/or list.&quot;&quot;&quot;</span>
+    <span class="c1">#     if not isinstance(condition, dict):</span>
+    <span class="c1">#         raise ValueError(&quot;Condition must be a dict.&quot;)</span>
+    <span class="c1">#     if &quot;VR&quot; not in condition:</span>
+    <span class="c1">#         raise ValueError(&quot;Condition must contain a &#39;VR&#39; key.&quot;)</span>
+    <span class="c1">#     if not self.is_id(condition[&quot;VR&quot;]):</span>
+    <span class="c1">#         raise ValueError(&quot;Variable ID must be a valid Variable ID.&quot;)</span>
+    <span class="c1">#     if &quot;logic&quot; not in condition.keys():            </span>
+    <span class="c1">#         raise ValueError(&quot;Condition must contain a &#39;symbol&#39; key.&quot;)</span>
+    <span class="c1">#     if condition[&quot;logic&quot;] not in logic_options:</span>
+    <span class="c1">#         raise ValueError(&quot;Invalid logic.&quot;)</span>
+    <span class="c1">#     if &quot;value&quot; not in condition.keys():</span>
+    <span class="c1">#         raise ValueError(&quot;Condition must contain a &#39;value&#39; key.&quot;)</span>
+    <span class="c1">#     if condition[&quot;logic&quot;] in numeric_logic_options and not isinstance(condition[&quot;value&quot;], int):</span>
+    <span class="c1">#         raise ValueError(&quot;Numeric logical symbols must have an int value.&quot;)</span>
+    <span class="c1">#     try:</span>
+    <span class="c1">#         a = json.dumps(condition[&quot;value&quot;])</span>
+    <span class="c1">#     except:</span>
+    <span class="c1">#         raise ValueError(&quot;Value must be JSON serializable.&quot;)</span>
+
+    <span class="k">def</span> <span class="nf">get_subset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve the conditions to the actual subset of data. Returns a dict of lists of dicts [of lists...].</span>
+<span class="sd">        Example usage:</span>
+<span class="sd">        subset = {</span>
+<span class="sd">            &quot;DS000000_000&quot;: {</span>
+<span class="sd">                &quot;SJ000000_000&quot;: {</span>
+<span class="sd">                    &quot;VS000000_000&quot;: {</span>
+<span class="sd">                        &quot;PH000000_000&quot;: {},</span>
+<span class="sd">                         &quot;PH000000_001&quot;: {}</span>
+<span class="sd">                    }</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;SJ000000_001&quot;: {</span>
+<span class="sd">                    &quot;VS000000_000&quot;: {</span>
+<span class="sd">                        &quot;PH000000_000&quot;: {},</span>
+<span class="sd">                         &quot;PH000000_001&quot;: {}</span>
+<span class="sd">                    }</span>
+<span class="sd">                }</span>
+<span class="sd">            }</span>
+<span class="sd">        }&quot;&quot;&quot;</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">get_current</span><span class="p">()</span>
+        <span class="n">schema_id</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">get_schema_id</span><span class="p">()</span>
+
 
     <span class="c1">#################### Start class-specific attributes ###################</span>
-    <span class="k">def</span> <span class="nf">add_criteria</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">logic</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a criterion to the subset.</span>
-<span class="sd">        Possible values for logic are: &quot;&gt;&quot;, &quot;&lt;&quot;, &quot;&gt;=&quot;, &quot;&lt;=&quot;, &quot;==&quot;, &quot;!=&quot;, &quot;in&quot;, &quot;not in&quot;, &quot;is&quot;, &quot;is not&quot;, &quot;contains&quot;, &quot;not contains&quot;.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>
-        <span class="n">logic_options</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&gt;=&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;=&quot;</span><span class="p">,</span> <span class="s2">&quot;==&quot;</span><span class="p">,</span> <span class="s2">&quot;!=&quot;</span><span class="p">,</span> <span class="s2">&quot;in&quot;</span><span class="p">,</span> <span class="s2">&quot;not in&quot;</span><span class="p">,</span> <span class="s2">&quot;is&quot;</span><span class="p">,</span> <span class="s2">&quot;is not&quot;</span><span class="p">,</span> <span class="s2">&quot;contains&quot;</span><span class="p">,</span> <span class="s2">&quot;not contains&quot;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">logic</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">logic_options</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid logic value.&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">var_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Variable</span><span class="o">.</span><span class="n">get_all_ids</span><span class="p">():</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid variable ID.&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">criteria</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">var_id</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">logic</span><span class="p">))</span>
+    <span class="c1"># def add_criteria(self, var_id: str, value, logic: str) -&gt; None:</span>
+    <span class="c1">#     &quot;&quot;&quot;Add a criterion to the subset.</span>
+    <span class="c1">#     Possible values for logic are: &quot;&gt;&quot;, &quot;&lt;&quot;, &quot;&gt;=&quot;, &quot;&lt;=&quot;, &quot;==&quot;, &quot;!=&quot;, &quot;in&quot;, &quot;not in&quot;, &quot;is&quot;, &quot;is not&quot;, &quot;contains&quot;, &quot;not contains&quot;.&quot;&quot;&quot;</span>
+    <span class="c1">#     from ResearchOS import Variable</span>
+    <span class="c1">#     logic_options = [&quot;&gt;&quot;, &quot;&lt;&quot;, &quot;&gt;=&quot;, &quot;&lt;=&quot;, &quot;==&quot;, &quot;!=&quot;, &quot;in&quot;, &quot;not in&quot;, &quot;is&quot;, &quot;is not&quot;, &quot;contains&quot;, &quot;not contains&quot;]</span>
+    <span class="c1">#     if logic not in logic_options:</span>
+    <span class="c1">#         raise ValueError(&quot;Invalid logic value.&quot;)</span>
+    <span class="c1">#     if var_id not in Variable.get_all_ids():</span>
+    <span class="c1">#         raise ValueError(&quot;Invalid variable ID.&quot;)</span>
+    <span class="c1">#     self.criteria.append((var_id, value, logic))</span>
 
     <span class="c1">#################### Start Source objects ####################</span>
     <span class="k">def</span> <span class="nf">get_processes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of process objects that belong to this subset.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Process</span>
         <span class="n">pr_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Process</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">Process</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">pr_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">pr_id</span> <span class="ow">in</span> <span class="n">pr_ids</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">get_plots</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of plot objects that belong to this subset.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Plot</span>
         <span class="n">pl_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Plot</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">Plot</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">pl_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">pl_id</span> <span class="ow">in</span> <span class="n">pl_ids</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">get_trials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of trial objects that belong to this subset.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Trial</span>
         <span class="n">tr_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Trial</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">Trial</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">tr_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr_id</span> <span class="ow">in</span> <span class="n">tr_ids</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
@@ -1209,38 +1498,54 @@
 
 
 
-<h2 id="src.ResearchOS.PipelineObjects.subset.Subset.add_criteria" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">add_criteria</span><span class="p">(</span><span class="n">var_id</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">logic</span><span class="p">)</span></code>
+<h2 id="src.ResearchOS.PipelineObjects.subset.Subset.__init__" class="doc doc-heading">
+          <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 </h2>
 
 
   <div class="doc doc-contents ">
   
-      <p>Add a criterion to the subset.
-Possible values for logic are: "&gt;", "&lt;", "&gt;=", "&lt;=", "==", "!=", "in", "not in", "is", "is not", "contains", "not contains".</p>
+      <p>Initialize the attributes that are required by ResearchOS.
+Other attributes can be added &amp; modified later.</p>
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/PipelineObjects/subset.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">18</span>
-<span class="normal">19</span>
-<span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span>
-<span class="normal">23</span>
-<span class="normal">24</span>
-<span class="normal">25</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">25</span>
 <span class="normal">26</span>
-<span class="normal">27</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">add_criteria</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">logic</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a criterion to the subset.</span>
-<span class="sd">    Possible values for logic are: &quot;&gt;&quot;, &quot;&lt;&quot;, &quot;&gt;=&quot;, &quot;&lt;=&quot;, &quot;==&quot;, &quot;!=&quot;, &quot;in&quot;, &quot;not in&quot;, &quot;is&quot;, &quot;is not&quot;, &quot;contains&quot;, &quot;not contains&quot;.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Variable</span>
-    <span class="n">logic_options</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&gt;=&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;=&quot;</span><span class="p">,</span> <span class="s2">&quot;==&quot;</span><span class="p">,</span> <span class="s2">&quot;!=&quot;</span><span class="p">,</span> <span class="s2">&quot;in&quot;</span><span class="p">,</span> <span class="s2">&quot;not in&quot;</span><span class="p">,</span> <span class="s2">&quot;is&quot;</span><span class="p">,</span> <span class="s2">&quot;is not&quot;</span><span class="p">,</span> <span class="s2">&quot;contains&quot;</span><span class="p">,</span> <span class="s2">&quot;not contains&quot;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">logic</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">logic_options</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid logic value.&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">var_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Variable</span><span class="o">.</span><span class="n">get_all_ids</span><span class="p">():</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid variable ID.&quot;</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">criteria</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">var_id</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">logic</span><span class="p">))</span>
+<span class="normal">27</span>
+<span class="normal">28</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the attributes that are required by ResearchOS.</span>
+<span class="sd">    Other attributes can be added &amp; modified later.&quot;&quot;&quot;</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">all_default_attrs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="src.ResearchOS.PipelineObjects.subset.Subset.__setattr__" class="doc doc-heading">
+          <code class="highlight language-python"><span class="fm">__setattr__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Set the attribute value. If the attribute value is not valid, an error is thrown.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/subset.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the attribute value. If the attribute value is not valid, an error is thrown.&quot;&quot;&quot;</span>
+    <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_setattr_type_specific</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">validate</span><span class="p">,</span> <span class="n">complex_attrs_list</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -1264,13 +1569,11 @@ Possible values for logic are: "&gt;", "&lt;", "&gt;=", "&lt;=", "==", "!=", "in
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/PipelineObjects/subset.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
-<span class="normal">39</span>
-<span class="normal">40</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_plots</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_plots</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of plot objects that belong to this subset.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Plot</span>
     <span class="n">pl_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Plot</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">Plot</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">pl_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">pl_id</span> <span class="ow">in</span> <span class="n">pl_ids</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
@@ -1296,15 +1599,94 @@ Possible values for logic are: "&gt;", "&lt;", "&gt;=", "&lt;=", "==", "!=", "in
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/PipelineObjects/subset.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
-<span class="normal">31</span>
-<span class="normal">32</span>
-<span class="normal">33</span>
-<span class="normal">34</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_processes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_processes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of process objects that belong to this subset.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Process</span>
     <span class="n">pr_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Process</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">Process</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">pr_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">pr_id</span> <span class="ow">in</span> <span class="n">pr_ids</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="src.ResearchOS.PipelineObjects.subset.Subset.get_subset" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">get_subset</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Resolve the conditions to the actual subset of data. Returns a dict of lists of dicts [of lists...].
+Example usage:
+subset = {
+    "DS000000_000": {
+        "SJ000000_000": {
+            "VS000000_000": {
+                "PH000000_000": {},
+                 "PH000000_001": {}
+            }
+        },
+        "SJ000000_001": {
+            "VS000000_000": {
+                "PH000000_000": {},
+                 "PH000000_001": {}
+            }
+        }
+    }
+}</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/subset.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_subset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve the conditions to the actual subset of data. Returns a dict of lists of dicts [of lists...].</span>
+<span class="sd">    Example usage:</span>
+<span class="sd">    subset = {</span>
+<span class="sd">        &quot;DS000000_000&quot;: {</span>
+<span class="sd">            &quot;SJ000000_000&quot;: {</span>
+<span class="sd">                &quot;VS000000_000&quot;: {</span>
+<span class="sd">                    &quot;PH000000_000&quot;: {},</span>
+<span class="sd">                     &quot;PH000000_001&quot;: {}</span>
+<span class="sd">                }</span>
+<span class="sd">            },</span>
+<span class="sd">            &quot;SJ000000_001&quot;: {</span>
+<span class="sd">                &quot;VS000000_000&quot;: {</span>
+<span class="sd">                    &quot;PH000000_000&quot;: {},</span>
+<span class="sd">                     &quot;PH000000_001&quot;: {}</span>
+<span class="sd">                }</span>
+<span class="sd">            }</span>
+<span class="sd">        }</span>
+<span class="sd">    }&quot;&quot;&quot;</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">get_current</span><span class="p">()</span>
+    <span class="n">schema_id</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">get_schema_id</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -1328,15 +1710,171 @@ Possible values for logic are: "&gt;", "&lt;", "&gt;=", "&lt;=", "==", "!=", "in
 
           <details class="quote">
             <summary>Source code in <code>src/ResearchOS/PipelineObjects/subset.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">42</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_trials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of trial objects that belong to this subset.&quot;&quot;&quot;</span>
+    <span class="n">tr_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Trial</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">Trial</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">tr_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr_id</span> <span class="ow">in</span> <span class="n">tr_ids</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="src.ResearchOS.PipelineObjects.subset.Subset.load" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">load</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Load the dataset-specific attributes from the database in an attribute-specific way.</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/subset.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the dataset-specific attributes from the database in an attribute-specific way.&quot;&quot;&quot;</span>
+    <span class="n">PipelineObject</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="c1"># Load the attributes specific to it being a PipelineObject.</span>
+</code></pre></div></td></tr></table></div>
+          </details>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="src.ResearchOS.PipelineObjects.subset.Subset.validate_conditions" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">validate_conditions</span><span class="p">(</span><span class="n">conditions</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Validate the condition recursively.
+Example usage:
+conditions = {
+    "and": [
+        [vr1.id, "&lt;", 4],
+        {
+            "or": [
+                [vr1.id, "&gt;", 2],
+                [vr1.id, "=", 7]
+            ]
+        }
+    ]
+}</p>
+
+          <details class="quote">
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/subset.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
 <span class="normal">43</span>
 <span class="normal">44</span>
 <span class="normal">45</span>
-<span class="normal">46</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_trials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of trial objects that belong to this subset.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">ResearchOS</span> <span class="kn">import</span> <span class="n">Trial</span>
-    <span class="n">tr_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_source_object_ids</span><span class="p">(</span><span class="bp">cls</span> <span class="o">=</span> <span class="n">Trial</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">Trial</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">tr_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr_id</span> <span class="ow">in</span> <span class="n">tr_ids</span><span class="p">]</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">validate_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conditions</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate the condition recursively.</span>
+<span class="sd">    Example usage:</span>
+<span class="sd">    conditions = {</span>
+<span class="sd">        &quot;and&quot;: [</span>
+<span class="sd">            [vr1.id, &quot;&lt;&quot;, 4],</span>
+<span class="sd">            {</span>
+<span class="sd">                &quot;or&quot;: [</span>
+<span class="sd">                    [vr1.id, &quot;&gt;&quot;, 2],</span>
+<span class="sd">                    [vr1.id, &quot;=&quot;, 7]</span>
+<span class="sd">                ]</span>
+<span class="sd">            }</span>
+<span class="sd">        ]</span>
+<span class="sd">    }</span>
+<span class="sd">    &quot;&quot;&quot;</span>        
+    <span class="c1"># Validate a single condition.</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conditions</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="n">DBConnectionFactory</span><span class="o">.</span><span class="n">create_db_connection</span><span class="p">()</span><span class="o">.</span><span class="n">conn</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">conditions</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Condition must be a list of length 3.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">IDCreator</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span><span class="o">.</span><span class="n">is_ro_id</span><span class="p">(</span><span class="n">conditions</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Variable ID must be a valid Variable ID.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">conditions</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">logic_options</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid logic.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">conditions</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">numeric_logic_options</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conditions</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Numeric logical symbols must have an int value.&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">conditions</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be JSON serializable.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Validate the &quot;and&quot;/&quot;or&quot; keys.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conditions</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Condition must be a dict.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;and&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">conditions</span> <span class="ow">and</span> <span class="s2">&quot;or&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Condition must contain an &#39;and&#39; or &#39;or&#39; key.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;and&quot;</span> <span class="ow">in</span> <span class="n">conditions</span> <span class="ow">and</span> <span class="s2">&quot;or&quot;</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Condition cannot contain both &#39;and&#39; and &#39;or&#39; keys.&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">conditions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;and&quot;</span><span class="p">,</span> <span class="s2">&quot;or&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid key in condition.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a list.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a list of lists or dicts.&quot;</span><span class="p">)</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">validate_conditions</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span> <span class="k">for</span> <span class="n">cond</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span> <span class="c1"># Assigned to a just to make interpreter happy.</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
