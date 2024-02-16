@@ -74,7 +74,7 @@ class DataObject(ResearchObject):
         address_id = self.id
         schema_id = self.get_current_schema_id()
         action = Action(name = "set VR value")
-        self.add_vr_row(vr.id, value, schema_id, action)                       
+        self.add_vr_row(vr.id, value, schema_id, action)
 
     def add_vr_row(self, vr_id: str, value: Any, schema_id: str, action: Action) -> None:
         """Add a VR to the DataObject. Also serves to modify existing objects."""
@@ -122,17 +122,17 @@ class DataObject(ResearchObject):
         # if len(levels) > 1:
         #     raise ValueError("There are multiple addresses with the same ID in the database.")
         # Remove the None components from each row of the result.
-        trimmed_levels = []
-        for row in levels:
-            trimmed_levels.append([x for x in row if x is not None])
-        levels = ResearchObjectHandler.list_to_dict(trimmed_levels)
-        levels_dict = {}
-        for row_num in range(len(levels)):
-            for col_num in range(10):
-                object_id = levels[row_num][col_num]
-                if object_id is not None and object_id not in levels_dict:
-                    levels_dict[object_id] = {}
-        return levels_dict
+        # trimmed_levels = []
+        # for row in levels:
+        #     trimmed_levels.append([x for x in row if x is not None])
+        # levels = ResearchObjectHandler.list_to_dict(trimmed_levels)
+        # levels_dict = {}
+        # for row_num in range(len(levels)):
+        #     for col_num in range(len(levels[row_num])):
+        #         object_id = levels[row_num][col_num]
+        #         if object_id is not None and object_id not in levels_dict:
+        #             levels_dict[object_id] = {}
+        # return levels_dict
 
     def get_vr_file_path(self, vr_id: str, dataset_id: str, levels: list) -> str:
         """Get the file path for a VR."""
