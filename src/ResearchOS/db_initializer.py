@@ -110,31 +110,13 @@ class DBInitializer():
         # Data addresses. Lists all data addresses for all data.
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_addresses (
                         action_id TEXT NOT NULL,
-                        address_id TEXT NOT NULL,
+                        target_object_id TEXT NOT NULL,
+                        source_object_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
-                        level0_id TEXT,
-                        level1_id TEXT,
-                        level2_id TEXT,
-                        level3_id TEXT,
-                        level4_id TEXT,
-                        level5_id TEXT,
-                        level6_id TEXT,
-                        level7_id TEXT,
-                        level8_id TEXT,
-                        level9_id TEXT,
+                        FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
-                        FOREIGN KEY (address_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (level0_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (level1_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (level2_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (level3_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (level4_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (level5_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (level6_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (level7_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (level8_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (level9_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
         
         # Data address schemas. Lists all data address schemas for all data.

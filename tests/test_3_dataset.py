@@ -11,14 +11,13 @@ from ResearchOS.research_object_handler import ResearchObjectHandler
 # addresses['DS1']['SJ2']['TR1'] = {}
 # addresses['DS1']['SJ2']['TR2'] = {}
 addresses = [
-        ["DS1"],
-        ["DS1", "SJ1"],
-        ["DS1", "SJ1", "TR1"],
-        ["DS1", "SJ1", "TR2"],
-        ["DS1", "SJ2"],
-        ["DS1", "SJ2", "TR1"],
-        ["DS1", "SJ2", "TR2"]
-    ]
+    ["DS1", "SJ1"],
+    ["DS1", "SJ2"],
+    ["SJ1", "TR1"],
+    ["SJ1", "TR2"],
+    ["SJ2", "TR1"],
+    ["SJ2", "TR2"]
+]
 # schema = {}
 # schema[ros.Dataset] = {}
 # schema[ros.Dataset][ros.Subject] = {}
@@ -30,26 +29,22 @@ schema = [
 
 def test_dataset_exists(db_connection):
     """Make sure that the dataset exists in the database after the dataset is first created."""
-    ds = ros.Dataset(id = "ID1")
+    ds = ros.Dataset(id = "DS1")
     assert isinstance(ds, ros.Dataset)
-    assert ds.id == "ID1"
+    assert ds.id == "DS1"
     assert ds.prefix == "DS"
 
 def test_dataset_schema(db_connection):
     """Make sure that the schema is correct."""
-    ds = ros.Dataset(id = "ID1")    
+    ds = ros.Dataset(id = "DS1")    
     ds.schema = schema
     del ds
-    ds = ros.Dataset(id = "ID1")
+    ds = ros.Dataset(id = "DS1")
     assert ds.schema == schema
 
 def test_dataset_addresses(db_connection):
     ds = ros.Dataset(id = "DS1")
-    ds.schema = schema    
-    address_list = ResearchObjectHandler.dict_to_list(addresses)
-    for address in address_list:
-        cls = ResearchObjectHandler._prefix_to_class(address[0:2])
-        ro = cls(id = address)
+    ds.schema = schema
     ds.addresses = addresses
     del ds
     ds = ros.Dataset(id = "DS1")

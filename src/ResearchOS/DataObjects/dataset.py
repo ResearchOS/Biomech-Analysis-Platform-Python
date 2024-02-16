@@ -17,19 +17,19 @@ all_default_attrs["addresses"] = [] # Dict of empty dicts, where each key is the
 
 complex_attrs_list = ["schema", "addresses"]
 
-def class_to_prefix(schema: dict) -> dict:
-    """Convert the dict with a class key to a dict with a str prefix key."""
-    new_schema = {}
-    for key, value in schema.items():
-        new_schema[key.prefix] = class_to_prefix(value)                
-    return new_schema
+# def class_to_prefix(schema: dict) -> dict:
+#     """Convert the dict with a class key to a dict with a str prefix key."""
+#     new_schema = {}
+#     for key, value in schema.items():
+#         new_schema[key.prefix] = class_to_prefix(value)                
+#     return new_schema
 
-def prefix_to_class(schema: dict) -> dict:
-    """Convert the dict with a str prefix key to a dict with a class key."""
-    new_schema = {}
-    for key, value in schema.items():
-        new_schema[ResearchObjectHandler._prefix_to_class(key)] = prefix_to_class(value)                
-    return new_schema
+# def prefix_to_class(schema: dict) -> dict:
+#     """Convert the dict with a str prefix key to a dict with a class key."""
+#     new_schema = {}
+#     for key, value in schema.items():
+#         new_schema[ResearchObjectHandler._prefix_to_class(key)] = prefix_to_class(value)                
+#     return new_schema
 
 class Dataset(DataObject):
     """A dataset is one set of data.
@@ -74,26 +74,26 @@ class Dataset(DataObject):
         if non_subclass:
             raise ValueError("The schema must only include ResearchObject subclasses!")
         
-        if not graph[Dataset]:
+        if Dataset not in graph:
             raise ValueError("The schema must include the Dataset class as a source node!")
         
-        if graph[vr]:
+        if vr in graph:
             raise ValueError("The schema must not include the Variable class as a target node!")
         
-        nodes_with_no_targets = [node for node, out_degree in graph.out_degree() if out_degree == 0]
-        nodes_with_a_source = [node for node, in_degree in graph.in_degree() if in_degree > 0]
-        if graph[Dataset] in nodes_with_no_targets or graph[Dataset] in nodes_with_a_source:
-            raise ValueError("The schema must include the Dataset class as a source node and not a target node!")
+        # nodes_with_no_targets = [node for node, out_degree in graph.out_degree() if out_degree == 0]
+        # nodes_with_a_source = [node for node, in_degree in graph.in_degree() if in_degree > 0]
+        # if graph[Dataset] in nodes_with_no_targets or graph[Dataset] in nodes_with_a_source:
+        #     raise ValueError("The schema must include the Dataset class as a source node and not a target node!")
 
     def save_schema(self, schema: list[list], action: Action) -> None:
         """Save the schema to the database."""
         # 1. Convert the list of types to a list of str.
         str_schema = []
-        for sch in schema:            
-            for idx, cls in enumerate(sch):
-                sch[idx] = cls.prefix
-            str_schema.append(sch)
-            
+        for sch in schema:
+            classes = []
+            for cls in sch:
+                classes.append(cls.prefix)
+            str_schema.append(classes)
         # 2. Convert the list of str to a json string.
         json_schema = json.dumps(str_schema)
 
@@ -179,7 +179,7 @@ class Dataset(DataObject):
         for address_list in addresses:
             for idx, address in enumerate(address_list):
                 address_list[idx] = address.prefix            
-            sqlquery = f"INSERT INTO data_addresses (target_node_id, source_node_id, schema_id, action_id) VALUES ('{address_list[0]}', '{address_list[1]}', '{schema_id}', '{action.id}')"
+            sqlquery = f"INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES ('{address_list[0]}', '{address_list[1]}', '{schema_id}', '{action.id}')"
             action.add_sql_query(sqlquery)
 
     def load_addresses(self) -> list[list]:
@@ -188,13 +188,8 @@ class Dataset(DataObject):
         schema_id = self.get_current_schema_id(self.id)
 
         # 2. Get the addresses for the current schema_id.
-        sqlquery = f"SELECT target_node_id, source_node_id FROM data_addresses WHERE schema_id = '{schema_id}'"
-        result = conn.execute(sqlquery).fetchall()
-
-        # 3. Convert the result to a list of lists.
-        addresses = []
-        for row in result:
-            addresses.append([ResearchObjectHandler._prefix_to_class(row[0]), ResearchObjectHandler._prefix_to_class(row[1])])
+        sqlquery = f"SELECT target_object_id, source_object_id FROM data_addresses WHERE schema_id = '{schema_id}'"
+        addresses = conn.execute(sqlquery).fetchall()
 
         self.__dict__["addresses"] = addresses
     

@@ -21,6 +21,7 @@ def db_init(temp_db_file):
             
 @pytest.fixture
 def db_connection(temp_db_file, db_init):
+    # TODO: This needs to not be a singleton, so I can have clean tests that don't share a database connection with a different file.
     return DBConnectionFactory().create_db_connection(temp_db_file)
 
 @pytest.fixture(scope="session")
