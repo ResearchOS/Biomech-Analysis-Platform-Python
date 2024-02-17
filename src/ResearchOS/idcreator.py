@@ -4,6 +4,7 @@ import argparse
 import sys
 
 from ResearchOS.config import Config
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 config = Config()
 
@@ -13,8 +14,11 @@ instance_id_len = config.immutable["instance_id_len"]
 class IDCreator():
     """Creates all ID's for the ResearchOS database."""
 
-    def __init__(self, conn: sqlite3.Connection) -> None:
+    def __init__(self) -> None:
         """Initialize the IDCreator."""
+        pool = SQLiteConnectionPool()            
+        conn = pool.get_connection()
+        self.pool = pool
         self.conn = conn
     
     def create_ro_id(self, cls, abstract: str = None, instance: str = None, is_abstract: bool = False) -> str:
@@ -45,6 +49,7 @@ class IDCreator():
                 is_unique = True
             elif is_abstract:
                 raise ValueError("Abstract ID already exists.")
+        self.pool.return_connection(self.conn)
         return id   
 
 
@@ -60,6 +65,7 @@ class IDCreator():
             rows = cursor.fetchall()
             if len(rows) == 0:
                 is_unique = True
+        self.pool.return_connection(self.conn)
         return uuid_out
     
     def _is_action_id(uuid: str) -> bool:

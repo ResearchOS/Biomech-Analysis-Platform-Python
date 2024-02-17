@@ -4,6 +4,7 @@ import json, csv
 # import pandas as pd
 from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.variable import Variable
+from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.PipelineObjects.subset import Subset
@@ -96,7 +97,7 @@ class Logsheet(PipelineObject):
                 raise ValueError("Headers must be a list of tuples!")
             # 3. Check that each header tuple has 3 elements.        
             if len(header) != 4:
-                raise ValueError("Each header tuple must have 3 elements!")
+                raise ValueError("Each header tuple must have 4 elements!")
             # 4. Check that the first element of each header tuple is a string.        
             if not isinstance(header[0], str):
                 raise ValueError("First element of each header tuple must be a string!")
@@ -109,7 +110,7 @@ class Logsheet(PipelineObject):
                 raise ValueError("Third element of each header tuple must be a ResearchObject subclass!")
             # 6. Check that the third element of each header tuple is a valid variable ID.                
             if not header[3].startswith(Variable.prefix) or not ResearchObjectHandler.object_exists(header[3]):
-                raise ValueError("Third element of each header tuple must be a valid pre-existing variable ID!")
+                raise ValueError("Fourth element of each header tuple must be a valid pre-existing variable ID!")
             
         logsheet = self.read_and_clean_logsheet(nrows = 1)
         headers_in_logsheet = logsheet[0]
@@ -212,6 +213,7 @@ class Logsheet(PipelineObject):
     
     def read_logsheet(self) -> None:
         """Run the logsheet import process."""
+        ds = Dataset(id = self.get_dataset_id())
         self.validate_class_column_names(self.class_column_names)
         self.validate_headers(self.headers)
         self.validate_num_header_rows(self.num_header_rows)

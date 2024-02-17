@@ -20,16 +20,18 @@ class DBInitializer():
             os.remove(db_file)
 
         self.db_file = db_file
-        conn = sqlite3.connect(db_file)
-        self.conn = DBConnectionFactory.create_db_connection(db_file).conn # Sets the Config db_file path too.
+        self.conn = sqlite3.connect(db_file)
+        # conn.close()
+        # self.conn = DBConnectionFactory.create_db_connection(db_file).conn # Sets the Config db_file path too.
         # self.conn = sqlite3.connect(db_file)
         self.create_tables()
         self.check_tables_exist(intended_tables)
-        self.init_current_user_id()
+        self.conn.close() # Before current user ID.
+        self.init_current_user_id()        
 
     def init_current_user_id(self, user_id: str = "US000000_000"):
         """Initialize the current user ID in the settings table."""
-        CurrentUser(self.conn).set_current_user_id(user_id)
+        CurrentUser().set_current_user_id(user_id)
 
     def check_tables_exist(self, intended_tables: list):
         """Check that all of the tables were created."""        
@@ -126,6 +128,16 @@ class DBInitializer():
                         dataset_id TEXT NOT NULL,
                         levels_edge_list TEXT NOT NULL,
                         FOREIGN KEY (dataset_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        )""")
+        
+        # Variable -> DataObjects table. Lists all variables and which data objects they are associated with.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS vr_dataobjects (
+                        action_id TEXT NOT NULL,
+                        vr_id TEXT NOT NULL,
+                        data_object_id TEXT NOT NULL,
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (data_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
 

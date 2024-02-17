@@ -1,12 +1,16 @@
 import sqlite3, datetime
 
 from ResearchOS.idcreator import IDCreator
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 class CurrentUser():
     """Singular purpose is to return the current user object ID."""
 
-    def __init__(self, conn: sqlite3.Connection) -> None:
+    def __init__(self) -> None:
         """Initialize the CurrentUser class."""
+        pool = SQLiteConnectionPool()            
+        conn = pool.get_connection()
+        self.pool = pool
         self.conn = conn
     
     def get_current_user_id(self) -> str:
@@ -24,8 +28,9 @@ class CurrentUser():
         """Set the current user in the actions table in the database.
         This is the only action that does not affect any other table besides Actions. It is a special case."""
         cursor = self.conn.cursor()
-        action_id = IDCreator(self.conn).create_action_id()
+        action_id = IDCreator().create_action_id()
         name = "Set current user"
         sqlquery = f"INSERT INTO actions (action_id, user, name, datetime) VALUES ('{action_id}', '{user}', '{name}', '{datetime.datetime.now(datetime.UTC)}')"
         cursor.execute(sqlquery)
         self.conn.commit()
+        self.pool.return_connection(self.conn)

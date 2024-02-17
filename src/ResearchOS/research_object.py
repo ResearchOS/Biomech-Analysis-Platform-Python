@@ -1,9 +1,13 @@
 from ResearchOS.research_object_handler import ResearchObjectHandler
+# from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.action import Action
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 all_default_attrs = {}
 all_default_attrs["name"] = None
 all_default_attrs["notes"] = None
+
+complex_attrs_list = []
 
 # DEFAULT_USER_ID = "US000000_000"
 
@@ -57,7 +61,21 @@ class ResearchObject():
             if key in default_attrs and kwargs[key] == default_attrs[key]:
                 validate = False
             self.__setattr__(key, kwargs[key], action = action, validate = validate)
-        action.execute(commit = True, rollback = rollback)    
+        action.execute(commit = True, rollback = rollback)
+
+    def get_dataset_id(self) -> str:
+        """Get the most recent dataset ID."""        
+        sqlquery = f"SELECT action_id, dataset_id FROM data_address_schemas"
+        pool = SQLiteConnectionPool()
+        conn = pool.get_connection()
+        cursor = conn.cursor()
+        result = cursor.execute(sqlquery).fetchall()
+        ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num=0)
+        if not ordered_result:
+            raise ValueError("Need to create a dataset and set up its schema first.")
+        dataset_id = ordered_result[0][1]
+        pool.return_connection(conn)
+        return dataset_id
 
 
 

@@ -2,19 +2,23 @@ import weakref
 from typing import Any
 import json, re
 from typing import TYPE_CHECKING
+import sqlite3
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
     from ResearchOS.DataObjects.data_object import DataObject
 
+from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.action import Action
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
 
     instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
     counts = {} # Keep track of the number of instances of each ID.
+    pool = SQLiteConnectionPool()
 
     def dict_to_list(d: dict, full_list: list = []) -> list:
         """Convert a dictionary to a flat list."""        
@@ -109,11 +113,14 @@ class ResearchObjectHandler:
     @staticmethod
     def object_exists(id: str) -> bool:
         """Return true if the specified id exists in the database, false if not."""
-        db = DBConnectionFactory.create_db_connection()
-        cursor = db.conn.cursor()
+        pool = SQLiteConnectionPool()
+        conn = pool.get_connection()
+        # db = DBConnectionFactory.create_db_connection()
+        cursor = conn.cursor()
         sqlquery = f"SELECT object_id FROM research_objects WHERE object_id = '{id}'"
         cursor.execute(sqlquery)
         rows = cursor.fetchall()
+        pool.return_connection(conn)
         return len(rows) > 0
     
     @staticmethod
@@ -121,7 +128,7 @@ class ResearchObjectHandler:
         """Create the research object in the research_objects table of the database."""        
         sqlquery = f"INSERT INTO research_objects (object_id, action_id) VALUES ('{research_object.id}', '{action.id}')"
         action.add_sql_query(sqlquery)
-        action.execute(commit = False)
+        # action.execute(commit = False)
 
     @staticmethod
     def _get_most_recent_attrs(research_object: "ResearchObject", ordered_attr_result: list, default_attrs: dict = {}) -> dict:
@@ -152,12 +159,14 @@ class ResearchObjectHandler:
     def _load_ro(research_object: "ResearchObject", default_attrs: dict) -> None:
         """Load "simple" attributes from the database."""
         # 1. Get the database cursor.
-        db = DBConnectionFactory.create_db_connection()
-        cursor = db.conn.cursor()
+        # db = DBConnectionFactory.create_db_connection()
+        conn = ResearchObjectHandler.pool.get_connection()
+        cursor = conn.cursor()
 
         # 2. Get the attributes from the database.        
         sqlquery = f"SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = '{research_object.id}'"
         unordered_attr_result = cursor.execute(sqlquery).fetchall()
+        ResearchObjectHandler.pool.return_connection(conn)
         ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
         # if len(unordered_attr_result) == 0:
         #     raise ValueError("No object with that ID exists.")          
@@ -170,26 +179,26 @@ class ResearchObjectHandler:
         # 3. Set the attributes of the object.
         research_object.__dict__.update(attrs)
 
-        # 4. Load the class-specific attributes.
+        # 4. Load the class-specific attributes.        
         research_object.load()
 
     @staticmethod
-    def _setattr_type_specific(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, complex_attrs: list) -> None:
-        """Set the attribute value for the specified attribute. This method is called after the attribute value has been validated."""
-        if name == "value":
-            if research_object.__class__ in DataObject.__subclasses__():            
-                raise ValueError("Use self.set_value() method to set the value.")
-            else:
-                raise ValueError("""PipelineObjects cannot have a "value" attribute.""")
+    def _set_builtin_attribute(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list[str]):
+        # 1. If the attribute name is in default_attrs, it is a builtin attribute, so set the attribute value.
+        simple = False
+        execute_action = False
 
-        ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate)           
+        if name not in complex_attrs:
+            simple = True
 
-        if name not in complex_attrs:            
+        ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate)
+
+        if simple:
+            # Set the attribute "name" of this object as the VR ID (as a simple attribute).
             ResearchObjectHandler._setattr(research_object, name, value, action, validate)
             return
         
-        # Create an action. Must be after the ResearchObjectHandler._setattr() method.
-        execute_action = False
+        # Create an action. Must be after the ResearchObjectHandler._setattr() method.        
         if action is None:
             execute_action = True
             action = Action(name = "attribute_changed")
@@ -201,6 +210,62 @@ class ResearchObjectHandler:
         if execute_action:
             action.execute()
         research_object.__dict__[name] = value 
+
+    @staticmethod
+    def _setattr_type_specific(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, complex_attrs: list) -> None:
+        """Set the attribute value for the specified attribute. This method is called after the attribute value has been validated."""
+        from ResearchOS.variable import Variable
+        from ResearchOS.DataObjects.dataset import Dataset
+        from ResearchOS.DataObjects.data_object import DataObject
+
+        default_attrs = DefaultAttrs(research_object.__class__).default_attrs        
+        if name in default_attrs:
+            ResearchObjectHandler._set_builtin_attribute(research_object, name, value, action, validate, default_attrs, complex_attrs)
+            return
+        
+        conn = action.pool.get_connection()
+        cursor = conn.cursor()
+        if name in research_object.__dict__:
+            # The VR already exists for this name in the research object
+            vr = research_object.__dict__[name]
+            vr_id = vr.id
+        else:            
+            # Search through pre-existing unassociated VR for one with this name. If it's not in the vr_dataobjects table, it's unassociated.
+            # Then, put the vr_id into the vr_dataobjects table.
+            sqlquery = f"SELECT vr_id FROM vr_dataobjects"
+            associated_result = cursor.execute(sqlquery).fetchall()
+            vr_ids = [row[0] for row in associated_result]
+             
+            sqlquery = f"SELECT object_id FROM research_objects"
+            all_ids = cursor.execute(sqlquery).fetchall()
+            unassoc_vr_ids = [row[0] for row in all_ids if row[0] not in vr_ids and row[0].startswith(Variable.prefix)]
+            if not unassoc_vr_ids:
+                raise ValueError("No unassociated VR with that name exists.")
+            vr_id = unassoc_vr_ids[0]
+
+            sqlquery = f"INSERT INTO vr_dataobjects (action_id, object_id, vr_id) VALUES ('{action.id}', '{research_object.id}', '{vr_id}')"
+            action.add_sql_query(sqlquery)
+
+        action.pool.return_connection(conn)
+
+        # Put the value into the data_values table.
+        vr = Variable(id = vr_id)
+        ds_id = research_object.get_dataset_id()
+        ds = Dataset(id = ds_id)
+        schema_id = ds.get_current_schema_id(ds.id)
+        if ResearchObjectHandler.is_scalar(value):
+            json_value = json.dumps(value)
+            sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, scalar_value, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{json_value}', '{schema_id}')"
+        else:
+            sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{schema_id}')"
+        action.add_sql_query(sqlquery)
+        action.execute()
+        research_object.__dict__[name] = value
+        
+    @staticmethod
+    def is_scalar(value: Any) -> bool:
+        """Return True if the value is a scalar, False if not."""
+        return isinstance(value, (int, float, str, bool, None))
     
     @staticmethod
     def save_simple_attribute(id: str, name: str, json_value: Any, action: Action) -> Action:
@@ -211,29 +276,39 @@ class ResearchObjectHandler:
     @staticmethod
     def _get_attr_name(attr_id: int) -> str:
         """Get the name of an attribute given the attribute's ID. If it does not exist, return an error."""
-        cursor = DBConnectionFactory.create_db_connection().conn.cursor()
+        # cursor = DBConnectionFactory.create_db_connection().conn.cursor()
+        conn = ResearchObjectHandler.pool.get_connection()
+        cursor = conn.cursor()
         sqlquery = f"SELECT attr_name FROM attributes_list WHERE attr_id = '{attr_id}'"
         cursor.execute(sqlquery)
         rows = cursor.fetchall()
         if len(rows) == 0:
             raise Exception("No attribute with that ID exists.")
+        ResearchObjectHandler.pool.return_connection(conn)
         return rows[0][0]  
     
     @staticmethod
     def _get_attr_id(attr_name: str) -> str:
         """Get the ID of the attribute."""
-        db = DBConnectionFactory.create_db_connection()
-        cursor = db.conn.cursor()
+        pool = SQLiteConnectionPool()
+        conn = pool.get_connection()
+        cursor = conn.cursor()
         sqlquery = f"SELECT attr_id FROM attributes_list WHERE attr_name = '{attr_name}'"
         cursor.execute(sqlquery)
         rows = cursor.fetchall()
         if len(rows) > 0:
-            return rows[0][0]
+            attr_id = rows[0][0]
         else:
             sqlquery = f"INSERT INTO attributes_list (attr_name) VALUES ('{attr_name}')"
-            cursor.execute(sqlquery)
-            db.conn.commit()
-            return cursor.lastrowid
+            try:
+                cursor.execute(sqlquery)
+                conn.commit()
+                attr_id = cursor.lastrowid
+            except sqlite3.Error as e:
+                print(e)
+                raise e
+        pool.return_connection(conn)
+        return attr_id
         
     @staticmethod
     def _get_time_ordered_result(result: list, action_col_num: int) -> list[str]:
@@ -241,8 +316,8 @@ class ResearchObjectHandler:
         unordered_action_ids = [row[action_col_num] for row in result] # A list of action ID's in no particular order.
         action_ids_str = ', '.join([f'"{action_id}"' for action_id in unordered_action_ids])
         sqlquery = f"SELECT action_id FROM actions WHERE action_id IN ({action_ids_str}) ORDER BY datetime DESC"
-        db = DBConnectionFactory.create_db_connection()
-        cursor = db.conn.cursor()
+        conn = ResearchObjectHandler.pool.get_connection()
+        cursor = conn.cursor()
         ordered_action_ids = cursor.execute(sqlquery).fetchall()
         if ordered_action_ids is None or len(ordered_action_ids) == 0:
             return ordered_action_ids # Sometimes it's ok that there's no "simple" attributes?
@@ -253,6 +328,7 @@ class ResearchObjectHandler:
                 if unordered_action_id == action_id:
                     indices.append(i)
         sorted_result = [result[index] for index in indices]
+        ResearchObjectHandler.pool.return_connection(conn)
         return sorted_result
     
     @staticmethod

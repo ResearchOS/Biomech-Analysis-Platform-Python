@@ -33,7 +33,7 @@ class Config():
             self.__dict__.update(attrs)
 
     def save_config(self, config_path: str) -> None:
-        """Save all of the attributes to the config file."""
+        """Save all of the attributes to the config file."""        
         attrs = copy.deepcopy(self.__dict__)
         del attrs["immutable"]
         del attrs["_config_path"]
@@ -43,5 +43,8 @@ class Config():
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Set the attribute and save the config file."""
+        from ResearchOS.sqlite_pool import SQLiteConnectionPool
+        if name == "db_file":
+            SQLiteConnectionPool._instance = None # Reset the pool in case db_file changes.
         self.__dict__[name] = value
         self.save_config(self._config_path)

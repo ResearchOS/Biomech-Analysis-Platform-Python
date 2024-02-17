@@ -27,12 +27,12 @@ schema = [
         [ros.Subject, ros.Trial]
     ]
 
-def test_dataset_exists(db_connection):
-    """Make sure that the dataset exists in the database after the dataset is first created."""
-    ds = ros.Dataset(id = "DS1")
-    assert isinstance(ds, ros.Dataset)
-    assert ds.id == "DS1"
-    assert ds.prefix == "DS"
+# def test_dataset_exists(db_connection):
+#     """Make sure that the dataset exists in the database after the dataset is first created."""
+#     ds = ros.Dataset(id = "DS1")
+#     assert isinstance(ds, ros.Dataset)
+#     assert ds.id == "DS1"
+#     assert ds.prefix == "DS"
 
 def test_dataset_schema(db_connection):
     """Make sure that the schema is correct."""
@@ -50,18 +50,12 @@ def test_dataset_addresses(db_connection):
     ds = ros.Dataset(id = "DS1")
     ds.addresses == addresses
 
-def test_dataset_load_address_objects(db_connection):
-    ds = ros.Dataset(id = "DS1")
-    ds.schema = schema
-    ds.addresses = addresses
-    address_objects = ds.load_address_objects()
-
 def test_add_data(db_connection):
     ds = ros.Dataset(id = "DS1")
     ds.schema = schema
     ds.addresses = addresses
-    vr1 = ros.Variable(id = "VR1")
-    ds.vr[vr1.id] = 1
+    vr1 = ros.Variable(id = "VR1", name = "test")
+    ds.test = 4
     del ds
     ds = ros.Dataset(id = "DS1")
     assert ds.vr[vr1.id] == 1

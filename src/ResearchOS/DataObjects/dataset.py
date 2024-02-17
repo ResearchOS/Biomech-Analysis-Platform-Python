@@ -3,7 +3,8 @@ import json, copy
 
 import networkx as nx
 
-from ResearchOS.Graphs.data_graph import DataGraph
+# from ResearchOS.Graphs.data_graph import DataGraph
+from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
@@ -97,9 +98,8 @@ class Dataset(DataObject):
         # 2. Convert the list of str to a json string.
         json_schema = json.dumps(str_schema)
 
-        # 3. Save the schema to the database.
-        conn = DBConnectionFactory.create_db_connection().conn
-        schema_id = IDCreator(conn).create_action_id()
+        # 3. Save the schema to the database.        
+        schema_id = IDCreator().create_action_id()
         sqlquery = f"INSERT INTO data_address_schemas (schema_id, levels_edge_list, dataset_id, action_id) VALUES ('{schema_id}', '{json_schema}', '{self.id}', '{action.id}')"
         action.add_sql_query(sqlquery)
 
@@ -110,7 +110,7 @@ class Dataset(DataObject):
         # 2. Get the most recent action ID for the dataset in the data_address_schemas table.
         schema_id = self.get_current_schema_id(id)
         sqlquery = f"SELECT levels_edge_list FROM data_address_schemas WHERE schema_id = '{schema_id}'"
-        conn = DBConnectionFactory.create_db_connection().conn
+        conn = ResearchObjectHandler.pool.get_connection()
         result = conn.execute(sqlquery).fetchone()
 
         # 5. If the schema is not None, convert the string to a list of types.
@@ -148,7 +148,7 @@ class Dataset(DataObject):
         if not nx.is_directed_acyclic_graph(graph):
             raise ValueError("The addresses must be a directed acyclic graph!")
         
-        non_ro_id = [node for node in graph if not IDCreator(conn).is_ro_id(node)]
+        non_ro_id = [node for node in graph if not IDCreator().is_ro_id(node)]
         if non_ro_id:
             raise ValueError("The addresses must only include ResearchObject ID's!")
                 
@@ -163,23 +163,18 @@ class Dataset(DataObject):
         schema_graph = nx.MultiDiGraph()
         schema_graph.add_edges_from(schema)
         for address_edge in addresses:
-            for address in address_edge:
-                cls0 = ResearchObjectHandler._prefix_to_class(address[0])
-                cls1 = ResearchObjectHandler._prefix_to_class(address[1])
-                cls0_node = [node for node in schema_graph if node == cls0][0]
-                cls1_node = [node for node in schema_graph if node == cls1][0]
-                if cls0_node not in schema_graph.predecessors(cls1_node) or cls1_node not in schema_graph.successors(cls0_node):
-                    raise ValueError("The addresses must match the schema!")
+            cls0 = ResearchObjectHandler._prefix_to_class(address_edge[0])
+            cls1 = ResearchObjectHandler._prefix_to_class(address_edge[1])
+            if cls0 not in schema_graph.predecessors(cls1) or cls1 not in schema_graph.successors(cls0):
+                raise ValueError("The addresses must match the schema!")
                 
     def save_addresses(self, addresses: list[list], action: Action) -> None:
         """Save the addresses to the data_addresses table in the database."""        
         # 1. Get the schema_id for the current dataset_id that has not been overwritten by an Action.       
         dataset_id = self.id
         schema_id = self.get_current_schema_id(dataset_id)
-        for address_list in addresses:
-            for idx, address in enumerate(address_list):
-                address_list[idx] = address.prefix            
-            sqlquery = f"INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES ('{address_list[0]}', '{address_list[1]}', '{schema_id}', '{action.id}')"
+        for address_names in addresses:   
+            sqlquery = f"INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES ('{address_names[0]}', '{address_names[1]}', '{schema_id}', '{action.id}')"
             action.add_sql_query(sqlquery)
 
     def load_addresses(self) -> list[list]:
@@ -191,7 +186,27 @@ class Dataset(DataObject):
         sqlquery = f"SELECT target_object_id, source_object_id FROM data_addresses WHERE schema_id = '{schema_id}'"
         addresses = conn.execute(sqlquery).fetchall()
 
+        # 3. Convert the addresses to a list of lists.
+        addresses = [list(address) for address in addresses]
+
+        G = nx.MultiDiGraph()
+        # To avoid recursion, set the lines with Dataset manually so there is no self reference.
+        address_copy = copy.deepcopy(addresses)
+        if addresses:            
+            for idx, address in enumerate(addresses):
+                if address[0] == self.id:
+                    cls1 = ResearchObjectHandler._prefix_to_class(address[1])
+                    G.add_edge(self, cls1(id = address[1]))
+                    address_copy.remove(address)
+
+        addresses = address_copy
+        for address_edge in addresses:
+            cls0 = ResearchObjectHandler._prefix_to_class(address_edge[0])
+            cls1 = ResearchObjectHandler._prefix_to_class(address_edge[1])
+            G.add_edge(cls0(id = address_edge[0]), cls1(id = address_edge[1]))
+
         self.__dict__["addresses"] = addresses
+        self.__dict__["address_graph"] = G
     
 if __name__=="__main__":
     pass
