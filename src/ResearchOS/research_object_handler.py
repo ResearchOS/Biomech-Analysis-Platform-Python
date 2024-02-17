@@ -240,13 +240,12 @@ class ResearchObjectHandler:
             all_ids = cursor.execute(sqlquery).fetchall()
             unassoc_vr_ids = [row[0] for row in all_ids if row[0] not in vr_ids and row[0].startswith(Variable.prefix)]
             if not unassoc_vr_ids:
+                action.pool.return_connection(conn)
                 raise ValueError("No unassociated VR with that name exists.")
             vr_id = unassoc_vr_ids[0]
 
             sqlquery = f"INSERT INTO vr_dataobjects (action_id, object_id, vr_id) VALUES ('{action.id}', '{research_object.id}', '{vr_id}')"
-            action.add_sql_query(sqlquery)
-
-        action.pool.return_connection(conn)
+            action.add_sql_query(sqlquery)        
 
         # Put the value into the data_values table.
         vr = Variable(id = vr_id)
@@ -261,6 +260,7 @@ class ResearchObjectHandler:
         action.add_sql_query(sqlquery)
         action.execute()
         research_object.__dict__[name] = value
+        action.pool.return_connection(conn)
         
     @staticmethod
     def is_scalar(value: Any) -> bool:

@@ -73,4 +73,4 @@ def logsheet_headers():
     return headers
 
 if __name__ == "__main__":
-    pytest.main(["-v", "tests/"])
+    pytest.main(["-v", "-s", "tests/"])

@@ -22,6 +22,7 @@ class CurrentUser():
         result = cursor.execute(sqlquery).fetchone()
         if result is None:
             raise ValueError("current user does not exist because there are no actions")
+        self.pool.return_connection(self.conn)
         return result[0]
     
     def set_current_user_id(self, user: str) -> None:
