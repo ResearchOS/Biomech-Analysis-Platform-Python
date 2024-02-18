@@ -68,7 +68,7 @@ class DBInitializer():
                         action_id TEXT PRIMARY KEY,
                         user TEXT NOT NULL,
                         name TEXT NOT NULL,
-                        datetime TEXT NOT NULL,                        
+                        datetime TEXT NOT NULL,
                         redo_of TEXT,
                         FOREIGN KEY (user) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         FOREIGN KEY (redo_of) REFERENCES actions(action_id) ON DELETE CASCADE
@@ -96,22 +96,22 @@ class DBInitializer():
                         )""")
         
         # Data objects data values. Lists all data values for all data objects.
-        # address_id is just the lowest level data object ID (the lowest level of the address).
+        # dataobject_id is just the lowest level data object ID (the lowest level of the address).
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values (
-                        action_id TEXT NOT NULL,
-                        address_id TEXT NOT NULL,
+                        action_id TEXT PRIMARY KEY,
+                        dataobject_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
-                        VR_id TEXT NOT NULL,
+                        vr_id TEXT NOT NULL,
                         scalar_value TEXT,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
-                        FOREIGN KEY (address_id) REFERENCES data_addresses(address_id) ON DELETE CASCADE,
+                        FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
                         FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE                    
                         )""")
         
         # Data addresses. Lists all data addresses for all data.
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_addresses (
-                        action_id TEXT NOT NULL,
+                        action_id TEXT PRIMARY KEY,
                         target_object_id TEXT NOT NULL,
                         source_object_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
@@ -135,9 +135,9 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS vr_dataobjects (
                         action_id TEXT NOT NULL,
                         vr_id TEXT NOT NULL,
-                        data_object_id TEXT NOT NULL,
+                        dataobject_id TEXT NOT NULL,
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (data_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
 

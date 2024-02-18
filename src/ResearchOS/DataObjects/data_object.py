@@ -23,48 +23,48 @@ root_data_path = "data"
 class DataObject(ResearchObject):
     """The abstract base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage."""    
 
-    def __init__(self, default_attrs: dict, **kwargs) -> None:
-        """Initialize the data object."""
-        all_default_attrs_all = all_default_attrs | default_attrs # Class-specific default attributes take precedence.
-        super().__init__(all_default_attrs_all, **kwargs)
+    # def __init__(self, default_attrs: dict, **kwargs) -> None:
+    #     """Initialize the data object."""
+    #     all_default_attrs_all = all_default_attrs | default_attrs # Class-specific default attributes take precedence.
+    #     super().__init__(all_default_attrs_all, **kwargs)
 
-    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        # 1. Detect if the value is a VR, or if the name corresponds to a VR's name.
-        ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
+    # def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+    #     """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+    #     # 1. Detect if the value is a VR, or if the name corresponds to a VR's name.
+    #     ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
 
-    def __getattribute__(self, name: str) -> Any:
-        """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""        
-        subclasses = DataObject.__subclasses__()
-        vr_class = [x for x in subclasses if x.prefix == "VR"][0]
-        try:
-            value = super().__getattribute__(name) # Throw the default error.
-        except AttributeError as e:
-            raise e        
-        if not isinstance(value, vr_class):
-            return value
+    # def __getattribute__(self, name: str) -> Any:
+    #     """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""        
+    #     subclasses = DataObject.__subclasses__()
+    #     vr_class = [x for x in subclasses if x.prefix == "VR"][0]
+    #     try:
+    #         value = super().__getattribute__(name) # Throw the default error.
+    #     except AttributeError as e:
+    #         raise e        
+    #     if not isinstance(value, vr_class):
+    #         return value
         
-        ## Where the magic happens.
-        # If the attribute is a VR, get the value from the database.
-        conn = ResearchObjectHandler.pool.get_connection()
-        schema_id = self.get_current_schema_id()
-        sqlquery = f"SELECT scalar_value FROM data_values WHERE address_id = '{self.id}' AND schema_id = '{schema_id}' AND vr_id = '{value.id}'"
-        json_value = conn.cursor().execute(sqlquery).fetchall()
-        if len(value) < 1:
-            raise ValueError("The VR does not exist in the database for this DataObject.")
-        if len(value) > 1:
-            raise ValueError("There are multiple VRs with the same ID in the database for this DataObject.")
-        value = json.loads(json_value[0][0])
-        if value is None:
-            # Get the value from the file system.
-            dataset_id = self.get_dataset_id(schema_id)
-            levels = self.get_levels(schema_id, self.id)
-            path = self.get_vr_file_path(value.id, dataset_id, levels)
-            if os.path.exists(path):
-                with open(path, "r") as f:
-                    value = json.load(f)   
-        ResearchObjectHandler.pool.return_connection(conn)
-        return value
+    #     ## Where the magic happens.
+    #     # If the attribute is a VR, get the value from the database.
+    #     conn = ResearchObjectHandler.pool.get_connection()
+    #     schema_id = self.get_current_schema_id()
+    #     sqlquery = f"SELECT scalar_value FROM data_values WHERE address_id = '{self.id}' AND schema_id = '{schema_id}' AND vr_id = '{value.id}'"
+    #     json_value = conn.cursor().execute(sqlquery).fetchall()
+    #     if len(value) < 1:
+    #         raise ValueError("The VR does not exist in the database for this DataObject.")
+    #     if len(value) > 1:
+    #         raise ValueError("There are multiple VRs with the same ID in the database for this DataObject.")
+    #     value = json.loads(json_value[0][0])
+    #     if value is None:
+    #         # Get the value from the file system.
+    #         dataset_id = self.get_dataset_id(schema_id)
+    #         levels = self.get_levels(schema_id, self.id)
+    #         path = self.get_vr_file_path(value.id, dataset_id, levels)
+    #         if os.path.exists(path):
+    #             with open(path, "r") as f:
+    #                 value = json.load(f)   
+    #     ResearchObjectHandler.pool.return_connection(conn)
+    #     return value
 
 
     def load(self) -> None:
@@ -135,27 +135,4 @@ class DataObject(ResearchObject):
         #         object_id = levels[row_num][col_num]
         #         if object_id is not None and object_id not in levels_dict:
         #             levels_dict[object_id] = {}
-        # return levels_dict
-
-    def get_vr_file_path(self, vr_id: str, dataset_id: str, levels: list) -> str:
-        """Get the file path for a VR."""
-        subfolder = ""
-        for level in levels:
-            if level is not None:
-                subfolder += level + os.sep
-        return root_data_path + os.sep + dataset_id + subfolder + vr_id + ".json"    
-
-    def get_current_schema_id(self, dataset_id: str) -> str:
-        conn = ResearchObjectHandler.pool.get_connection()
-        sqlquery = f"SELECT action_id FROM data_address_schemas WHERE dataset_id = '{dataset_id}'"
-        action_ids = conn.cursor().execute(sqlquery).fetchall()
-        action_ids = ResearchObjectHandler._get_time_ordered_result(action_ids, action_col_num=0)
-        action_id_schema = action_ids[0][0] if action_ids else None
-        if action_id_schema is None and not self.schema:
-            return # If the schema is empty and the addresses are empty, this is likely initialization so just return.
-
-        sqlquery = f"SELECT schema_id FROM data_address_schemas WHERE dataset_id = '{dataset_id}' AND action_id = '{action_id_schema}'"
-        schema_id = conn.execute(sqlquery).fetchone()
-        schema_id = schema_id[0] if schema_id else None
-        ResearchObjectHandler.pool.return_connection(conn)
-        return schema_id    
+        # return levels_dict    

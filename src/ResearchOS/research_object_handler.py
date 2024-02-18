@@ -1,17 +1,19 @@
 import weakref
 from typing import Any
-import json, re
+import json, re, os
 from typing import TYPE_CHECKING
 import sqlite3
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
-    from ResearchOS.DataObjects.data_object import DataObject
+    from ResearchOS.variable import Variable
+    # from ResearchOS.DataObjects.data_object import DataObject
 
-from ResearchOS.default_attrs import DefaultAttrs
-from ResearchOS.db_connection_factory import DBConnectionFactory
+# from ResearchOS.default_attrs import DefaultAttrs
+# from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
+from ResearchOS.idcreator import IDCreator
 
 class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
@@ -20,37 +22,28 @@ class ResearchObjectHandler:
     counts = {} # Keep track of the number of instances of each ID.
     pool = SQLiteConnectionPool()
 
-    def dict_to_list(d: dict, full_list: list = []) -> list:
-        """Convert a dictionary to a flat list."""        
-        for k, v in d.items():
-            full_list.append(k)
-            full_list = ResearchObjectHandler.dict_to_list(v, full_list)
-        return full_list
-    
-    def list_to_dict(l: list, d: dict = {}) -> dict:
-        """Convert a list of lists to a nested dictionary."""                
-        nested_dict = {}
-        for row in l:
-            # Relies on there being only one new value per row compared to the row above. Should always be the case the way I've done this.
-            def add_to_dict(d: dict, row: list):
-                for idx, elem in enumerate(row):
-                    if idx < len(row)-1:
-                        continue
-                    if elem not in d:
-                        d[elem] = {}
-                    if elem != row[-1]:
-                        d[elem] = add_to_dict(d[elem], row[1:])
-                return d
-            nested_dict = add_to_dict(nested_dict, row)
-            # for elem in row:
-            #     if elem not in nested_dict:
-            #         nested_dict[elem] = {}
-            #     else:
-            #         nested_dict_tmp = nested_dict[elem]
-            #     if elem not in current_level:
-            #         current_level[elem] = {}
-            #     current_level = ResearchObjectHandler.list_to_dict(current_level[elem])
-        return nested_dict
+    @staticmethod
+    def load_vr_value(research_object: "ResearchObject", vr: "Variable") -> Any:
+        """Load the value of the variable."""
+        from ResearchOS.DataObjects.dataset import Dataset
+        dataset_id = research_object.get_dataset_id()
+        ds = Dataset(id = dataset_id)
+        schema_id = research_object.get_current_schema_id(dataset_id)
+        conn = ResearchObjectHandler.pool.get_connection()
+        cursor = conn.cursor()
+        sqlquery = f"SELECT scalar_value FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
+        rows = cursor.execute(sqlquery).fetchall()        
+        ResearchObjectHandler.pool.return_connection(conn)
+        if len(rows) == 0:
+            raise ValueError("No value exists for that VR.")
+        value = json.loads(rows[0][0])
+        if value is None:
+            # Get the file path.
+            path = vr.get_vr_file_path(vr.id, dataset_id, schema_id)
+            if os.path.exists(path):
+                with open(path, "r") as f:
+                    value = json.load(path)
+        return value
 
     @staticmethod
     def _set_attr_validator(research_object: "ResearchObject", attr_name: str, attr_value: Any, validate: bool = True) -> None:
@@ -68,8 +61,8 @@ class ResearchObjectHandler:
             ResearchObjectHandler.validator(research_object, attr_name, attr_value)
 
     @staticmethod
-    def check_inputs(tmp_kwargs: dict) -> None:
-        """Validate the inputs to the constructor."""
+    def check_inputs(cls: type, tmp_kwargs: dict) -> None:
+        """Validate the inputs to the constructor."""        
         # Convert the keys of the tmp_kwargs to lowercase.
         kwargs = {}
         for key in tmp_kwargs.keys():
@@ -77,7 +70,8 @@ class ResearchObjectHandler:
         if not kwargs or "id" not in kwargs.keys():
             raise ValueError("id is required as a kwarg")
         id = kwargs["id"]
-        # Ensure that the ID is a string and is properly formatted.
+        if not IDCreator().is_ro_id(id):
+            raise ValueError("id is not a valid ID.")              
 
         return kwargs
     
@@ -184,6 +178,7 @@ class ResearchObjectHandler:
 
     @staticmethod
     def _set_builtin_attribute(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list[str]):
+        """Responsible for setting the value of all builtin attributes, simple or not."""
         # 1. If the attribute name is in default_attrs, it is a builtin attribute, so set the attribute value.
         simple = False
         execute_action = False
@@ -191,14 +186,14 @@ class ResearchObjectHandler:
         if name not in complex_attrs:
             simple = True
 
-        ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate)
+        ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate) # Validate the attribute.
 
         if simple:
             # Set the attribute "name" of this object as the VR ID (as a simple attribute).
-            ResearchObjectHandler._setattr(research_object, name, value, action, validate)
-            return
+            ResearchObjectHandler._set_simple_builtin_attr(research_object, name, value, action, validate)
+            return        
         
-        # Create an action. Must be after the ResearchObjectHandler._setattr() method.        
+        # Create an action. Must be after the ResearchObjectHandler._set_simple_builtin_attr() method.        
         if action is None:
             execute_action = True
             action = Action(name = "attribute_changed")
@@ -212,13 +207,11 @@ class ResearchObjectHandler:
         research_object.__dict__[name] = value 
 
     @staticmethod
-    def _setattr_type_specific(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, complex_attrs: list) -> None:
-        """Set the attribute value for the specified attribute. This method is called after the attribute value has been validated."""
+    def _setattr(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list[str]) -> None:
+        """Set the attribute value for the specified attribute. This method serves as ResearchObject.__setattr__()."""
         from ResearchOS.variable import Variable
         from ResearchOS.DataObjects.dataset import Dataset
-        from ResearchOS.DataObjects.data_object import DataObject
 
-        default_attrs = DefaultAttrs(research_object.__class__).default_attrs        
         if name in default_attrs:
             ResearchObjectHandler._set_builtin_attribute(research_object, name, value, action, validate, default_attrs, complex_attrs)
             return
@@ -244,7 +237,7 @@ class ResearchObjectHandler:
                 raise ValueError("No unassociated VR with that name exists.")
             vr_id = unassoc_vr_ids[0]
 
-            sqlquery = f"INSERT INTO vr_dataobjects (action_id, object_id, vr_id) VALUES ('{action.id}', '{research_object.id}', '{vr_id}')"
+            sqlquery = f"INSERT INTO vr_dataobjects (action_id, dataobject_id, vr_id) VALUES ('{action.id}', '{research_object.id}', '{vr_id}')"
             action.add_sql_query(sqlquery)        
 
         # Put the value into the data_values table.
@@ -259,7 +252,7 @@ class ResearchObjectHandler:
             sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{schema_id}')"
         action.add_sql_query(sqlquery)
         action.execute()
-        research_object.__dict__[name] = value
+        research_object.__dict__[name] = vr
         action.pool.return_connection(conn)
         
     @staticmethod
@@ -314,11 +307,12 @@ class ResearchObjectHandler:
     def _get_time_ordered_result(result: list, action_col_num: int) -> list[str]:
         """Return the result array from conn.cursor().execute() in reverse chronological order (e.g. latest first)."""
         unordered_action_ids = [row[action_col_num] for row in result] # A list of action ID's in no particular order.
-        action_ids_str = ', '.join([f'"{action_id}"' for action_id in unordered_action_ids])
+        action_ids_str = ', '.join([f"'{action_id}'" for action_id in unordered_action_ids])
         sqlquery = f"SELECT action_id FROM actions WHERE action_id IN ({action_ids_str}) ORDER BY datetime DESC"
         conn = ResearchObjectHandler.pool.get_connection()
         cursor = conn.cursor()
         ordered_action_ids = cursor.execute(sqlquery).fetchall()
+        ResearchObjectHandler.pool.return_connection(conn)
         if ordered_action_ids is None or len(ordered_action_ids) == 0:
             return ordered_action_ids # Sometimes it's ok that there's no "simple" attributes?
         ordered_action_ids = [action_id[0] for action_id in ordered_action_ids]
@@ -327,8 +321,7 @@ class ResearchObjectHandler:
             for i, unordered_action_id in enumerate(unordered_action_ids):
                 if unordered_action_id == action_id:
                     indices.append(i)
-        sorted_result = [result[index] for index in indices]
-        ResearchObjectHandler.pool.return_connection(conn)
+        sorted_result = [result[index] for index in indices]        
         return sorted_result
     
     @staticmethod
@@ -350,12 +343,11 @@ class ResearchObjectHandler:
         raise ValueError("No class with that prefix exists.")
     
     @staticmethod
-    def _setattr(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+    def _set_simple_builtin_attr(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
         Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it).
         If it is not a built-in ResearchOS attribute, then no validation occurs."""
-        # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.        
-        ResearchObjectHandler._set_attr_validator(self, attr_name=name, attr_value=value, validate=validate) # Validate the attribute.        
+        # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.     
         
         json_value = ResearchObjectHandler.to_json(self, name, value) # Convert the value to JSON
         

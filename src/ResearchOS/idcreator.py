@@ -85,6 +85,8 @@ class IDCreator():
         instance_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
         abstract_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}$"
         subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
+        # Check for a valid prefix.
+        self.pool.return_connection(self.conn)
         if not any(id.startswith(cls.prefix) for cls in subclasses if hasattr(cls, "prefix")):
             return False
         return True

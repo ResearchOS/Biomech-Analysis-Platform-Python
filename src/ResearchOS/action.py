@@ -10,8 +10,8 @@ class Action():
     
     def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None):           
         self.pool = SQLiteConnectionPool()
-        conn = self.pool.get_connection()
-        cursor = conn.cursor()
+        # conn = self.pool.get_connection()
+        # cursor = conn.cursor()
         self.sql_queries = []
         if not id:
             id = IDCreator().create_action_id()            
@@ -22,26 +22,26 @@ class Action():
             # Do not commit here! When the action is executed then the action and the other db changes will be committed.
             sqlquery = f"INSERT INTO actions (action_id, user, name, datetime, redo_of) VALUES ('{id}', '{user_object_id}', '{name}', '{str(timestamp)}', '{redo_of}')"
             self.add_sql_query(sqlquery)
-        else:
-            # Loading an existing action.
-            sqlquery = f"SELECT * FROM actions WHERE action_id = '{id}'"
-            result = cursor.execute(sqlquery).fetchall()            
-            if result is None:
-                raise AssertionError(f"Action {id} does not exist.")
-            if len(result) > 1:
-                raise AssertionError(f"Action {id} is not unique.")
-            result = result[0]
-            user_object_id = result[1]
-            name = result[2]                        
-            timestamp = result[3]            
-            redo_of = result[4]
+        # else:
+        #     # Loading an existing action.
+        #     sqlquery = f"SELECT * FROM actions WHERE action_id = '{id}'"
+        #     result = cursor.execute(sqlquery).fetchall()            
+        #     if result is None:
+        #         raise AssertionError(f"Action {id} does not exist.")
+        #     if len(result) > 1:
+        #         raise AssertionError(f"Action {id} is not unique.")
+        #     result = result[0]
+        #     user_object_id = result[1]
+        #     name = result[2]                        
+        #     timestamp = result[3]            
+        #     redo_of = result[4]
 
         self.id = id
         self.name = name
         self.timestamp = timestamp        
         self.redo_of = redo_of               
         self.user_object_id = user_object_id
-        self.pool.return_connection(conn)
+        # self.pool.return_connection(conn)
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
@@ -103,6 +103,7 @@ class Action():
         # Execute all of the SQL queries.
         if len(self.sql_queries) == 0:
             conn.rollback()
+            pool.return_connection(conn)            
             return
         for query in self.sql_queries:
             cursor.execute(query)
@@ -113,7 +114,7 @@ class Action():
         # Log the action to the Actions table   
         if commit:            
             conn.commit()
-            pool.return_connection(conn)
+        pool.return_connection(conn)
 
     def restore(self) -> None:
         """Restore the action, restoring the state of the referenced research objects to be the state in this Action."""        

@@ -5,14 +5,14 @@ import ResearchOS as ros
 
 classes_and_ids = [
     (ros.Project, "PJ1"),
-    (ros.Analysis, "AN1"),
     (ros.Process, "PR1"),
+    (ros.Analysis, "AN1"),
     (ros.Subset, "SS1"),
     (ros.Logsheet, "LG1"),
     (ros.Dataset, "DS1"),
     (ros.Phase, "PH1"),
     (ros.Trial, "TR1"),
-    (ros.Visit, "VT1"),
+    (ros.Visit, "VS1"),
     (ros.Subject, "SJ1"),
     (ros.Variable, "VR1")    
 ]
@@ -45,7 +45,7 @@ def test_create_new_ro_with_other_kwargs_not_id(cls, id):
         assert str(e) == "id is required as a kwarg"
 
 @pytest.mark.parametrize("cls,id", classes_and_ids_no_vr)
-def test_create_new_ro_with_id_kwarg_and_custom_kwargs_attrs(cls, id, db_connection):
+def test_missing_vr_create_new_ro_with_id_kwarg_and_custom_kwargs_attrs(cls, id, db_connection):
     """Attempt to create a new Research Object with the id kwarg and other kwargs.
     Fails because there is no VR with the name "other_kwarg"."""
     try:
@@ -55,7 +55,7 @@ def test_create_new_ro_with_id_kwarg_and_custom_kwargs_attrs(cls, id, db_connect
         assert str(e) == "No unassociated VR with that name exists." 
 
 @pytest.mark.parametrize("cls,id", classes_and_ids_no_vr)
-def test_happy_create_new_ro_with_id_kwarg_only(cls, id, db_connection):
+def test_happy_id_kwarg_only_create_new_ro(cls, id, db_connection):
     """Create a new Research Object with only the id kwarg."""
     ro = cls(id = id) # VR requires a name.
     # Check the object's common attributes.
@@ -64,7 +64,7 @@ def test_happy_create_new_ro_with_id_kwarg_only(cls, id, db_connection):
     # Check the contents of the SQL tables.       
 
 @pytest.mark.parametrize("cls,id", classes_and_ids_no_vr)
-def test_create_new_ro_with_id_kwarg_and_custom_kwargs_vars(cls, id, db_connection):
+def test_missing_dataset_create_new_ro_with_id_kwarg_and_custom_kwargs_vars(cls, id, db_connection):
     """Create a new Research Object with the id kwarg and other kwargs."""
     vr = ros.Variable(id = "VR1", name = "test_vr")
     try:
@@ -80,7 +80,7 @@ schema = [
 ]
 
 @pytest.mark.parametrize("cls,id", classes_and_ids_no_vr)
-def test_happy_create_new_ro_with_id_kwarg_and_custom_kwargs_vars(cls, id, db_connection):
+def test_happy_with_zz_id_kwarg_and_custom_kwargs_vars_create_new_ro(cls, id, db_connection):
     """Create a new Research Object with the id kwarg and other kwargs."""
     ds = ros.Dataset(id = "DS1")
     ds.schema = schema
@@ -88,12 +88,13 @@ def test_happy_create_new_ro_with_id_kwarg_and_custom_kwargs_vars(cls, id, db_co
     ro = cls(id = id, test_vr = "test")
     # Check the object's common attributes.
     assert ro.id == id
-    assert ro.other_kwarg == "other_kwarg"
+    assert vr.name == "test_vr"
     assert ro.prefix == cls.prefix
+    assert ro.__dict__["test_vr"] == vr
     assert ro.test_vr == "test"
 
 project_builtin_args = [
-    (ros.Project, "ID1", "AN1", "DS1")
+    (ros.Project, "PJ1", "AN1", "DS1")
 ]
 
 @pytest.mark.parametrize("cls,id,current_analysis_id,current_dataset_id", project_builtin_args)
@@ -108,5 +109,4 @@ def test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(cls, id, current_a
     # Check the contents of the SQL tables.
         
 if __name__=="__main__":
-    # test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(classes_and_ids[0][0], classes_and_ids[0][1])  
-    test_create_new_ro_with_id_kwarg_and_other_builtin_kwargs(project_builtin_args[0][0], project_builtin_args[0][1], project_builtin_args[0][2], project_builtin_args[0][3])
+    pass

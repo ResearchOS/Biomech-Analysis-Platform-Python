@@ -1,12 +1,14 @@
 import pytest, shutil, os
+import weakref
 
 import ResearchOS as ros
 
 from ResearchOS.db_initializer import DBInitializer
-from ResearchOS.db_connection_factory import DBConnectionFactory
-from ResearchOS.db_connection import DBConnection
+# from ResearchOS.db_connection_factory import DBConnectionFactory
+# from ResearchOS.db_connection import DBConnection
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.config import Config
+from ResearchOS.research_object_handler import ResearchObjectHandler
 
 # Function scoped
 @pytest.fixture(scope="function")
@@ -14,12 +16,8 @@ def temp_db_file(tmp_path):
     config = Config()
     db_file = str(tmp_path / "test.db")
     config.db_file = db_file
+    print(db_file)
     return db_file
-
-# Session scoped
-# @pytest.fixture(scope="session")
-# def temp_db_file(tmp_path_factory):   
-#     return str(tmp_path_factory.mktemp("test").joinpath("test.db"))
   
 @pytest.fixture(scope="function")
 def db_init(temp_db_file):
@@ -27,18 +25,10 @@ def db_init(temp_db_file):
             
 @pytest.fixture(scope="function")
 def db_connection(temp_db_file, db_init):
-    # TODO: This needs to not be a singleton, so I can have clean tests that don't share a database connection with a different file.
-    # DBConnection._instance = None
-    # pool = SQLiteConnectionPool(temp_db_file, 5)
-    return True
-    # SQLiteConnectionPool._instance = None
-    # conn = pool.get_connection()
-    # # db = DBConnectionFactory().create_db_connection(temp_db_file, singleton = True)
-    # yield conn
-    # pool.return_connection(conn)
-    # if os.path.exists(temp_db_file):
-    #     os.unlink(temp_db_file)
-        # os.remove(temp_db_file)
+    ResearchObjectHandler.instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
+    ResearchObjectHandler.counts = {} # Keep track of the number of instances of each ID.
+    ResearchObjectHandler.pool = SQLiteConnectionPool()
+    return ResearchObjectHandler.pool
 
 @pytest.fixture(scope="session")
 def temp_logsheet_file(tmp_path_factory):
@@ -73,4 +63,5 @@ def logsheet_headers():
     return headers
 
 if __name__ == "__main__":
-    pytest.main(["-v", "-s", "tests/"])
+    # pytest.main(["-v", "-s", "tests/"])
+    pytest.main(["-v", "tests/"])

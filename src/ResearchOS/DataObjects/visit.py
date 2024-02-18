@@ -14,14 +14,14 @@ class Visit(DataObject):
 
     prefix: str = "VS"
     
-    def __init__(self, **kwargs):
-        """Initialize the attributes that are required by ResearchOS.
-        Other attributes can be added & modified later."""
-        super().__init__(all_default_attrs, **kwargs)
+    # def __init__(self, **kwargs):
+    #     """Initialize the attributes that are required by ResearchOS.
+    #     Other attributes can be added & modified later."""
+    #     super().__init__(all_default_attrs, **kwargs)
 
-    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
+    # def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+    #     """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+    #     ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
 
     def load(self) -> None:
         """Load the dataset-specific attributes from the database in an attribute-specific way."""

@@ -4,7 +4,7 @@ import json, copy
 import networkx as nx
 
 # from ResearchOS.Graphs.data_graph import DataGraph
-from ResearchOS.default_attrs import DefaultAttrs
+# from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
@@ -18,20 +18,6 @@ all_default_attrs["addresses"] = [] # Dict of empty dicts, where each key is the
 
 complex_attrs_list = ["schema", "addresses"]
 
-# def class_to_prefix(schema: dict) -> dict:
-#     """Convert the dict with a class key to a dict with a str prefix key."""
-#     new_schema = {}
-#     for key, value in schema.items():
-#         new_schema[key.prefix] = class_to_prefix(value)                
-#     return new_schema
-
-# def prefix_to_class(schema: dict) -> dict:
-#     """Convert the dict with a str prefix key to a dict with a class key."""
-#     new_schema = {}
-#     for key, value in schema.items():
-#         new_schema[ResearchObjectHandler._prefix_to_class(key)] = prefix_to_class(value)                
-#     return new_schema
-
 class Dataset(DataObject):
     """A dataset is one set of data.
     Class-specific Attributes:
@@ -40,14 +26,14 @@ class Dataset(DataObject):
 
     prefix: str = "DS"
 
-    def __init__(self, **kwargs):
-        """Initialize the attributes that are required by ResearchOS.
-        Other attributes can be added & modified later."""
-        super().__init__(all_default_attrs, **kwargs)
+    # def __init__(self, **kwargs):
+    #     """Initialize the attributes that are required by ResearchOS.
+    #     Other attributes can be added & modified later."""
+    #     super().__init__(all_default_attrs, **kwargs)
 
-    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
+    # def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+    #     """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+    #     ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
 
     def load(self) -> None:
         """Load the dataset-specific attributes from the database in an attribute-specific way."""
