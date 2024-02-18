@@ -217,23 +217,39 @@ class ResearchObjectHandler:
         else:            
             # Search through pre-existing unassociated VR for one with this name. If it's not in the vr_dataobjects table, it's unassociated.
             # Then, put the vr_id into the vr_dataobjects table.
+            # Check if there is an existing variable that should be used (from a different DataObject, e.g. another Trial).
+            selected_vr = None
             sqlquery = f"SELECT vr_id FROM vr_dataobjects"
             associated_result = cursor.execute(sqlquery).fetchall()
             vr_ids = [row[0] for row in associated_result]
-             
-            sqlquery = f"SELECT object_id FROM research_objects"
-            all_ids = cursor.execute(sqlquery).fetchall()
-            unassoc_vr_ids = [row[0] for row in all_ids if row[0] not in vr_ids and row[0].startswith(Variable.prefix)]
-            if not unassoc_vr_ids:
-                action.pool.return_connection(conn)
-                raise ValueError("No unassociated VR with that name exists.")
-            vr_id = unassoc_vr_ids[0]
+            for vr_id in vr_ids:
+                vr = Variable(id = vr_id)
+                if vr.name == name:
+                    selected_vr = vr
+                    break
 
-            sqlquery = f"INSERT INTO vr_dataobjects (action_id, dataobject_id, vr_id) VALUES ('{action.id}', '{research_object.id}', '{vr_id}')"
+            # If no associated VR with that name exists, then select an unassociated VR with that name.
+            if not selected_vr: 
+                sqlquery = f"SELECT object_id FROM research_objects"
+                all_ids = cursor.execute(sqlquery).fetchall()
+                unassoc_vr_ids = [row[0] for row in all_ids if row[0] not in vr_ids and row[0].startswith(Variable.prefix)]
+                if not unassoc_vr_ids:
+                    action.pool.return_connection(conn)
+                    raise ValueError("No unassociated VR with that name exists.")
+                # Load each variable and check its name. If no matches here, just take the first one.
+                for count, vr_id in enumerate(unassoc_vr_ids):
+                    vr = Variable(id = vr_id)
+                    if count == 0:
+                        selected_vr = vr
+                    if vr.name == name:
+                        selected_vr = vr
+                        break
+
+            sqlquery = f"INSERT INTO vr_dataobjects (action_id, dataobject_id, vr_id) VALUES ('{action.id}', '{research_object.id}', '{selected_vr.id}')"
             action.add_sql_query(sqlquery)        
 
         # Put the value into the data_values table.
-        vr = Variable(id = vr_id)
+        vr = selected_vr
         ds_id = research_object.get_dataset_id()
         schema_id = vr.get_current_schema_id(ds_id)
         if ResearchObjectHandler.is_scalar(value):
@@ -248,7 +264,9 @@ class ResearchObjectHandler:
     @staticmethod
     def is_scalar(value: Any) -> bool:
         """Return True if the value is a scalar, False if not."""
-        return isinstance(value, (int, float, str, bool, None))
+        if value is None:
+            return True
+        return isinstance(value, (int, float, str, bool))
     
     @staticmethod
     def save_simple_attribute(id: str, name: str, json_value: Any, action: Action) -> Action:

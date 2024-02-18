@@ -74,13 +74,8 @@ def test_missing_dataset_create_new_ro_with_id_kwarg_and_custom_kwargs_vars(cls,
 
     # Check the contents of the SQL tables.
 
-schema = [
-    [ros.Dataset, ros.Subject],
-    [ros.Subject, ros.Trial]
-]
-
 @pytest.mark.parametrize("cls,id", classes_and_ids_no_vr)
-def test_happy_with_zz_id_kwarg_and_custom_kwargs_vars_create_new_ro(cls, id, db_connection):
+def test_happy_with_zz_id_kwarg_and_custom_kwargs_vars_create_new_ro(cls, id, schema, db_connection):
     """Create a new Research Object with the id kwarg and other kwargs."""
     ds = ros.Dataset(id = "DS2")
     ds.schema = schema
@@ -92,6 +87,8 @@ def test_happy_with_zz_id_kwarg_and_custom_kwargs_vars_create_new_ro(cls, id, db
     assert ro.prefix == cls.prefix
     assert ro.__dict__["test_vr"] == vr
     assert ro.test_vr == "test"
+    a = ro.test_vr
+    assert a == "test"
 
 project_builtin_args = [
     (ros.Project, "PJ1", "AN1", "DS1")

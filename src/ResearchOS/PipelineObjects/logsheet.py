@@ -1,6 +1,8 @@
 from typing import Any
 import json, csv
 
+import networkx as nx
+
 # import pandas as pd
 from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.variable import Variable
@@ -211,9 +213,6 @@ class Logsheet(PipelineObject):
         self.validate_path(self.path)
         self.validate_subset_id(self.subset_id)
 
-        # pool = SQLiteConnectionPool()
-        # conn = pool.get_connection()
-
         # 1. Load the logsheet (using built-in Python libraries)
         if self.path.endswith(("xlsx", "xls")):
             full_logsheet = self.load_xlsx()
@@ -232,6 +231,7 @@ class Logsheet(PipelineObject):
         
         # For each row, connect instances of the appropriate DataObject subclass to all other instances of appropriate DataObject subclasses.
         headers_in_logsheet = full_logsheet[0]
+        all_headers = self.headers
         header_names = [header[0] for header in self.headers]
         header_types = [header[1] for header in self.headers]
         header_levels = [header[2] for header in self.headers]
@@ -245,28 +245,68 @@ class Logsheet(PipelineObject):
             vr_obj_list.append(vr)
             vr_list.append(vr.id)
         # Order the class column names by precedence in the schema so that higher level objects always exist before lower level, so they can be attached.
-        # schema_ordered_col_names = self.order_class_column_names()
-        idcreator = IDCreator()
+        schema = ds.schema
+        schema_graph = nx.DiGraph()
+        schema_graph.add_edges_from(schema)
+        order = list(nx.topological_sort(schema_graph))
+        if len(order) <= 1:
+            raise ValueError("The schema must have at least 2 elements including the Dataset!")
+        order = order[1:] # Remove the Dataset class from the order.
+        dobj_column_names = []
+        for cls in order:
+            for column_name, cls_item in self.class_column_names.items():
+                if cls is cls_item:
+                    dobj_column_names.append(column_name)
+        
         action = Action(name = "read logsheet")
-        for row in logsheet:            
+        all_dobjs_ordered = []
+        for row_num, row in enumerate(logsheet):
             # Create a new instance of the appropriate DataObject subclass(es) and store it in the database.
             # TODO: How to order the data objects?
-            for header, cls in self.class_column_names.items():
+            row_dobjs = []
+            for idx, cls in enumerate(order):
+                header = dobj_column_names[idx]
                 col_idx = headers_in_logsheet.index(header)
                 raw_value = row[col_idx]                
                 value = header_types[col_idx](raw_value)
                 level = header_levels[col_idx]                
                 vr = vr_obj_list[col_idx]
                 
-                # Create the DataObject instance.
-                new_dobj = cls(id = idcreator.create_ro_id(cls))
+                # Create the DataObject instance.                
+                new_dobj = cls(id = IDCreator().create_ro_id(cls), name = value)
+                row_dobjs.append(new_dobj)
 
+                # If this column is e.g. Trial, and the Variable is a Trial level Variable, then attach the Variable to the DataObject.
                 if level is cls:
                     new_dobj.__setattr__(vr.name, value, action = action)
 
-        assert False
-        # TODO: Need to arrange the address ID's that were generated into an edge list.
+            all_dobjs_ordered.append(row_dobjs)
+
+            # TODO: Assign all of the data from non-data object columns to the appropriate DataObject instances.
+            for header in all_headers:
+                name = header[0]
+                type_class = header[1]
+                level = header[2]
+                vr_id = header[3]
+                if name in dobj_column_names:
+                    continue
+                dobj = [dobj for dobj in row_dobjs if dobj.__class__ == level][0]
+                raw_value = row[headers_in_logsheet.index(name)]
+                # print("Row: ", row_num, "Column: ", name, "Value: ", raw_value)
+                try:
+                    value = type_class(raw_value)
+                except ValueError:
+                    value = raw_value
+                dobj.__setattr__(name, value) # Set the attribute of this DataObject instance to the value in the logsheet.
+
+        # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.
+        addresses = []
+        for row in all_dobjs_ordered:
+            for idx, dobj in enumerate(row):
+                if idx == 0:
+                    continue
+                addresses.append([row[idx-1].id, dobj.id])
         ds = Dataset(id = self.get_dataset_id())
         ds.addresses = addresses
 

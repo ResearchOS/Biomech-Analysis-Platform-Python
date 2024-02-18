@@ -99,7 +99,7 @@ class ResearchObject():
             action.do_exec = True
         else:
             action.do_exec = False
-        ResearchObjectHandler._setattr(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
+        ResearchObjectHandler._setattr(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)        
         action.execute()
 
     def get_dataset_id(self) -> str:

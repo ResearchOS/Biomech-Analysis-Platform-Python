@@ -52,10 +52,9 @@ class Subset(PipelineObject):
         """        
         # Validate a single condition.
         if isinstance(conditions, list):
-            conn = DBConnectionFactory.create_db_connection().conn
             if len(conditions) != 3:
                 raise ValueError("Condition must be a list of length 3.")
-            if not IDCreator(conn).is_ro_id(conditions[0]):
+            if not IDCreator().is_ro_id(conditions[0]):
                 raise ValueError("Variable ID must be a valid Variable ID.")
             if conditions[1] not in logic_options:
                 raise ValueError("Invalid logic.")

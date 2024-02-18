@@ -53,6 +53,14 @@ def addresses():
             cls(id = address)
     return addresses
 
+@pytest.fixture(scope="function")
+def schema():
+    schema = [
+        [ros.Dataset, ros.Subject],
+        [ros.Subject, ros.Trial]
+    ]
+    return schema
+
 # Logsheet
 @pytest.fixture(scope="function")
 def logsheet_headers(db_connection):
@@ -75,7 +83,7 @@ def logsheet_headers(db_connection):
     ]
     headers = []
     for i in range(0, 15):
-        vr = ros.Variable(id = f"VR{i}")
+        vr = ros.Variable(id = f"VR{i}", name = incomplete_headers[i][0])
         headers.append((incomplete_headers[i][0], incomplete_headers[i][1], incomplete_headers[i][2], vr.id))
     return headers
 

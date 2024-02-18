@@ -58,9 +58,10 @@ def test_logsheet_num_header_rows(temp_logsheet_file, db_connection):
     lg = ros.Logsheet(id = "LG1")
     assert lg.num_header_rows == num_header_rows
 
-def test_read_logsheet(temp_logsheet_file, logsheet_headers, db_connection):
+def test_read_logsheet(temp_logsheet_file, logsheet_headers, schema, db_connection):
     """Make sure that the logsheet can be read."""
     ds = ros.Dataset(id = "DS1")
+    ds.schema = schema
     lg = ros.Logsheet(id = "LG1")
     lg.path = temp_logsheet_file
     ss = ros.Subset(id = "SS1")
