@@ -9,7 +9,7 @@ from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
-from ResearchOS.db_connection_factory import DBConnectionFactory
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 all_default_attrs = {}
 all_default_attrs["schema"] = [] # Dict of empty dicts, where each key is the class and the value is a dict with subclass type(s).
@@ -122,8 +122,7 @@ class Dataset(DataObject):
         
     def validate_addresses(self, addresses: list[list]) -> None:
         """Validate that the addresses are in the correct format."""
-        self.validate_schema(self.schema)
-        conn = DBConnectionFactory.create_db_connection().conn        
+        self.validate_schema(self.schema)   
 
         try:
             graph = nx.MultiDiGraph()
@@ -162,19 +161,27 @@ class Dataset(DataObject):
         for address_names in addresses:   
             sqlquery = f"INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES ('{address_names[0]}', '{address_names[1]}', '{schema_id}', '{action.id}')"
             action.add_sql_query(sqlquery)
+        self.__dict__["address_graph"] = self.addresses_to_object_graph(addresses)
 
     def load_addresses(self) -> list[list]:
         """Load the addresses from the database."""
-        conn = DBConnectionFactory.create_db_connection().conn
+        pool = SQLiteConnectionPool()        
         schema_id = self.get_current_schema_id(self.id)
+        conn = pool.get_connection()
 
         # 2. Get the addresses for the current schema_id.
         sqlquery = f"SELECT target_object_id, source_object_id FROM data_addresses WHERE schema_id = '{schema_id}'"
         addresses = conn.execute(sqlquery).fetchall()
+        pool.return_connection(conn)
 
         # 3. Convert the addresses to a list of lists.
-        addresses = [list(address) for address in addresses]
+        addresses = [list(address) for address in addresses]        
 
+        self.__dict__["addresses"] = addresses
+        self.__dict__["address_graph"] = self.addresses_to_object_graph(addresses)
+
+    def addresses_to_object_graph(self, addresses: list[list]) -> nx.MultiDiGraph:
+        """Convert the addresses to a MultiDiGraph."""
         G = nx.MultiDiGraph()
         # To avoid recursion, set the lines with Dataset manually so there is no self reference.
         address_copy = copy.deepcopy(addresses)
@@ -190,9 +197,7 @@ class Dataset(DataObject):
             cls0 = ResearchObjectHandler._prefix_to_class(address_edge[0])
             cls1 = ResearchObjectHandler._prefix_to_class(address_edge[1])
             G.add_edge(cls0(id = address_edge[0]), cls1(id = address_edge[1]))
-
-        self.__dict__["addresses"] = addresses
-        self.__dict__["address_graph"] = G
+        return G
     
 if __name__=="__main__":
     pass

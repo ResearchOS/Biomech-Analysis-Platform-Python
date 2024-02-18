@@ -82,7 +82,7 @@ schema = [
 @pytest.mark.parametrize("cls,id", classes_and_ids_no_vr)
 def test_happy_with_zz_id_kwarg_and_custom_kwargs_vars_create_new_ro(cls, id, db_connection):
     """Create a new Research Object with the id kwarg and other kwargs."""
-    ds = ros.Dataset(id = "DS1")
+    ds = ros.Dataset(id = "DS2")
     ds.schema = schema
     vr = ros.Variable(id = "VR1", name = "test_vr")
     ro = cls(id = id, test_vr = "test")

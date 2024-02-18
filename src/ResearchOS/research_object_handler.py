@@ -181,7 +181,6 @@ class ResearchObjectHandler:
         """Responsible for setting the value of all builtin attributes, simple or not."""
         # 1. If the attribute name is in default_attrs, it is a builtin attribute, so set the attribute value.
         simple = False
-        execute_action = False
 
         if name not in complex_attrs:
             simple = True
@@ -192,17 +191,12 @@ class ResearchObjectHandler:
             # Set the attribute "name" of this object as the VR ID (as a simple attribute).
             ResearchObjectHandler._set_simple_builtin_attr(research_object, name, value, action, validate)
             return        
-        
-        # Create an action. Must be after the ResearchObjectHandler._set_simple_builtin_attr() method.        
-        if action is None:
-            execute_action = True
-            action = Action(name = "attribute_changed")
 
         # Save the attribute to the database.
         save_method = eval("research_object.save_" + name)
         save_method(value, action = action)
 
-        if execute_action:
+        if action.do_exec:
             action.execute()
         research_object.__dict__[name] = value 
 
@@ -211,6 +205,12 @@ class ResearchObjectHandler:
         """Set the attribute value for the specified attribute. This method serves as ResearchObject.__setattr__()."""
         from ResearchOS.variable import Variable
         from ResearchOS.DataObjects.dataset import Dataset
+
+        if action is None:            
+            action = Action(name = "attribute_changed")
+            action.do_exec = True
+        else:
+            action.do_exec = False
 
         if name in default_attrs:
             ResearchObjectHandler._set_builtin_attribute(research_object, name, value, action, validate, default_attrs, complex_attrs)
