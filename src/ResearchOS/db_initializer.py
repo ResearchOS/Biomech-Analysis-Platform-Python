@@ -98,7 +98,7 @@ class DBInitializer():
         # Data objects data values. Lists all data values for all data objects.
         # dataobject_id is just the lowest level data object ID (the lowest level of the address).
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values (
-                        action_id TEXT PRIMARY KEY,
+                        action_id TEXT,
                         dataobject_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
                         vr_id TEXT NOT NULL,
@@ -106,19 +106,21 @@ class DBInitializer():
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
-                        FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE                    
+                        FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        PRIMARY KEY (dataobject_id, schema_id, vr_id)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_addresses (
-                        action_id TEXT PRIMARY KEY,
+                        action_id TEXT,
                         target_object_id TEXT NOT NULL,
                         source_object_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
                         FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
+                        PRIMARY KEY (target_object_id, source_object_id, schema_id)
                         )""")
         
         # Data address schemas. Lists all data address schemas for all data.

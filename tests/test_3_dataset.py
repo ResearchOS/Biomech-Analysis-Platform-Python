@@ -10,14 +10,6 @@ from ResearchOS.research_object_handler import ResearchObjectHandler
 # addresses['DS1']['SJ1']['TR2'] = {}
 # addresses['DS1']['SJ2']['TR1'] = {}
 # addresses['DS1']['SJ2']['TR2'] = {}
-addresses = [
-    ["DS1", "SJ1"],
-    ["DS1", "SJ2"],
-    ["SJ1", "TR1"],
-    ["SJ1", "TR2"],
-    ["SJ2", "TR1"],
-    ["SJ2", "TR2"]
-]
 # schema = {}
 # schema[ros.Dataset] = {}
 # schema[ros.Dataset][ros.Subject] = {}
@@ -42,23 +34,24 @@ def test_dataset_schema(db_connection):
     ds = ros.Dataset(id = "DS1")
     assert ds.schema == schema
 
-def test_dataset_addresses(db_connection):
+def test_dataset_addresses(db_connection, addresses):
     ds = ros.Dataset(id = "DS1")
-    ds.schema = schema
+    ds.schema = schema    
     ds.addresses = addresses
     del ds
     ds = ros.Dataset(id = "DS1")
     ds.addresses == addresses
 
-def test_add_data(db_connection):
+def test_add_data(db_connection, addresses):
     ds = ros.Dataset(id = "DS1")
     ds.schema = schema
     ds.addresses = addresses
     vr1 = ros.Variable(id = "VR1", name = "test")
     ds.test = 4
+    assert ds.__dict__["test"] == vr1
     del ds
     ds = ros.Dataset(id = "DS1")
-    assert ds.vr[vr1.id] == 1
+    assert ds.test == 4
 
 
 if __name__ == "__main__":

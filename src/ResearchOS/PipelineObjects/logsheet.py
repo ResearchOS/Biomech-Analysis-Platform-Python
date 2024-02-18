@@ -11,7 +11,7 @@ from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
-from ResearchOS.db_connection_factory import DBConnectionFactory
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -153,6 +153,7 @@ class Logsheet(PipelineObject):
         
     def validate_class_column_names(self, class_column_names: dict) -> None:
         """Validate the class column names. Must be a dict where the keys are the column names in the logsheet and the values are the DataObject subclasses."""
+        self.validate_path(self.path)
         # 1. Check that the class column names are a dict.
         if not isinstance(class_column_names, dict):
             raise ValueError("Class column names must be a dict!")
@@ -210,7 +211,8 @@ class Logsheet(PipelineObject):
         self.validate_path(self.path)
         self.validate_subset_id(self.subset_id)
 
-        conn = DBConnectionFactory.create_db_connection().conn
+        # pool = SQLiteConnectionPool()
+        # conn = pool.get_connection()
 
         # 1. Load the logsheet (using built-in Python libraries)
         if self.path.endswith(("xlsx", "xls")):
@@ -244,7 +246,7 @@ class Logsheet(PipelineObject):
             vr_list.append(vr.id)
         # Order the class column names by precedence in the schema so that higher level objects always exist before lower level, so they can be attached.
         # schema_ordered_col_names = self.order_class_column_names()
-        idcreator = IDCreator(conn)
+        idcreator = IDCreator()
         action = Action(name = "read logsheet")
         for row in logsheet:            
             # Create a new instance of the appropriate DataObject subclass(es) and store it in the database.
@@ -262,7 +264,11 @@ class Logsheet(PipelineObject):
                 if level is cls:
                     new_dobj.__setattr__(vr.name, value, action = action)
 
-                # Attach the DataObject instance to its parent DataObject instance.
+        assert False
+        # TODO: Need to arrange the address ID's that were generated into an edge list.
+        # Then assign that to the Dataset.
+        ds = Dataset(id = self.get_dataset_id())
+        ds.addresses = addresses
 
 
 

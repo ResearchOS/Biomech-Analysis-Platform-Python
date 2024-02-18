@@ -24,10 +24,8 @@ class ResearchObjectHandler:
 
     @staticmethod
     def load_vr_value(research_object: "ResearchObject", vr: "Variable") -> Any:
-        """Load the value of the variable."""
-        from ResearchOS.DataObjects.dataset import Dataset
-        dataset_id = research_object.get_dataset_id()
-        ds = Dataset(id = dataset_id)
+        """Load the value of the variable."""        
+        dataset_id = research_object.get_dataset_id()        
         schema_id = research_object.get_current_schema_id(dataset_id)
         conn = ResearchObjectHandler.pool.get_connection()
         cursor = conn.cursor()
@@ -204,13 +202,7 @@ class ResearchObjectHandler:
     def _setattr(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list[str]) -> None:
         """Set the attribute value for the specified attribute. This method serves as ResearchObject.__setattr__()."""
         from ResearchOS.variable import Variable
-        from ResearchOS.DataObjects.dataset import Dataset
-
-        if action is None:            
-            action = Action(name = "attribute_changed")
-            action.do_exec = True
-        else:
-            action.do_exec = False
+        from ResearchOS.DataObjects.dataset import Dataset        
 
         if name in default_attrs:
             ResearchObjectHandler._set_builtin_attribute(research_object, name, value, action, validate, default_attrs, complex_attrs)
@@ -243,15 +235,13 @@ class ResearchObjectHandler:
         # Put the value into the data_values table.
         vr = Variable(id = vr_id)
         ds_id = research_object.get_dataset_id()
-        ds = Dataset(id = ds_id)
-        schema_id = ds.get_current_schema_id(ds.id)
+        schema_id = vr.get_current_schema_id(ds_id)
         if ResearchObjectHandler.is_scalar(value):
             json_value = json.dumps(value)
             sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, scalar_value, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{json_value}', '{schema_id}')"
         else:
             sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{schema_id}')"
         action.add_sql_query(sqlquery)
-        action.execute()
         research_object.__dict__[name] = vr
         action.pool.return_connection(conn)
         

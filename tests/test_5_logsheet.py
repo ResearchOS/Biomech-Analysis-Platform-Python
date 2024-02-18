@@ -25,29 +25,33 @@ def test_logsheet_path(temp_logsheet_file, db_connection):
     lg.path = temp_logsheet_file
     assert lg.path == temp_logsheet_file
 
-def test_class_column_names(db_connection):
+class_column_names = {
+    "Subject_Codename": ros.Subject,
+    "Trial_Name_Number": ros.Trial
+}
+
+def test_class_column_names(temp_logsheet_file, db_connection):
     """Make sure that the class column names are correct."""
-    lg = ros.Logsheet(id = "LG1")
-    class_column_names = {
-        "Subject_Codename": ros.Subject,
-        "Trial_Name_Number": ros.Trial
-    }
+    lg = ros.Logsheet(id = "LG1")    
+    lg.path = temp_logsheet_file
     lg.class_column_names = class_column_names
     del lg
     lg = ros.Logsheet(id = "LG1")
     assert lg.class_column_names == class_column_names
 
-def test_logsheet_headers(logsheet_headers, db_connection):
+def test_logsheet_headers(temp_logsheet_file, logsheet_headers, db_connection):
     """Make sure that the header names are correct."""
     lg = ros.Logsheet(id = "LG1")    
+    lg.path = temp_logsheet_file
     lg.headers = logsheet_headers
     del lg
     lg = ros.Logsheet(id = "LG1")
     assert lg.headers == logsheet_headers
 
-def test_logsheet_num_header_rows(db_connection):
+def test_logsheet_num_header_rows(temp_logsheet_file, db_connection):
     """Make sure that the number of header rows is correct."""
     lg = ros.Logsheet(id = "LG1")
+    lg.path = temp_logsheet_file
     num_header_rows = 3
     lg.num_header_rows = num_header_rows
     del lg
@@ -56,11 +60,14 @@ def test_logsheet_num_header_rows(db_connection):
 
 def test_read_logsheet(temp_logsheet_file, logsheet_headers, db_connection):
     """Make sure that the logsheet can be read."""
+    ds = ros.Dataset(id = "DS1")
     lg = ros.Logsheet(id = "LG1")
     lg.path = temp_logsheet_file
     ss = ros.Subset(id = "SS1")
     lg.subset_id = ss.id
     lg.headers = logsheet_headers
     lg.num_header_rows = 3
+    lg.class_column_names = class_column_names
     lg.read_logsheet()
+    ds.address_graph
     # assert lg.logsheet_data == []

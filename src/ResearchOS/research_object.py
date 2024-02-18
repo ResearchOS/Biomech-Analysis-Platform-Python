@@ -87,15 +87,20 @@ class ResearchObject():
             if key in default_attrs and kwargs[key] == default_attrs[key]:
                 validate = False
             self.__setattr__(key, kwargs[key], action = action, validate = validate, all_attrs = attrs)
-        action.execute(commit = True, rollback = rollback)
-        # action.pool.
-        # action.pool.commit_and_return_all()        
+            action.execute(commit = True) # Commit the action to the database.
+        action.execute(commit = True, rollback = rollback) # Commit the action to the database.
 
     def __setattr__(self, name, value, action: Action = None, validate: bool = True, all_attrs: DefaultAttrs = None) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
         if all_attrs is None:
             all_attrs = DefaultAttrs(self.__class__)
+        if action is None:            
+            action = Action(name = "attribute_changed")
+            action.do_exec = True
+        else:
+            action.do_exec = False
         ResearchObjectHandler._setattr(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
+        action.execute()
 
     def get_dataset_id(self) -> str:
         """Get the most recent dataset ID."""        

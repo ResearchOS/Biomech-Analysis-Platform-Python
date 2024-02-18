@@ -36,9 +36,26 @@ def temp_logsheet_file(tmp_path_factory):
     shutil.copy("Spr23TWW_OA_AllSubjects_032323.csv", logsheet_path)
     return logsheet_path
 
+# Dataset
+@pytest.fixture(scope="function")
+def addresses():
+    addresses = [
+        ["DS1", "SJ1"],
+        ["DS1", "SJ2"],
+        ["SJ1", "TR1"],
+        ["SJ1", "TR2"],
+        ["SJ2", "TR1"],
+        ["SJ2", "TR2"]
+    ]
+    for address_edge in addresses:
+        for address in address_edge:
+            cls = ResearchObjectHandler._prefix_to_class(address[0:2])
+            cls(id = address)
+    return addresses
+
 # Logsheet
 @pytest.fixture(scope="function")
-def logsheet_headers():
+def logsheet_headers(db_connection):
     incomplete_headers = [
         ("Date", str, ros.Subject),
         ("Subject_Codename", str, ros.Subject),
