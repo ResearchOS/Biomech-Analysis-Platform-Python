@@ -1,7 +1,7 @@
 import os, json
 
 from ResearchOS.db_initializer import DBInitializer
-from ResearchOS.db_connection_factory import DBConnectionFactory
+# from ResearchOS.db_connection_factory import DBConnectionFactory
 
 sql_settings_path = os.path.abspath("src/ResearchOS/config/sql.json")
 

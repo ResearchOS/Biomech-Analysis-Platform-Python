@@ -175,7 +175,7 @@ class ResearchObjectHandler:
         research_object.load()
 
     @staticmethod
-    def _set_builtin_attribute(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list[str]):
+    def _set_builtin_attribute(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list):
         """Responsible for setting the value of all builtin attributes, simple or not."""
         # 1. If the attribute name is in default_attrs, it is a builtin attribute, so set the attribute value.
         simple = False
@@ -199,7 +199,7 @@ class ResearchObjectHandler:
         research_object.__dict__[name] = value 
 
     @staticmethod
-    def _setattr(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list[str]) -> None:
+    def _setattr(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list) -> None:
         """Set the attribute value for the specified attribute. This method serves as ResearchObject.__setattr__()."""
         from ResearchOS.variable import Variable  
 
@@ -311,7 +311,7 @@ class ResearchObjectHandler:
         return attr_id
         
     @staticmethod
-    def _get_time_ordered_result(result: list, action_col_num: int) -> list[str]:
+    def _get_time_ordered_result(result: list, action_col_num: int) -> list:
         """Return the result array from conn.cursor().execute() in reverse chronological order (e.g. latest first)."""
         unordered_action_ids = [row[action_col_num] for row in result] # A list of action ID's in no particular order.
         action_ids_str = ', '.join([f"'{action_id}'" for action_id in unordered_action_ids])

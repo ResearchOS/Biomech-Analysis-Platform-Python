@@ -88,7 +88,7 @@ class Process(PipelineObject):
         output_vr_names_in_code = get_returned_variable_names(self.method)
         self._validate_vrs(outputs, output_vr_names_in_code)    
 
-    def _validate_vrs(self, vr: dict, vr_names_in_code: list[str]) -> None:
+    def _validate_vrs(self, vr: dict, vr_names_in_code: list) -> None:
         """Validate that the input and output variables are correct. They should follow the same format.
         The format is a dictionary with the variable name as the key and the variable ID as the value."""        
         if not isinstance(vr, dict):

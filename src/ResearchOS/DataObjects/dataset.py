@@ -43,7 +43,7 @@ class Dataset(DataObject):
 
     ### Schema Methods
         
-    def validate_schema(self, schema: list[list]) -> None:
+    def validate_schema(self, schema: list) -> None:
         """Validate that the data schema follows the proper format.
         Must be a dict of dicts, where all keys are Python types matching a DataObject subclass, and the lowest levels are empty."""
         subclasses = DataObject.__subclasses__()
@@ -72,7 +72,7 @@ class Dataset(DataObject):
         # if graph[Dataset] in nodes_with_no_targets or graph[Dataset] in nodes_with_a_source:
         #     raise ValueError("The schema must include the Dataset class as a source node and not a target node!")
 
-    def save_schema(self, schema: list[list], action: Action) -> None:
+    def save_schema(self, schema: list, action: Action) -> None:
         """Save the schema to the database."""
         # 1. Convert the list of types to a list of str.
         str_schema = []
@@ -120,7 +120,7 @@ class Dataset(DataObject):
         
     ### Address Methods
         
-    def validate_addresses(self, addresses: list[list]) -> None:
+    def validate_addresses(self, addresses: list) -> None:
         """Validate that the addresses are in the correct format."""
         self.validate_schema(self.schema)   
 
@@ -153,7 +153,7 @@ class Dataset(DataObject):
             if cls0 not in schema_graph.predecessors(cls1) or cls1 not in schema_graph.successors(cls0):
                 raise ValueError("The addresses must match the schema!")
                 
-    def save_addresses(self, addresses: list[list], action: Action) -> None:
+    def save_addresses(self, addresses: list, action: Action) -> None:
         """Save the addresses to the data_addresses table in the database."""        
         # 1. Get the schema_id for the current dataset_id that has not been overwritten by an Action.       
         dataset_id = self.id
@@ -163,7 +163,7 @@ class Dataset(DataObject):
             action.add_sql_query(sqlquery)
         self.__dict__["address_graph"] = self.addresses_to_object_graph(addresses)
 
-    def load_addresses(self) -> list[list]:
+    def load_addresses(self) -> list:
         """Load the addresses from the database."""
         pool = SQLiteConnectionPool()        
         schema_id = self.get_current_schema_id(self.id)
@@ -180,7 +180,7 @@ class Dataset(DataObject):
         self.__dict__["addresses"] = addresses
         self.__dict__["address_graph"] = self.addresses_to_object_graph(addresses)
 
-    def addresses_to_object_graph(self, addresses: list[list]) -> nx.MultiDiGraph:
+    def addresses_to_object_graph(self, addresses: list) -> nx.MultiDiGraph:
         """Convert the addresses to a MultiDiGraph."""
         G = nx.MultiDiGraph()
         # To avoid recursion, set the lines with Dataset manually so there is no self reference.

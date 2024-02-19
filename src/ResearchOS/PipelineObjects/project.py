@@ -74,27 +74,27 @@ class Project(PipelineObject):
         return self._gen_obj_or_none(us_ids, User)
     
     #################### Start Target objects ####################
-    def get_analyses(self) -> list["Analysis"]:        
-        """Return a list of analysis objects in the project."""
-        from ResearchOS.PipelineObjects.analysis import Analysis
-        an_ids = self._get_all_target_object_ids(cls = Analysis)
-        return self._gen_obj_or_none(an_ids, Analysis)
+    # def get_analyses(self) -> list["Analysis"]:        
+    #     """Return a list of analysis objects in the project."""
+    #     from ResearchOS.PipelineObjects.analysis import Analysis
+    #     an_ids = self._get_all_target_object_ids(cls = Analysis)
+    #     return self._gen_obj_or_none(an_ids, Analysis)
     
-    def add_analysis_id(self, analysis_id: str):
-        """Add an analysis to the project."""
-        from ResearchOS.PipelineObjects.analysis import Analysis        
-        self._add_target_object_id(analysis_id, cls = Analysis)
+    # def add_analysis_id(self, analysis_id: str):
+    #     """Add an analysis to the project."""
+    #     from ResearchOS.PipelineObjects.analysis import Analysis        
+    #     self._add_target_object_id(analysis_id, cls = Analysis)
 
-    def remove_analysis_id(self, analysis_id: str):
-        """Remove an analysis from the project."""
-        from ResearchOS.PipelineObjects.analysis import Analysis        
-        self._remove_target_object_id(analysis_id, cls = Analysis)
+    # def remove_analysis_id(self, analysis_id: str):
+    #     """Remove an analysis from the project."""
+    #     from ResearchOS.PipelineObjects.analysis import Analysis        
+    #     self._remove_target_object_id(analysis_id, cls = Analysis)
 
-    #################### Start class-specific methods ####################
-    def open_project_path(self) -> None:
-        """Open the project's path in the Finder/File Explorer."""
-        path = self.project_path
-        self._open_path(path)
+    # #################### Start class-specific methods ####################
+    # def open_project_path(self) -> None:
+    #     """Open the project's path in the Finder/File Explorer."""
+    #     path = self.project_path
+    #     self._open_path(path)
     
 
 if __name__=="__main__":

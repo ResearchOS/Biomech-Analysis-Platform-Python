@@ -109,12 +109,13 @@ def test_happy_input_vr(db_connection):
     pr = ros.Process(id = "PR1")
     vr = ros.Variable(id = "VR1", name = "var1")
     vr2 = ros.Variable(id = "VR2", name = "var2")
+    vr3 = ros.Variable(id = "VR3", name = "var3")
     inputs = {
         "valid_variable_name": vr.id
     }
     pr.method = derivative
     pr.set_input_vrs(data = vr, fs = vr2)
-    # pr.input_vr = inputs
+    pr.set_output_vrs(deriv = vr3)
     del pr
     pr = ros.Process(id = "PR1")
     assert pr.input_vr == inputs

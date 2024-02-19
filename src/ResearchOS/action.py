@@ -1,4 +1,5 @@
 import datetime, sqlite3
+from datetime import timezone
 
 from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.idcreator import IDCreator
@@ -14,7 +15,7 @@ class Action():
         if not id:
             id = IDCreator().create_action_id()            
             if not timestamp:
-                timestamp = datetime.datetime.now(tz = datetime.UTC)
+                timestamp = datetime.datetime.now(timezone.utc)
             if not user_object_id:
                 user_object_id = CurrentUser().get_current_user_id()
             sqlquery = f"INSERT INTO actions (action_id, user, name, datetime, redo_of) VALUES ('{id}', '{user_object_id}', '{name}', '{str(timestamp)}', '{redo_of}')"

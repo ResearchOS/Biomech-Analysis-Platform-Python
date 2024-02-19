@@ -198,7 +198,7 @@ class Logsheet(PipelineObject):
             raise ValueError("Subset ID must start with the correct prefix!")
 
     #################### Start class-specific methods ####################
-    def load_xlsx(self) -> list[list]:
+    def load_xlsx(self) -> list:
         """Load the logsheet as a list of lists using Pandas."""        
         df = pd.read_excel(self.path, header = None)
         return df.values.tolist()
