@@ -7,6 +7,7 @@ from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.variable import Variable
 from ResearchOS.idcreator import IDCreator
+from ResearchOS.research_object_handler import ResearchObjectHandler
 
 all_default_attrs = {}
 all_default_attrs["conditions"] = {}
@@ -47,6 +48,8 @@ class Subset(PipelineObject):
                 raise ValueError("Condition must be a list of length 3.")
             if not IDCreator().is_ro_id(conditions[0]):
                 raise ValueError("Variable ID must be a valid Variable ID.")
+            if not ResearchObjectHandler.object_exists(conditions[0]):
+                raise ValueError("Variable must be pre-existing.")
             if conditions[1] not in logic_options:
                 raise ValueError("Invalid logic.")
             if conditions[1] in numeric_logic_options and not isinstance(conditions[2], int):
