@@ -10,6 +10,10 @@ all_default_attrs = {}
 
 complex_attrs_list = []
 
+all_default_attrs = {}
+
+complex_attrs_list = []
+
 class Plot(PipelineObject):
     
     prefix = "PL"    

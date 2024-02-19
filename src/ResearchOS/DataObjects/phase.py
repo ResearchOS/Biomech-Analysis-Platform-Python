@@ -10,7 +10,11 @@ all_default_attrs = {}
 
 complex_attrs_list = []
 
-class Phase(DataObject):
+all_default_attrs = {}
+
+complex_attrs_list = []
+
+class Phase(ros.DataObject):
     """Phase class."""
 
     prefix = "PH"

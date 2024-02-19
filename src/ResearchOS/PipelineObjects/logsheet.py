@@ -25,6 +25,8 @@ all_default_attrs["subset_id"] = None
 
 complex_attrs_list = []
 
+complex_attrs_list = []
+
 class Logsheet(PipelineObject):
 
     prefix = "LG"

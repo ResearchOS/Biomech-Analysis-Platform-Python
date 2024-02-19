@@ -18,6 +18,12 @@ numeric_logic_options = (">", "<", ">=", "<=", )
 any_type_logic_options = ("==", '=', "!=", "in", "not in", "is", "is not", "contains", "not contains")
 logic_options = numeric_logic_options + any_type_logic_options
 
+complex_attrs_list = []
+
+numeric_logic_options = (">", "<", ">=", "<=", )
+any_type_logic_options = ("==", '=', "!=", "in", "not in", "is", "is not", "contains", "not contains")
+logic_options = numeric_logic_options + any_type_logic_options
+
 class Subset(PipelineObject):
     """Provides rules to select a subset of data from a dataset."""
     

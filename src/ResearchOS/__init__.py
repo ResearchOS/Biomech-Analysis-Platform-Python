@@ -23,5 +23,8 @@ from .DataObjects.phase import Phase
 # # Needs to be after PipelineObjects import.
 from .PipelineObjects import Static # This is a package, not a module.
 
+# # Needs to be after PipelineObjects import.
+# from .PipelineObjects import Static # This is a package, not a module.
+
 # Last
 # from .db_initializer import DBInitializer

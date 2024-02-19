@@ -10,6 +10,10 @@ all_default_attrs = {}
 
 complex_attrs_list = []
 
+all_default_attrs = {}
+
+complex_attrs_list = []
+
 class Subject(DataObject):
     """Subject class."""
 
