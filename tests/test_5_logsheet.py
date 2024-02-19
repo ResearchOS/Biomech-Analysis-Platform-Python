@@ -71,4 +71,3 @@ def test_read_logsheet(temp_logsheet_file, logsheet_headers, schema, db_connecti
     lg.class_column_names = class_column_names
     lg.read_logsheet()
     ds.address_graph
-    # assert lg.logsheet_data == []

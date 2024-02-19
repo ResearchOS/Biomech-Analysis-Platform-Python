@@ -119,8 +119,7 @@ class Logsheet(PipelineObject):
         for header in headers:
             # Update the Variable object with the name if it is not already set, and the level.
             vr = Variable(id = header[3])
-            if vr.name is None:
-                vr.name = header[0]
+            vr.name = header[0]
             vr.level = header[2]
             str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, header[3]))
         return json.dumps(str_headers)
@@ -244,6 +243,7 @@ class Logsheet(PipelineObject):
             assert vr.level == header_levels[idx]
             vr_obj_list.append(vr)
             vr_list.append(vr.id)
+            
         # Order the class column names by precedence in the schema so that higher level objects always exist before lower level, so they can be attached.
         schema = ds.schema
         schema_graph = nx.DiGraph()
@@ -260,6 +260,7 @@ class Logsheet(PipelineObject):
         
         action = Action(name = "read logsheet")
         all_dobjs_ordered = []
+        logsheet = logsheet[0:10]
         for row_num, row in enumerate(logsheet):
             # Create a new instance of the appropriate DataObject subclass(es) and store it in the database.
             # TODO: How to order the data objects?
@@ -292,11 +293,13 @@ class Logsheet(PipelineObject):
                     continue
                 dobj = [dobj for dobj in row_dobjs if dobj.__class__ == level][0]
                 raw_value = row[headers_in_logsheet.index(name)]
-                # print("Row: ", row_num, "Column: ", name, "Value: ", raw_value)
+                print("Row: ", row_num, "Column: ", name, "Value: ", raw_value)
                 try:
                     value = type_class(raw_value)
                 except ValueError:
                     value = raw_value
+                if isinstance(value, str):
+                    value = value.replace("'", "''") # Handle single quotes.
                 dobj.__setattr__(name, value) # Set the attribute of this DataObject instance to the value in the logsheet.
 
         # Arrange the address ID's that were generated into an edge list.
@@ -307,7 +310,6 @@ class Logsheet(PipelineObject):
                 if idx == 0:
                     continue
                 addresses.append([row[idx-1].id, dobj.id])
-        ds = Dataset(id = self.get_dataset_id())
         ds.addresses = addresses
 
 

@@ -10,8 +10,6 @@ class Action():
     
     def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None):           
         self.pool = SQLiteConnectionPool()
-        # conn = self.pool.get_connection()
-        # cursor = conn.cursor()
         self.sql_queries = []
         if not id:
             id = IDCreator().create_action_id()            
@@ -19,7 +17,6 @@ class Action():
                 timestamp = datetime.datetime.now(tz = datetime.UTC)
             if not user_object_id:
                 user_object_id = CurrentUser().get_current_user_id()
-            # Do not commit here! When the action is executed then the action and the other db changes will be committed.
             sqlquery = f"INSERT INTO actions (action_id, user, name, datetime, redo_of) VALUES ('{id}', '{user_object_id}', '{name}', '{str(timestamp)}', '{redo_of}')"
             self.add_sql_query(sqlquery)
         # else:
@@ -41,7 +38,6 @@ class Action():
         self.timestamp = timestamp        
         self.redo_of = redo_of               
         self.user_object_id = user_object_id
-        # self.pool.return_connection(conn)
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
@@ -95,22 +91,21 @@ class Action():
         """Add a sql query to the action."""
         self.sql_queries.append(sqlquery)
 
-    def execute(self, commit: bool = True, rollback: bool = False) -> None:
+    def execute(self, commit: bool = True) -> None:
         """Run all of the sql queries in the action."""
         pool = SQLiteConnectionPool()
         conn = pool.get_connection()
         cursor = conn.cursor()
         # Execute all of the SQL queries.
         if len(self.sql_queries) == 0:
-            conn.rollback()
             pool.return_connection(conn)            
             return
         for query in self.sql_queries:
-            cursor.execute(query)
-        self.sql_queries = []   
-        if rollback:
-            commit = False
-            conn.rollback()              
+            try:
+                cursor.execute(query)
+            except:
+                raise ValueError(f"SQL query failed: {query}")
+        self.sql_queries = []               
         # Log the action to the Actions table   
         if commit:            
             conn.commit()

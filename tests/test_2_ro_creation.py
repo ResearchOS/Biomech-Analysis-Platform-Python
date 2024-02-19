@@ -89,6 +89,7 @@ def test_happy_with_zz_id_kwarg_and_custom_kwargs_vars_create_new_ro(cls, id, sc
     assert ro.test_vr == "test"
     a = ro.test_vr
     assert a == "test"
+    assert getattr(ro,"test_vr") == "test"
 
 project_builtin_args = [
     (ros.Project, "PJ1", "AN1", "DS1")

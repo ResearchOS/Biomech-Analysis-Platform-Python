@@ -88,5 +88,5 @@ def logsheet_headers(db_connection):
     return headers
 
 if __name__ == "__main__":
-    # pytest.main(["-v", "-s", "tests/"])
-    pytest.main(["-v", "tests/"])
+    pytest.main(["-v", "-s", "tests/"])
+    # pytest.main(["-v", "tests/"])

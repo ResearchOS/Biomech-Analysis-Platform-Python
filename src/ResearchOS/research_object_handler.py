@@ -201,8 +201,7 @@ class ResearchObjectHandler:
     @staticmethod
     def _setattr(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list[str]) -> None:
         """Set the attribute value for the specified attribute. This method serves as ResearchObject.__setattr__()."""
-        from ResearchOS.variable import Variable
-        from ResearchOS.DataObjects.dataset import Dataset        
+        from ResearchOS.variable import Variable  
 
         if name in default_attrs:
             ResearchObjectHandler._set_builtin_attribute(research_object, name, value, action, validate, default_attrs, complex_attrs)

@@ -1,9 +1,7 @@
 import ast, inspect
+from typing import Callable
 
-import ast
-import inspect
-
-def get_returned_variable_names(func):
+def get_returned_variable_names(func: Callable):
     """
     Extracts the names of variables that are returned by the given function, including
     cases where multiple variables are returned in a single return statement.
@@ -39,6 +37,16 @@ def get_returned_variable_names(func):
     visitor.visit(tree)
     
     return visitor.returned_vars
+
+def get_input_variable_names(func: Callable):
+    """Get the names of the input variables of a function."""
+    sig = inspect.signature(func)
+    parameters = sig.parameters
+
+    # Distinguish required vs. optional parameters
+    required_params = [p for p in parameters.values() if p.default == p.empty]
+    req_param_names = [p.name for p in required_params]
+    return req_param_names
 
 # Example function with a single return statement returning multiple values
 def example_function():
