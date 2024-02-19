@@ -1,6 +1,6 @@
-from ResearchOS import PipelineObject
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
-class Analysis(PipelineObject):
+class AnalysisStatic(PipelineObject):
     """The static attributes and methods for the Analysis class."""
 
     

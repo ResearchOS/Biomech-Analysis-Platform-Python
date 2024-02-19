@@ -1,13 +1,19 @@
 from typing import Any
 import json, csv
 
-# import pandas as pd
+import networkx as nx
 
-import ResearchOS as ros
+# import pandas as pd
+from ResearchOS.DataObjects.data_object import DataObject
+from ResearchOS.variable import Variable
+from ResearchOS.DataObjects.dataset import Dataset
+from ResearchOS.research_object import ResearchObject
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
-from ResearchOS.db_connection_factory import DBConnectionFactory
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -19,26 +25,15 @@ all_default_attrs["subset_id"] = None
 
 complex_attrs_list = []
 
-class Logsheet(ros.PipelineObject):
+complex_attrs_list = []
+
+class Logsheet(PipelineObject):
 
     prefix = "LG"
 
-    #################### Start class-specific attributes ###################
-    def __init__(self, **kwargs):
-        """Initialize the attributes that are required by ResearchOS.
-        Other attributes can be added & modified later."""
-        super().__init__(all_default_attrs, **kwargs)
-
-    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        if name == "vr":
-            raise ValueError("The attribute 'vr' is not allowed to be set for Pipeline Objects.")
-        else:
-            ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
-
     def load(self) -> None:
         """Load the dataset-specific attributes from the database in an attribute-specific way."""
-        ros.PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
+        PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
 
     def read_and_clean_logsheet(self, nrows: int = None) -> None:
         """Read the logsheet (CSV only) and clean it."""
@@ -95,8 +90,8 @@ class Logsheet(ros.PipelineObject):
             if not isinstance(header, tuple):
                 raise ValueError("Headers must be a list of tuples!")
             # 3. Check that each header tuple has 3 elements.        
-            if len(header) != 3:
-                raise ValueError("Each header tuple must have 3 elements!")
+            if len(header) != 4:
+                raise ValueError("Each header tuple must have 4 elements!")
             # 4. Check that the first element of each header tuple is a string.        
             if not isinstance(header[0], str):
                 raise ValueError("First element of each header tuple must be a string!")
@@ -105,9 +100,11 @@ class Logsheet(ros.PipelineObject):
             #     raise ValueError("Second element of each header tuple must be a Python type!")
             if header[1] not in [str, int, float]:
                 raise ValueError("Second element of each header tuple must be a Python type!")
+            if header[2] not in DataObject.__subclasses__():
+                raise ValueError("Third element of each header tuple must be a ResearchObject subclass!")
             # 6. Check that the third element of each header tuple is a valid variable ID.                
-            if not header[2].startswith(ros.Variable.prefix) or not ResearchObjectHandler.object_exists(header[2]):
-                raise ValueError("Third element of each header tuple must be a valid pre-existing variable ID!")
+            if not header[3].startswith(Variable.prefix) or not ResearchObjectHandler.object_exists(header[3]):
+                raise ValueError("Fourth element of each header tuple must be a valid pre-existing variable ID!")
             
         logsheet = self.read_and_clean_logsheet(nrows = 1)
         headers_in_logsheet = logsheet[0]
@@ -118,14 +115,20 @@ class Logsheet(ros.PipelineObject):
             raise ValueError(f"The headers {missing} do not match between logsheet and code!")
             
     def to_json_headers(self, headers: list) -> str:
-        """Convert the headers to a JSON string."""
+        """Convert the headers to a JSON string.
+        Also sets the VR's name and level."""
         str_headers = []
         for header in headers:
-            str_headers.append((header[0], str(header[1])[8:-2], header[2]))
+            # Update the Variable object with the name if it is not already set, and the level.
+            vr = Variable(id = header[3])
+            vr.name = header[0]
+            vr.level = header[2]
+            str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, header[3]))
         return json.dumps(str_headers)
 
     def from_json_headers(self, json_var: str) -> list:
         """Convert the JSON string to a list of headers."""
+        subclasses = DataObject.__subclasses__()
         str_var = json.loads(json_var)
         headers = []
         mapping = {
@@ -134,7 +137,8 @@ class Logsheet(ros.PipelineObject):
             "float": float
         }
         for header in str_var:
-            headers.append((header[0], mapping[header[1]], header[2]))                
+            cls_header = [cls for cls in subclasses if cls.prefix == header[2]][0]
+            headers.append((header[0], mapping[header[1]], cls_header, header[3]))                
         return headers
             
     ### Num header rows
@@ -151,7 +155,8 @@ class Logsheet(ros.PipelineObject):
     ### Class column names
         
     def validate_class_column_names(self, class_column_names: dict) -> None:
-        """Validate the class column names."""
+        """Validate the class column names. Must be a dict where the keys are the column names in the logsheet and the values are the DataObject subclasses."""
+        self.validate_path(self.path)
         # 1. Check that the class column names are a dict.
         if not isinstance(class_column_names, dict):
             raise ValueError("Class column names must be a dict!")
@@ -159,7 +164,7 @@ class Logsheet(ros.PipelineObject):
         for key, value in class_column_names.items():
             if not isinstance(key, str):
                 raise ValueError("Keys of class column names must be strings!")
-            if not issubclass(value, ros.DataObject):
+            if not issubclass(value, DataObject):
                 raise ValueError("Values of class column names must be Python types that subclass DataObject!")
             
         headers = self.read_and_clean_logsheet(nrows = 1)[0]
@@ -170,7 +175,7 @@ class Logsheet(ros.PipelineObject):
         """Convert the dict from JSON string where values are class prefixes to a dict where keys are column names and values are DataObject subclasses."""     
         prefix_var = json.loads(json_var)
         class_column_names = {}
-        all_classes = ResearchObjectHandler._get_subclasses(ros.ResearchObject)
+        all_classes = ResearchObjectHandler._get_subclasses(ResearchObject)
         for key, prefix in prefix_var.items():
             for cls in all_classes:
                 if hasattr(cls, "prefix") and cls.prefix == prefix:
@@ -191,24 +196,23 @@ class Logsheet(ros.PipelineObject):
         """Validate the subset ID."""
         if not ResearchObjectHandler.object_exists(subset_id):
             raise ValueError("Subset ID must be a valid ID!")
-        if not subset_id.startswith(ros.Subset.prefix):
+        if not subset_id.startswith(Subset.prefix):
             raise ValueError("Subset ID must start with the correct prefix!")
 
     #################### Start class-specific methods ####################
-    def load_xlsx(self) -> list[list]:
+    def load_xlsx(self) -> list:
         """Load the logsheet as a list of lists using Pandas."""        
         df = pd.read_excel(self.path, header = None)
         return df.values.tolist()
     
     def read_logsheet(self) -> None:
         """Run the logsheet import process."""
+        ds = Dataset(id = self.get_dataset_id())
         self.validate_class_column_names(self.class_column_names)
         self.validate_headers(self.headers)
         self.validate_num_header_rows(self.num_header_rows)
         self.validate_path(self.path)
         self.validate_subset_id(self.subset_id)
-
-        conn = DBConnectionFactory.create_db_connection().conn
 
         # 1. Load the logsheet (using built-in Python libraries)
         if self.path.endswith(("xlsx", "xls")):
@@ -228,31 +232,87 @@ class Logsheet(ros.PipelineObject):
         
         # For each row, connect instances of the appropriate DataObject subclass to all other instances of appropriate DataObject subclasses.
         headers_in_logsheet = full_logsheet[0]
+        all_headers = self.headers
         header_names = [header[0] for header in self.headers]
         header_types = [header[1] for header in self.headers]
-        header_vrids = [header[2] for header in self.headers]
+        header_levels = [header[2] for header in self.headers]
+        header_vrids = [header[3] for header in self.headers]
         # Load/create all of the Variables
         vr_list = []
-        for idx, vrid in enumerate(header_vrids):
-            vr = ros.Variable(id = vrid, name = header_names[idx])
+        vr_obj_list = []
+        for idx, vr_id in enumerate(header_vrids):
+            vr = Variable(id = vr_id)
+            assert vr.level == header_levels[idx]
+            vr_obj_list.append(vr)
             vr_list.append(vr.id)
+            
         # Order the class column names by precedence in the schema so that higher level objects always exist before lower level, so they can be attached.
-        # schema_ordered_col_names = self.order_class_column_names()
-        idcreator = IDCreator(conn)
-        for row in logsheet:            
+        schema = ds.schema
+        schema_graph = nx.DiGraph()
+        schema_graph.add_edges_from(schema)
+        order = list(nx.topological_sort(schema_graph))
+        if len(order) <= 1:
+            raise ValueError("The schema must have at least 2 elements including the Dataset!")
+        order = order[1:] # Remove the Dataset class from the order.
+        dobj_column_names = []
+        for cls in order:
+            for column_name, cls_item in self.class_column_names.items():
+                if cls is cls_item:
+                    dobj_column_names.append(column_name)
+        
+        action = Action(name = "read logsheet")
+        all_dobjs_ordered = []
+        logsheet = logsheet[0:10]
+        for row_num, row in enumerate(logsheet):
             # Create a new instance of the appropriate DataObject subclass(es) and store it in the database.
             # TODO: How to order the data objects?
-            for header, cls in self.class_column_names.items():
+            row_dobjs = []
+            for idx, cls in enumerate(order):
+                header = dobj_column_names[idx]
                 col_idx = headers_in_logsheet.index(header)
-                raw_value = row[col_idx]
+                raw_value = row[col_idx]                
                 value = header_types[col_idx](raw_value)
+                level = header_levels[col_idx]                
+                vr = vr_obj_list[col_idx]
+                
+                # Create the DataObject instance.                
+                new_dobj = cls(id = IDCreator().create_ro_id(cls), name = value)
+                row_dobjs.append(new_dobj)
 
-                # Create the DataObject instance.
-                new_dobj = cls(id = idcreator.create_ro_id(cls))
+                # If this column is e.g. Trial, and the Variable is a Trial level Variable, then attach the Variable to the DataObject.
+                if level is cls:
+                    new_dobj.__setattr__(vr.name, value, action = action)
 
-                new_dobj.vr[vr_list[col_idx]] = value
+            all_dobjs_ordered.append(row_dobjs)
 
-                # Attach the DataObject instance to its parent DataObject instance.
+            # TODO: Assign all of the data from non-data object columns to the appropriate DataObject instances.
+            for header in all_headers:
+                name = header[0]
+                type_class = header[1]
+                level = header[2]
+                vr_id = header[3]
+                if name in dobj_column_names:
+                    continue
+                dobj = [dobj for dobj in row_dobjs if dobj.__class__ == level][0]
+                raw_value = row[headers_in_logsheet.index(name)]
+                print("Row: ", row_num, "Column: ", name, "Value: ", raw_value)
+                try:
+                    value = type_class(raw_value)
+                except ValueError:
+                    value = raw_value
+                if isinstance(value, str):
+                    value = value.replace("'", "''") # Handle single quotes.
+                dobj.__setattr__(name, value) # Set the attribute of this DataObject instance to the value in the logsheet.
+
+        # Arrange the address ID's that were generated into an edge list.
+        # Then assign that to the Dataset.
+        addresses = []
+        for row in all_dobjs_ordered:
+            for idx, dobj in enumerate(row):
+                if idx == 0:
+                    continue
+                addresses.append([row[idx-1].id, dobj.id])
+        ds.addresses = addresses
 
 
 

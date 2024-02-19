@@ -1,36 +1,17 @@
 from typing import Any
-import json, re
+import os
 
 from ResearchOS.research_object_handler import ResearchObjectHandler
-from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.action import Action
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
+from ResearchOS.default_attrs import DefaultAttrs
 
-# from ResearchOS import Config
-# from idcreator import IDCreator
-# from ResearchOS.DBHandlers.db_handler_sqlite import DBHandlerSQLite
+all_default_attrs = {}
+all_default_attrs["notes"] = None
 
-# config = Config()
+complex_attrs_list = []
 
-# abstract_id_len = config.abstract_id_len
-# instance_id_len = config.instance_id_len
-
-# DEFAULT_EXISTS_ATTRIBUTE_NAME = "exists"
-# DEFAULT_EXISTS_ATTRIBUTE_VALUE = True
-# DEFAULT_NAME_ATTRIBUTE_NAME = "name"
-# DEFAULT_NAME_ATTRIBUTE_VALUE = "object creation" 
-# DEFAULT_ABSTRACT_KWARG_NAME = "abstract"
-
-# DEFAULT_USER_ID = "US000000_000"
-
-# # DEFAULT_USER_PARENT = "US000000_000"
-
-# ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method (or no parent, for User).
-
-DEFAULT_USER_ID = "US000000_000"
-
-# DEFAULT_USER_PARENT = "US000000_000"
-
-ok_parent_class_prefixes = ["US", "DS", "PJ", "AN"] # The list of classes that have a "current_{parent}_id" builtin method (or no parent, for User).
+root_data_path = "data"
 
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
@@ -40,45 +21,126 @@ class ResearchObject():
     
     def __eq__(self, other):
         if isinstance(other, ResearchObject):
-            return self.id == other.id
-        return NotImplemented
+            return self.id == other.id and self is other
+        return self == other
+    
+    def __getattribute__(self, name: str) -> Any:
+        """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""
+        from ResearchOS.DataObjects.data_object import DataObject
+        subclasses = DataObject.__subclasses__()
+        vr_class = [x for x in subclasses if x.prefix == "VR"][0]
+        try:
+            value = super().__getattribute__(name) # Throw the default error.
+        except AttributeError as e:
+            raise e        
+        if not isinstance(value, vr_class):
+            return value
+        
+        value = ResearchObjectHandler.load_vr_value(self, value)
+        return value
 
     def __new__(cls, **kwargs):
         """Create a new research object in memory. If the object already exists in memory with this ID, return the existing object."""
-        kwargs = ResearchObjectHandler.check_inputs(kwargs)
+        kwargs = ResearchObjectHandler.check_inputs(cls, kwargs)
         id = kwargs["id"]
         if id in ResearchObjectHandler.instances:
             ResearchObjectHandler.counts[id] += 1
+            ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = True
             return ResearchObjectHandler.instances[id]
         ResearchObjectHandler.counts[id] = 1
         instance = super(ResearchObject, cls).__new__(cls)
         ResearchObjectHandler.instances[id] = instance
+        ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = False
         return instance
     
-    def __init__(self, default_attrs: dict, **kwargs):
-        """Initialize the research object."""
-        action = None # Initialize the action.
-        self.__dict__["id"] = kwargs["id"] # Put the ID in the __dict__ so that it is not overwritten by the __setattr__ method.
-        del kwargs["id"]
-        if ResearchObjectHandler.object_exists(self.id):
+    def __init__(self, **orig_kwargs):
+        """Initialize the research object."""   
+        self.__dict__["id"] = orig_kwargs["id"] # Put the ID in the __dict__ so that it is not overwritten by the __setattr__ method.
+        del orig_kwargs["id"] # Remove the ID from the kwargs so that it is not set as an attribute.        
+        attrs = DefaultAttrs(self.__class__) # Get the default attributes for the class.
+        default_attrs = attrs.default_attrs
+        default_attrs["name"] = self.id # Set the default name to the object's ID.
+
+        # Will be overwritten if creating a new object.
+        action = Action(name = f"set object attributes")
+        kwargs = orig_kwargs # Because the defaults will have all been set, don't include them.
+        prev_exists = ResearchObjectHandler.object_exists(self.id)
+        if not self.prev_loaded and prev_exists:
             # Load the existing object's attributes from the database.
-            ResearchObjectHandler._load_ro(self, default_attrs) 
-            action = Action(name = f"set object attributes")
-        else:
+            ResearchObjectHandler._load_ro(self, default_attrs)
+        elif not prev_exists:
             # Create a new object.
             action = Action(name = f"created object")
             ResearchObjectHandler._create_ro(self, action = action) # Create the object in the database.
-            # Add the default attributes to the kwargs to be set, only if they're not being overwritten by a kwarg.
-            for key in default_attrs:
-                if key not in kwargs:
-                    kwargs[key] = default_attrs[key]        
+            kwargs = default_attrs | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
+        del self.__dict__["prev_loaded"] # Remove the prev_loaded attribute from the object.
+
+        # Set the attributes.
         for key in kwargs:
-            validate = True # Default is to validate any attribute.
+            validate = True # Default is to validate any attribute.        
+            # If previously loaded, don't overwrite a default attribute with its default value. If it was specified as a kwarg, then use that specified value.
+            if key in self.__dict__ and key not in orig_kwargs:
+                continue
             # If the attribute value is a default value, don't validate it.
             if key in default_attrs and kwargs[key] == default_attrs[key]:
                 validate = False
-            self.__setattr__(key, kwargs[key], action = action, validate = validate)
-        action.execute(commit = True)    
+            self.__setattr__(key, kwargs[key], action = action, validate = validate, all_attrs = attrs)
+            action.execute(commit = True) # Commit the action to the database.
+        # action.execute(commit = True) # Commit the action to the database.
+
+    def __setattr__(self, name, value, action: Action = None, validate: bool = True, all_attrs: DefaultAttrs = None) -> None:
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        if all_attrs is None:
+            all_attrs = DefaultAttrs(self.__class__)
+        if action is None:            
+            action = Action(name = "attribute_changed")
+            action.do_exec = True
+        else:
+            action.do_exec = False
+        ResearchObjectHandler._setattr(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)        
+        action.execute()
+
+    def get_vr(self, name: str) -> Any:
+        """Get the VR itself instead of its value."""
+        return self.__dict__[name]
+
+    def get_dataset_id(self) -> str:
+        """Get the most recent dataset ID."""        
+        sqlquery = f"SELECT action_id, dataset_id FROM data_address_schemas"
+        pool = SQLiteConnectionPool()
+        conn = pool.get_connection()
+        cursor = conn.cursor()
+        result = cursor.execute(sqlquery).fetchall()
+        pool.return_connection(conn)
+        # ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num=0)
+        if not result:
+            raise ValueError("Need to create a dataset and set up its schema first.")
+        dataset_id = result[-1][1]        
+        return dataset_id
+    
+    def get_vr_file_path(self, vr_id: str, dataset_id: str, levels: list) -> str:
+        """Get the file path for a VR."""
+        subfolder = ""
+        for level in levels:
+            if level is not None:
+                subfolder += level + os.sep
+        return root_data_path + os.sep + dataset_id + subfolder + vr_id + ".json"    
+
+    def get_current_schema_id(self, dataset_id: str) -> str:
+        conn = ResearchObjectHandler.pool.get_connection()
+        sqlquery = f"SELECT action_id FROM data_address_schemas WHERE dataset_id = '{dataset_id}'"
+        action_ids = conn.cursor().execute(sqlquery).fetchall()
+        action_ids = ResearchObjectHandler._get_time_ordered_result(action_ids, action_col_num=0)
+        action_id_schema = action_ids[0][0] if action_ids else None
+        if action_id_schema is None:
+            ResearchObjectHandler.pool.return_connection(conn)
+            return # If the schema is empty and the addresses are empty, this is likely initialization so just return.
+
+        sqlquery = f"SELECT schema_id FROM data_address_schemas WHERE dataset_id = '{dataset_id}' AND action_id = '{action_id_schema}'"
+        schema_id = conn.execute(sqlquery).fetchone()
+        schema_id = schema_id[0] if schema_id else None
+        ResearchObjectHandler.pool.return_connection(conn)
+        return schema_id    
 
 
 
@@ -128,16 +190,6 @@ class ResearchObject():
 #     def is_instance_object(self) -> bool:
 #         """Return true if the object is an instance object, false if it is an abstract object."""
 #         return self.parse_id(self.id)[2] is not None
-        
-#     def is_id(self, id: str) -> bool:
-#         """Check if the given ID matches the pattern of a valid research object ID."""              
-#         instance_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
-#         abstract_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}$"
-#         if not isinstance(id, str):
-#             raise ValueError("id must be a str!")
-#         if re.match(instance_pattern, id) or re.match(abstract_pattern, id):
-#             return True
-#         return False    
     
 #     def _is_id_of_class(self, id: str, cls: type) -> bool:
 #         """True if the ID is of the proper type, False if not."""
@@ -294,18 +346,6 @@ class ResearchObject():
 #     ###############################################################################################################################
 #     ############################################ end of abstract/instance relation methods ########################################
 #     ###############################################################################################################################     
-    
-#     def parse_id(self, id: str) -> tuple:
-#         """Parse an ID into its prefix, abstract, and instance parts."""
-#         if not self.is_id(id):
-#             raise ValueError("Invalid ID.")
-#         prefix = id[0:2]
-#         abstract = id[2:2+abstract_id_len]
-#         num_underscores = id.count("_")
-#         instance = None
-#         if num_underscores == 1:            
-#             instance = id[-instance_id_len:]
-#         return (prefix, abstract, instance)
     
 #     def _open_path(self, path: str) -> None:
 #         """Open a file or directory in the default application."""

@@ -1,6 +1,10 @@
 import random, os, uuid, sqlite3, re
+import uuid
+import argparse
+import sys
 
 from ResearchOS.config import Config
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 config = Config()
 
@@ -10,8 +14,11 @@ instance_id_len = config.immutable["instance_id_len"]
 class IDCreator():
     """Creates all ID's for the ResearchOS database."""
 
-    def __init__(self, conn: sqlite3.Connection) -> None:
+    def __init__(self) -> None:
         """Initialize the IDCreator."""
+        pool = SQLiteConnectionPool()            
+        conn = pool.get_connection()
+        self.pool = pool
         self.conn = conn
     
     def create_ro_id(self, cls, abstract: str = None, instance: str = None, is_abstract: bool = False) -> str:
@@ -42,6 +49,7 @@ class IDCreator():
                 is_unique = True
             elif is_abstract:
                 raise ValueError("Abstract ID already exists.")
+        self.pool.return_connection(self.conn)
         return id   
 
 
@@ -57,6 +65,7 @@ class IDCreator():
             rows = cursor.fetchall()
             if len(rows) == 0:
                 is_unique = True
+        self.pool.return_connection(self.conn)
         return uuid_out
     
     def _is_action_id(uuid: str) -> bool:
@@ -70,12 +79,40 @@ class IDCreator():
     
     def is_ro_id(self, id: str) -> bool:
         """Check if the given ID matches the pattern of a valid research object ID."""    
-        # TODO: Re-implement this when I decide on what the ResearchObject ID's look like.          
+        # TODO: Re-implement this when I decide on what the ResearchObject ID's look like.
+        from ResearchOS.research_object import ResearchObject
+        from ResearchOS.research_object_handler import ResearchObjectHandler
         instance_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
         abstract_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}$"
+        subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
+        # Check for a valid prefix.
+        self.pool.return_connection(self.conn)
+        if not any(id.startswith(cls.prefix) for cls in subclasses if hasattr(cls, "prefix")):
+            return False
         return True
         # if not isinstance(id, str):
         #     raise ValueError("id must be a str!")
         # if re.match(instance_pattern, id) or re.match(abstract_pattern, id):
         #     return True
         # return False  
+
+def main():
+    parser = argparse.ArgumentParser(description='Generate a UUID based on the specified version.')
+    parser.add_argument('-a', '--action', action='store_const', const='3', help='Generate a UUID using uuid3 (requires -a or -r argument).')
+    parser.add_argument('-r', '--researchobject', action='store_const', const='4', help='Generate a UUID using uuid4 (requires -a or -r argument).')
+    args = parser.parse_args()
+
+    # Check which argument is provided
+    if args.action:
+        id = IDCreator(conn).create_action_id()
+    elif args.researchobject:
+        id = IDCreator(conn).create_ro_id()
+    else:
+        parser.print_help()
+        sys.exit(1)
+    
+
+if __name__ == "__main__":
+    from ResearchOS.db_connection_factory import DBConnectionFactory
+    conn = DBConnectionFactory.create_db_connection().conn
+    main()

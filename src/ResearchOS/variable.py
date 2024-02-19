@@ -1,59 +1,41 @@
 from typing import Any
+import json
 
-import ResearchOS as ros
-from ResearchOS.action import Action
-from ResearchOS.research_object_handler import ResearchObjectHandler
-from ResearchOS.idcreator import IDCreator
-from ResearchOS.db_connection_factory import DBConnectionFactory
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS.DataObjects.data_object import DataObject
 
 all_default_attrs = {}
+all_default_attrs["level"] = None
 all_default_attrs["hard_coded_value"] = None
-all_default_attrs["level"] = None # Eventually needs to be a complex attr.
 
 complex_attrs_list = []
 
-class Variable(ros.DataObject, ros.PipelineObject):
+class Variable(DataObject,  PipelineObject):
     """Variable class."""
 
     prefix: str = "VR"
-    
-    def __init__(self, **kwargs):
-        """Initialize the attributes that are required by ResearchOS.
-        Other attributes can be added & modified later."""
-        super().__init__(all_default_attrs, **kwargs)
-
-    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        if name == "value":
-            # Set variable value.
-            pass
-        else:
-            ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
 
     def load(self) -> None:
         """Load the variable-specific attributes from the database in an attribute-specific way."""
         pass
     
-    #################### Start class-specific attributes ###################
+    ## Level methods
+
     def validate_level(self, level: type) -> None:
         """Check that the level is of a valid type."""
         if not isinstance(level, type):
             raise ValueError("Level must be a type.")
-        if not isinstance(level, DataObject):
+        if level not in DataObject.__subclasses__():
             raise ValueError("Level must be a DataObject.")
-        us = ros.User(id = ros.User.get_current_user_object_id())
-        us.validate_current_project_id(id = us.current_project_id)
-        pj = ros.Project(id = us.current_project_id)
-        pj.validate_current_dataset_id(id = pj.current_dataset_id)
-        ds = ros.Dataset(id = pj.current_dataset_id)
-        ds.validate_schema(schema = ds.schema)
-        if level not in ds.schema:
-            raise ValueError("Level must be in the dataset schema.")
+        
+    def to_json_level(self, level: type) -> dict:
+        """Return the level as a JSON object."""
+        return json.dumps(level.prefix)
 
-    #################### Start Source objects ####################
-    def get_source_object_ids(self, cls: type) -> list:
-        """Return a list of all source objects for the Variable."""
-        ids = self._get_all_source_object_ids(cls = cls)
-        return [cls(id = id) for id in ids]
+    def from_json_level(self, level: str) -> type:
+        """Return the level as a JSON object."""
+        level_str = json.loads(level)
+        subclasses = DataObject.__subclasses__()
+        return [cls for cls in subclasses if cls.prefix == level_str][0]
     
-    ## NOTE: THERE ARE NO TARGET OBJECTS FOR VARIABLES
+    

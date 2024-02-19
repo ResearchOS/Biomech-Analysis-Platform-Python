@@ -1,8 +1,8 @@
 import networkx as nx
-from src.ResearchOS.research_object import ResearchObject
-from src.ResearchOS.research_object import DEFAULT_EXISTS_ATTRIBUTE_NAME
+from ResearchOS.research_object import ResearchObject
+# from ResearchOS.research_object import DEFAULT_EXISTS_ATTRIBUTE_NAME
 
-from src.ResearchOS.action import Action
+from ResearchOS.action import Action
 
 import json
 

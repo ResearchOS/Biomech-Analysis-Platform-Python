@@ -3,6 +3,7 @@
 import sqlite3, os, json
 
 from ResearchOS.current_user import CurrentUser
+from ResearchOS.db_connection_factory import DBConnectionFactory
 
 sql_settings_path = os.path.dirname(__file__) + "/config/sql.json"
 
@@ -20,13 +21,17 @@ class DBInitializer():
 
         self.db_file = db_file
         self.conn = sqlite3.connect(db_file)
+        # conn.close()
+        # self.conn = DBConnectionFactory.create_db_connection(db_file).conn # Sets the Config db_file path too.
+        # self.conn = sqlite3.connect(db_file)
         self.create_tables()
         self.check_tables_exist(intended_tables)
-        self.init_current_user_id()
+        self.conn.close() # Before current user ID.
+        self.init_current_user_id()        
 
     def init_current_user_id(self, user_id: str = "US000000_000"):
         """Initialize the current user ID in the settings table."""
-        CurrentUser(self.conn).set_current_user_id(user_id)
+        CurrentUser().set_current_user_id(user_id)
 
     def check_tables_exist(self, intended_tables: list):
         """Check that all of the tables were created."""        
@@ -63,7 +68,7 @@ class DBInitializer():
                         action_id TEXT PRIMARY KEY,
                         user TEXT NOT NULL,
                         name TEXT NOT NULL,
-                        datetime TEXT NOT NULL,                        
+                        datetime TEXT NOT NULL,
                         redo_of TEXT,
                         FOREIGN KEY (user) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         FOREIGN KEY (redo_of) REFERENCES actions(action_id) ON DELETE CASCADE
@@ -91,36 +96,31 @@ class DBInitializer():
                         )""")
         
         # Data objects data values. Lists all data values for all data objects.
-        # address_id is just the lowest level data object ID (the lowest level of the address).
+        # dataobject_id is just the lowest level data object ID (the lowest level of the address).
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values (
-                        action_id TEXT NOT NULL,
-                        address_id TEXT NOT NULL,
+                        action_id TEXT,
+                        dataobject_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
-                        VR_id TEXT NOT NULL,
+                        vr_id TEXT NOT NULL,
                         scalar_value TEXT,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
-                        FOREIGN KEY (address_id) REFERENCES data_addresses(address_id) ON DELETE CASCADE,
+                        FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
-                        FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE                    
+                        FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        PRIMARY KEY (dataobject_id, schema_id, vr_id)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_addresses (
-                        action_id TEXT NOT NULL,
-                        address_id TEXT NOT NULL,
+                        action_id TEXT,
+                        target_object_id TEXT NOT NULL,
+                        source_object_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
-                        level0_id TEXT,
-                        level1_id TEXT,
-                        level2_id TEXT,
-                        level3_id TEXT,
-                        level4_id TEXT,
-                        level5_id TEXT,
-                        level6_id TEXT,
-                        level7_id TEXT,
-                        level8_id TEXT,
-                        level9_id TEXT,
+                        FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
+                        PRIMARY KEY (target_object_id, source_object_id, schema_id)
                         )""")
         
         # Data address schemas. Lists all data address schemas for all data.
@@ -130,6 +130,16 @@ class DBInitializer():
                         dataset_id TEXT NOT NULL,
                         levels_edge_list TEXT NOT NULL,
                         FOREIGN KEY (dataset_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        )""")
+        
+        # Variable -> DataObjects table. Lists all variables and which data objects they are associated with.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS vr_dataobjects (
+                        action_id TEXT NOT NULL,
+                        vr_id TEXT NOT NULL,
+                        dataobject_id TEXT NOT NULL,
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
 

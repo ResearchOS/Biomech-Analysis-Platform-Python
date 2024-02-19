@@ -1,6 +1,6 @@
 from typing import Any
 
-import ResearchOS as ros
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
@@ -13,7 +13,7 @@ all_default_attrs["project_path"] = None
 
 complex_attrs_list = []
 
-class Project(ros.PipelineObject):
+class Project(PipelineObject):
     """A project is a collection of analyses.
     Class-specific Attributes:
     1. current_analysis_id: The ID of the current analysis for this project.
@@ -22,21 +22,18 @@ class Project(ros.PipelineObject):
 
     prefix: str = "PJ"
 
-    def __init__(self, **kwargs):
-        """Initialize the attributes that are required by ResearchOS.
-        Other attributes can be added & modified later."""
-        super().__init__(all_default_attrs, **kwargs)
+    # def __init__(self, **kwargs):
+    #     """Initialize the attributes that are required by ResearchOS.
+    #     Other attributes can be added & modified later."""
+    #     super().__init__(all_default_attrs, **kwargs)
 
-    def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        if name == "vr":
-            raise ValueError("The attribute 'vr' is not allowed to be set for Pipeline Objects.")
-        else:
-            ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
+    # def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+    #     """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+    #     ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
 
     def load(self) -> None:
         """Load the dataset-specific attributes from the database in an attribute-specific way."""
-        ros.PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
+        PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
     
     def validate_current_analysis_id(self, id: str) -> None:
         """Validate the current analysis ID. If it is not valid, the value is rejected."""        
@@ -77,27 +74,27 @@ class Project(ros.PipelineObject):
         return self._gen_obj_or_none(us_ids, User)
     
     #################### Start Target objects ####################
-    def get_analyses(self) -> list["Analysis"]:        
-        """Return a list of analysis objects in the project."""
-        from ResearchOS.PipelineObjects.analysis import Analysis
-        an_ids = self._get_all_target_object_ids(cls = Analysis)
-        return self._gen_obj_or_none(an_ids, Analysis)
+    # def get_analyses(self) -> list["Analysis"]:        
+    #     """Return a list of analysis objects in the project."""
+    #     from ResearchOS.PipelineObjects.analysis import Analysis
+    #     an_ids = self._get_all_target_object_ids(cls = Analysis)
+    #     return self._gen_obj_or_none(an_ids, Analysis)
     
-    def add_analysis_id(self, analysis_id: str):
-        """Add an analysis to the project."""
-        from ResearchOS.PipelineObjects.analysis import Analysis        
-        self._add_target_object_id(analysis_id, cls = Analysis)
+    # def add_analysis_id(self, analysis_id: str):
+    #     """Add an analysis to the project."""
+    #     from ResearchOS.PipelineObjects.analysis import Analysis        
+    #     self._add_target_object_id(analysis_id, cls = Analysis)
 
-    def remove_analysis_id(self, analysis_id: str):
-        """Remove an analysis from the project."""
-        from ResearchOS.PipelineObjects.analysis import Analysis        
-        self._remove_target_object_id(analysis_id, cls = Analysis)
+    # def remove_analysis_id(self, analysis_id: str):
+    #     """Remove an analysis from the project."""
+    #     from ResearchOS.PipelineObjects.analysis import Analysis        
+    #     self._remove_target_object_id(analysis_id, cls = Analysis)
 
-    #################### Start class-specific methods ####################
-    def open_project_path(self) -> None:
-        """Open the project's path in the Finder/File Explorer."""
-        path = self.project_path
-        self._open_path(path)
+    # #################### Start class-specific methods ####################
+    # def open_project_path(self) -> None:
+    #     """Open the project's path in the Finder/File Explorer."""
+    #     path = self.project_path
+    #     self._open_path(path)
     
 
 if __name__=="__main__":

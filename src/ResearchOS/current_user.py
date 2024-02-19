@@ -1,12 +1,17 @@
 import sqlite3, datetime
+from datetime import timezone
 
 from ResearchOS.idcreator import IDCreator
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 class CurrentUser():
     """Singular purpose is to return the current user object ID."""
 
-    def __init__(self, conn: sqlite3.Connection) -> None:
+    def __init__(self) -> None:
         """Initialize the CurrentUser class."""
+        pool = SQLiteConnectionPool()            
+        conn = pool.get_connection()
+        self.pool = pool
         self.conn = conn
     
     def get_current_user_id(self) -> str:
@@ -18,14 +23,16 @@ class CurrentUser():
         result = cursor.execute(sqlquery).fetchone()
         if result is None:
             raise ValueError("current user does not exist because there are no actions")
+        self.pool.return_connection(self.conn)
         return result[0]
     
     def set_current_user_id(self, user: str) -> None:
         """Set the current user in the actions table in the database.
         This is the only action that does not affect any other table besides Actions. It is a special case."""
         cursor = self.conn.cursor()
-        action_id = IDCreator(self.conn).create_action_id()
+        action_id = IDCreator().create_action_id()
         name = "Set current user"
-        sqlquery = f"INSERT INTO actions (action_id, user, name, datetime) VALUES ('{action_id}', '{user}', '{name}', '{datetime.datetime.now(datetime.UTC)}')"
+        sqlquery = f"INSERT INTO actions (action_id, user, name, datetime) VALUES ('{action_id}', '{user}', '{name}', '{datetime.datetime.now(timezone.utc)}')"
         cursor.execute(sqlquery)
         self.conn.commit()
+        self.pool.return_connection(self.conn)

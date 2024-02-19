@@ -10,11 +10,9 @@ all_default_attrs = {}
 
 complex_attrs_list = []
 
-complex_attrs_list = []
+class Condition(DataObject):
 
-class Visit(DataObject):
-
-    prefix: str = "VS"
+    prefix: str = "CN"
     
     # def __init__(self, **kwargs):
     #     """Initialize the attributes that are required by ResearchOS.
