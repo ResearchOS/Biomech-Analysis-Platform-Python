@@ -1,104 +1,176 @@
-from ResearchOS import PipelineObject
+from typing import Any
 from typing import Callable
+import json, sys
+import importlib
 
-from abc import abstractmethod
+from ResearchOS.research_object import ResearchObject
+from ResearchOS.variable import Variable
+from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS.PipelineObjects.subset import Subset
+from ResearchOS.DataObjects.dataset import Dataset
+from ResearchOS.PipelineObjects.project import Project
+from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.current_user import CurrentUser
+from ResearchOS.code_inspector import get_returned_variable_names, get_input_variable_names
 
-default_attrs = {}
-default_attrs["method"] = None
-default_attrs["level"] = None
+all_default_attrs = {}
+all_default_attrs["method"] = None
+all_default_attrs["level"] = None
+all_default_attrs["input_vrs"] = {}
+all_default_attrs["output_vrs"] = {}
+all_default_attrs["subset"] = None
+
+complex_attrs_list = []
 
 
 class Process(PipelineObject):
 
     prefix = "PR"
 
-    @abstractmethod
-    def get_all_ids() -> list[str]:
-        return super().get_all_ids(Process)
+    def load(self) -> None:
+        """Load the dataset-specific attributes from the database in an attribute-specific way."""
+        pass
+        # PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
 
     #################### Start class-specific attributes ###################
     def validate_method(self, method: Callable) -> None:
-        pass
+        if not isinstance(method, Callable):
+            raise ValueError("Method must be a callable function!")
+        if method.__module__ not in sys.modules:
+            raise ValueError("Method must be in an imported module!")
+
+    def from_json_method(self, json_method: str) -> Callable:
+        """Convert a JSON string to a method.
+        Returns None if the method name is not found (e.g. if code changed locations or something)"""
+        method_name = json.loads(json_method)
+        module_name, *attribute_path = method_name.split(".")        
+        module = importlib.import_module(module_name)
+        attribute = module
+        for attr in attribute_path:
+            attribute = getattr(attribute, attr)
+        return attribute
+
+    def to_json_method(self, method: Callable) -> str:
+        """Convert a method to a JSON string."""
+        if method is None:
+            return json.dumps(None)
+        return json.dumps(method.__module__ + "." + method.__qualname__)
 
     def validate_level(self, level: type) -> None:
-        pass
+        if not isinstance(level, type):
+            raise ValueError("Level must be a type!")
+        
+    def from_json_level(self, level: str) -> type:
+        """Convert a JSON string to a Process level."""
+        classes = ResearchObjectHandler._get_subclasses(ResearchObject)
+        for cls in classes:
+            if hasattr(cls, "prefix") and cls.prefix == level:
+                return cls
 
-    def json_translate_method(self):
-        pass
-
-    def json_translate_level(self):
-        pass
-
-    #################### Start Source objects ####################
-    def get_analyses(self) -> list:
-        """Return a list of analysis objects that belong to this process."""
-        from ResearchOS import Analysis
-        an_ids = self._get_all_source_object_ids(cls = Analysis)
-        return [Analysis(id = an_id) for an_id in an_ids]
+    def to_json_level(self, level: type) -> str:
+        """Convert a Process level to a JSON string."""
+        return json.dumps(level.prefix)
     
-    #################### Start Target objects ####################
+    def validate_subset_id(self, subset_id: str) -> None:
+        """Validate that the subset ID is correct."""
+        if not ResearchObjectHandler.object_exists(subset_id):
+            raise ValueError("Subset ID must reference an existing Subset.")
+        
+    def validate_input_vrs(self, inputs: dict) -> None:
+        """Validate that the input variables are correct."""
+        self.validate_method(self.method)
+        input_vr_names_in_code = get_input_variable_names(self.method)
+        self._validate_vrs(inputs, input_vr_names_in_code)
+
+    def validate_output_vrs(self, outputs: dict) -> None:
+        """Validate that the output variables are correct."""
+        self.validate_method(self.method)
+        output_vr_names_in_code = get_returned_variable_names(self.method)
+        self._validate_vrs(outputs, output_vr_names_in_code)    
+
+    def _validate_vrs(self, vr: dict, vr_names_in_code: list) -> None:
+        """Validate that the input and output variables are correct. They should follow the same format.
+        The format is a dictionary with the variable name as the key and the variable ID as the value."""        
+        if not isinstance(vr, dict):
+            raise ValueError("Variables must be a dictionary.")
+        for key, value in vr.items():
+            if not isinstance(key, str):
+                raise ValueError("Variable names in code must be strings.")
+            if not str(key).isidentifier():
+                raise ValueError("Variable names in code must be valid variable names.")
+            if not isinstance(value, Variable):
+                raise ValueError("Variable ID's must be Variable objects.")
+            if not ResearchObjectHandler.object_exists(value.id):
+                raise ValueError("Variable ID's must reference existing Variables.")
+        if not all([vr_name in vr_names_in_code for vr_name in vr.keys()]):
+            raise ValueError("Output variables must be returned by the method.")
+        
+    def from_json_input_vrs(self, input_vrs: str) -> dict:
+        """Convert a JSON string to a dictionary of input variables."""
+        input_vrs_dict = json.loads(input_vrs)
+        return {key: Variable(id = value) for key, value in input_vrs_dict.items()}
+    
+    def to_json_input_vrs(self, input_vrs: dict) -> str:
+        """Convert a dictionary of input variables to a JSON string."""     
+        return json.dumps({key: value.id for key, value in input_vrs.items()})
+    
+    def from_json_output_vrs(self, output_vrs: str) -> dict:
+        """Convert a JSON string to a dictionary of output variables."""
+        output_vrs_dict = json.loads(output_vrs)
+        return {key: Variable(id = value) for key, value in output_vrs_dict.items()}
+    
+    def to_json_output_vrs(self, output_vrs: dict) -> str:
+        """Convert a dictionary of output variables to a JSON string."""
+        return json.dumps({key: value.id for key, value in output_vrs.items()})
+    
+    def set_input_vrs(self, **kwargs) -> None:
+        """Convenience function to set the input variables with named variables rather than a dict."""
+        self.input_vrs = kwargs
+
+    def set_output_vrs(self, **kwargs) -> None:
+        """Convenience function to set the output variables with named variables rather than a dict."""
+        self.output_vrs = kwargs
 
     #################### Start class-specific methods ###################
-    def get_input_variables(self) -> list:
-        """Return a list of variable IDs that belong to this process."""
-        from ResearchOS import Variable
-        vr_ids = self._get_all_source_object_ids(cls = Variable)
-        return self._gen_obj_or_none(vr_ids, Variable)
-    
-    def get_output_variables(self) -> list:
-        """Return a list of variable IDs that belong to this process."""
-        from ResearchOS import Variable
-        vr_ids = self._get_all_target_object_ids(cls = Variable)
-        return self._gen_obj_or_none(vr_ids, Variable)
-    
-    def get_subsets(self) -> list:
-        """Return a list of subset IDs that belong to this process."""
-        from ResearchOS import Subset
-        ss_ids = self._get_all_target_object_ids(cls = Subset)
-        return self._gen_obj_or_none(ss_ids, Subset)
-    
-    def add_input_variable_id(self, var_id):
-        """Add an input variable to the process."""
-        # TODO: Need to add a mapping between variable ID and name in code.
-        from ResearchOS import Variable        
-        self._add_source_object_id(var_id, cls = Variable)
+    def run(self) -> None:
+        """Execute the attached method.
+        kwargs are the input VR's."""
+        # 1. Validate that the level & method have been properly set.
+        self.validate_method(self.method)
+        self.validate_level(self.level)
 
-    def add_output_variable_id(self, var_id):
-        """Add an output variable to the process."""
-        # TODO: Need to add a mapping between variable ID and name in code.
-        from ResearchOS import Variable        
-        self._add_target_object_id(var_id, cls = Variable)
+        output_var_names_in_code = get_returned_variable_names(self.method)
 
-    def remove_input_variable_id(self, var_id):
-        """Remove an input variable from the process."""
-        from ResearchOS import Variable        
-        self._remove_source_object_id(var_id, cls = Variable)
+        # 2. Validate that the input & output variables have been properly set.
+        self.validate_input_vrs()
+        self.validate_output_vrs()
 
-    def remove_output_variable_id(self, var_id):
-        """Remove an output variable from the process."""
-        from ResearchOS import Variable        
-        self._remove_target_object_id(var_id, cls = Variable)
+        # 3. Validate that the subsets have been properly set.
+        self.validate_subset_id(self.subset)
 
-    def add_subset_id(self, ss_id):
-        """Add a subset to the process."""
-        from ResearchOS import Subset
-        self._add_target_object_id(ss_id, cls = Subset)
+        # 4. Run the method.
+        # Get the subset of the data.
+        subset_graph = Subset(id = self.subset_id).get_subset()
 
-    def remove_subset_id(self, ss_id):
-        """Remove a subset from the process."""
-        from ResearchOS import Subset
-        self._remove_target_object_id(ss_id, cls = Subset)
+        level_nodes = [node for node in subset_graph if isinstance(node, self.level)]
+        # Iterate over each data object at this level (e.g. all Trials)
+        for node in level_nodes:
+            # Get the values for the input variables for this DataObject node.
+            vr_values_in = {}
+            for var_name_in_code, vr in self.input_vrs.items():
+                vr_values_in[var_name_in_code] = getattr(node, vr)
 
-    def run_method(self) -> None:
-        """Execute the attached method."""
-        pass
+            # NOTE: For now, assuming that there is only one return statement in the entire method.
+            vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
+            if not isinstance(vr_values_out, tuple):
+                vr_values_out = (vr_values_out,)
+            if len(vr_values_out) != len(self.output_vrs):
+                raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
+            if not all(vr in self.output_vrs for vr in output_var_names_in_code):
+                raise ValueError("All of the variable names returned by this method must have been previously registered with this Process instance.")            
 
-
-if __name__=="__main__":
-    pr = Process()
-    pr.add_input_variable(var = "id1")
-    pr.add_output_variable(var = "id2")
-    pr.assign_code(Process.square)
-    pr.subset_data(gender == 'm')
-    pr.run()
+            # Set the output variables for this DataObject node.            
+            for vr_name, vr in self.output_vrs.items():
+                idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out, and the order in the output_vrs dict are probably different.
+                setattr(node, vr_name, vr_values_out[idx])
 

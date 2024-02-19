@@ -1,11 +1,13 @@
-from ResearchOS import ResearchObject
+from ResearchOS.research_object import ResearchObject
 # from typing import Any
+
+all_default_attrs = {}
+
+complex_attrs_list = []
 
 class PipelineObject(ResearchObject):
     """Parent class of all pipeline objects: Projects, Analyses, Logsheets, Process Groups, Processes, Variables, SpecifyTrials, Views"""
 
-    # def __setattr__(self, __name: str, __value: Any) -> None:
-    #     super().__setattr__(__name, __value)        
-        
-    #     # Set attributes of the object in the database.
-    #     pass
+    def load(self) -> None:
+        """Load the dataset-specific attributes from the database in an attribute-specific way."""
+        pass

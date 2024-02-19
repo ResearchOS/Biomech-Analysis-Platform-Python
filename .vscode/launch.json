@@ -11,6 +11,14 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "conftest",
+            "type": "python",
+            "request": "launch",
+            "program": "tests/conftest.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }
