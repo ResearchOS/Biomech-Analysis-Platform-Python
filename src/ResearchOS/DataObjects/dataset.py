@@ -39,13 +39,27 @@ class Dataset(DataObject):
     
     #################### Start class-specific attributes ###################
     def validate_dataset_path(self, path: str) -> None:
-        """Validate the dataset path."""
+        """Validate the dataset path.
+        Args:
+            self
+            path (string): your dataset path
+        Returns:
+            None
+        Raises:
+            ValueError: given path does not exist"""
         import os
         if not os.path.exists(path):
             raise ValueError("Specified path is not a path or does not currently exist!")        
         
     def validate_schema(self, schema: list) -> None:
-        """Validate the data schema follows the proper format."""
+        """Validate the data schema follows the proper format.
+        Args:
+            self
+            schema (list): your schema list
+        Returns:
+            None
+        Raises:
+            ValueError: Schema is not valid"""
         from ResearchOS import User
         from ResearchOS import Variable
         # TODO: Check that every element is unique, no repeats.
@@ -84,7 +98,12 @@ class Dataset(DataObject):
         return json_schema
 
     def from_json_schema(self, json_schema: str) -> list:
-        """Convert the data schema from json to list of types."""
+        """Convert the data schema from json to list of types.
+        Args:
+            self
+            json_schema (string): 
+        Returns:
+            types_schema (list): list of schema types"""
         str_schema = json.loads(json_schema)
         classes = self._get_subclasses(DataObject)        
         types_schema = [] # Should return a list of DataObject classes.
@@ -96,7 +115,11 @@ class Dataset(DataObject):
 
     @abstractmethod
     def _create_uuid() -> str:
-        """Create the schema_id (as uuid.uuid4()) for the data schema."""
+        """Create the schema_id (as uuid.uuid4()) for the data schema.
+        Args:
+            None
+        Returns:
+            uuid_out (string): IDK"""
         import uuid
         is_unique = False
         cursor = Action.conn.cursor()
@@ -111,47 +134,83 @@ class Dataset(DataObject):
     
     #################### Start Source objects ####################
     def get_users(self) -> list:
-        """Return a list of user objects that belong to this project. Identical to Project.get_users()"""
+        """Return a list of user objects that belong to this project. Identical to Project.get_users()
+        Args:
+            self
+        Returns:
+            IDK"""
         from ResearchOS import User
         us_ids = self._get_all_source_object_ids(cls = User)
         return self._gen_obj_or_none(us_ids, User)
 
     #################### Start Target objects ####################
     def get_projects(self) -> list:
-        """Return a list of project objects that use this dataset."""
+        """Return a list of project objects that use this dataset.
+        Args:
+            self
+        Returns:
+            IDK"""
         from ResearchOS import Project
         pj_ids = self._get_all_target_object_ids(cls = Project)
         return self._gen_obj_or_none(pj_ids, Project)
     
     def add_project_id(self, project_id: str):
-        """Add a project to the dataset."""
+        """Add a project to the dataset.
+        Args:
+            self
+            project_id (string): the project id as a string
+        Returns:
+            none IDK"""
         from ResearchOS import Project
         self._add_target_object_id(project_id, cls = Project)
 
     def remove_project_id(self, project_id: str):
-        """Remove a project from the dataset."""
+        """Remove a project from the dataset.
+        Args:
+            self
+            project_id (string): the project id to remove given as a string
+        Returns:
+            none IDK"""
         from ResearchOS import Project        
         self._remove_target_object_id(project_id, cls = Project)
 
     def get_subjects(self) -> list:
-        """Return a list of subject objects that belong to this dataset."""
+        """Return a list of subject objects that belong to this dataset.
+        Args:
+            self
+        Returns:
+            IDK (list): subject objects in this database"""
         from ResearchOS import Subject
         sj_ids = self._get_all_target_object_ids(cls = Subject)
         return self._gen_obj_or_none(sj_ids, Subject)
     
     def add_subject_id(self, subject_id: str):
-        """Add a subject to the dataset."""
+        """Add a subject to the dataset.
+        Args:
+            self
+            subject_id (string): the subject id to remove given as a string
+        Returns:
+            none IDK"""
         from ResearchOS import Subject
         self._add_target_object_id(subject_id, cls = Subject)
 
     def remove_subject_id(self, subject_id: str):
-        """Remove a subject from the dataset."""
+        """Remove a subject from the dataset.
+        Args:
+            self
+            subject_id (string): subject id to remove given as a string
+        Returns:
+            none IDK"""
         from ResearchOS import Subject        
         self._remove_target_object_id(subject_id, cls = Subject)
 
     #################### Start class-specific methods ####################
     def open_dataset_path(self) -> None:
-        """Open the dataset's path in the Finder/File Explorer."""
+        """Open the dataset's path in the Finder/File Explorer. Is class-specifit method.
+        Args:
+            self
+        Returns:
+            none"""
         path = self.dataset_path
 
 if __name__=="__main__":
