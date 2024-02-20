@@ -1,16 +1,15 @@
 from typing import Any
 from typing import Callable
-import json, sys
+import json, sys, os
 import importlib
+
+import networkx as nx
 
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.variable import Variable
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.PipelineObjects.subset import Subset
-from ResearchOS.DataObjects.dataset import Dataset
-from ResearchOS.PipelineObjects.project import Project
 from ResearchOS.research_object_handler import ResearchObjectHandler
-from ResearchOS.current_user import CurrentUser
 from ResearchOS.code_inspector import get_returned_variable_names, get_input_variable_names
 
 all_default_attrs = {}
@@ -18,9 +17,16 @@ all_default_attrs["method"] = None
 all_default_attrs["level"] = None
 all_default_attrs["input_vrs"] = {}
 all_default_attrs["output_vrs"] = {}
-all_default_attrs["subset"] = None
+all_default_attrs["subset_id"] = None
+all_default_attrs["is_matlab"] = False
+all_default_attrs["mfolder"] = None
+all_default_attrs["mfunc_name"] = None
 
 complex_attrs_list = []
+
+import matlab.engine
+
+eng = matlab.engine.start_matlab()
 
 
 class Process(PipelineObject):
@@ -33,7 +39,28 @@ class Process(PipelineObject):
         # PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
 
     #################### Start class-specific attributes ###################
+    def validate_mfunc_name(self, mfunc_name: str) -> None:
+        self.validate_mfolder(self.mfolder)
+        if not self.is_matlab and mfunc_name is None: 
+            return
+        if not isinstance(mfunc_name, str):
+            raise ValueError("Function name must be a string!")
+        if not str(mfunc_name).isidentifier():
+            raise ValueError("Function name must be a valid variable name!")
+        if not os.path.exists(os.path.join(self.mfolder, mfunc_name + ".m")):
+            raise ValueError("Function name must reference an existing MATLAB function in the specified folder.")
+        
+    def validate_mfolder(self, mfolder: str) -> None:
+        if not self.is_matlab and mfolder is None:
+            return
+        if not isinstance(mfolder, str):
+            raise ValueError("Path must be a string!")
+        if not os.path.exists(mfolder):
+            raise ValueError("Path must be a valid existing folder path!")
+        
     def validate_method(self, method: Callable) -> None:
+        if method is None and self.is_matlab:
+            return
         if not isinstance(method, Callable):
             raise ValueError("Method must be a callable function!")
         if method.__module__ not in sys.modules:
@@ -77,20 +104,21 @@ class Process(PipelineObject):
             raise ValueError("Subset ID must reference an existing Subset.")
         
     def validate_input_vrs(self, inputs: dict) -> None:
-        """Validate that the input variables are correct."""
-        self.validate_method(self.method)
-        input_vr_names_in_code = get_input_variable_names(self.method)
-        self._validate_vrs(inputs, input_vr_names_in_code)
+        """Validate that the input variables are correct."""        
+        if not self.is_matlab:
+            input_vr_names_in_code = get_input_variable_names(self.method)
+        # self._validate_vrs(inputs, input_vr_names_in_code)
 
     def validate_output_vrs(self, outputs: dict) -> None:
-        """Validate that the output variables are correct."""
-        self.validate_method(self.method)
-        output_vr_names_in_code = get_returned_variable_names(self.method)
+        """Validate that the output variables are correct."""        
+        if not self.is_matlab:
+            output_vr_names_in_code = get_returned_variable_names(self.method)
         # self._validate_vrs(outputs, output_vr_names_in_code)    
 
     def _validate_vrs(self, vr: dict, vr_names_in_code: list) -> None:
         """Validate that the input and output variables are correct. They should follow the same format.
-        The format is a dictionary with the variable name as the key and the variable ID as the value."""        
+        The format is a dictionary with the variable name as the key and the variable ID as the value."""       
+        self.validate_method(self.method) 
         if not isinstance(vr, dict):
             raise ValueError("Variables must be a dictionary.")
         for key, value in vr.items():
@@ -139,7 +167,9 @@ class Process(PipelineObject):
         self.validate_method(self.method)
         self.validate_level(self.level)
 
-        output_var_names_in_code = get_returned_variable_names(self.method)
+        # TODO: Fix this to work with MATLAB.
+        if not self.is_matlab:
+            output_var_names_in_code = get_returned_variable_names(self.method)
 
         # 2. Validate that the input & output variables have been properly set.
         self.validate_input_vrs(self.input_vrs)
@@ -152,25 +182,47 @@ class Process(PipelineObject):
         # Get the subset of the data.
         subset_graph = Subset(id = self.subset_id).get_subset()
 
+        # Do the setup for MATLAB.
+        if self.is_matlab:
+            eng.addpath(self.mfolder, nargout=0)            
+
         level_nodes = [node for node in subset_graph if isinstance(node, self.level)]
         # Iterate over each data object at this level (e.g. all Trials)
         for node in level_nodes:
             # Get the values for the input variables for this DataObject node.
             vr_values_in = {}
+            anc_nodes = nx.ancestors(subset_graph, node)
+            node_lineage = [node] + [anc_node for anc_node in anc_nodes]
             for var_name_in_code, vr in self.input_vrs.items():
-                vr_values_in[var_name_in_code] = getattr(node, vr)
+                for curr_node in node_lineage:
+                    if hasattr(curr_node, vr.name):
+                        vr_values_in[var_name_in_code] = getattr(curr_node, vr.name)
+                        break
 
             # NOTE: For now, assuming that there is only one return statement in the entire method.
-            vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
+            if self.is_matlab:
+                vr_vals_in = list(vr_values_in.values())
+                # vr_vals_out = eng.test(1,2, nargout = 1)
+                vr_vals_in_str = ",".join([f"vr_vals_in[{idx}]" for idx in range(len(vr_vals_in))])
+                vr_values_out = eval(f"eng.{self.mfunc_name}({vr_vals_in_str}, nargout={len(self.output_vrs)})")
+            else:
+                vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
             if not isinstance(vr_values_out, tuple):
                 vr_values_out = (vr_values_out,)
             if len(vr_values_out) != len(self.output_vrs):
                 raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
-            if not all(vr in self.output_vrs for vr in output_var_names_in_code):
-                raise ValueError("All of the variable names returned by this method must have been previously registered with this Process instance.")            
+            # if not all(vr in self.output_vrs for vr in output_var_names_in_code):
+            #     raise ValueError("All of the variable names returned by this method must have been previously registered with this Process instance.")            
 
-            # Set the output variables for this DataObject node.            
+            # Set the output variables for this DataObject node.
+            idx = -1 # For MATLAB. Requires that the args are in the proper order.
             for vr_name, vr in self.output_vrs.items():
-                idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out, and the order in the output_vrs dict are probably different.
+                if not self.is_matlab:
+                    idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out, and the order in the output_vrs dict are probably different.
+                else:
+                    idx += 1
                 setattr(node, vr_name, vr_values_out[idx])
+
+        if self.is_matlab:
+            eng.rmpath(self.mfolder, nargout=0)   
 
