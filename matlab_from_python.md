@@ -1,0 +1,28 @@
+Compatible versions of MATLAB & Python: https://www.mathworks.com/support/requirements/python-compatibility.html
+
+### NOTE: This only works on Windows so far.
+### NOTE 2: MATLAB & Python must both be 64 bit. They must have the "same architecture"
+From here: https://www.mathworks.com/help/matlab/matlab_external/system-requirements-for-matlab-engine-for-python.html
+# Setup:
+## 1. Download MATLAB R2021b.
+
+## 2. Download Python 3.9.0
+From here: https://www.python.org/downloads/release/python-390/
+Select the "Windows x86-64 executable installer".
+Be sure to add it to the PATH when installing!
+
+## 3. Install MATLAB Engine API for Python
+In the folder for the project, create a .venv with VSCode.
+Select the Python 3.9.0 interpreter.
+Mine was located at: 
+"C:\Users\Mitchell\AppData\Local\Programs\Python\Python39\python.exe"
+Then, in the Terminal, with the venv activated, run:
+python -m pip install matlabengine==9.11.19
+
+# 4. In MATLAB, run:
+pyenv(Version="3.9")
+From here: https://www.mathworks.com/help/matlab/matlab_external/install-supported-python-implementation.html#bujjwjn
+
+
+
+# Usage:

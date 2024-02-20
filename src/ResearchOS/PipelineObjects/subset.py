@@ -1,5 +1,5 @@
 from typing import Any
-import json
+import json, copy
 
 import networkx as nx
 
@@ -89,20 +89,20 @@ class Subset(PipelineObject):
         nodes_for_subgraph = []
         G = ds.address_graph
         for node in G.nodes():
-            if not self.meets_conditions(node, self.conditions):
+            if not self.meets_conditions(node, self.conditions, G):
                 continue
             curr_nodes = [node]
             curr_nodes.extend(nx.ancestors(G, node))
             nodes_for_subgraph.extend([node for node in curr_nodes if node not in nodes_for_subgraph])
         return G.subgraph(nodes_for_subgraph) # Maintains the relationships between all of the nodes in the subgraph.
 
-    def meets_conditions(self, node: Any, conditions: dict) -> bool:
+    def meets_conditions(self, node: Any, conditions: dict, G: nx.MultiDiGraph) -> bool:
         """Check if the node meets the conditions."""
         if isinstance(conditions, dict):
             if "and" in conditions:
-                return all([self.meets_conditions(node, cond) for cond in conditions["and"]])
+                return all([self.meets_conditions(node, cond, G) for cond in conditions["and"]])
             if "or" in conditions:
-                return any([self.meets_conditions(node, cond) for cond in conditions["or"]])
+                return any([self.meets_conditions(node, cond, G) for cond in conditions["or"]])
                     
         # Check the condition.
         vr_id = conditions[0]
@@ -111,6 +111,15 @@ class Subset(PipelineObject):
         vr = Variable(id = vr_id)
         vr_name = vr.name
         if not hasattr(node, vr_name):
+            anc_nodes = nx.ancestors(G, node)
+            found_attr = False
+            for anc_node in anc_nodes:
+                if not hasattr(anc_node, vr_name):
+                    continue
+                found_attr = True
+                break
+            if found_attr and self.meets_conditions(anc_node, conditions, G):
+                return True
             return False
         vr_value = getattr(node, vr_name)
 
