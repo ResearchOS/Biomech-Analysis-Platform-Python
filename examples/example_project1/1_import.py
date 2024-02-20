@@ -1,3 +1,5 @@
+import json, os
+
 import ResearchOS as ros
 
 from subsets import all_trials_OA, all_trials_YA
@@ -9,6 +11,8 @@ ss.conditions = all_trials_OA
 ds = ros.Dataset(id = "DS1")
 input_vr1 = ros.Variable(id = "VR15", name = "dataset_path", level = ros.Dataset, hard_coded_value = ds.dataset_path)
 mocapfpHelper = ros.Variable(id = "VR16", name = "mocapfpHelper", level = ros.Trial)
+with open (os.sep.join(["examples", "example_project1", "mocapfpHelper.json"]), "r") as f:
+    mocapfpHelper.hard_coded_value = json.load(f)
 fpsUsed = ros.Variable(id = "VR5")
 
 # Output variables

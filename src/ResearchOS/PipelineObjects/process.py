@@ -9,6 +9,7 @@ from ResearchOS.research_object import ResearchObject
 from ResearchOS.variable import Variable
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.PipelineObjects.subset import Subset
+from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.code_inspector import get_returned_variable_names, get_input_variable_names
 
@@ -163,6 +164,7 @@ class Process(PipelineObject):
     def run(self) -> None:
         """Execute the attached method.
         kwargs are the input VR's."""
+        ds = Dataset(id = self.get_dataset_id())
         # 1. Validate that the level & method have been properly set.
         self.validate_method(self.method)
         self.validate_level(self.level)
@@ -180,7 +182,8 @@ class Process(PipelineObject):
 
         # 4. Run the method.
         # Get the subset of the data.
-        subset_graph = Subset(id = self.subset_id).get_subset()
+        subset_graph = ds.address_graph
+        # subset_graph = Subset(id = self.subset_id).get_subset()
 
         # Do the setup for MATLAB.
         if self.is_matlab:
@@ -199,6 +202,8 @@ class Process(PipelineObject):
                     if hasattr(curr_node, vr.name):
                         vr_values_in[var_name_in_code] = getattr(curr_node, vr.name)
                         break
+                    else:
+                        raise ValueError(f"Variable {vr.name} not found in the {node}.__dict__.")
 
             # NOTE: For now, assuming that there is only one return statement in the entire method.
             if self.is_matlab:

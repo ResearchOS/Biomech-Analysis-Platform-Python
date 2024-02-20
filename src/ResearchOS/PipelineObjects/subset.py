@@ -89,7 +89,8 @@ class Subset(PipelineObject):
         nodes_for_subgraph = []
         G = ds.address_graph
         for node in G.nodes():
-            if not self.meets_conditions(node, self.conditions, G):
+            ro = ResearchObjectHandler._prefix_to_class(node.prefix)(id = node.id)
+            if not self.meets_conditions(ro, self.conditions, G):
                 continue
             curr_nodes = [node]
             curr_nodes.extend(nx.ancestors(G, node))
@@ -105,8 +106,8 @@ class Subset(PipelineObject):
                 return any([self.meets_conditions(node, cond, G) for cond in conditions["or"]])
                     
         # Check the condition.
-        cls = ResearchObjectHandler._prefix_to_class(node.prefix)
-        ro = cls(id = node.id)
+        # cls = ResearchObjectHandler._prefix_to_class(node.prefix)
+        # ro = cls(id = node.id)
         vr_id = conditions[0]
         logic = conditions[1]
         value = conditions[2]
