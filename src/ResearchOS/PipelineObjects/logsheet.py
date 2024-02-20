@@ -1,6 +1,5 @@
 from typing import Any
-import json, csv
-import copy
+import json, csv, platform
 
 import networkx as nx
 
@@ -14,7 +13,6 @@ from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
-from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -39,7 +37,10 @@ class Logsheet(PipelineObject):
     def read_and_clean_logsheet(self, nrows: int = None) -> None:
         """Read the logsheet (CSV only) and clean it."""
         logsheet = []
-        first_elem_prefix = '\ufeff'
+        if platform.system() == "Windows":
+            first_elem_prefix = "ï»¿"
+        else:
+            first_elem_prefix = '\ufeff'
         with open(self.path, "r") as f:
             reader = csv.reader(f, delimiter=',', quotechar='"')            
 
@@ -49,7 +50,7 @@ class Logsheet(PipelineObject):
                     break
         
         # 7. Check that the headers all match the logsheet.
-        logsheet[0][0] = logsheet[0][0].replace(first_elem_prefix, "")
+        logsheet[0][0] = logsheet[0][0][len(first_elem_prefix):]
         return logsheet
 
     ### Logsheet path
@@ -229,7 +230,9 @@ class Logsheet(PipelineObject):
         if len(full_logsheet) == self.num_header_rows:
             logsheet = []
         else:
-            logsheet = full_logsheet[self.num_header_rows:]        
+            logsheet = full_logsheet[self.num_header_rows:]
+
+        logsheet = logsheet[0:50] # For testing purposes, only read the first 50 rows.
         
         # For each row, connect instances of the appropriate DataObject subclass to all other instances of appropriate DataObject subclasses.
         headers_in_logsheet = full_logsheet[0]
@@ -281,9 +284,9 @@ class Logsheet(PipelineObject):
         for cls in order:
             name_ids_dict[cls] = {} # Initialize the dict for this class.
         all_dobjs_ordered = [] # The list of lists of DataObject instances, ordered by the order of the schema.
-        for row in dobj_names:
+        for row_num, row in enumerate(dobj_names):
             row = row[1:]
-            all_dobjs_ordered.append([ds]) # Add the Dataset to the beginning of each row.                    
+            all_dobjs_ordered.append([ds]) # Add the Dataset to the beginning of each row.
             for idx in range(len(row)):
                 cls = order[idx] # The class to create.
                 col_idx = cols_idx[idx] # The index of the column in the logsheet.
@@ -292,6 +295,7 @@ class Logsheet(PipelineObject):
                     name_ids_dict[cls][value] = IDCreator().create_ro_id(cls)
                 ro = cls(id = name_ids_dict[cls][value], name = value)
                 all_dobjs_ordered[-1].append(ro)
+                print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", ro.id)
         
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.

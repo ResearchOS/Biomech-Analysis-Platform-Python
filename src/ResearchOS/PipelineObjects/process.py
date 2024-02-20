@@ -142,11 +142,11 @@ class Process(PipelineObject):
         output_var_names_in_code = get_returned_variable_names(self.method)
 
         # 2. Validate that the input & output variables have been properly set.
-        self.validate_input_vrs()
-        self.validate_output_vrs()
+        self.validate_input_vrs(self.input_vrs)
+        self.validate_output_vrs(self.output_vrs)
 
         # 3. Validate that the subsets have been properly set.
-        self.validate_subset_id(self.subset)
+        self.validate_subset_id(self.subset_id)
 
         # 4. Run the method.
         # Get the subset of the data.

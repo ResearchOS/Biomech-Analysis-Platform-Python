@@ -4,7 +4,7 @@ from importer import import_example
 from ResearchOS.config import Config
 
 ## DELETE THE DATABASE FILE AND RUN DB_INITIALIZER FIRST.
-db_file = "dev_database3.db"
+db_file = "dev_database.db"
 config = Config()
 config.db_file = db_file
 ros.DBInitializer()
@@ -15,7 +15,7 @@ ds.schema = [
     [ros.Dataset, ros.Subject],
     [ros.Subject, ros.Trial]
 ]
-ds.dataset_path = "examples/data"
+ds.dataset_path = "examples\data"
 
 # Initialize the logsheet.
 lg = ros.Logsheet(id = "LG1")
@@ -74,7 +74,6 @@ importPR.level = ros.Trial
 importPR.set_input_vrs(path = dataset_path_vr)
 importPR.set_output_vrs(mocap_data = vr1, force_data = vr2)
 importPR.subset_id = ss.id
-ss_graph = ss.get_subset()
 importPR.run()
 
 # Create & set up the Process object to compute the derivative.
