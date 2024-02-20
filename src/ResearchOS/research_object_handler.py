@@ -7,13 +7,10 @@ import sqlite3
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
     from ResearchOS.variable import Variable
-    # from ResearchOS.DataObjects.data_object import DataObject
 
-# from ResearchOS.default_attrs import DefaultAttrs
-# from ResearchOS.db_connection_factory import DBConnectionFactory
+from ResearchOS.idcreator import IDCreator
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
-from ResearchOS.idcreator import IDCreator
 
 class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
@@ -29,8 +26,12 @@ class ResearchObjectHandler:
         schema_id = research_object.get_current_schema_id(dataset_id)
         conn = ResearchObjectHandler.pool.get_connection()
         cursor = conn.cursor()
+        sqlquery = "SELECT * FROM data_values"
+        # sqlquery = "SELECT scalar_value FROM data_values WHERE vr_id = ? AND dataobject_id = ? AND schema_id = ?"
         sqlquery = f"SELECT scalar_value FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
-        rows = cursor.execute(sqlquery).fetchall()        
+        # params = (vr.id, research_object.id, schema_id)
+        # sqlquery = f"SELECT scalar_value FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
+        rows = cursor.execute(sqlquery).fetchall()
         ResearchObjectHandler.pool.return_connection(conn)
         if len(rows) == 0:
             raise ValueError("No value exists for that VR.")
@@ -47,13 +48,14 @@ class ResearchObjectHandler:
     def _set_attr_validator(research_object: "ResearchObject", attr_name: str, attr_value: Any, validate: bool = True) -> None:
         """Set the attribute validator for the specified attribute."""
         if not attr_name.isidentifier():
-            raise ValueError(f"{attr_name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.
-        # if attr_name in research_object.__dict__ and research_object.__dict__.get(attr_name, None) == attr_value:
-        #     return # No change.
+            raise ValueError(f"{attr_name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.        
         if attr_name == "id":
             raise ValueError("Cannot change the ID of a research object.")
         if attr_name == "prefix":
             raise ValueError("Cannot change the prefix of a research object.")
+        if attr_name == "name":
+            if not str(attr_value).isidentifier():
+                raise ValueError(f"name attribute, value: {attr_value} is not a valid attribute name.")
         # Validate the value        
         if validate:                                                      
             ResearchObjectHandler.validator(research_object, attr_name, attr_value)
@@ -206,21 +208,26 @@ class ResearchObjectHandler:
         if name in default_attrs:
             ResearchObjectHandler._set_builtin_attribute(research_object, name, value, action, validate, default_attrs, complex_attrs)
             return
-        
+                
         conn = action.pool.get_connection()
         cursor = conn.cursor()
         if name in research_object.__dict__:
-            # The VR already exists for this name in the research object
-            vr = research_object.__dict__[name]
-            vr_id = vr.id
+            # The VR already exists for this name in the research object, AND the value is unchanging.
+            if getattr(research_object, name) == value:
+                action.pool.return_connection(conn)
+                return
+            
+            selected_vr = research_object.__dict__[name]
+            vr_id = selected_vr.id            
         else:            
             # Search through pre-existing unassociated VR for one with this name. If it's not in the vr_dataobjects table, it's unassociated.
             # Then, put the vr_id into the vr_dataobjects table.
-            # Check if there is an existing variable that should be used (from a different DataObject, e.g. another Trial).
+            # Check if there is an existing variable that should be used (from a different DataObject, e.g. another Trial).            
             selected_vr = None
             sqlquery = f"SELECT vr_id FROM vr_dataobjects"
             associated_result = cursor.execute(sqlquery).fetchall()
             vr_ids = [row[0] for row in associated_result]
+            vr_ids = list(set(vr_ids))
             for vr_id in vr_ids:
                 vr = Variable(id = vr_id)
                 if vr.name == name:
@@ -257,8 +264,9 @@ class ResearchObjectHandler:
         else:
             sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{schema_id}')"
         action.add_sql_query(sqlquery)
+        action.execute()
+        action.pool.return_connection(conn)        
         research_object.__dict__[name] = vr
-        action.pool.return_connection(conn)
         
     @staticmethod
     def is_scalar(value: Any) -> bool:

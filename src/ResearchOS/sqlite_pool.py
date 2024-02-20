@@ -45,6 +45,9 @@ class SQLiteConnectionPool:
 
     def return_connection(self, connection):
         # self.print_caller_method_name()
+        # Ensure that the transaction is over. 
+        # If I am returning the connection, there's nothing else for it to do anyways.
+        connection.rollback()
         if self.pool.full():
             connection.close()
         else:

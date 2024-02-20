@@ -1,5 +1,6 @@
 from typing import Any
 import json, csv
+import copy
 
 import networkx as nx
 
@@ -145,7 +146,7 @@ class Logsheet(PipelineObject):
             
     def validate_num_header_rows(self, num_header_rows: int) -> None:
         """Validate the number of header rows. If it is not valid, the value is rejected."""                
-        if not isinstance(num_header_rows, int | float):
+        if not isinstance(num_header_rows, (int, float)):
             raise ValueError("Num header rows must be numeric!")
         if num_header_rows<0:
             raise ValueError("Num header rows must be positive!")
@@ -228,7 +229,7 @@ class Logsheet(PipelineObject):
         if len(full_logsheet) == self.num_header_rows:
             logsheet = []
         else:
-            logsheet = full_logsheet[self.num_header_rows:]
+            logsheet = full_logsheet[self.num_header_rows:]        
         
         # For each row, connect instances of the appropriate DataObject subclass to all other instances of appropriate DataObject subclasses.
         headers_in_logsheet = full_logsheet[0]
@@ -259,51 +260,39 @@ class Logsheet(PipelineObject):
             for column_name, cls_item in self.class_column_names.items():
                 if cls is cls_item:
                     dobj_column_names.append(column_name)
+
+        # Create the data objects.
+        # Get all of the names of the data objects, after they're cleaned for SQLite.
+        cols_idx = [headers_in_logsheet.index(header) for header in dobj_column_names] # Get the indices of the data objects columns.
+        dobj_names = []
+        for row in logsheet:
+            dobj_names.append([])
+            for idx in cols_idx:
+                raw_value = row[idx]
+                type_class = header_types[idx]
+                value = self.clean_value(type_class, raw_value)
+                dobj_names[-1].append(value)        
+        for row_num, row in enumerate(dobj_names):
+            if any([len(cell)==0 for cell in row]):
+                raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} all data object names must be non-empty!")
+        [row.insert(0, ds.id) for row in dobj_names] # List of lists with all data object names, including the Dataset.
+        name_ids_dict = {} # The dict that maps the values (names) to the IDs. Separate dict for each class, each class is a top-level key of the dict.
+        name_ids_dict[Dataset] = {ds.name: ds.id}
+        for cls in order:
+            name_ids_dict[cls] = {} # Initialize the dict for this class.
+        all_dobjs_ordered = [] # The list of lists of DataObject instances, ordered by the order of the schema.
+        for row in dobj_names:
+            row = row[1:]
+            all_dobjs_ordered.append([ds]) # Add the Dataset to the beginning of each row.                    
+            for idx in range(len(row)):
+                cls = order[idx] # The class to create.
+                col_idx = cols_idx[idx] # The index of the column in the logsheet.
+                value = self.clean_value(header_types[col_idx], row[idx])
+                if value not in name_ids_dict[cls]:                    
+                    name_ids_dict[cls][value] = IDCreator().create_ro_id(cls)
+                ro = cls(id = name_ids_dict[cls][value], name = value)
+                all_dobjs_ordered[-1].append(ro)
         
-        action = Action(name = "read logsheet")
-        all_dobjs_ordered = []
-        logsheet = logsheet[0:10]
-        for row_num, row in enumerate(logsheet):
-            # Create a new instance of the appropriate DataObject subclass(es) and store it in the database.
-            # TODO: How to order the data objects?
-            row_dobjs = []
-            for idx, cls in enumerate(order):
-                header = dobj_column_names[idx]
-                col_idx = headers_in_logsheet.index(header)
-                raw_value = row[col_idx]                
-                value = header_types[col_idx](raw_value)
-                level = header_levels[col_idx]                
-                vr = vr_obj_list[col_idx]
-                
-                # Create the DataObject instance.                
-                new_dobj = cls(id = IDCreator().create_ro_id(cls), name = value)
-                row_dobjs.append(new_dobj)
-
-                # If this column is e.g. Trial, and the Variable is a Trial level Variable, then attach the Variable to the DataObject.
-                if level is cls:
-                    new_dobj.__setattr__(vr.name, value, action = action)
-
-            all_dobjs_ordered.append(row_dobjs)
-
-            # TODO: Assign all of the data from non-data object columns to the appropriate DataObject instances.
-            for header in all_headers:
-                name = header[0]
-                type_class = header[1]
-                level = header[2]
-                vr_id = header[3]
-                if name in dobj_column_names:
-                    continue
-                dobj = [dobj for dobj in row_dobjs if dobj.__class__ == level][0]
-                raw_value = row[headers_in_logsheet.index(name)]
-                print("Row: ", row_num, "Column: ", name, "Value: ", raw_value)
-                try:
-                    value = type_class(raw_value)
-                except ValueError:
-                    value = raw_value
-                if isinstance(value, str):
-                    value = value.replace("'", "''") # Handle single quotes.
-                dobj.__setattr__(name, value) # Set the attribute of this DataObject instance to the value in the logsheet.
-
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.
         addresses = []
@@ -311,8 +300,52 @@ class Logsheet(PipelineObject):
             for idx, dobj in enumerate(row):
                 if idx == 0:
                     continue
-                addresses.append([row[idx-1].id, dobj.id])
-        ds.addresses = addresses
+                ids = [row[idx-1].id, dobj.id]
+                if ids not in addresses:
+                    addresses.append(ids)
+        ds.addresses = addresses # Store addresses, also creates address_graph.
+                
+        
+        # Assign the values to the DataObject instances.
+        # TODO: Validate that the logsheet is of valid format.
+        # 1. Doesn't have conflicting values for one level (empty/None is OK)        
+        action = Action(name = "read logsheet")
+        action.commit = True
+        for row_num, row in enumerate(logsheet):
+            row_dobjs = all_dobjs_ordered[row_num][1:]
+
+            # Assign all of the data to the appropriate DataObject instances.
+            # Includes the "data object columns" so that the DataObjects have an attribute with the name of the header name.
+            for header in all_headers:
+                name = header[0]
+                col_idx = headers_in_logsheet.index(name)                
+                type_class = header[1]
+                level = header[2]
+                level_idx = order.index(level)
+                vr_id = header[3]
+                dobj = row_dobjs[level_idx]
+                value = self.clean_value(type_class, row[headers_in_logsheet.index(name)])
+                print("Row: ", row_num, "Column: ", name, "Value: ", value)
+                prev_value = getattr(dobj, name, None) # May not exist yet.                
+                if prev_value is not None:                    
+                    if prev_value == value or value is None:
+                        continue
+                    conn = action.pool.get_connection()
+                    action.pool.return_connection(conn)
+                    raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")                
+                dobj.__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.                                
+
+    def clean_value(self, type_class: type, raw_value: Any) -> Any:
+        """Convert to proper type and clean the value of the logsheet cell."""
+        try:
+            value = type_class(raw_value)
+        except ValueError:
+            value = raw_value
+        if isinstance(value, str):
+            value = value.replace("'", "''") # Handle single quotes.
+        if value == '': # Empty
+            value = None
+        return value
 
 
 

@@ -1,32 +1,43 @@
 """Initialize a database to handle all of the data for the application."""
 
-import sqlite3, os, json
+import os, json, weakref
 
 from ResearchOS.current_user import CurrentUser
-from ResearchOS.db_connection_factory import DBConnectionFactory
+from ResearchOS.config import Config
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
+from ResearchOS.research_object_handler import ResearchObjectHandler
 
 sql_settings_path = os.path.dirname(__file__) + "/config/sql.json"
 
 class DBInitializer():
     """Initializes the database when the Python package is run for the first time using ros-quickstart."""
 
-    def __init__(self, db_file: str) -> None:
+    def __init__(self, db_file: str = None) -> None:
         """Initialize the database."""
-        with open(sql_settings_path, "r") as file:
-            data = json.load(file) 
-        intended_tables = data["intended_tables"]
+        # Reset everything.
+        ResearchObjectHandler.instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
+        ResearchObjectHandler.counts = {} # Keep track of the number of instances of each ID.
+        ResearchObjectHandler.pool = None
+        SQLiteConnectionPool._instance = None
 
+        config = Config()
+        if db_file is None:
+            db_file = config.db_file
+        else:
+            config.db_file = db_file
         if os.path.exists(db_file):
             os.remove(db_file)
+        with open(sql_settings_path, "r") as file:
+            data = json.load(file) 
+        intended_tables = data["intended_tables"]        
 
         self.db_file = db_file
-        self.conn = sqlite3.connect(db_file)
-        # conn.close()
-        # self.conn = DBConnectionFactory.create_db_connection(db_file).conn # Sets the Config db_file path too.
-        # self.conn = sqlite3.connect(db_file)
+        self.pool = SQLiteConnectionPool()
+        ResearchObjectHandler.pool = self.pool
+        self.conn = self.pool.get_connection()
         self.create_tables()
         self.check_tables_exist(intended_tables)
-        self.conn.close() # Before current user ID.
+        self.pool.return_connection(self.conn)
         self.init_current_user_id()        
 
     def init_current_user_id(self, user_id: str = "US000000_000"):
@@ -98,7 +109,7 @@ class DBInitializer():
         # Data objects data values. Lists all data values for all data objects.
         # dataobject_id is just the lowest level data object ID (the lowest level of the address).
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values (
-                        action_id TEXT,
+                        action_id TEXT NOT NULL,
                         dataobject_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
                         vr_id TEXT NOT NULL,
@@ -107,7 +118,7 @@ class DBInitializer():
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
                         FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (dataobject_id, schema_id, vr_id)
+                        PRIMARY KEY (dataobject_id, schema_id, vr_id, scalar_value)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.

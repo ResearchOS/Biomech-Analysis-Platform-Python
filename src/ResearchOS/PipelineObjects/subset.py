@@ -17,12 +17,9 @@ complex_attrs_list = []
 numeric_logic_options = (">", "<", ">=", "<=", )
 any_type_logic_options = ("==", '=', "!=", "in", "not in", "is", "is not", "contains", "not contains")
 logic_options = numeric_logic_options + any_type_logic_options
+plural_logic = ("in", "not in", "contains", "not contains")
 
 complex_attrs_list = []
-
-numeric_logic_options = (">", "<", ">=", "<=", )
-any_type_logic_options = ("==", '=', "!=", "in", "not in", "is", "is not", "contains", "not contains")
-logic_options = numeric_logic_options + any_type_logic_options
 
 class Subset(PipelineObject):
     """Provides rules to select a subset of data from a dataset."""
@@ -113,9 +110,23 @@ class Subset(PipelineObject):
         value = conditions[2]
         vr = Variable(id = vr_id)
         vr_name = vr.name
+        if not hasattr(node, vr_name):
+            return False
         vr_value = getattr(node, vr_name)
 
+        # This is probably shoddy logic, but it'll serve as a first pass to handle None types.
+        if logic in plural_logic:
+            if logic == "contains" and vr_value is None:
+                return False
+            elif logic == "not contains" and vr_value is None and value is not None:                
+                return True
+            elif logic == "in" and value is None:
+                return False
+            elif logic == "not in" and value is None:
+                return True
+
         # Numeric
+        bool_val = False
         if logic == ">" and vr_value > value:
             bool_val = True
         elif logic == "<" and vr_value < value:
@@ -136,6 +147,10 @@ class Subset(PipelineObject):
         elif logic == "is" and vr_value is value:
             bool_val = True
         elif logic == "is not" and vr_value is not value:
+            bool_val = True
+        elif logic == "contains" and value in vr_value:
+            bool_val = True
+        elif logic == "not contains" and not value in vr_value:
             bool_val = True
 
         return bool_val

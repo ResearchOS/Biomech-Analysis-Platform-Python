@@ -1,21 +1,25 @@
 import ResearchOS as ros
 from derivative import derivative
 from importer import import_example
+from ResearchOS.config import Config
 
 ## DELETE THE DATABASE FILE AND RUN DB_INITIALIZER FIRST.
+db_file = "dev_database3.db"
+config = Config()
+config.db_file = db_file
+ros.DBInitializer()
 
+# Initialize the dataset
 ds = ros.Dataset(id = "DS1")
-
-ds.schema = {
-    ros.Subject: {        
-        ros.Trial: {}
-    }
-}
+ds.schema = [
+    [ros.Dataset, ros.Subject],
+    [ros.Subject, ros.Trial]
+]
 ds.dataset_path = "examples/data"
-# ds.addresses = ""
 
+# Initialize the logsheet.
 lg = ros.Logsheet(id = "LG1")
-lg.path = "Spr23TWW_OA_AllSubjects_032323.csv"
+lg.path = "Spr23TWW_OA_AllSubjects_032323_TEST.csv"
 
 incomplete_headers = [
     ("Date", str, ros.Subject),
@@ -48,34 +52,40 @@ ss = ros.Subset(id = "SS1")
 lg.subset_id = ss.id
 lg.read_logsheet() # Puts addresses in the dataset object.
 
-tr1 = ros.Trial(id = "TR1")
-vr_trial = ros.Variable(id = "VR1", name = "test")
-tr1.set_value(vr_trial, 1)
-a = tr1.test
+# Initialize the variables.
+dataset_path_vr = ros.Variable(id = "VR15", name = "raw_data_path", level = ros.Dataset, hard_coded_value = ds.dataset_path)
+vr1 = ros.Variable(id = "VR16", name = "raw_mocap_data", level = ros.Trial)
+vr2 = ros.Variable(id = "VR17", name = "sampling_rate", level = ros.Trial)
 
-vr_data_path = ros.Variable(id = "VR0", name = "raw data path", level = ros.Dataset)
-vr1 = ros.Variable(id = "VR1", name = "raw mocap data", level = ros.Trial)
-vr2 = ros.Variable(id = "VR2", name = "sampling rate", level = ros.Trial)
-# TODO: Show hard-coded??
+conditions = {
+    "and": [
+        ["VR8", "in", ["Straight Line Gait", "TWW Pre-planned", "TWW Late-cued","Static Calibration"]],
+        ["VR9", "in", ["L", None]],
+        ["VR10", "==", 1],        
+        ["VR12", "not contains", "Practice"] # NEEDS FIXING FOR A "CONTAINS"
+    ]
+}
+ss.conditions = conditions
 
 # Create & set up the Process object to import the data.
 importPR = ros.Process(id = "PR1", name = "import")
 importPR.method = import_example
 importPR.level = ros.Trial
-importPR.input_vr = vr_data_path.id
-importPR.output_vr = vr1.id
+importPR.set_input_vrs(path = dataset_path_vr)
+importPR.set_output_vrs(mocap_data = vr1, force_data = vr2)
 importPR.subset_id = ss.id
-importPR.run_method()
+ss_graph = ss.get_subset()
+importPR.run()
 
 # Create & set up the Process object to compute the derivative.
-derivPR = ros.Process(id = "PR1", name = "deriv mocap data")
-derivPR.method = derivative
-derivPR.level = ros.Trial
-derivPR.input_vr = ""
-derivPR.output_vr = ""
-derivPR.subset_id = ss.id
-derivPR.run_method()
+# derivPR = ros.Process(id = "PR1", name = "deriv mocap data")
+# derivPR.method = derivative
+# derivPR.level = ros.Trial
+# derivPR.input_vr = ""
+# derivPR.output_vr = ""
+# derivPR.subset_id = ss.id
+# derivPR.run_method()
 
-derivPR = ros.Process(id = "PR1", name = "deriv mocap data",
-            method = derivative, level = ros.Trial, input_vr = "", output_vr = "", subset_id = ss.id)
-derivPR.run_method()
+# derivPR = ros.Process(id = "PR1", name = "deriv mocap data",
+#             method = derivative, level = ros.Trial, input_vr = "", output_vr = "", subset_id = ss.id)
+# derivPR.run_method()

@@ -22,7 +22,7 @@ class ResearchObject():
     def __eq__(self, other):
         if isinstance(other, ResearchObject):
             return self.id == other.id and self is other
-        return self == other
+        return False
     
     def __getattribute__(self, name: str) -> Any:
         """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""
@@ -33,10 +33,8 @@ class ResearchObject():
             value = super().__getattribute__(name) # Throw the default error.
         except AttributeError as e:
             raise e        
-        if not isinstance(value, vr_class):
-            return value
-        
-        value = ResearchObjectHandler.load_vr_value(self, value)
+        if isinstance(value, vr_class):
+            value = ResearchObjectHandler.load_vr_value(self, value)
         return value
 
     def __new__(cls, **kwargs):
@@ -57,9 +55,8 @@ class ResearchObject():
         """Initialize the research object."""   
         self.__dict__["id"] = orig_kwargs["id"] # Put the ID in the __dict__ so that it is not overwritten by the __setattr__ method.
         del orig_kwargs["id"] # Remove the ID from the kwargs so that it is not set as an attribute.        
-        attrs = DefaultAttrs(self.__class__) # Get the default attributes for the class.
+        attrs = DefaultAttrs(self) # Get the default attributes for the class.
         default_attrs = attrs.default_attrs
-        default_attrs["name"] = self.id # Set the default name to the object's ID.
 
         # Will be overwritten if creating a new object.
         action = Action(name = f"set object attributes")
@@ -85,20 +82,19 @@ class ResearchObject():
             if key in default_attrs and kwargs[key] == default_attrs[key]:
                 validate = False
             self.__setattr__(key, kwargs[key], action = action, validate = validate, all_attrs = attrs)
-            action.execute(commit = True) # Commit the action to the database.
-        # action.execute(commit = True) # Commit the action to the database.
+            action.execute() # Commit the action to the database.
 
     def __setattr__(self, name, value, action: Action = None, validate: bool = True, all_attrs: DefaultAttrs = None) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        if hasattr(self, name) and getattr(self, name) == value:
+            return # No change.
         if all_attrs is None:
-            all_attrs = DefaultAttrs(self.__class__)
+            all_attrs = DefaultAttrs(self)
         if action is None:            
             action = Action(name = "attribute_changed")
-            action.do_exec = True
-        else:
-            action.do_exec = False
-        ResearchObjectHandler._setattr(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)        
-        action.execute()
+        ResearchObjectHandler._setattr(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
+        if action.do_exec:        
+            action.execute()
 
     def get_vr(self, name: str) -> Any:
         """Get the VR itself instead of its value."""
