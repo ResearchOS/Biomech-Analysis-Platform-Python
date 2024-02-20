@@ -203,7 +203,7 @@ class Process(PipelineObject):
                         vr_values_in[var_name_in_code] = getattr(curr_node, vr.name)
                         break
                     else:
-                        raise ValueError(f"Variable {vr.name} not found in the {node}.__dict__.")
+                        raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
 
             # NOTE: For now, assuming that there is only one return statement in the entire method.
             if self.is_matlab:
