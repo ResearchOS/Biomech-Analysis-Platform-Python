@@ -202,9 +202,8 @@ class Process(PipelineObject):
             # NOTE: For now, assuming that there is only one return statement in the entire method.
             if self.is_matlab:
                 vr_vals_in = list(vr_values_in.values())
-                # vr_vals_out = eng.test(1,2, nargout = 1)
-                vr_vals_in_str = ",".join([f"vr_vals_in[{idx}]" for idx in range(len(vr_vals_in))])
-                vr_values_out = eval(f"eng.{self.mfunc_name}({vr_vals_in_str}, nargout={len(self.output_vrs)})")
+                fcn = getattr(eng, self.mfunc_name)
+                vr_values_out = fcn(*vr_vals_in, nargout=len(self.output_vrs))
             else:
                 vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
             if not isinstance(vr_values_out, tuple):
