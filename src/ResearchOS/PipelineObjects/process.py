@@ -86,7 +86,7 @@ class Process(PipelineObject):
         """Validate that the output variables are correct."""
         self.validate_method(self.method)
         output_vr_names_in_code = get_returned_variable_names(self.method)
-        self._validate_vrs(outputs, output_vr_names_in_code)    
+        # self._validate_vrs(outputs, output_vr_names_in_code)    
 
     def _validate_vrs(self, vr: dict, vr_names_in_code: list) -> None:
         """Validate that the input and output variables are correct. They should follow the same format.

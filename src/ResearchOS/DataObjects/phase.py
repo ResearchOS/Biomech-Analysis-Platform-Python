@@ -1,10 +1,6 @@
 from typing import Any
 
 from ResearchOS.DataObjects.data_object import DataObject
-from ResearchOS.action import Action
-from ResearchOS.research_object_handler import ResearchObjectHandler
-from ResearchOS.idcreator import IDCreator
-from ResearchOS.db_connection_factory import DBConnectionFactory
 
 all_default_attrs = {}
 
@@ -14,7 +10,7 @@ all_default_attrs = {}
 
 complex_attrs_list = []
 
-class Phase(ros.DataObject):
+class Phase(DataObject):
     """Phase class."""
 
     prefix = "PH"

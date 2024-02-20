@@ -35,6 +35,8 @@ class Variable(DataObject,  PipelineObject):
     def from_json_level(self, level: str) -> type:
         """Return the level as a JSON object."""
         level_str = json.loads(level)
+        if level_str is None:
+            return level_str
         subclasses = DataObject.__subclasses__()
         return [cls for cls in subclasses if cls.prefix == level_str][0]
     

@@ -10,7 +10,10 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "env": {
+                "PYDEVD_WARN_EVALUATION_TIMEOUT": "30",
+            }
         },
         {
             "name": "conftest",
@@ -18,7 +21,10 @@
             "request": "launch",
             "program": "tests/conftest.py",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "env": {
+                "PYDEVD_WARN_EVALUATION_TIMEOUT": "30",
+            }
         }
     ]
 }

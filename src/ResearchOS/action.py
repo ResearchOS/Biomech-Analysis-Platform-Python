@@ -34,11 +34,13 @@ class Action():
         #     timestamp = result[3]            
         #     redo_of = result[4]
 
+        self.commit = True
         self.id = id
         self.name = name
         self.timestamp = timestamp        
         self.redo_of = redo_of               
         self.user_object_id = user_object_id
+        self.do_exec = True
 
     ###############################################################################################################################
     #################################################### end of dunder methods ####################################################
@@ -92,7 +94,7 @@ class Action():
         """Add a sql query to the action."""
         self.sql_queries.append(sqlquery)
 
-    def execute(self, commit: bool = True) -> None:
+    def execute(self) -> None:
         """Run all of the sql queries in the action."""
         pool = SQLiteConnectionPool()
         conn = pool.get_connection()
@@ -104,11 +106,12 @@ class Action():
         for query in self.sql_queries:
             try:
                 cursor.execute(query)
-            except:
+            except:                
+                pool.return_connection(conn)
                 raise ValueError(f"SQL query failed: {query}")
         self.sql_queries = []               
         # Log the action to the Actions table   
-        if commit:            
+        if self.commit:            
             conn.commit()
         pool.return_connection(conn)
 
