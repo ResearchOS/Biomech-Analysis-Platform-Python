@@ -26,3 +26,9 @@ From here: https://www.mathworks.com/help/matlab/matlab_external/install-support
 
 
 # Usage:
+In process.py:
+import matlab.engine
+eng = matlab.engine.start_matlab()
+
+In the body of Process.run():
+varargout = eng.myfcn(varargin, nargout = length(self.output_vrs))

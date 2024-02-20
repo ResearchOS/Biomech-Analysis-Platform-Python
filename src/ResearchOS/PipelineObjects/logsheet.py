@@ -250,7 +250,7 @@ class Logsheet(PipelineObject):
             vr_obj_list.append(vr)
             vr_list.append(vr.id)
             
-        # Order the class column names by precedence in the schema so that higher level objects always exist before lower level, so they can be attached.
+        # Order the class column names by precedence in the schema so that higher level objects always exist before lower level.
         schema = ds.schema
         schema_graph = nx.DiGraph()
         schema_graph.add_edges_from(schema)
@@ -267,18 +267,18 @@ class Logsheet(PipelineObject):
         # Create the data objects.
         # Get all of the names of the data objects, after they're cleaned for SQLite.
         cols_idx = [headers_in_logsheet.index(header) for header in dobj_column_names] # Get the indices of the data objects columns.
-        dobj_names = []
+        dobj_names = [] # The matrix of data object names (values in the logsheet).
         for row in logsheet:
             dobj_names.append([])
             for idx in cols_idx:
                 raw_value = row[idx]
                 type_class = header_types[idx]
                 value = self.clean_value(type_class, raw_value)
-                dobj_names[-1].append(value)        
+                dobj_names[-1].append(value)
         for row_num, row in enumerate(dobj_names):
-            if any([len(cell)==0 for cell in row]):
-                raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} all data object names must be non-empty!")
-        [row.insert(0, ds.id) for row in dobj_names] # List of lists with all data object names, including the Dataset.
+            if not all([str(cell).isidentifier() for cell in row]):
+                raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} all data object names must be non-empty and valid variable names!")
+        [row.insert(0, ds.id) for row in dobj_names] # Prepend the Dataset to the first column of each row.
         name_ids_dict = {} # The dict that maps the values (names) to the IDs. Separate dict for each class, each class is a top-level key of the dict.
         name_ids_dict[Dataset] = {ds.name: ds.id}
         for cls in order:
@@ -293,21 +293,9 @@ class Logsheet(PipelineObject):
                 value = self.clean_value(header_types[col_idx], row[idx])
                 if value not in name_ids_dict[cls]:                    
                     name_ids_dict[cls][value] = IDCreator().create_ro_id(cls)
-                ro = cls(id = name_ids_dict[cls][value], name = value)
-                all_dobjs_ordered[-1].append(ro)
-                print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", ro.id)
-        
-        # Arrange the address ID's that were generated into an edge list.
-        # Then assign that to the Dataset.
-        addresses = []
-        for row in all_dobjs_ordered:
-            for idx, dobj in enumerate(row):
-                if idx == 0:
-                    continue
-                ids = [row[idx-1].id, dobj.id]
-                if ids not in addresses:
-                    addresses.append(ids)
-        ds.addresses = addresses # Store addresses, also creates address_graph.
+                ro = cls(id = name_ids_dict[cls][value], name = value) # Create the research object.
+                all_dobjs_ordered[-1].append(ro) # Matrix of all research objects.
+                print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", ro.id)        
                 
         
         # Assign the values to the DataObject instances.
@@ -337,7 +325,20 @@ class Logsheet(PipelineObject):
                     conn = action.pool.get_connection()
                     action.pool.return_connection(conn)
                     raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")                
-                dobj.__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.                                
+                dobj.__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.
+                a = getattr(dobj, name)
+
+        # Arrange the address ID's that were generated into an edge list.
+        # Then assign that to the Dataset.
+        addresses = []
+        for row in all_dobjs_ordered:
+            for idx, dobj in enumerate(row):
+                if idx == 0:
+                    continue
+                ids = [row[idx-1].id, dobj.id]
+                if ids not in addresses:
+                    addresses.append(ids)
+        ds.addresses = addresses # Store addresses, also creates address_graph.
 
     def clean_value(self, type_class: type, raw_value: Any) -> Any:
         """Convert to proper type and clean the value of the logsheet cell."""

@@ -105,6 +105,8 @@ class Subset(PipelineObject):
                 return any([self.meets_conditions(node, cond, G) for cond in conditions["or"]])
                     
         # Check the condition.
+        cls = ResearchObjectHandler._prefix_to_class(node.prefix)
+        ro = cls(id = node.id)
         vr_id = conditions[0]
         logic = conditions[1]
         value = conditions[2]

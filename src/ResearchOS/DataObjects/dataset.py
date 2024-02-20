@@ -162,6 +162,7 @@ class Dataset(DataObject):
             sqlquery = f"INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES ('{address_names[0]}', '{address_names[1]}', '{schema_id}', '{action.id}')"
             action.add_sql_query(sqlquery)
         self.__dict__["address_graph"] = self.addresses_to_object_graph(addresses)
+        self.__dict__["addresses"] = addresses
 
     def load_addresses(self) -> list:
         """Load the addresses from the database."""
@@ -185,12 +186,11 @@ class Dataset(DataObject):
         G = nx.MultiDiGraph()
         # To avoid recursion, set the lines with Dataset manually so there is no self reference.
         address_copy = copy.deepcopy(addresses)
-        if addresses:            
-            for idx, address in enumerate(addresses):
-                if address[0] == self.id:
-                    cls1 = ResearchObjectHandler._prefix_to_class(address[1])
-                    G.add_edge(self, cls1(id = address[1]))
-                    address_copy.remove(address)
+        for idx, address in enumerate(addresses):
+            if address[0] == self.id: # Include the Dataset as the source node.
+                cls1 = ResearchObjectHandler._prefix_to_class(address[1])
+                G.add_edge(self, cls1(id = address[1]))
+                address_copy.remove(address)
 
         addresses = address_copy
         for address_edge in addresses:
