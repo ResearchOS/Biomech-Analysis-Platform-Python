@@ -184,7 +184,8 @@ class Process(PipelineObject):
 
         # Do the setup for MATLAB.
         if self.is_matlab:
-            eng.addpath(self.mfolder, nargout=0)            
+            eng.addpath(self.mfolder, nargout=0)
+            # eng.eval(dbstop in self.mfunc_name if error)
 
         level_nodes = [node for node in subset_graph if isinstance(node, self.level)]
         # Iterate over each data object at this level (e.g. all Trials)
