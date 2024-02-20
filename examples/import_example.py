@@ -73,7 +73,7 @@ importPR = ros.Process(id = "PR1", name = "import")
 importPR.level = ros.Trial
 importPR.is_matlab = True
 importPR.set_input_vrs(path = dataset_path_vr)
-importPR.set_output_vrs(mocap_data = vr1)
+importPR.set_output_vrs(mocap_data = vr1, force_data = vr2)
 importPR.subset_id = ss.id
 importPR.mfolder = "C:\\Users\\Mitchell\\Desktop\\Matlab Code\\GitRepos\\PGUI_CommonPath\\Code\\Process_Functions_Copy_For_Python"
 importPR.mfunc_name = "test"
