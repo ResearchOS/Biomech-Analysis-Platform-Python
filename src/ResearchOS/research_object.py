@@ -116,14 +116,6 @@ class ResearchObject():
             raise ValueError("Need to create a dataset and set up its schema first.")
         dataset_id = result[-1][1]        
         return dataset_id
-    
-    def get_vr_file_path(self, vr_id: str, dataset_id: str, levels: list) -> str:
-        """Get the file path for a VR."""
-        subfolder = ""
-        for level in levels:
-            if level is not None:
-                subfolder += level + os.sep
-        return root_data_path + os.sep + dataset_id + subfolder + vr_id + ".json"    
 
     def get_current_schema_id(self, dataset_id: str) -> str:
         conn = ResearchObjectHandler.pool.get_connection()

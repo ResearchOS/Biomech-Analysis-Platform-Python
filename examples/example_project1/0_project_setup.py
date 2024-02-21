@@ -14,7 +14,8 @@ ds.schema = [
     [ros.Dataset, ros.Subject],
     [ros.Subject, ros.Trial]
 ]
-ds.dataset_path = os.sep.join(["examples","data"])
+# ds.dataset_path = os.sep.join(["examples","data"])
+ds.dataset_path = "C:\\Users\\Mitchell\\Desktop\\Matlab Code\\GitRepos\\Spr23-YA-OA-Role-Gait-Phase\\Raw Data Files"
 
 # Initialize the logsheet.
 lg = ros.Logsheet(id = "LG1")

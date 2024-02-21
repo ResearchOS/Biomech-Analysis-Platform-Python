@@ -192,25 +192,44 @@ class Process(PipelineObject):
             eng.addpath(self.mfolder, nargout=0)
             # eng.eval(dbstop in self.mfunc_name if error)
 
-        level_nodes = [node for node in subset_graph if isinstance(node, self.level)]
+        level_nodes = sorted([node for node in subset_graph if isinstance(node, self.level)], key = lambda x: x.name)
         # Iterate over each data object at this level (e.g. all Trials)
+        schema = ds.schema
+        schema_graph = nx.MultiDiGraph(schema)
+        schema_order = list(nx.topological_sort(schema_graph))
         for node in level_nodes:
             # Get the values for the input variables for this DataObject node.
+            print(f"Running {self.mfunc_name} on {node.name}.")
             vr_values_in = {}
             anc_nodes = nx.ancestors(subset_graph, node)
             node_lineage = [node] + [anc_node for anc_node in anc_nodes]
             for var_name_in_code, vr in self.input_vrs.items():
+                vr_found = False
+                if vr.hard_coded_value is not None:
+                    vr_values_in[var_name_in_code] = vr.hard_coded_value
+                    vr_found = True                
                 for curr_node in node_lineage:
                     if hasattr(curr_node, vr.name):
                         vr_values_in[var_name_in_code] = getattr(curr_node, vr.name)
+                        vr_found = True
                         break
-                    else:
-                        raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
+                if not vr_found:
+                    raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
+                
+            # Get the lineage so I can get the file path.
+            ordered_levels = []
+            for level in schema_order:
+                ordered_levels.append([n for n in node_lineage if isinstance(n, level)])
+            data_path = ds.dataset_path
+            for level in ordered_levels[1:]:
+                data_path = os.path.join(data_path, level[0].name)
+            if "c3dFilePath" in vr_values_in:
+                vr_values_in["c3dFilePath"] = data_path + ".c3d"
 
             # NOTE: For now, assuming that there is only one return statement in the entire method.
             if self.is_matlab:
                 vr_vals_in = list(vr_values_in.values())
-                fcn = getattr(eng, self.mfunc_name)
+                fcn = getattr(eng, self.mfunc_name)                
                 vr_values_out = fcn(*vr_vals_in, nargout=len(self.output_vrs))
             else:
                 vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
@@ -227,8 +246,9 @@ class Process(PipelineObject):
                 if not self.is_matlab:
                     idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out, and the order in the output_vrs dict are probably different.
                 else:
-                    idx += 1
+                    idx += 1                
                 setattr(node, vr_name, vr_values_out[idx])
+                print(f"In {node.name} ({node.id}): Saved VR {vr_name} (VR: {vr.id}).")
 
         if self.is_matlab:
             eng.rmpath(self.mfolder, nargout=0)   

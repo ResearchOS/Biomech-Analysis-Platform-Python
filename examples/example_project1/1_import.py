@@ -9,6 +9,7 @@ ss.conditions = all_trials_OA
 
 # Initialize the variables.
 ds = ros.Dataset(id = "DS1")
+ds.dataset_path = "C:\\Users\\Mitchell\\Desktop\\Matlab Code\\GitRepos\\Spr23-YA-OA-Role-Gait-Phase\\Raw Data Files"
 input_vr1 = ros.Variable(id = "VR15", name = "dataset_path", level = ros.Dataset, hard_coded_value = ds.dataset_path)
 mocapfpHelper = ros.Variable(id = "VR16", name = "mocapfpHelper", level = ros.Trial)
 with open (os.sep.join(["examples", "example_project1", "mocapfpHelper.json"]), "r") as f:
