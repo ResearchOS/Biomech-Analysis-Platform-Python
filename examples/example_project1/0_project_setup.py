@@ -1,3 +1,4 @@
+import os
 import ResearchOS as ros
 from ResearchOS.config import Config
 
@@ -13,7 +14,7 @@ ds.schema = [
     [ros.Dataset, ros.Subject],
     [ros.Subject, ros.Trial]
 ]
-ds.dataset_path = "examples\data"
+ds.dataset_path = os.sep.join(["examples","data"])
 
 # Initialize the logsheet.
 lg = ros.Logsheet(id = "LG1")

@@ -25,9 +25,11 @@ all_default_attrs["mfunc_name"] = None
 
 complex_attrs_list = []
 
-import matlab.engine
-
-eng = matlab.engine.start_matlab()
+try:
+    import matlab.engine
+    eng = matlab.engine.start_matlab()
+except:
+    pass
 
 
 class Process(PipelineObject):
@@ -182,8 +184,8 @@ class Process(PipelineObject):
 
         # 4. Run the method.
         # Get the subset of the data.
-        subset_graph = ds.address_graph
-        # subset_graph = Subset(id = self.subset_id).get_subset()
+        # subset_graph = ds.address_graph
+        subset_graph = Subset(id = self.subset_id).get_subset()
 
         # Do the setup for MATLAB.
         if self.is_matlab:

@@ -281,9 +281,20 @@ class Logsheet(PipelineObject):
         [row.insert(0, ds.id) for row in dobj_names] # Prepend the Dataset to the first column of each row.
         name_ids_dict = {} # The dict that maps the values (names) to the IDs. Separate dict for each class, each class is a top-level key of the dict.
         name_ids_dict[Dataset] = {ds.name: ds.id}
+        name_dobjs_dict = {}
+        name_dobjs_dict[Dataset] = {ds.name: ds}
         for cls in order:
-            name_ids_dict[cls] = {} # Initialize the dict for this class.
-        all_dobjs_ordered = [] # The list of lists of DataObject instances, ordered by the order of the schema.
+            name_ids_dict[cls] = {} # Initialize the dict for this class.            
+            name_dobjs_dict[cls] = {}
+        # Create the DataObject instances in the dict.
+        
+        # for cls, values in name_ids_dict.items():
+        #     name_dobjs_dict[cls] = {}
+        #     for name, id in values.items():
+        #         dobj = cls(id = id, name = name)
+        #         name_dobjs_dict[cls][name] = dobj
+
+        all_dobjs_ordered = [] # The list of lists of DataObject instances, ordered by the order of the schema.                
         for row_num, row in enumerate(dobj_names):
             row = row[1:]
             all_dobjs_ordered.append([ds]) # Add the Dataset to the beginning of each row.
@@ -293,9 +304,11 @@ class Logsheet(PipelineObject):
                 value = self.clean_value(header_types[col_idx], row[idx])
                 if value not in name_ids_dict[cls]:                    
                     name_ids_dict[cls][value] = IDCreator().create_ro_id(cls)
-                ro = cls(id = name_ids_dict[cls][value], name = value) # Create the research object.
-                all_dobjs_ordered[-1].append(ro) # Matrix of all research objects.
-                print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", ro.id)        
+                    dobj = cls(id = name_ids_dict[cls][value], name = value) # Create the research object.                
+                    name_dobjs_dict[cls][value] = dobj
+                dobj = name_dobjs_dict[cls][value]
+                all_dobjs_ordered[-1].append(dobj) # Matrix of all research objects.
+                print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", dobj.id, "Memory Loc: ", id(dobj))        
                 
         
         # Assign the values to the DataObject instances.
@@ -314,19 +327,20 @@ class Logsheet(PipelineObject):
                 type_class = header[1]
                 level = header[2]
                 level_idx = order.index(level)
-                vr_id = header[3]
-                dobj = row_dobjs[level_idx]
+                vr_id = header[3]                
                 value = self.clean_value(type_class, row[headers_in_logsheet.index(name)])
                 print("Row: ", row_num, "Column: ", name, "Value: ", value)
-                prev_value = getattr(dobj, name, None) # May not exist yet.                
+                prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.                
                 if prev_value is not None:                    
                     if prev_value == value or value is None:
                         continue
                     conn = action.pool.get_connection()
                     action.pool.return_connection(conn)
                     raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")                
-                dobj.__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.
-                a = getattr(dobj, name)
+                row_dobjs[level_idx].__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.
+                dobj = row_dobjs[level_idx]
+                # a = getattr(dobj, name)
+                # print(a)
 
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.

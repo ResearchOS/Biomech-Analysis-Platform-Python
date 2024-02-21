@@ -153,7 +153,8 @@ class ResearchObjectHandler:
     def _load_ro(research_object: "ResearchObject", default_attrs: dict) -> None:
         """Load "simple" attributes from the database."""
         # 1. Get the database cursor.
-        # db = DBConnectionFactory.create_db_connection()
+        from ResearchOS.DataObjects.data_object import DataObject
+        from ResearchOS.variable import Variable
         conn = ResearchObjectHandler.pool.get_connection()
         cursor = conn.cursor()
 
@@ -161,9 +162,7 @@ class ResearchObjectHandler:
         sqlquery = f"SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = '{research_object.id}'"
         unordered_attr_result = cursor.execute(sqlquery).fetchall()
         ResearchObjectHandler.pool.return_connection(conn)
-        ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
-        # if len(unordered_attr_result) == 0:
-        #     raise ValueError("No object with that ID exists.")          
+        ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)         
                              
         attrs = ResearchObjectHandler._get_most_recent_attrs(research_object, ordered_attr_result, default_attrs)   
 
@@ -173,8 +172,20 @@ class ResearchObjectHandler:
         # 3. Set the attributes of the object.
         research_object.__dict__.update(attrs)
 
-        # 4. Load the class-specific attributes.        
-        research_object.load()
+        # 4. Load the class-specific builtin attributes.
+        for key in default_attrs.keys():
+            if key in research_object.__dict__:
+                continue
+            if hasattr(research_object, "load_" + key):
+                load_method = getattr(research_object, "load_" + key)
+                load_method()
+
+        dobj_subclasses = DataObject.__subclasses__()
+        del dobj_subclasses[dobj_subclasses.index(Variable)]
+        if research_object.__class__ in dobj_subclasses:
+            research_object.load_data_values()
+
+        
 
     @staticmethod
     def _set_builtin_attribute(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list):

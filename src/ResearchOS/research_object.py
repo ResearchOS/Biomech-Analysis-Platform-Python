@@ -41,6 +41,8 @@ class ResearchObject():
         """Create a new research object in memory. If the object already exists in memory with this ID, return the existing object."""
         kwargs = ResearchObjectHandler.check_inputs(cls, kwargs)
         id = kwargs["id"]
+        # keys = ",".join([key for key in ResearchObjectHandler.instances.keys()])
+        # print("Keys: " + keys)
         if id in ResearchObjectHandler.instances:
             ResearchObjectHandler.counts[id] += 1
             ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = True
@@ -49,6 +51,7 @@ class ResearchObject():
         instance = super(ResearchObject, cls).__new__(cls)
         ResearchObjectHandler.instances[id] = instance
         ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = False
+        instance.__dict__["prev_loaded"] = False        
         return instance
     
     def __init__(self, **orig_kwargs):
