@@ -232,7 +232,7 @@ class Logsheet(PipelineObject):
         else:
             logsheet = full_logsheet[self.num_header_rows:]
 
-        logsheet = logsheet[0:50] # For testing purposes, only read the first 50 rows.
+        # logsheet = logsheet[0:50] # For testing purposes, only read the first 50 rows.
         
         # For each row, connect instances of the appropriate DataObject subclass to all other instances of appropriate DataObject subclasses.
         headers_in_logsheet = full_logsheet[0]
@@ -308,7 +308,19 @@ class Logsheet(PipelineObject):
                     name_dobjs_dict[cls][value] = dobj
                 dobj = name_dobjs_dict[cls][value]
                 all_dobjs_ordered[-1].append(dobj) # Matrix of all research objects.
-                print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", dobj.id, "Memory Loc: ", id(dobj))        
+                print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", dobj.id, "Memory Loc: ", id(dobj))
+
+        # Arrange the address ID's that were generated into an edge list.
+        # Then assign that to the Dataset.
+        addresses = []
+        for row in all_dobjs_ordered:
+            for idx, dobj in enumerate(row):
+                if idx == 0:
+                    continue
+                ids = [row[idx-1].id, dobj.id]
+                if ids not in addresses:
+                    addresses.append(ids)
+        ds.addresses = addresses # Store addresses, also creates address_graph.
                 
         
         # Assign the values to the DataObject instances.
@@ -340,19 +352,7 @@ class Logsheet(PipelineObject):
                 row_dobjs[level_idx].__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.
                 dobj = row_dobjs[level_idx]
                 # a = getattr(dobj, name)
-                # print(a)
-
-        # Arrange the address ID's that were generated into an edge list.
-        # Then assign that to the Dataset.
-        addresses = []
-        for row in all_dobjs_ordered:
-            for idx, dobj in enumerate(row):
-                if idx == 0:
-                    continue
-                ids = [row[idx-1].id, dobj.id]
-                if ids not in addresses:
-                    addresses.append(ids)
-        ds.addresses = addresses # Store addresses, also creates address_graph.
+                # print(a)        
 
     def clean_value(self, type_class: type, raw_value: Any) -> Any:
         """Convert to proper type and clean the value of the logsheet cell."""

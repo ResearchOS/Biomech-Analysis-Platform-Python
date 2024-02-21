@@ -2,7 +2,11 @@ import weakref
 from typing import Any
 import json, re, os
 from typing import TYPE_CHECKING
-import sqlite3
+import sqlite3, copy
+
+import networkx as nx
+import scipy as sp
+import numpy as np
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
@@ -26,22 +30,18 @@ class ResearchObjectHandler:
         schema_id = research_object.get_current_schema_id(dataset_id)
         conn = ResearchObjectHandler.pool.get_connection()
         cursor = conn.cursor()
-        sqlquery = "SELECT * FROM data_values"
-        # sqlquery = "SELECT scalar_value FROM data_values WHERE vr_id = ? AND dataobject_id = ? AND schema_id = ?"
         sqlquery = f"SELECT scalar_value FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
-        # params = (vr.id, research_object.id, schema_id)
-        # sqlquery = f"SELECT scalar_value FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
         rows = cursor.execute(sqlquery).fetchall()
         ResearchObjectHandler.pool.return_connection(conn)
         if len(rows) == 0:
             raise ValueError("No value exists for that VR.")
-        value = json.loads(rows[0][0])
+        raw_value = rows[0][0]
+        if raw_value is None:
+            return None
+        value = json.loads(raw_value)
         if value is None:
             # Get the file path.
-            path = vr.get_vr_file_path(vr.id, dataset_id, schema_id)
-            if os.path.exists(path):
-                with open(path, "r") as f:
-                    value = json.load(path)
+            value = ResearchObjectHandler.load_vr_from_file(research_object, research_object.id, vr.id, schema_id)
         return value
 
     @staticmethod
@@ -269,15 +269,99 @@ class ResearchObjectHandler:
         vr = selected_vr
         ds_id = research_object.get_dataset_id()
         schema_id = vr.get_current_schema_id(ds_id)
+        is_scalar = False
         if ResearchObjectHandler.is_scalar(value):
+            is_scalar = True
             json_value = json.dumps(value)
             sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, scalar_value, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{json_value}', '{schema_id}')"
         else:
             sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{schema_id}')"
         action.add_sql_query(sqlquery)
+        if not is_scalar:
+            ResearchObjectHandler.save_vr_to_file(research_object, research_object.id, vr_id, schema_id, value)
         action.execute()
         action.pool.return_connection(conn)        
         research_object.__dict__[name] = vr
+
+    @staticmethod
+    def get_vr_file_path(research_object: "ResearchObject", vr_id: str) -> str:
+        """Get the file path for the VR for this data object."""
+        from ResearchOS.DataObjects.dataset import Dataset
+        ds = Dataset(id = research_object.get_dataset_id())
+        schema = ds.schema
+        schema_graph = nx.MultiDiGraph(schema)
+        schema_order = list(nx.topological_sort(schema_graph))
+        ordered_levels = []
+        anc_nodes = nx.ancestors(ds.address_graph, research_object)
+        node_lineage = [research_object] + [anc_node for anc_node in anc_nodes]
+        for level in schema_order[0:len(node_lineage)]:
+            ordered_levels.append([n for n in node_lineage if isinstance(n, level)])
+        data_path = os.sep.join([os.path.dirname(ds.dataset_path) ,"MAT Data Files"])
+        if not os.path.exists(data_path):            
+            os.makedirs(data_path)
+        for level in ordered_levels[1:]:
+            data_path = os.path.join(data_path, level[0].name)
+            if not os.path.exists(data_path):         
+                os.makedirs(data_path)
+        file_path = data_path + os.sep + vr_id + ".mat"
+        return file_path
+
+    @staticmethod
+    def save_vr_to_file(research_object: "ResearchObject", ro_id: str, vr_id: str, schema_id: str, raw_value: Any) -> None:
+        file_path = ResearchObjectHandler.get_vr_file_path(research_object, vr_id)        
+        # Save the data to the file.
+        tmp_value = copy.deepcopy(raw_value)
+        value = ResearchObjectHandler.clean_value_for_save_mat(tmp_value)        
+        # sp.io.savemat(file_path, {"stored_data": {"key1": [1, 2, 3], "key2": [4, 5, 6], "key3": [1, "b", "cd"]}})
+        sp.io.savemat(file_path, {"stored_data": value})
+
+    @staticmethod
+    def load_vr_from_file(research_object: "ResearchObject", ro_id: str, vr_id: str, schema_id: str) -> Any:
+        """Load the value of this variable from the file."""
+        file_path = ResearchObjectHandler.get_vr_file_path(research_object, vr_id)
+        if not os.path.exists(file_path):
+            return
+
+        # Load the data from the file.
+        scipy_val = sp.io.loadmat(file_path)
+        data_out = scipy_val["stored_data"]        
+        cleaned_data = ResearchObjectHandler.clean_value_from_load_mat(data_out)
+        return cleaned_data
+
+
+
+    @staticmethod
+    def clean_value_from_load_mat(numpy_array: Any) -> Any:
+        """Ensure that all data types are from scipy.io.loadmat are Pythonic."""
+        if isinstance(numpy_array, np.ndarray) and numpy_array.dtype.names is not None:
+            return {name: ResearchObjectHandler.clean_value_from_load_mat(numpy_array[name]) for name in numpy_array.dtype.names}
+        elif isinstance(numpy_array, np.ndarray):
+            numpy_array_tmp = numpy_array
+            if numpy_array.size == 1:
+                numpy_array_tmp = numpy_array[0]
+            return numpy_array_tmp.tolist()
+        else:
+            return numpy_array
+
+    @staticmethod
+    def clean_value_for_save_mat(value: Any) -> Any:
+        """Ensure that all data types are compatible with the scipy.io.savemat method."""
+        # Recursive.
+        if isinstance(value, (dict, set)):
+            for key in value.keys():
+                value[key] = ResearchObjectHandler.clean_value_for_save_mat(value[key])
+            return value
+
+        if isinstance(value, (list, tuple)):
+            if len(value) == 0:
+                return value
+            if isinstance(value[0], (list, tuple, dict, set)):
+                for i, item in enumerate(value):
+                    value[i] = ResearchObjectHandler.clean_value_for_save_mat(item)
+                return value
+
+        # Actually clean the values.
+        return np.array(value)
         
     @staticmethod
     def is_scalar(value: Any) -> bool:
