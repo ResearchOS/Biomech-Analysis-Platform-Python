@@ -88,9 +88,9 @@ class Subset(PipelineObject):
         # 2. For each node in the address_graph, check if it meets the conditions.
         nodes_for_subgraph = []
         G = ds.address_graph
-        for node in G.nodes():
-            ro = ResearchObjectHandler._prefix_to_class(node.prefix)(id = node.id)
-            if not self.meets_conditions(ro, self.conditions, G):
+        for idx, node in enumerate(G.nodes()):
+            # ro = ResearchObjectHandler._prefix_to_class(node.prefix)(id = node.id)
+            if not self.meets_conditions(node, self.conditions, G):
                 continue
             curr_nodes = [node]
             curr_nodes.extend(nx.ancestors(G, node))

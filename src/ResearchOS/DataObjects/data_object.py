@@ -5,7 +5,7 @@ import json, os
 from ResearchOS.action import Action
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.research_object import ResearchObject
-from ResearchOS.db_connection_factory import DBConnectionFactory
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
 
@@ -22,6 +22,23 @@ root_data_path = "data"
 
 class DataObject(ResearchObject):
     """The abstract base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage."""    
+
+    def load_data_values(self) -> None:
+        """Load data values from the database."""
+        # 1. Get all of the latest address_id & vr_id combinations (that have not been overwritten) for the current schema for the current database.
+        # Get the schema_id.
+        # TODO: Put the schema_id into the data_values table.
+        # 1. Get all of the VRs for the current object.
+        from ResearchOS.variable import Variable
+        sqlquery = f"SELECT vr_id FROM vr_dataobjects WHERE dataobject_id = '{self.id}'"
+        conn = ResearchObjectHandler.pool.get_connection()
+        cursor = conn.cursor()
+        vr_ids = cursor.execute(sqlquery).fetchall()
+        vr_ids = [x[0] for x in vr_ids]
+        ResearchObjectHandler.pool.return_connection(conn)
+        for vr_id in vr_ids:
+            vr = Variable(id = vr_id)
+            self.__dict__[vr.name] = vr
 
     # def __init__(self, default_attrs: dict, **kwargs) -> None:
     #     """Initialize the data object."""
@@ -66,12 +83,6 @@ class DataObject(ResearchObject):
     #     ResearchObjectHandler.pool.return_connection(conn)
     #     return value
 
-
-    def load(self) -> None:
-        """Load the data object from the database."""
-        pass
-        # self.load_data_values()
-
     # def set_value(self, vr: "Variable", value: Any) -> None:
     #     """Set the value of a VR for a specific object."""
     #     address_id = self.id
@@ -102,13 +113,7 @@ class DataObject(ResearchObject):
     #     levels = self.get_levels(schema_id, self.id)
     #     path = self.get_vr_file_path(vr_id, dataset_id, levels)
     #     with open(path, "w") as f:
-    #         json.dump(value, f)
-
-    # def load_data_values(self) -> None:
-    #     """Load data values from the database."""        
-        # 1. Get all of the latest address_id & vr_id combinations (that have not been overwritten) for the current schema for the current database.
-        # Get the schema_id.
-        # TODO: Put the schema_id into the data_values table.
+    #         json.dump(value, f)    
 
     # def get_levels(self, schema_id: str, object_id: str = None) -> list:
     #     """Get the levels of the data object."""
