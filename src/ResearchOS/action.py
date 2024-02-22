@@ -105,7 +105,7 @@ class Action():
         # Ensure that all of the SQL queries are tuples: (sqlquery, params)
         for idx, q in enumerate(self.sql_queries):
             if not isinstance(q, (tuple)):
-                self.sqlqueries[idx] = (q,)
+                self.sql_queries[idx] = (q,)
 
         # Execute all of the SQL queries.
         if len(self.sql_queries) == 0:
