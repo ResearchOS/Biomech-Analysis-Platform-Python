@@ -310,6 +310,7 @@ class Logsheet(PipelineObject):
         # i.e. Doesn't have conflicting values for one level (empty/None is OK)        
         action = Action(name = "read logsheet")
         action.commit = True
+        attrs_cache_dict = {}
         for row_num, row in enumerate(logsheet):
             row_dobjs = all_dobjs_ordered[row_num][1:]
 
@@ -323,16 +324,24 @@ class Logsheet(PipelineObject):
                 level_idx = order.index(level)
                 vr_id = header[3]                
                 value = self.clean_value(type_class, row[headers_in_logsheet.index(name)])
+                # Set up the cache dict for this data object.
+                if not row_dobjs[level_idx].id in attrs_cache_dict:
+                    attrs_cache_dict[row_dobjs[level_idx].id] = {}
+                # Set up the cache dict for this data object for this attribute.
+                if name not in attrs_cache_dict[row_dobjs[level_idx].id]:
+                    attrs_cache_dict[row_dobjs[level_idx].id][name] = None
                 print("Row: ", row_num, "Column: ", name, "Value: ", value)
-                prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.                
+                prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
+                # prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.                
                 if prev_value is not None:                    
                     if prev_value == value or value is None:
                         continue
                     conn = action.pool.get_connection()
                     action.pool.return_connection(conn)
                     raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")                
-                row_dobjs[level_idx].__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.
-                dobj = row_dobjs[level_idx]    
+                row_dobjs[level_idx].__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.                
+                attrs_cache_dict[row_dobjs[level_idx].id][name] = value
+                dobj = row_dobjs[level_idx]
 
     def clean_value(self, type_class: type, raw_value: Any) -> Any:
         """Convert to proper type and clean the value of the logsheet cell."""

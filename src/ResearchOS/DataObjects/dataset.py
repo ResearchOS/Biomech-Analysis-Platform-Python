@@ -31,8 +31,10 @@ class Dataset(DataObject):
     def validate_schema(self, schema: list) -> None:
         """Validate that the data schema follows the proper format.
         Must be a dict of dicts, where all keys are Python types matching a DataObject subclass, and the lowest levels are empty."""
-        subclasses = DataObject.__subclasses__()
-        vr = [x for x in subclasses if x.prefix == "VR"][0]                
+        from ResearchOS.research_object import ResearchObject
+        subclasses = ResearchObject.__subclasses__()
+        dataobj_subclasses = DataObject.__subclasses__()
+        vr = [x for x in subclasses if hasattr(x,"prefix") and x.prefix == "VR"][0]                
             
         graph = nx.MultiDiGraph()
         try:
@@ -42,9 +44,9 @@ class Dataset(DataObject):
         if not nx.is_directed_acyclic_graph(graph):
             raise ValueError("The schema must be a directed acyclic graph!")
         
-        non_subclass = [node for node in graph if node not in subclasses]
+        non_subclass = [node for node in graph if node not in dataobj_subclasses]
         if non_subclass:
-            raise ValueError("The schema must only include ResearchObject subclasses!")
+            raise ValueError("The schema must only include DataObject subclasses!")
         
         if Dataset not in graph:
             raise ValueError("The schema must include the Dataset class as a source node!")
@@ -180,15 +182,14 @@ class Dataset(DataObject):
         addresses = address_copy
         subclasses = DataObject.__subclasses__()
         cls_dict = {cls.prefix: cls for cls in subclasses}  
-        count = 0
+        # count = 0
         idcreator = IDCreator()
         for address_edge in addresses:            
             cls0 = cls_dict[idcreator.get_prefix(address_edge[0])]
             cls1 = cls_dict[idcreator.get_prefix(address_edge[1])]
             G.add_edge(cls0(id = address_edge[0]), cls1(id = address_edge[1]))
-            count += 1
-            print(str(count))
-        idcreator.pool.return_connection(idcreator.conn)
+            # count += 1
+            # print(str(count))        
         return G
     
 if __name__=="__main__":
