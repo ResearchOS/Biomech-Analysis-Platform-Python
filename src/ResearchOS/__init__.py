@@ -1,5 +1,4 @@
 # ALWAYS HERE, ALWAYS IN THIS ORDER!
-# from .config import Config
 from .research_object import ResearchObject
 from .DataObjects.data_object import DataObject
 from .PipelineObjects.pipeline_object import PipelineObject

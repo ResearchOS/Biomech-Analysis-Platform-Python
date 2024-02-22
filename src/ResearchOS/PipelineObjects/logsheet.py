@@ -24,17 +24,11 @@ all_default_attrs["subset_id"] = None
 
 complex_attrs_list = []
 
-complex_attrs_list = []
-
 class Logsheet(PipelineObject):
 
     prefix = "LG"
 
-    def load(self) -> None:
-        """Load the dataset-specific attributes from the database in an attribute-specific way."""
-        PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
-
-    def read_and_clean_logsheet(self, nrows: int = None) -> None:
+    def read_and_clean_logsheet(self, nrows: int = None) -> list:
         """Read the logsheet (CSV only) and clean it."""
         logsheet = []
         if platform.system() == "Windows":
@@ -69,9 +63,6 @@ class Logsheet(PipelineObject):
         # 3. Check that the file is a CSV.
         if not path.endswith(("csv", "xlsx", "xls")):
             raise ValueError("Specified file is not a CSV!")
-        # 4. Check that the file is not empty.
-        # if os.stat(path).st_size == 0:
-        #     raise ValueError("Specified file is empty!")
         
     ### Logsheet headers
     
@@ -97,9 +88,6 @@ class Logsheet(PipelineObject):
             # 4. Check that the first element of each header tuple is a string.        
             if not isinstance(header[0], str):
                 raise ValueError("First element of each header tuple must be a string!")
-            # 5. Check that the second element of each header tuple is a type.        
-            # if not isinstance(header[1], type):
-            #     raise ValueError("Second element of each header tuple must be a Python type!")
             if header[1] not in [str, int, float]:
                 raise ValueError("Second element of each header tuple must be a Python type!")
             if header[2] not in DataObject.__subclasses__():
@@ -286,14 +274,8 @@ class Logsheet(PipelineObject):
         for cls in order:
             name_ids_dict[cls] = {} # Initialize the dict for this class.            
             name_dobjs_dict[cls] = {}
-        # Create the DataObject instances in the dict.
-        
-        # for cls, values in name_ids_dict.items():
-        #     name_dobjs_dict[cls] = {}
-        #     for name, id in values.items():
-        #         dobj = cls(id = id, name = name)
-        #         name_dobjs_dict[cls][name] = dobj
 
+        # Create the DataObject instances in the dict.        
         all_dobjs_ordered = [] # The list of lists of DataObject instances, ordered by the order of the schema.                
         for row_num, row in enumerate(dobj_names):
             row = row[1:]
@@ -324,8 +306,8 @@ class Logsheet(PipelineObject):
                 
         
         # Assign the values to the DataObject instances.
-        # TODO: Validate that the logsheet is of valid format.
-        # 1. Doesn't have conflicting values for one level (empty/None is OK)        
+        # Validates that the logsheet is of valid format.
+        # i.e. Doesn't have conflicting values for one level (empty/None is OK)        
         action = Action(name = "read logsheet")
         action.commit = True
         for row_num, row in enumerate(logsheet):
@@ -350,9 +332,7 @@ class Logsheet(PipelineObject):
                     action.pool.return_connection(conn)
                     raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")                
                 row_dobjs[level_idx].__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.
-                dobj = row_dobjs[level_idx]
-                # a = getattr(dobj, name)
-                # print(a)        
+                dobj = row_dobjs[level_idx]    
 
     def clean_value(self, type_class: type, raw_value: Any) -> Any:
         """Convert to proper type and clean the value of the logsheet cell."""

@@ -1,5 +1,5 @@
 from typing import Any
-import json, copy
+import json
 
 import networkx as nx
 
@@ -19,16 +19,12 @@ any_type_logic_options = ("==", '=', "!=", "in", "not in", "is", "is not", "cont
 logic_options = numeric_logic_options + any_type_logic_options
 plural_logic = ("in", "not in", "contains", "not contains")
 
-complex_attrs_list = []
-
 class Subset(PipelineObject):
     """Provides rules to select a subset of data from a dataset."""
     
     prefix = "SS"
 
-    def load(self) -> None:
-        """Load the dataset-specific attributes from the database in an attribute-specific way."""
-        PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
+    ## conditions
     
     def validate_conditions(self, conditions: dict) -> None:
         """Validate the condition recursively.
@@ -107,8 +103,6 @@ class Subset(PipelineObject):
                 return any([self.meets_conditions(node, cond, G) for cond in conditions["or"]])
                     
         # Check the condition.
-        # cls = ResearchObjectHandler._prefix_to_class(node.prefix)
-        # ro = cls(id = node.id)
         vr_id = conditions[0]
         logic = conditions[1]
         value = conditions[2]

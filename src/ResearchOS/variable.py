@@ -1,4 +1,3 @@
-from typing import Any
 import json
 
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
@@ -14,10 +13,6 @@ class Variable(DataObject,  PipelineObject):
     """Variable class."""
 
     prefix: str = "VR"
-
-    def load(self) -> None:
-        """Load the variable-specific attributes from the database in an attribute-specific way."""
-        pass
     
     ## Level methods
 
