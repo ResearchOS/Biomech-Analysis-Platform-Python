@@ -47,9 +47,8 @@ classifiers = [
 ]
 # Runtime dependencies
 dependencies = [
-  "networkx",
-  "numpy",
-  "scipy"
+  "networkx>=3.2.1",
+  "scipy>=1.12.0"
 ]
 
 [project.optional-dependencies]
