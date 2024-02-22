@@ -167,11 +167,13 @@ class Process(PipelineObject):
     
     def set_input_vrs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict."""
-        self.input_vrs = kwargs
+        action = Action(name = "set_input_vrs")
+        self.__setattr__("input_vrs", kwargs, action = action)
 
     def set_output_vrs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict."""
-        self.output_vrs = kwargs
+        action = Action(name = "set_output_vrs")
+        self.__setattr__("output_vrs", kwargs, action = action)
 
     def run(self) -> None:
         """Execute the attached method.

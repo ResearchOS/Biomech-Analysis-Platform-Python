@@ -1,7 +1,6 @@
 import json
 
-from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
-from ResearchOS.DataObjects.data_object import DataObject
+from ResearchOS.research_object import ResearchObject
 
 all_default_attrs = {}
 all_default_attrs["level"] = None
@@ -9,7 +8,7 @@ all_default_attrs["hard_coded_value"] = None
 
 complex_attrs_list = []
 
-class Variable(DataObject,  PipelineObject):
+class Variable(ResearchObject):
     """Variable class."""
 
     prefix: str = "VR"
@@ -18,6 +17,7 @@ class Variable(DataObject,  PipelineObject):
 
     def validate_level(self, level: type) -> None:
         """Check that the level is of a valid type."""
+        from ResearchOS.DataObjects.data_object import DataObject
         if not isinstance(level, type):
             raise ValueError("Level must be a type.")
         if level not in DataObject.__subclasses__():
@@ -29,6 +29,7 @@ class Variable(DataObject,  PipelineObject):
 
     def from_json_level(self, level: str) -> type:
         """Return the level as a JSON object."""
+        from ResearchOS.DataObjects.data_object import DataObject
         level_str = json.loads(level)
         if level_str is None:
             return level_str

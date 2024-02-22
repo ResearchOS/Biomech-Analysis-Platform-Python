@@ -40,6 +40,19 @@ class ResearchObject():
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
         if hasattr(self, name) and getattr(self, name) == value:
             return # No change.
+        
+        # Ensure that the criteria to set the attribute are met.
+        if not str(name).isidentifier():
+            raise ValueError(f"{name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.        
+        if name == "id":
+            raise ValueError("Cannot change the ID of a research object.")
+        if name == "prefix":
+            raise ValueError("Cannot change the prefix of a research object.")
+        if name == "name":
+            if not str(value).isidentifier():
+                raise ValueError(f"name attribute, value: {value} is not a valid attribute name.") 
+            
+        # Set the attribute.
         if all_attrs is None:
             all_attrs = DefaultAttrs(self)
         if action is None:            
