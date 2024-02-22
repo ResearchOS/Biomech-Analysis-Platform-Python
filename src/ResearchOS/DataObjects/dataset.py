@@ -25,22 +25,7 @@ class Dataset(DataObject):
     2. data schema: The schema of the dataset (specified as a list of classes)"""
 
     prefix: str = "DS"
-
-    # def __init__(self, **kwargs):
-    #     """Initialize the attributes that are required by ResearchOS.
-    #     Other attributes can be added & modified later."""
-    #     super().__init__(all_default_attrs, **kwargs)
-
-    # def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
-    #     """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-    #     ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
-
-    def load(self) -> None:
-        """Load the dataset-specific attributes from the database in an attribute-specific way."""
-        self.load_schema() # Load the dataset schema.
-        self.load_addresses() # Load the dataset addresses.
-        DataObject.load(self) # Load the attributes specific to it being a DataObject.
-
+    
     ### Schema Methods
         
     def validate_schema(self, schema: list) -> None:
@@ -193,10 +178,17 @@ class Dataset(DataObject):
                 address_copy.remove(address)
 
         addresses = address_copy
-        for address_edge in addresses:
-            cls0 = ResearchObjectHandler._prefix_to_class(address_edge[0])
-            cls1 = ResearchObjectHandler._prefix_to_class(address_edge[1])
+        subclasses = DataObject.__subclasses__()
+        cls_dict = {cls.prefix: cls for cls in subclasses}  
+        count = 0
+        idcreator = IDCreator()
+        for address_edge in addresses:            
+            cls0 = cls_dict[idcreator.get_prefix(address_edge[0])]
+            cls1 = cls_dict[idcreator.get_prefix(address_edge[1])]
             G.add_edge(cls0(id = address_edge[0]), cls1(id = address_edge[1]))
+            count += 1
+            print(str(count))
+        idcreator.pool.return_connection(idcreator.conn)
         return G
     
 if __name__=="__main__":

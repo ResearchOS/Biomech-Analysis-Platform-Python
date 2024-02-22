@@ -20,6 +20,12 @@ class IDCreator():
         conn = pool.get_connection()
         self.pool = pool
         self.conn = conn
+
+    def get_prefix(self, id: str) -> str:
+        """Get the prefix of the given ID."""
+        if not self.is_ro_id(id):
+            raise ValueError("The given ID is not a valid ResearchObject ID.")
+        return id[:2]
     
     def create_ro_id(self, cls, abstract: str = None, instance: str = None, is_abstract: bool = False) -> str:
         """Create a ResearchObject ID following [prefix]XXXXXX_XXX."""
