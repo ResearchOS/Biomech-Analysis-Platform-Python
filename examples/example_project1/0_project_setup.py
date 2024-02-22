@@ -1,6 +1,6 @@
 import os
 import ResearchOS as ros
-from ResearchOS.config import Config
+# from ResearchOS.config import Config
 
 ## DELETE THE DATABASE FILE AND RUN DB_INITIALIZER FIRST.
 # db_file = "dev_database.db"
@@ -15,7 +15,7 @@ ds.schema = [
     [ros.Subject, ros.Trial]
 ]
 # ds.dataset_path = os.sep.join(["examples","data"])
-ds.dataset_path = "C:\\Users\\Mitchell\\Desktop\\Matlab Code\\GitRepos\\Spr23-YA-OA-Role-Gait-Phase\\Raw Data Files"
+# ds.dataset_path = "C:\\Users\\Mitchell\\Desktop\\Matlab Code\\GitRepos\\Spr23-YA-OA-Role-Gait-Phase\\Raw Data Files"
 
 # Initialize the logsheet.
 lg = ros.Logsheet(id = "LG1")

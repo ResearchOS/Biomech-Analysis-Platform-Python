@@ -34,6 +34,10 @@ class DefaultAttrs():
         elif cls in PipelineObject.__subclasses__():
             parent_default_attrs = p_default_attrs
             parent_complex_attrs = p_complex_attrs
+        else:
+            # Variable class
+            parent_default_attrs = {}
+            parent_complex_attrs = []
 
         ro_default_attrs["name"] = research_object.id
         self.default_attrs = {**ro_default_attrs, **parent_default_attrs, **class_default_attrs}

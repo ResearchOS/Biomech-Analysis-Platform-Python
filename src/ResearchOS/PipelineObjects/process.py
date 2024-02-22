@@ -1,7 +1,8 @@
 from typing import Any
 from typing import Callable
-import json, sys, os
+import json, sys, os, pickle
 import importlib
+from hashlib import sha256
 
 import networkx as nx
 
@@ -13,6 +14,7 @@ from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.code_inspector import get_returned_variable_names, get_input_variable_names
 from ResearchOS.action import Action
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 all_default_attrs = {}
 all_default_attrs["method"] = None
@@ -194,6 +196,8 @@ class Process(PipelineObject):
         # 3. Validate that the subsets have been properly set.
         self.validate_subset_id(self.subset_id)
 
+        schema_id = self.get_current_schema_id(ds.id)
+
         # 4. Run the method.
         # Get the subset of the data.
         subset_graph = Subset(id = self.subset_id).get_subset()
@@ -209,6 +213,9 @@ class Process(PipelineObject):
         schema = ds.schema
         schema_graph = nx.MultiDiGraph(schema)
         schema_order = list(nx.topological_sort(schema_graph))
+        pool_data = SQLiteConnectionPool(name = "data")
+        conn_data = pool_data.get_connection()
+        cursor_data = conn_data.cursor()
         for node in level_nodes:
             # Get the values for the input variables for this DataObject node.
             print(f"Running {self.mfunc_name} on {node.name}.")
@@ -239,6 +246,36 @@ class Process(PipelineObject):
             if "c3dFilePath" in vr_values_in:
                 vr_values_in["c3dFilePath"] = data_path + ".c3d"
 
+            # Check if the values for the input variables are up to date. If so, skip this node.
+            check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_values_in.items()}
+            run_process = False
+            for vr_name, vr_val in check_vr_values_in.items():
+                blob = pickle.dumps(vr_val)
+                hash_val = sha256(blob).hexdigest()
+
+                # Get the ID for this hash.
+                sqlquery = "SELECT data_blob_id FROM data_values_blob WHERE data_hash = ?"
+                result = cursor_data.execute(sqlquery, (hash_val,)).fetchall() 
+                # If None, then do processing.
+                if len(result) == 0:
+                    run_process = True
+                    break               
+
+                 # If not None, check if it's the most recent.
+                data_blob_id = result[0][0]
+                sqlquery = "SELECT action_id, data_blob_id FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND schema_id = ? AND data_blob_id = ?"
+                params = (node.id, self.input_vrs[vr_name].id, schema_id, data_blob_id)
+                result = cursor_data.execute(sqlquery, params).fetchall()
+                time_ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num = 0)
+                latest_data_blob_id = time_ordered_result[0][1]
+                if latest_data_blob_id != data_blob_id:
+                    run_process = True
+                    break
+
+            if not run_process:
+                print(f"Skipping {node.name} ({node.id}).")
+                continue
+
             # NOTE: For now, assuming that there is only one return statement in the entire method.
             if self.is_matlab:
                 vr_vals_in = list(vr_values_in.values())
@@ -266,3 +303,4 @@ class Process(PipelineObject):
         if self.is_matlab:
             eng.rmpath(self.mfolder, nargout=0)   
 
+        pool.return_connection(conn)

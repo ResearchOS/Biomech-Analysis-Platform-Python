@@ -38,17 +38,16 @@ class ResearchObjectHandler:
         sqlquery = f"SELECT action_id, data_blob_id FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
         result = cursor.execute(sqlquery).fetchall()
         ResearchObjectHandler.pool.return_connection(conn)
-        time_ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num = 0)        
-        if len(rows) == 0:
+        if len(result) == 0:
             raise ValueError("No value exists for that VR.")
-        data_blob_id = time_ordered_result[0][0]
+        time_ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num = 0)                
+        data_blob_id = time_ordered_result[0][1]
 
         # 2. Get the data_blob from the data_blobs table.
         conn = ResearchObjectHandler.pool_data.get_connection()
         cursor = conn.cursor()
-        sqlquery = "SELECT data_blob FROM data_blobs WHERE data_hash = ?"
-        data_hash = sha256(data_blob_id.encode()).hexdigest()
-        params = (data_hash,)
+        sqlquery = "SELECT data_blob FROM data_values_blob WHERE data_blob_id = ?"        
+        params = (data_blob_id,)
         rows = cursor.execute(sqlquery, params).fetchall()
         ResearchObjectHandler.pool_data.return_connection(conn)
         return pickle.loads(rows[0][0])
@@ -117,7 +116,7 @@ class ResearchObjectHandler:
             
             # Now that the value is loaded as the proper type/format, validate it, if it is not the default value.
             if not (len(default_attrs) > 0 and attr_name in default_attrs and attr_value == default_attrs[attr_name]):
-                ResearchObjectHandler.validator(research_object, attr_name, attr_value)
+                ResearchObjectHandler.validate(research_object, attr_name, attr_value)
             attrs[attr_name] = attr_value
             if len(used_attr_ids) == num_attrs:
                 break # Every attribute is accounted for.
@@ -158,16 +157,20 @@ class ResearchObjectHandler:
         if research_object.__class__ in dobj_subclasses:
             research_object.load_dataobject_vrs()
 
-        
+    @staticmethod
+    def validate(research_object: "ResearchObject", name: str, value: Any) -> None:
+        """Validate the value of the attribute."""
+        if hasattr(research_object, "validate_" + name):
+            validate_method = getattr(research_object, "validate_" + name)
+            validate_method(value)
 
     @staticmethod
     def _set_builtin_attribute(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list):
         """Responsible for setting the value of all builtin attributes, simple or not."""  
 
         # Validate the value
-        if validate and hasattr(research_object, "validate_" + name):       
-            validate_method = getattr(research_object, "validate_" + name)
-            validate_method(value)
+        if validate:       
+            ResearchObjectHandler.validate(research_object, name, value)
 
         if not hasattr(research_object, "save_" + name):
             # Set the attribute "name" of this object as the VR ID (as a simple attribute).
@@ -175,7 +178,7 @@ class ResearchObjectHandler:
             return        
 
         # Save the "complex" builtin attribute to the database.
-        save_method = getattr("research_object", "save_" + name)
+        save_method = getattr(research_object, "save_" + name)
         save_method(value, action = action)
 
         if action.do_exec:
@@ -233,26 +236,36 @@ class ResearchObjectHandler:
                         break
 
             sqlquery = f"INSERT INTO vr_dataobjects (action_id, dataobject_id, vr_id) VALUES ('{action.id}', '{research_object.id}', '{selected_vr.id}')"
-            action.add_sql_query(sqlquery)        
+            action.add_sql_query(sqlquery)  
+        
+        # Check if this value already exists in the database. If so, don't save it again.
+        pool_data =SQLiteConnectionPool(name = "data")
+        conn_data = pool_data.get_connection()
+        cursor_data = conn_data.cursor()
+        data_blob = pickle.dumps(value)          
+        data_hash = sha256(data_blob).hexdigest()
+        sqlquery = f"SELECT data_blob_id FROM data_values_blob WHERE data_hash = ?"
+        params = (data_hash,)
+        rows = cursor_data.execute(sqlquery, params).fetchall()
+        if rows:
+            data_blob_id = rows[0][0]
+        else:
+            # Save this new value to the data_blob_values table in the data db.
+            sqlquery = "INSERT INTO data_values_blob (data_hash, data_blob) VALUES (?, ?)"                    
+            params = (data_hash, data_blob)
+            cursor_data.execute(sqlquery, params)
+            conn_data.commit()
+            data_blob_id = cursor_data.lastrowid
+        pool_data.return_connection(conn_data)
 
         # Put the data_blob_id into the data_values table.
         vr = selected_vr
         ds_id = research_object.get_dataset_id()
         schema_id = vr.get_current_schema_id(ds_id)        
-        sqlquery = "INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id) VALUES (?, ?, ?, ?)"
-        params = (action.id, vr.id, research_object.id, schema_id)        
+        sqlquery = "INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id, data_blob_id) VALUES (?, ?, ?, ?, ?)"
+        params = (action.id, vr.id, research_object.id, schema_id, data_blob_id)        
         action.add_sql_query(sqlquery, params)
         action.pool.return_connection(conn)
-        
-        # Save the value to the data_blob_values table in the data db.
-        pool_data =SQLiteConnectionPool(name = "data")
-        conn_data = pool_data.get_connection()
-        sqlquery = "INSERT INTO data_values_blob (data_hash, data_blob) VALUES (?, ?)"
-        data_hash = sha256(action.id.encode()).hexdigest()
-        data_blob = pickle.dumps(value)
-        params = (data_hash, data_blob)
-        cursor.execute(sqlquery, params)
-        pool_data.return_connection(conn_data)
 
         action.execute()        
         research_object.__dict__[name] = vr

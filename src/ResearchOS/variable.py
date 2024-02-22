@@ -25,6 +25,8 @@ class Variable(ResearchObject):
         
     def to_json_level(self, level: type) -> dict:
         """Return the level as a JSON object."""
+        if level is None:
+            return json.dumps(level)
         return json.dumps(level.prefix)
 
     def from_json_level(self, level: str) -> type:

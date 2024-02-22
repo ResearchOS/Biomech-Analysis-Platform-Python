@@ -82,7 +82,7 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values_blob (
                         data_blob_id INTEGER PRIMARY KEY,
                         data_blob BLOB NOT NULL,
-                        data_hash TEXT NOT NULL
+                        data_hash TEXT NOT NULL UNIQUE
                         )""")        
 
     def create_tables(self):
