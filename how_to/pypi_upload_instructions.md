@@ -13,7 +13,8 @@ All actions are performed in the command line from the root directory of the pro
 1. python3 -m twine upload --repository testpypi dist/*
 ## Install
 <!-- 2. python3 -m pip install --index-url https://test.pypi.org/simple/ --no-deps ResearchOS -->
-2. pip install -i https://test.pypi.org/simple/ ResearchOS==0.0.9
+### NOTE: This installs the package from the test PyPI repository but dependencies are installed from the main PyPI repository.
+2. python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple ResearchOS
 
 # PyPI
 ## Upload
