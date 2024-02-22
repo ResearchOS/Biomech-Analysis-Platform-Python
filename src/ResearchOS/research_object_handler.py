@@ -42,23 +42,7 @@ class ResearchObjectHandler:
         if value is None:
             # Get the file path.
             value = ResearchObjectHandler.load_vr_from_file(research_object, research_object.id, vr.id, schema_id)
-        return value
-
-    @staticmethod
-    def _set_attr_validator(research_object: "ResearchObject", attr_name: str, attr_value: Any, validate: bool = True) -> None:
-        """Set the attribute validator for the specified attribute."""
-        if not attr_name.isidentifier():
-            raise ValueError(f"{attr_name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.        
-        if attr_name == "id":
-            raise ValueError("Cannot change the ID of a research object.")
-        if attr_name == "prefix":
-            raise ValueError("Cannot change the prefix of a research object.")
-        if attr_name == "name":
-            if not str(attr_value).isidentifier():
-                raise ValueError(f"name attribute, value: {attr_value} is not a valid attribute name.")
-        # Validate the value        
-        if validate:                                                      
-            ResearchObjectHandler.validator(research_object, attr_name, attr_value)
+        return value      
 
     @staticmethod
     def check_inputs(cls: type, tmp_kwargs: dict) -> None:
@@ -73,16 +57,7 @@ class ResearchObjectHandler:
         if not IDCreator().is_ro_id(id):
             raise ValueError("id is not a valid ID.")              
 
-        return kwargs
-    
-    @staticmethod
-    def validator(research_object: "ResearchObject", attr_name: str, attr_value: Any)  -> Any:
-        """Validate the attribute value. If the attribute value is not valid, an error is thrown."""
-        try:            
-            validate_method = eval("research_object.validate_" + attr_name)
-            validate_method(attr_value)
-        except AttributeError as e:
-            pass
+        return kwargs        
 
     @staticmethod
     def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any) -> Any:
@@ -97,11 +72,11 @@ class ResearchObjectHandler:
     @staticmethod
     def to_json(research_object: "ResearchObject", attr_name: str, attr_value: Any) -> Any:        
         """Convert the attribute value to a JSON string. If there is no class-specific way to do it, then use the builtin json.dumps"""
-        try:
-            to_json_method = eval("research_object.to_json_" + attr_name)
+        if hasattr(research_object, "to_json_" + attr_name):
+            to_json_method = getattr(research_object, "to_json_" + attr_name)
             attr_value_json = to_json_method(attr_value)
-        except AttributeError as e:
-            attr_value_json = json.dumps(attr_value)
+        else:
+            attr_value = json.dumps(attr_value)
         return attr_value_json
     
     @staticmethod
@@ -189,22 +164,20 @@ class ResearchObjectHandler:
 
     @staticmethod
     def _set_builtin_attribute(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list):
-        """Responsible for setting the value of all builtin attributes, simple or not."""
-        # 1. If the attribute name is in default_attrs, it is a builtin attribute, so set the attribute value.
-        simple = False
+        """Responsible for setting the value of all builtin attributes, simple or not."""  
 
-        if name not in complex_attrs:
-            simple = True
+        # Validate the value
+        if validate and hasattr(research_object, "validate_" + name):       
+            validate_method = getattr(research_object, "validate_" + name)
+            validate_method(value)
 
-        ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate) # Validate the attribute.
-
-        if simple:
+        if not hasattr(research_object, "save_" + name):
             # Set the attribute "name" of this object as the VR ID (as a simple attribute).
             ResearchObjectHandler._set_simple_builtin_attr(research_object, name, value, action, validate)
             return        
 
-        # Save the attribute to the database.
-        save_method = eval("research_object.save_" + name)
+        # Save the "complex" builtin attribute to the database.
+        save_method = getattr("research_object", "save_" + name)
         save_method(value, action = action)
 
         if action.do_exec:
@@ -220,6 +193,7 @@ class ResearchObjectHandler:
             ResearchObjectHandler._set_builtin_attribute(research_object, name, value, action, validate, default_attrs, complex_attrs)
             return
                 
+        # Set custom (VR) attributes: this object's "name" attribute is the VR object.
         conn = action.pool.get_connection()
         cursor = conn.cursor()
         if name in research_object.__dict__:

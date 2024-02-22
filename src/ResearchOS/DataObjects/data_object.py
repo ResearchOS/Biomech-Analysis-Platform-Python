@@ -1,16 +1,33 @@
 """The base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage.""" 
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.default_attrs import DefaultAttrs
+from ResearchOS.action import Action
 
 all_default_attrs = {}
 
 complex_attrs_list = []
 
-# Root folder where all data is stored.
-# root_data_path = "data"
-
 class DataObject(ResearchObject):
-    """The abstract base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage."""    
+    """The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors."""    
+
+    def __delattr__(self, name: str, action: Action = None) -> None:
+        """Delete an attribute. If it's a builtin attribute, don't delete it.
+        If it's a VR, make sure it's "deleted" from the database."""
+        default_attrs = DefaultAttrs(self).default_attrs
+        if name in default_attrs:
+            raise AttributeError("Cannot delete a builtin attribute.")
+        if name not in self.__dict__:
+            raise AttributeError("No such attribute.")
+        if action is None:
+            action = Action(name = "delete_attribute")
+        vr_id = self.__dict__[name].id
+        sqlquery = f"INSERT INTO vr_dataobjects (action_id, dataobject_id, vr_id, is_active) VALUES ('{action.id}', '{self.id}', '{vr_id}', 0)"
+        if action is None:
+            action = Action(name = "delete_attribute")
+        action.add_sql_query(sqlquery)
+        action.execute()
+        del self.__dict__[name]
 
     def load_data_values(self) -> None:
         """Load data values from the database."""
@@ -19,7 +36,7 @@ class DataObject(ResearchObject):
         # TODO: Put the schema_id into the data_values table.
         # 1. Get all of the VRs for the current object.
         from ResearchOS.variable import Variable
-        sqlquery = f"SELECT vr_id FROM vr_dataobjects WHERE dataobject_id = '{self.id}'"
+        sqlquery = f"SELECT vr_id FROM vr_dataobjects WHERE dataobject_id = '{self.id}' AND is_active = 1"
         conn = ResearchObjectHandler.pool.get_connection()
         cursor = conn.cursor()
         vr_ids = cursor.execute(sqlquery).fetchall()

@@ -1,7 +1,5 @@
 from ResearchOS.research_object import ResearchObject
-from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.action import Action
-from ResearchOS.research_object_handler import ResearchObjectHandler
 
 all_default_attrs = {}
 
@@ -10,19 +8,34 @@ complex_attrs_list = []
 class PipelineObject(ResearchObject):
     """Parent class of all pipeline objects: Projects, Analyses, Logsheets, Process Groups, Processes, Variables, SpecifyTrials, Views"""
     
-    def __delattr__(self, name: str, action: Action = None) -> None:
-        """Delete an attribute. If it's a builtin attribute, don't delete it.
-        If it's a VR, make sure it's "deleted" from the database."""
-        default_attrs = DefaultAttrs(self).default_attrs
-        if name in default_attrs:
-            raise AttributeError("Cannot delete a builtin attribute.")
-        if name not in self.__dict__:
-            raise AttributeError("No such attribute.")
+    def _add_source_object_id(self, source_object_id: str, action: Action = None) -> None:
+        """Add a source object ID to the current object."""
+        target_object_id = self.id
+        is_active = 1
+        self._update_pipeline_edge(source_object_id, target_object_id, is_active, action)
+
+    def _remove_source_object_id(self, source_object_id: str, action: Action = None) -> None:
+        """Remove a source object ID from the current object."""
+        target_object_id = self.id
+        is_active = 0
+        self._update_pipeline_edge(source_object_id, target_object_id, is_active, action)
+
+    def _add_target_object_id(self, target_object_id: str, action: Action = None) -> None:
+        """Add a target object ID to the current object."""
+        source_object_id = self.id
+        is_active = 1
+        self._update_pipeline_edge(source_object_id, target_object_id, is_active, action)
+
+    def _remove_target_object_id(self, target_object_id: str, action: Action = None) -> None:
+        """Remove a target object ID from the current object."""
+        source_object_id = self.id
+        is_active = 0
+        self._update_pipeline_edge(source_object_id, target_object_id, is_active, action)
+
+    def _update_pipeline_edge(self, source_object_id: str, target_object_id: str, is_active: bool, action: Action = None) -> None:
+        """Update one pipeline edge."""
         if action is None:
-            action = Action(name = "delete_attribute")
-        vr_id = self.__dict__[name].id
-        sqlquery = f"INSERT INTO vr_dataobjects (action_id, dataobject_id, vr_id, is_active) VALUES ('{action.id}', '{self.id}', '{vr_id}', 0)"
-        conn = ResearchObjectHandler.pool.get_connection()
-        conn.execute(sqlquery)
-        ResearchObjectHandler.pool.return_connection(conn)
-        del self.__dict__[name]
+            action = Action(name = "update_pipeline_edges")
+        sqlquery = f"INSERT INTO pipelineobjects_graph (action_id, source_object_id, target_object_id, is_active) VALUES ('{action.id}', '{source_object_id}', '{target_object_id}', {is_active})"        
+        action.add_sql_query(sqlquery)
+        action.execute()

@@ -1,3 +1,4 @@
 {
-    "db_file": "dev_database.db"
+    "db_file": "dev_database.db",
+    "use_file_system": true
 }
