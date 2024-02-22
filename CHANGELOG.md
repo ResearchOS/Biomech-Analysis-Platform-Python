@@ -1,3 +1,6 @@
+v0.0.7
+First successfully running version of the package. Trying to upload so I can demonstrate the package on another computer.
+
 v0.0.6
 Implemented data schemas. ** Placeholder text **
 
