@@ -29,13 +29,14 @@ class DataObject(ResearchObject):
         action.execute()
         del self.__dict__[name]
 
-    def load_data_values(self) -> None:
+    def load_dataobject_vrs(self) -> None:
         """Load data values from the database."""
         # 1. Get all of the latest address_id & vr_id combinations (that have not been overwritten) for the current schema for the current database.
         # Get the schema_id.
         # TODO: Put the schema_id into the data_values table.
         # 1. Get all of the VRs for the current object.
-        from ResearchOS.variable import Variable
+        from ResearchOS.variable import Variable        
+
         sqlquery = f"SELECT vr_id FROM vr_dataobjects WHERE dataobject_id = '{self.id}' AND is_active = 1"
         conn = ResearchObjectHandler.pool.get_connection()
         cursor = conn.cursor()

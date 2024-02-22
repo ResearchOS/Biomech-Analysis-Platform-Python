@@ -7,23 +7,25 @@ from threading import Lock
 from ResearchOS.config import Config
 
 class SQLiteConnectionPool:
-    _instance = None
+    _instances = {"main": None, "data": None}
     _lock = Lock()  # Ensure thread-safe singleton access
 
-    def __new__(cls, database: str = None, pool_size: int = 10):
-        config = Config()
-        if database is None:
+    def __new__(cls, name: str = "main", pool_size: int = 10):
+        config = Config()        
+        if name == "main":
             database = config.db_file
+        elif name == "data":
+            database = config.data_db_file
         with cls._lock:
-            if cls._instance is None:
-                cls._instance = super(SQLiteConnectionPool, cls).__new__(cls)
-                cls._instance.database = database
-                cls._instance.pool_size = pool_size
-                cls._instance.pool = Queue(maxsize=pool_size)                
+            if cls._instances[name] is None:
+                cls._instances[name] = super(SQLiteConnectionPool, cls).__new__(cls)
+                cls._instances[name].database = database
+                cls._instances[name].pool_size = pool_size
+                cls._instances[name].pool = Queue(maxsize=pool_size)                
                 for _ in range(pool_size):
-                    cls._instance.pool.put(sqlite3.connect(database))
-                cls._instance.checked_out_connections = set()
-        return cls._instance
+                    cls._instances[name].pool.put(sqlite3.connect(database))
+                cls._instances[name].checked_out_connections = set()
+        return cls._instances[name]
     
     def print_caller_method_name(self):
         caller_frame = inspect.currentframe().f_back.f_back.f_back

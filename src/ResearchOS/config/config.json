@@ -1,4 +1,5 @@
 {
-    "db_file": "dev_database.db",
+    "db_file": "researchos.db",
+    "data_db_file": "researchos_data.db",
     "use_file_system": true
 }

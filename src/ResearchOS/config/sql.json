@@ -1,12 +1,16 @@
 {
     "intended_tables": [
-        "action_tables",
         "research_objects",
         "actions",
         "attributes_list",
         "simple_attributes",
         "data_values",
         "data_addresses",
-        "data_address_schemas"
+        "data_address_schemas",
+        "vr_dataobjects",
+        "pipelineobjects_graph"
+    ],
+    "intended_tables_data": [
+        "data_values_blob"
     ]
 }

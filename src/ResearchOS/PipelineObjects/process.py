@@ -235,6 +235,7 @@ class Process(PipelineObject):
             data_path = ds.dataset_path
             for level in ordered_levels[1:]:
                 data_path = os.path.join(data_path, level[0].name)
+            # TODO: Make the name of this variable not hard-coded.
             if "c3dFilePath" in vr_values_in:
                 vr_values_in["c3dFilePath"] = data_path + ".c3d"
 

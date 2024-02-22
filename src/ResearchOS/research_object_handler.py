@@ -3,6 +3,8 @@ from typing import Any
 import json, re, os
 from typing import TYPE_CHECKING
 import sqlite3, copy
+from hashlib import sha256
+import pickle
 
 import networkx as nx
 import scipy as sp
@@ -10,6 +12,7 @@ import numpy as np
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
+    from ResearchOS.DataObjects.data_object import DataObject
     from ResearchOS.variable import Variable
 
 from ResearchOS.idcreator import IDCreator
@@ -20,29 +23,35 @@ class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
 
     instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
-    counts = {} # Keep track of the number of instances of each ID.
-    pool = SQLiteConnectionPool()
+    counts = {} # Keep track of the number of instances of each ID.    
+    pool = SQLiteConnectionPool(name = "main")
+    pool_data = SQLiteConnectionPool(name = "data")    
 
     @staticmethod
-    def load_vr_value(research_object: "ResearchObject", vr: "Variable") -> Any:
-        """Load the value of the variable."""        
+    def load_vr_value(research_object: "DataObject", vr: "Variable") -> Any:
+        """Load the value of the variable for this DataObject."""
+        # 1. Get the latest data_blob_id.
         dataset_id = research_object.get_dataset_id()        
         schema_id = research_object.get_current_schema_id(dataset_id)
         conn = ResearchObjectHandler.pool.get_connection()
         cursor = conn.cursor()
-        sqlquery = f"SELECT scalar_value FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
-        rows = cursor.execute(sqlquery).fetchall()
+        sqlquery = f"SELECT action_id, data_blob_id FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
+        result = cursor.execute(sqlquery).fetchall()
         ResearchObjectHandler.pool.return_connection(conn)
+        time_ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num = 0)        
         if len(rows) == 0:
             raise ValueError("No value exists for that VR.")
-        raw_value = rows[0][0]
-        if raw_value is None:
-            return None
-        value = json.loads(raw_value)
-        if value is None:
-            # Get the file path.
-            value = ResearchObjectHandler.load_vr_from_file(research_object, research_object.id, vr.id, schema_id)
-        return value      
+        data_blob_id = time_ordered_result[0][0]
+
+        # 2. Get the data_blob from the data_blobs table.
+        conn = ResearchObjectHandler.pool_data.get_connection()
+        cursor = conn.cursor()
+        sqlquery = "SELECT data_blob FROM data_blobs WHERE data_hash = ?"
+        data_hash = sha256(data_blob_id.encode()).hexdigest()
+        params = (data_hash,)
+        rows = cursor.execute(sqlquery, params).fetchall()
+        ResearchObjectHandler.pool_data.return_connection(conn)
+        return pickle.loads(rows[0][0])
 
     @staticmethod
     def check_inputs(cls: type, tmp_kwargs: dict) -> None:
@@ -156,9 +165,8 @@ class ResearchObjectHandler:
                 load_method()
 
         dobj_subclasses = DataObject.__subclasses__()
-        del dobj_subclasses[dobj_subclasses.index(Variable)]
         if research_object.__class__ in dobj_subclasses:
-            research_object.load_data_values()
+            research_object.load_dataobject_vrs()
 
         
 
@@ -239,68 +247,72 @@ class ResearchObjectHandler:
             sqlquery = f"INSERT INTO vr_dataobjects (action_id, dataobject_id, vr_id) VALUES ('{action.id}', '{research_object.id}', '{selected_vr.id}')"
             action.add_sql_query(sqlquery)        
 
-        # Put the value into the data_values table.
+        # Put the data_blob_id into the data_values table.
         vr = selected_vr
         ds_id = research_object.get_dataset_id()
-        schema_id = vr.get_current_schema_id(ds_id)
-        is_scalar = False
-        if ResearchObjectHandler.is_scalar(value):
-            is_scalar = True
-            json_value = json.dumps(value)
-            sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, scalar_value, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{json_value}', '{schema_id}')"
-        else:
-            sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{schema_id}')"
-        action.add_sql_query(sqlquery)
-        if not is_scalar:
-            ResearchObjectHandler.save_vr_to_file(research_object, research_object.id, vr_id, schema_id, value)
-        action.execute()
-        action.pool.return_connection(conn)        
+        schema_id = vr.get_current_schema_id(ds_id)        
+        sqlquery = "INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id) VALUES (?, ?, ?, ?)"
+        params = (action.id, vr_id, research_object.id, schema_id)        
+        action.add_sql_query(sqlquery, params)
+        action.pool.return_connection(conn)
+        
+        # Save the value to the other db.
+        pool_data =SQLiteConnectionPool(name = "data")
+        conn_data = pool_data.get_connection()
+        sqlquery = "INSERT INTO data_values_blob (data_hash, data_blob) VALUES (?, ?)"
+        data_hash = sha256(action.id.encode()).hexdigest()
+        data_blob = pickle.dumps(value)
+        params = (data_hash, data_blob)
+        cursor.execute(sqlquery, params)
+        pool_data.return_connection(conn_data)
+
+        action.execute()        
         research_object.__dict__[name] = vr
 
-    @staticmethod
-    def get_vr_file_path(research_object: "ResearchObject", vr_id: str) -> str:
-        """Get the file path for the VR for this data object."""
-        from ResearchOS.DataObjects.dataset import Dataset
-        ds = Dataset(id = research_object.get_dataset_id())
-        schema = ds.schema
-        schema_graph = nx.MultiDiGraph(schema)
-        schema_order = list(nx.topological_sort(schema_graph))
-        ordered_levels = []
-        anc_nodes = nx.ancestors(ds.address_graph, research_object)
-        node_lineage = [research_object] + [anc_node for anc_node in anc_nodes]
-        for level in schema_order[0:len(node_lineage)]:
-            ordered_levels.append([n for n in node_lineage if isinstance(n, level)])
-        data_path = os.sep.join([os.path.dirname(ds.dataset_path) ,"MAT Data Files"])
-        if not os.path.exists(data_path):            
-            os.makedirs(data_path)
-        for level in ordered_levels[1:]:
-            data_path = os.path.join(data_path, level[0].name)
-            if not os.path.exists(data_path):         
-                os.makedirs(data_path)
-        file_path = data_path + os.sep + vr_id + ".mat"
-        return file_path
+    # @staticmethod
+    # def get_vr_file_path(research_object: "ResearchObject", vr_id: str) -> str:
+    #     """Get the file path for the VR for this data object."""
+    #     from ResearchOS.DataObjects.dataset import Dataset
+    #     ds = Dataset(id = research_object.get_dataset_id())
+    #     schema = ds.schema
+    #     schema_graph = nx.MultiDiGraph(schema)
+    #     schema_order = list(nx.topological_sort(schema_graph))
+    #     ordered_levels = []
+    #     anc_nodes = nx.ancestors(ds.address_graph, research_object)
+    #     node_lineage = [research_object] + [anc_node for anc_node in anc_nodes]
+    #     for level in schema_order[0:len(node_lineage)]:
+    #         ordered_levels.append([n for n in node_lineage if isinstance(n, level)])
+    #     data_path = os.sep.join([os.path.dirname(ds.dataset_path) ,"MAT Data Files"])
+    #     if not os.path.exists(data_path):            
+    #         os.makedirs(data_path)
+    #     for level in ordered_levels[1:]:
+    #         data_path = os.path.join(data_path, level[0].name)
+    #         if not os.path.exists(data_path):         
+    #             os.makedirs(data_path)
+    #     file_path = data_path + os.sep + vr_id + ".mat"
+    #     return file_path
 
-    @staticmethod
-    def save_vr_to_file(research_object: "ResearchObject", ro_id: str, vr_id: str, schema_id: str, raw_value: Any) -> None:
-        file_path = ResearchObjectHandler.get_vr_file_path(research_object, vr_id)        
-        # Save the data to the file.
-        tmp_value = copy.deepcopy(raw_value)
-        value = ResearchObjectHandler.clean_value_for_save_mat(tmp_value)        
-        # sp.io.savemat(file_path, {"stored_data": {"key1": [1, 2, 3], "key2": [4, 5, 6], "key3": [1, "b", "cd"]}})
-        sp.io.savemat(file_path, {"stored_data": value})
+    # @staticmethod
+    # def save_vr_to_file(research_object: "ResearchObject", ro_id: str, vr_id: str, schema_id: str, raw_value: Any) -> None:
+    #     file_path = ResearchObjectHandler.get_vr_file_path(research_object, vr_id)        
+    #     # Save the data to the file.
+    #     tmp_value = copy.deepcopy(raw_value)
+    #     value = ResearchObjectHandler.clean_value_for_save_mat(tmp_value)        
+    #     # sp.io.savemat(file_path, {"stored_data": {"key1": [1, 2, 3], "key2": [4, 5, 6], "key3": [1, "b", "cd"]}})
+    #     sp.io.savemat(file_path, {"stored_data": value})
 
-    @staticmethod
-    def load_vr_from_file(research_object: "ResearchObject", ro_id: str, vr_id: str, schema_id: str) -> Any:
-        """Load the value of this variable from the file."""
-        file_path = ResearchObjectHandler.get_vr_file_path(research_object, vr_id)
-        if not os.path.exists(file_path):
-            return
+    # @staticmethod
+    # def load_vr_from_file(research_object: "ResearchObject", ro_id: str, vr_id: str, schema_id: str) -> Any:
+    #     """Load the value of this variable from the file."""
+    #     file_path = ResearchObjectHandler.get_vr_file_path(research_object, vr_id)
+    #     if not os.path.exists(file_path):
+    #         return
 
-        # Load the data from the file.
-        scipy_val = sp.io.loadmat(file_path)
-        data_out = scipy_val["stored_data"]        
-        cleaned_data = ResearchObjectHandler.clean_value_from_load_mat(data_out)
-        return cleaned_data
+    #     # Load the data from the file.
+    #     scipy_val = sp.io.loadmat(file_path)
+    #     data_out = scipy_val["stored_data"]        
+    #     cleaned_data = ResearchObjectHandler.clean_value_from_load_mat(data_out)
+    #     return cleaned_data
 
 
 

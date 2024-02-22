@@ -24,10 +24,9 @@ class ResearchObject():
         return False
     
     def __getattribute__(self, name: str) -> Any:
-        """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""
-        from ResearchOS.DataObjects.data_object import DataObject
-        subclasses = DataObject.__subclasses__()
-        vr_class = [x for x in subclasses if x.prefix == "VR"][0]
+        """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""        
+        subclasses = ResearchObject.__subclasses__()
+        vr_class = [x for x in subclasses if (hasattr(x,"prefix") and x.prefix == "VR")][0]
         try:
             value = super().__getattribute__(name) # Throw the default error.
         except AttributeError as e:
