@@ -1,52 +1,71 @@
 """Initialize a database to handle all of the data for the application."""
 
-import os, json, weakref
+import os, json, weakref, sqlite3
 
 from ResearchOS.current_user import CurrentUser
 from ResearchOS.config import Config
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.research_object_handler import ResearchObjectHandler
 
-sql_settings_path = os.path.dirname(__file__) + "/config/sql.json"
+sql_settings_path = os.sep.join([os.path.dirname(__file__), "config", "sql.json"])
 
 class DBInitializer():
     """Initializes the database when the Python package is run for the first time using ros-quickstart."""
 
-    def __init__(self, db_file: str = None) -> None:
+    def __init__(self, main_db_file: str = None, data_db_file: str = None) -> None:
         """Initialize the database."""
-        # Reset everything.
+        # Reset research object dictionary.
         ResearchObjectHandler.instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
         ResearchObjectHandler.counts = {} # Keep track of the number of instances of each ID.
+        
+        # Reset the connection pools for each database.
         ResearchObjectHandler.pool = None
-        SQLiteConnectionPool._instance = None
+        ResearchObjectHandler.pool_data = None
+        SQLiteConnectionPool._instances = {"main": None, "data": None}                      
 
+        # Remove database files.
         config = Config()
-        if db_file is None:
-            db_file = config.db_file
+        if main_db_file is None:
+            main_db_file = config.db_file
         else:
-            config.db_file = db_file
-        if os.path.exists(db_file):
-            os.remove(db_file)
+            config.db_file = main_db_file
+        if os.path.exists(main_db_file):
+            os.remove(main_db_file)
+        if data_db_file is None:
+            data_db_file = config.data_db_file
+        else:
+            config.data_db_file = data_db_file
+        if os.path.exists(data_db_file):
+            os.remove(data_db_file)
         with open(sql_settings_path, "r") as file:
-            data = json.load(file) 
-        intended_tables = data["intended_tables"]        
+            sql_settings = json.load(file) 
+        intended_tables = sql_settings["intended_tables"]
+        intended_tables_data = sql_settings["intended_tables_data"]
 
-        self.db_file = db_file
-        self.pool = SQLiteConnectionPool()
-        ResearchObjectHandler.pool = self.pool
+        self.db_file = main_db_file
+        self.pool = SQLiteConnectionPool(name = "main")
+        ResearchObjectHandler.pool = self.pool        
         self.conn = self.pool.get_connection()
         self.create_tables()
-        self.check_tables_exist(intended_tables)
+        self.check_tables_exist(self.conn, intended_tables)
         self.pool.return_connection(self.conn)
-        self.init_current_user_id()        
+        self.init_current_user_id()
+
+        self.data_db_file = data_db_file
+        self.pool_data = SQLiteConnectionPool(name = "data")
+        ResearchObjectHandler.pool_data = self.pool_data
+        self.conn_data = self.pool_data.get_connection()
+        self.create_tables_data_db()
+        self.check_tables_exist(self.conn_data, intended_tables_data)
+        self.pool_data.return_connection(self.conn_data)
 
     def init_current_user_id(self, user_id: str = "US000000_000"):
         """Initialize the current user ID in the settings table."""
         CurrentUser().set_current_user_id(user_id)
 
-    def check_tables_exist(self, intended_tables: list):
+    def check_tables_exist(self, conn: sqlite3.Connection, intended_tables: list):
         """Check that all of the tables were created."""        
-        cursor = self.conn.cursor()
+        cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = cursor.fetchall()
         tables = [table[0] for table in tables]
@@ -54,6 +73,17 @@ class DBInitializer():
         if missing_tables:
             print(missing_tables)
             raise Exception("At least one table missing!")
+        
+    def create_tables_data_db(self):
+        """Create the database for the data objects."""
+        cursor = self.conn_data.cursor()
+
+        # Data objects data values. Lists all data values for all data objects.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS data_values_blob (
+                        data_blob_id INTEGER PRIMARY KEY,
+                        data_blob BLOB NOT NULL,
+                        data_hash TEXT NOT NULL
+                        )""")        
 
     def create_tables(self):
         """Create the database and all of its tables."""
@@ -113,12 +143,12 @@ class DBInitializer():
                         dataobject_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
                         vr_id TEXT NOT NULL,
-                        scalar_value TEXT,
+                        data_blob_id INTEGER NOT NULL,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
                         FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (dataobject_id, schema_id, vr_id, scalar_value)
+                        PRIMARY KEY (dataobject_id, schema_id, vr_id, data_blob_id)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.
@@ -170,4 +200,4 @@ class DBInitializer():
 
         
 if __name__ == '__main__':    
-    db = DBInitializer("dev_database.db")
+    db = DBInitializer()
