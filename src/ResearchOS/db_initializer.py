@@ -60,12 +60,12 @@ class DBInitializer():
         cursor = self.conn.cursor()
 
         # Action-tables one-to-many relation table. Lists all actions and which tables they had an effect on.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS action_tables (
-                        action_id TEXT NOT NULL,
-                        table_name TEXT NOT NULL,
-                        PRIMARY KEY (action_id, table_name),
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
-                        )""")
+        # cursor.execute("""CREATE TABLE IF NOT EXISTS action_tables (
+        #                 action_id TEXT NOT NULL,
+        #                 table_name TEXT NOT NULL,
+        #                 PRIMARY KEY (action_id, table_name),
+        #                 FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+        #                 )""")
 
         # Objects table. Lists all research objects in the database, and which action created them.
         cursor.execute("""CREATE TABLE IF NOT EXISTS research_objects (
@@ -149,10 +149,23 @@ class DBInitializer():
                         action_id TEXT NOT NULL,
                         vr_id TEXT NOT NULL,
                         dataobject_id TEXT NOT NULL,
+                        is_active INTEGER NOT NULL DEFAULT 1,
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
+        
+        # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
+                        action_id TEXT NOT NULL,
+                        source_object_id TEXT NOT NULL,
+                        target_object_id TEXT NOT NULL,
+                        is_active INTEGER NOT NULL DEFAULT 1,
+                        FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id, source_object_id, target_object_id)
+                        )""")        
 
 
         
