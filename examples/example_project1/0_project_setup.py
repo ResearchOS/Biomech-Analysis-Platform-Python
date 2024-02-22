@@ -3,9 +3,9 @@ import ResearchOS as ros
 from ResearchOS.config import Config
 
 ## DELETE THE DATABASE FILE AND RUN DB_INITIALIZER FIRST.
-db_file = "dev_database.db"
-config = Config()
-config.db_file = db_file
+# db_file = "dev_database.db"
+# config = Config()
+# config.db_file = db_file
 ros.DBInitializer()
 
 # Initialize the dataset

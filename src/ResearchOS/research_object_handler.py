@@ -79,16 +79,6 @@ class ResearchObjectHandler:
         return attr_value
     
     @staticmethod
-    def to_json(research_object: "ResearchObject", attr_name: str, attr_value: Any) -> Any:        
-        """Convert the attribute value to a JSON string. If there is no class-specific way to do it, then use the builtin json.dumps"""
-        if hasattr(research_object, "to_json_" + attr_name):
-            to_json_method = getattr(research_object, "to_json_" + attr_name)
-            attr_value_json = to_json_method(attr_value)
-        else:
-            attr_value = json.dumps(attr_value)
-        return attr_value_json
-    
-    @staticmethod
     def object_exists(id: str) -> bool:
         """Return true if the specified id exists in the database, false if not."""
         pool = SQLiteConnectionPool()
@@ -205,23 +195,21 @@ class ResearchObjectHandler:
         conn = action.pool.get_connection()
         cursor = conn.cursor()
         if name in research_object.__dict__:
-            # The VR already exists for this name in the research object, AND the value is unchanging.
-            if getattr(research_object, name) == value:
-                action.pool.return_connection(conn)
-                return
-            
-            selected_vr = research_object.__dict__[name]
-            vr_id = selected_vr.id            
+            selected_vr = research_object.__dict__[name]                      
         else:            
-            # Search through pre-existing unassociated VR for one with this name. If it's not in the vr_dataobjects table, it's unassociated.
+            # Search through pre-existing unassociated VR for one with this name and is_active = 1. If it's not in the vr_dataobjects table with is_active = 1, it's unassociated.
             # Then, put the vr_id into the vr_dataobjects table.
             # Check if there is an existing variable that should be used (from a different DataObject, e.g. another Trial).            
             selected_vr = None
-            sqlquery = f"SELECT vr_id FROM vr_dataobjects"
+            sqlquery = f"SELECT vr_id, is_active FROM vr_dataobjects WHERE dataobject_id = '{research_object.id}'"
             associated_result = cursor.execute(sqlquery).fetchall()
             vr_ids = [row[0] for row in associated_result]
-            vr_ids = list(set(vr_ids))
-            for vr_id in vr_ids:
+            is_active_int = [row[1] for row in associated_result]
+            assoc_vr_ids_unique = list(set(vr_ids))
+            vr_ids_unique_dict = {vr_id: is_active_int[vr_ids.index(vr_id)] for vr_id in assoc_vr_ids_unique}                        
+            for vr_id, is_active in vr_ids_unique_dict.items():
+                if is_active != 1:
+                    continue
                 vr = Variable(id = vr_id)
                 if vr.name == name:
                     selected_vr = vr
@@ -231,7 +219,7 @@ class ResearchObjectHandler:
             if not selected_vr: 
                 sqlquery = f"SELECT object_id FROM research_objects"
                 all_ids = cursor.execute(sqlquery).fetchall()
-                unassoc_vr_ids = [row[0] for row in all_ids if row[0] not in vr_ids and row[0].startswith(Variable.prefix)]
+                unassoc_vr_ids = [row[0] for row in all_ids if row[0] not in assoc_vr_ids_unique and row[0].startswith(Variable.prefix)]                
                 if not unassoc_vr_ids:
                     action.pool.return_connection(conn)
                     raise ValueError("No unassociated VR with that name exists.")
@@ -252,11 +240,11 @@ class ResearchObjectHandler:
         ds_id = research_object.get_dataset_id()
         schema_id = vr.get_current_schema_id(ds_id)        
         sqlquery = "INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id) VALUES (?, ?, ?, ?)"
-        params = (action.id, vr_id, research_object.id, schema_id)        
+        params = (action.id, vr.id, research_object.id, schema_id)        
         action.add_sql_query(sqlquery, params)
         action.pool.return_connection(conn)
         
-        # Save the value to the other db.
+        # Save the value to the data_blob_values table in the data db.
         pool_data =SQLiteConnectionPool(name = "data")
         conn_data = pool_data.get_connection()
         sqlquery = "INSERT INTO data_values_blob (data_hash, data_blob) VALUES (?, ?)"
@@ -349,18 +337,19 @@ class ResearchObjectHandler:
         # Actually clean the values.
         return np.array(value)
         
-    @staticmethod
-    def is_scalar(value: Any) -> bool:
-        """Return True if the value is a scalar, False if not."""
-        if value is None:
-            return True
-        return isinstance(value, (int, float, str, bool))
+    # @staticmethod
+    # def is_scalar(value: Any) -> bool:
+    #     """Return True if the value is a scalar, False if not."""
+    #     if value is None:
+    #         return True
+    #     return isinstance(value, (int, float, str, bool))
     
     @staticmethod
     def save_simple_attribute(id: str, name: str, json_value: Any, action: Action) -> Action:
         """If no store_attr method exists for the object attribute, use this default method."""                                      
-        sqlquery = f"INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{id}', '{ResearchObjectHandler._get_attr_id(name)}', '{json_value}')"                
-        action.add_sql_query(sqlquery)
+        sqlquery = f"INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES (?, ?, ?, ?)"
+        params = (action.id, id, ResearchObjectHandler._get_attr_id(name), json_value)
+        action.add_sql_query(sqlquery, params)
     
     @staticmethod
     def _get_attr_name(attr_id: int) -> str:
@@ -445,7 +434,11 @@ class ResearchObjectHandler:
         If it is not a built-in ResearchOS attribute, then no validation occurs."""
         # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.     
         
-        json_value = ResearchObjectHandler.to_json(self, name, value) # Convert the value to JSON
+        if hasattr(self, "to_json_" + name):
+            to_json_method = getattr(self, "to_json_" + name)
+            json_value = to_json_method(value)
+        else:
+            json_value = json.dumps(value)
         
         # Create an Action. Must be before the ResearchObjectHandler.save_simple_attribute() method.
         execute_action = False
