@@ -9,7 +9,6 @@ from ResearchOS.variable import Variable
 from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
-from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
@@ -20,7 +19,6 @@ all_default_attrs["path"] = None
 all_default_attrs["headers"] = []
 all_default_attrs["num_header_rows"] = None
 all_default_attrs["class_column_names"] = {}
-all_default_attrs["subset_id"] = None
 
 complex_attrs_list = []
 
@@ -179,15 +177,6 @@ class Logsheet(PipelineObject):
         for key in var:
             prefix_var[key] = var[key].prefix
         return json.dumps(prefix_var)
-            
-    ### Subset ID
-            
-    def validate_subset_id(self, subset_id: str) -> None:
-        """Validate the subset ID."""
-        if not ResearchObjectHandler.object_exists(subset_id):
-            raise ValueError("Subset ID must be a valid ID!")
-        if not subset_id.startswith(Subset.prefix):
-            raise ValueError("Subset ID must start with the correct prefix!")
 
     #################### Start class-specific methods ####################
     def load_xlsx(self) -> list:
@@ -202,7 +191,6 @@ class Logsheet(PipelineObject):
         self.validate_headers(self.headers)
         self.validate_num_header_rows(self.num_header_rows)
         self.validate_path(self.path)
-        self.validate_subset_id(self.subset_id)
 
         # 1. Load the logsheet (using built-in Python libraries)
         if self.path.endswith(("xlsx", "xls")):

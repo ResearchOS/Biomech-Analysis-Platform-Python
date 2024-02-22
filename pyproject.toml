@@ -6,14 +6,15 @@ build-backend = "hatchling.build"
 exclude = [
   "/.github",
   "/docs",
+  "/howto",
   "mkdocs.yml",
   "requirements_dev.txt",
-  "/archive",
   "pypi_upload_instructions.md",
   "dev_env_file.py",
-  "/src/ResearchOS/tests",
-  "/src/ResearchOS/dev_database.db",
-  "/src/ResearchOS/config_no_prod/"
+  "researchos.db",
+  "researchos_data.db",
+  "Spr23TWW_OA_AllSubjects_032323_TEST.csv",
+  "Spr23TWW_OA_AllSubjects_032323.xlsx",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -42,6 +43,22 @@ classifiers = [
     "Topic :: Utilities",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent"
+]
+# Runtime dependencies
+dependencies = [
+  "networkx",
+  "numpy",
+  "pandas",
+  "scipy"
+]
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+  "pytest",
+  "mkdocstrings",
+  "mkdocs-material",
+  "mkdocstrings-python"
 ]
 
 [project.urls]

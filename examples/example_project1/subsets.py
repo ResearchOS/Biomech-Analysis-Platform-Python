@@ -6,7 +6,7 @@ all_trials_OA = {
         ["VR8", "in", ["Straight Line Gait", "TWW Pre-planned", "TWW Late-cued","Static Calibration"]],
         ["VR9", "in", ["L", None]],
         ["VR10", "==", 1],        
-        ["VR12", "not contains", "Practice"] # NEEDS FIXING FOR A "CONTAINS"
+        ["VR12", "not contains", "Practice"]
     ]
 }
 

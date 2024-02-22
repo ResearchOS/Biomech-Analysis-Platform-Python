@@ -1,7 +1,6 @@
 import ResearchOS as ros
 
-## DELETE THE DATABASE FILE AND RUN DB_INITIALIZER FIRST.
-
+## RUN DB_INITIALIZER FIRST (DELETES DATABASE)
 ros.DBInitializer()
 
 # Initialize the dataset
@@ -42,7 +41,5 @@ lg.class_column_names = {
     "Subject_Codename": ros.Subject,
     "Trial_Name_Number": ros.Trial
 }
-ss = ros.Subset(id = "SS1")
-lg.subset_id = ss.id
 
 lg.read_logsheet() # Puts addresses in the dataset object.
