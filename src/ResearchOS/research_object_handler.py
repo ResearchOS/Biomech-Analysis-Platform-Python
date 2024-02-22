@@ -6,8 +6,6 @@ import sqlite3, copy
 from hashlib import sha256
 import pickle
 
-import networkx as nx
-import scipy as sp
 import numpy as np
 
 if TYPE_CHECKING:
