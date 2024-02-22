@@ -148,7 +148,7 @@ class Dataset(DataObject):
         for address_names in addresses:   
             sqlquery = f"INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES ('{address_names[0]}', '{address_names[1]}', '{schema_id}', '{action.id}')"
             action.add_sql_query(sqlquery)
-        self.__dict__["address_graph"] = self.addresses_to_object_graph(addresses)
+        self.__dict__["address_graph"] = self.addresses_to_graph(addresses)
         self.__dict__["addresses"] = addresses
 
     def load_addresses(self) -> list:
@@ -166,10 +166,10 @@ class Dataset(DataObject):
         addresses = [list(address) for address in addresses]        
 
         self.__dict__["addresses"] = addresses
-        self.__dict__["address_graph"] = self.addresses_to_object_graph(addresses)
+        self.__dict__["address_graph"] = self.addresses_to_graph(addresses)
 
-    def addresses_to_object_graph(self, addresses: list) -> nx.MultiDiGraph:
-        """Convert the addresses to a MultiDiGraph."""
+    def addresses_to_graph(self, addresses: list) -> nx.MultiDiGraph:
+        """Convert the addresses edge list to a MultiDiGraph."""
         G = nx.MultiDiGraph()
         # To avoid recursion, set the lines with Dataset manually so there is no self reference.
         address_copy = copy.deepcopy(addresses)
@@ -181,15 +181,12 @@ class Dataset(DataObject):
 
         addresses = address_copy
         subclasses = DataObject.__subclasses__()
-        cls_dict = {cls.prefix: cls for cls in subclasses}  
-        # count = 0
+        cls_dict = {cls.prefix: cls for cls in subclasses}
         idcreator = IDCreator()
         for address_edge in addresses:            
             cls0 = cls_dict[idcreator.get_prefix(address_edge[0])]
             cls1 = cls_dict[idcreator.get_prefix(address_edge[1])]
             G.add_edge(cls0(id = address_edge[0]), cls1(id = address_edge[1]))
-            # count += 1
-            # print(str(count))        
         return G
     
 if __name__=="__main__":
