@@ -19,16 +19,12 @@ any_type_logic_options = ("==", '=', "!=", "in", "not in", "is", "is not", "cont
 logic_options = numeric_logic_options + any_type_logic_options
 plural_logic = ("in", "not in", "contains", "not contains")
 
-complex_attrs_list = []
-
 class Subset(PipelineObject):
     """Provides rules to select a subset of data from a dataset."""
     
     prefix = "SS"
 
-    def load(self) -> None:
-        """Load the dataset-specific attributes from the database in an attribute-specific way."""
-        PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
+    ## conditions
     
     def validate_conditions(self, conditions: dict) -> None:
         """Validate the condition recursively.
@@ -88,21 +84,23 @@ class Subset(PipelineObject):
         # 2. For each node in the address_graph, check if it meets the conditions.
         nodes_for_subgraph = []
         G = ds.address_graph
-        for node in G.nodes():
-            if not self.meets_conditions(node, self.conditions):
+        sorted_nodes = list(nx.topological_sort(G))
+        for idx, node in enumerate(sorted_nodes):
+            # ro = ResearchObjectHandler._prefix_to_class(node.prefix)(id = node.id)
+            if not self.meets_conditions(node, self.conditions, G):
                 continue
             curr_nodes = [node]
             curr_nodes.extend(nx.ancestors(G, node))
             nodes_for_subgraph.extend([node for node in curr_nodes if node not in nodes_for_subgraph])
         return G.subgraph(nodes_for_subgraph) # Maintains the relationships between all of the nodes in the subgraph.
 
-    def meets_conditions(self, node: Any, conditions: dict) -> bool:
+    def meets_conditions(self, node: Any, conditions: dict, G: nx.MultiDiGraph) -> bool:
         """Check if the node meets the conditions."""
         if isinstance(conditions, dict):
             if "and" in conditions:
-                return all([self.meets_conditions(node, cond) for cond in conditions["and"]])
+                return all([self.meets_conditions(node, cond, G) for cond in conditions["and"]])
             if "or" in conditions:
-                return any([self.meets_conditions(node, cond) for cond in conditions["or"]])
+                return any([self.meets_conditions(node, cond, G) for cond in conditions["or"]])
                     
         # Check the condition.
         vr_id = conditions[0]
@@ -111,6 +109,15 @@ class Subset(PipelineObject):
         vr = Variable(id = vr_id)
         vr_name = vr.name
         if not hasattr(node, vr_name):
+            anc_nodes = nx.ancestors(G, node)
+            found_attr = False
+            for anc_node in anc_nodes:
+                if not hasattr(anc_node, vr_name):
+                    continue
+                found_attr = True
+                break
+            if found_attr and self.meets_conditions(anc_node, conditions, G):
+                return True
             return False
         vr_value = getattr(node, vr_name)
 

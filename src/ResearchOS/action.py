@@ -90,76 +90,87 @@ class Action():
         id = result[0]
         return Action(id = id)
     
-    def add_sql_query(self, sqlquery: str) -> None:
+    def add_sql_query(self, sqlquery: str, params: tuple = None) -> None:
         """Add a sql query to the action."""
-        self.sql_queries.append(sqlquery)
+        if params:
+            self.sql_queries.append((sqlquery, params))
+        else:
+            self.sql_queries.append((sqlquery,))
 
     def execute(self) -> None:
         """Run all of the sql queries in the action."""
-        pool = SQLiteConnectionPool()
+        pool = SQLiteConnectionPool(name = "main")        
         conn = pool.get_connection()
         cursor = conn.cursor()
+        # Ensure that all of the SQL queries are tuples: (sqlquery, params)
+        for idx, q in enumerate(self.sql_queries):
+            if not isinstance(q, (tuple)):
+                self.sql_queries[idx] = (q,)
+
         # Execute all of the SQL queries.
         if len(self.sql_queries) == 0:
             pool.return_connection(conn)            
             return
-        for query in self.sql_queries:
+        for query_list in self.sql_queries:
             try:
-                cursor.execute(query)
+                if len(query_list) == 1:
+                    cursor.execute(query_list[0])
+                else:                    
+                    cursor.execute(query_list[0], query_list[1])
             except:                
                 pool.return_connection(conn)
-                raise ValueError(f"SQL query failed: {query}")
+                raise ValueError(f"SQL query failed: {query_list[0]}")
         self.sql_queries = []               
-        # Log the action to the Actions table   
+        # Commit the Action.  
         if self.commit:            
             conn.commit()
         pool.return_connection(conn)
 
-    def restore(self) -> None:
-        """Restore the action, restoring the state of the referenced research objects to be the state in this Action."""        
-        # Create a new action, where "redo_of" is set to self.id.
-        action = Action(name = self.name, redo_of = self.id)
-        cursor = self.conn.cursor()
-        table_names = ["data_values", "research_object_attributes", "data_address_schemas", "data_addresses"]
-        column_labels_list = [["action_id", "address_id", "schema_id", "VR_id", "PR_id", "scalar_value"], 
-                         ["action_id", "object_id", "attr_id", "attr_value", "child_of"],
-                         ["schema_id", "level_name", "level_index", "action_id", "dataset_id"],
-                         ["address_id", "schema_id", "level0", "level1", "level2", "level3", "level4", "level5", "level6", "level7", "level8", "level9", "action_id"]]
-        for idx, table_name in enumerate(table_names):
-            labels = column_labels_list[idx]
-            rows = Action._get_rows_of_action(action_id = self.id, table_name = table_name)
-            labels_formatted = ", ".join(labels)
-            action_id_index = labels.index("action_id")
-            for row in rows:                
-                row[action_id_index] = action.id # Update the action_id to the new action.
-                row_formatted = ", ".join(row)
-                sqlquery = f"INSERT INTO {table_name} ({labels_formatted}) VALUES ({row_formatted})"
-                cursor.execute(sqlquery, row)
+    # def restore(self) -> None:
+    #     """Restore the action, restoring the state of the referenced research objects to be the state in this Action."""        
+    #     # Create a new action, where "redo_of" is set to self.id.
+    #     action = Action(name = self.name, redo_of = self.id)
+    #     cursor = self.conn.cursor()
+    #     table_names = ["data_values", "research_object_attributes", "data_address_schemas", "data_addresses"]
+    #     column_labels_list = [["action_id", "address_id", "schema_id", "VR_id", "PR_id", "scalar_value"], 
+    #                      ["action_id", "object_id", "attr_id", "attr_value", "child_of"],
+    #                      ["schema_id", "level_name", "level_index", "action_id", "dataset_id"],
+    #                      ["address_id", "schema_id", "level0", "level1", "level2", "level3", "level4", "level5", "level6", "level7", "level8", "level9", "action_id"]]
+    #     for idx, table_name in enumerate(table_names):
+    #         labels = column_labels_list[idx]
+    #         rows = Action._get_rows_of_action(action_id = self.id, table_name = table_name)
+    #         labels_formatted = ", ".join(labels)
+    #         action_id_index = labels.index("action_id")
+    #         for row in rows:                
+    #             row[action_id_index] = action.id # Update the action_id to the new action.
+    #             row_formatted = ", ".join(row)
+    #             sqlquery = f"INSERT INTO {table_name} ({labels_formatted}) VALUES ({row_formatted})"
+    #             cursor.execute(sqlquery, row)
         
-        self.conn.commit()
+    #     self.conn.commit()
 
-    def redo(self) -> None:
-        """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
-        # Create a new action, where "redo_of" is set to self.id.        
-        next_action = Action.next(id = self.id)
-        if next_action is None:
-            return
-        Action.set_current_action(action = next_action)
-        next_action.execute()
+    # def redo(self) -> None:
+    #     """Execute the action, causing the current state of the referenced widgets and research objects to be the state in this Action."""        
+    #     # Create a new action, where "redo_of" is set to self.id.        
+    #     next_action = Action.next(id = self.id)
+    #     if next_action is None:
+    #         return
+    #     Action.set_current_action(action = next_action)
+    #     next_action.execute()
 
-    def undo(self) -> None:
-        """Undo the action, causing the current state of the referenced widgets and research objects to be the state of the previous Action."""
-        # Log the action to the database.        
-        prev_action = Action.previous(id = self.id)
-        if prev_action is None:
-            return        
-        prev_action.redo()    
+    # def undo(self) -> None:
+    #     """Undo the action, causing the current state of the referenced widgets and research objects to be the state of the previous Action."""
+    #     # Log the action to the database.        
+    #     prev_action = Action.previous(id = self.id)
+    #     if prev_action is None:
+    #         return        
+    #     prev_action.redo()    
 
-    def _get_rows_of_action(action_id: str, table_name: str) -> list:
-        """Get the rows of a table that were created by an action."""
-        cursor = self.conn.cursor()
-        sqlquery = f"SELECT * FROM {table_name} WHERE action_id = '{action_id}'"
-        return cursor.execute(sqlquery).fetchall()    
+    # def _get_rows_of_action(action_id: str, table_name: str) -> list:
+    #     """Get the rows of a table that were created by an action."""
+    #     cursor = self.conn.cursor()
+    #     sqlquery = f"SELECT * FROM {table_name} WHERE action_id = '{action_id}'"
+    #     return cursor.execute(sqlquery).fetchall()    
 
 if __name__=="__main__":    
     action = Action(name = "Test Action")    

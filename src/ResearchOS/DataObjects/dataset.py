@@ -25,29 +25,16 @@ class Dataset(DataObject):
     2. data schema: The schema of the dataset (specified as a list of classes)"""
 
     prefix: str = "DS"
-
-    # def __init__(self, **kwargs):
-    #     """Initialize the attributes that are required by ResearchOS.
-    #     Other attributes can be added & modified later."""
-    #     super().__init__(all_default_attrs, **kwargs)
-
-    # def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
-    #     """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-    #     ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
-
-    def load(self) -> None:
-        """Load the dataset-specific attributes from the database in an attribute-specific way."""
-        self.load_schema() # Load the dataset schema.
-        self.load_addresses() # Load the dataset addresses.
-        DataObject.load(self) # Load the attributes specific to it being a DataObject.
-
+    
     ### Schema Methods
         
     def validate_schema(self, schema: list) -> None:
         """Validate that the data schema follows the proper format.
         Must be a dict of dicts, where all keys are Python types matching a DataObject subclass, and the lowest levels are empty."""
-        subclasses = DataObject.__subclasses__()
-        vr = [x for x in subclasses if x.prefix == "VR"][0]                
+        from ResearchOS.research_object import ResearchObject
+        subclasses = ResearchObject.__subclasses__()
+        dataobj_subclasses = DataObject.__subclasses__()
+        vr = [x for x in subclasses if hasattr(x,"prefix") and x.prefix == "VR"][0]                
             
         graph = nx.MultiDiGraph()
         try:
@@ -57,9 +44,9 @@ class Dataset(DataObject):
         if not nx.is_directed_acyclic_graph(graph):
             raise ValueError("The schema must be a directed acyclic graph!")
         
-        non_subclass = [node for node in graph if node not in subclasses]
+        non_subclass = [node for node in graph if node not in dataobj_subclasses]
         if non_subclass:
-            raise ValueError("The schema must only include ResearchObject subclasses!")
+            raise ValueError("The schema must only include DataObject subclasses!")
         
         if Dataset not in graph:
             raise ValueError("The schema must include the Dataset class as a source node!")
@@ -161,7 +148,8 @@ class Dataset(DataObject):
         for address_names in addresses:   
             sqlquery = f"INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES ('{address_names[0]}', '{address_names[1]}', '{schema_id}', '{action.id}')"
             action.add_sql_query(sqlquery)
-        self.__dict__["address_graph"] = self.addresses_to_object_graph(addresses)
+        self.__dict__["address_graph"] = self.addresses_to_graph(addresses)
+        self.__dict__["addresses"] = addresses
 
     def load_addresses(self) -> list:
         """Load the addresses from the database."""
@@ -178,24 +166,26 @@ class Dataset(DataObject):
         addresses = [list(address) for address in addresses]        
 
         self.__dict__["addresses"] = addresses
-        self.__dict__["address_graph"] = self.addresses_to_object_graph(addresses)
+        self.__dict__["address_graph"] = self.addresses_to_graph(addresses)
 
-    def addresses_to_object_graph(self, addresses: list) -> nx.MultiDiGraph:
-        """Convert the addresses to a MultiDiGraph."""
+    def addresses_to_graph(self, addresses: list) -> nx.MultiDiGraph:
+        """Convert the addresses edge list to a MultiDiGraph."""
         G = nx.MultiDiGraph()
         # To avoid recursion, set the lines with Dataset manually so there is no self reference.
         address_copy = copy.deepcopy(addresses)
-        if addresses:            
-            for idx, address in enumerate(addresses):
-                if address[0] == self.id:
-                    cls1 = ResearchObjectHandler._prefix_to_class(address[1])
-                    G.add_edge(self, cls1(id = address[1]))
-                    address_copy.remove(address)
+        for idx, address in enumerate(addresses):
+            if address[0] == self.id: # Include the Dataset as the source node.
+                cls1 = ResearchObjectHandler._prefix_to_class(address[1])
+                G.add_edge(self, cls1(id = address[1]))
+                address_copy.remove(address)
 
         addresses = address_copy
-        for address_edge in addresses:
-            cls0 = ResearchObjectHandler._prefix_to_class(address_edge[0])
-            cls1 = ResearchObjectHandler._prefix_to_class(address_edge[1])
+        subclasses = DataObject.__subclasses__()
+        cls_dict = {cls.prefix: cls for cls in subclasses}
+        idcreator = IDCreator()
+        for address_edge in addresses:            
+            cls0 = cls_dict[idcreator.get_prefix(address_edge[0])]
+            cls1 = cls_dict[idcreator.get_prefix(address_edge[1])]
             G.add_edge(cls0(id = address_edge[0]), cls1(id = address_edge[1]))
         return G
     

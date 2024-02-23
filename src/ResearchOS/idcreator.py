@@ -15,14 +15,18 @@ class IDCreator():
     """Creates all ID's for the ResearchOS database."""
 
     def __init__(self) -> None:
-        """Initialize the IDCreator."""
-        pool = SQLiteConnectionPool()            
-        conn = pool.get_connection()
-        self.pool = pool
-        self.conn = conn
+        """Initialize the IDCreator."""        
+        self.pool = SQLiteConnectionPool()
+
+    def get_prefix(self, id: str) -> str:
+        """Get the prefix of the given ID."""
+        if not self.is_ro_id(id):
+            raise ValueError("The given ID is not a valid ResearchObject ID.")
+        return id[:2]
     
     def create_ro_id(self, cls, abstract: str = None, instance: str = None, is_abstract: bool = False) -> str:
         """Create a ResearchObject ID following [prefix]XXXXXX_XXX."""
+        conn = self.pool.get_connection()
         table_name = "research_objects"
         is_unique = False
         while not is_unique:
@@ -41,7 +45,7 @@ class IDCreator():
                 instance_new = ""
  
             id = cls.prefix + abstract_new + "_" + instance_new
-            cursor = self.conn.cursor()
+            cursor = conn.cursor()
             sql = f'SELECT object_id FROM {table_name} WHERE object_id = "{id}"'
             cursor.execute(sql)
             rows = cursor.fetchall()
@@ -49,14 +53,14 @@ class IDCreator():
                 is_unique = True
             elif is_abstract:
                 raise ValueError("Abstract ID already exists.")
-        self.pool.return_connection(self.conn)
+        self.pool.return_connection(conn)
         return id   
 
 
     def create_action_id(self) -> str:
         """Create an Action ID using Python's builtin uuid4."""
         is_unique = False        
-        conn = self.conn
+        conn = self.pool.get_connection()
         cursor = conn.cursor()
         while not is_unique:
             uuid_out = str(uuid.uuid4()) # For testing dataset creation.
@@ -65,7 +69,7 @@ class IDCreator():
             rows = cursor.fetchall()
             if len(rows) == 0:
                 is_unique = True
-        self.pool.return_connection(self.conn)
+        self.pool.return_connection(conn)
         return uuid_out
     
     def _is_action_id(uuid: str) -> bool:
@@ -86,7 +90,7 @@ class IDCreator():
         abstract_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}$"
         subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
         # Check for a valid prefix.
-        self.pool.return_connection(self.conn)
+        # self.pool.return_connection(self.conn)
         if not any(id.startswith(cls.prefix) for cls in subclasses if hasattr(cls, "prefix")):
             return False
         return True
@@ -104,9 +108,9 @@ def main():
 
     # Check which argument is provided
     if args.action:
-        id = IDCreator(conn).create_action_id()
+        id = IDCreator().create_action_id()
     elif args.researchobject:
-        id = IDCreator(conn).create_ro_id()
+        id = IDCreator().create_ro_id()
     else:
         parser.print_help()
         sys.exit(1)

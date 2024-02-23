@@ -1,5 +1,4 @@
 # ALWAYS HERE, ALWAYS IN THIS ORDER!
-# from .config import Config
 from .research_object import ResearchObject
 from .DataObjects.data_object import DataObject
 from .PipelineObjects.pipeline_object import PipelineObject
@@ -27,4 +26,4 @@ from .PipelineObjects import Static # This is a package, not a module.
 # from .PipelineObjects import Static # This is a package, not a module.
 
 # Last
-# from .db_initializer import DBInitializer
+from .db_initializer import DBInitializer

@@ -13,6 +13,7 @@
             "justMyCode": true,
             "env": {
                 "PYDEVD_WARN_EVALUATION_TIMEOUT": "30",
+                "PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT": "1"
             }
         },
         {
@@ -24,6 +25,7 @@
             "justMyCode": true,
             "env": {
                 "PYDEVD_WARN_EVALUATION_TIMEOUT": "30",
+                "PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT": "1"
             }
         }
     ]

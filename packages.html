@@ -8,6 +8,8 @@
           }
           class DataObjects {
           }
+          class condition {
+          }
           class data_object {
           }
           class dataset {
@@ -56,7 +58,11 @@
           }
           class db_connection_factory {
           }
+          class db_handler {
+          }
           class db_initializer {
+          }
+          class default_attrs {
           }
           class idcreator {
           }
@@ -66,7 +72,7 @@
           }
           class ro_graph {
           }
-          class user {
+          class sqlite_pool {
           }
           class variable {
           }
@@ -84,40 +90,29 @@
           ResearchOS --> process
           ResearchOS --> project
           ResearchOS --> subset
+          ResearchOS --> db_initializer
           ResearchOS --> research_object
           ResearchOS --> variable
+          condition --> data_object
+          condition --> action
+          condition --> db_connection_factory
+          condition --> idcreator
+          condition --> research_object_handler
           data_object --> action
-          data_object --> db_connection_factory
-          data_object --> idcreator
+          data_object --> default_attrs
           data_object --> research_object
           data_object --> research_object_handler
           data_object --> variable
           dataset --> data_object
           dataset --> action
-          dataset --> db_connection_factory
           dataset --> idcreator
+          dataset --> research_object
           dataset --> research_object_handler
-          dataset --> variable
+          dataset --> sqlite_pool
           phase --> data_object
-          phase --> action
-          phase --> db_connection_factory
-          phase --> idcreator
-          phase --> research_object_handler
           subject --> data_object
-          subject --> action
-          subject --> db_connection_factory
-          subject --> idcreator
-          subject --> research_object_handler
           trial --> data_object
-          trial --> action
-          trial --> db_connection_factory
-          trial --> idcreator
-          trial --> research_object_handler
           visit --> data_object
-          visit --> action
-          visit --> db_connection_factory
-          visit --> idcreator
-          visit --> research_object_handler
           Static --> analysis_static
           Static --> process_static
           Static --> project_static
@@ -125,77 +120,75 @@
           process_static --> pipeline_object
           project_static --> pipeline_object
           analysis --> pipeline_object
-          analysis --> action
-          analysis --> db_connection_factory
-          analysis --> idcreator
-          analysis --> research_object_handler
           logsheet --> data_object
+          logsheet --> dataset
           logsheet --> pipeline_object
-          logsheet --> subset
           logsheet --> action
-          logsheet --> db_connection_factory
           logsheet --> idcreator
           logsheet --> research_object
           logsheet --> research_object_handler
           logsheet --> variable
+          pipeline_object --> action
           pipeline_object --> research_object
           plot --> pipeline_object
-          plot --> action
-          plot --> db_connection_factory
-          plot --> idcreator
-          plot --> research_object_handler
           process --> dataset
           process --> pipeline_object
-          process --> project
           process --> subset
           process --> action
           process --> code_inspector
-          process --> current_user
-          process --> db_connection_factory
-          process --> idcreator
           process --> research_object
           process --> research_object_handler
+          process --> sqlite_pool
           process --> variable
           project --> ResearchOS
-          project --> analysis
           project --> pipeline_object
           project --> action
           project --> db_connection_factory
           project --> idcreator
           project --> research_object_handler
-          project --> user
           subset --> dataset
           subset --> pipeline_object
-          subset --> action
-          subset --> db_connection_factory
           subset --> idcreator
           subset --> research_object_handler
+          subset --> variable
           action --> current_user
           action --> db_connection_factory
           action --> idcreator
+          action --> sqlite_pool
+          config --> sqlite_pool
           current_user --> idcreator
+          current_user --> sqlite_pool
           db_connection_factory --> config
           db_connection_factory --> db_connection
+          db_handler --> action
+          db_initializer --> config
           db_initializer --> current_user
+          db_initializer --> research_object_handler
+          db_initializer --> sqlite_pool
+          default_attrs --> data_object
+          default_attrs --> pipeline_object
+          default_attrs --> research_object
           idcreator --> config
           idcreator --> db_connection_factory
+          idcreator --> research_object
+          idcreator --> research_object_handler
+          idcreator --> sqlite_pool
           research_object --> action
+          research_object --> default_attrs
           research_object --> research_object_handler
+          research_object --> sqlite_pool
+          research_object_handler --> data_object
           research_object_handler --> action
-          research_object_handler --> db_connection_factory
+          research_object_handler --> idcreator
           research_object_handler --> research_object
-          user --> data_object
-          user --> pipeline_object
-          user --> action
+          research_object_handler --> sqlite_pool
+          research_object_handler --> variable
+          ro_graph --> idcreator
+          ro_graph --> research_object_handler
+          sqlite_pool --> config
           variable --> data_object
-          variable --> dataset
-          variable --> pipeline_object
-          variable --> project
-          variable --> action
-          variable --> db_connection_factory
-          variable --> idcreator
-          variable --> research_object_handler
-          variable --> user
+          variable --> research_object
+          ro_graph ..> research_object
   
        </div>
   </body>
