@@ -32,11 +32,24 @@ class Logsheet(PipelineObject):
     prefix = "LG"
 
     def load(self) -> None:
-        """Load the dataset-specific attributes from the database in an attribute-specific way."""
+        """Load the dataset-specific attributes from the database in an attribute-specific way.
+        
+        Args:
+            self
+        
+        Returns:
+            None"""
         PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
 
     def read_and_clean_logsheet(self, nrows: int = None) -> None:
-        """Read the logsheet (CSV only) and clean it."""
+        """Read the logsheet (CSV only) and clean it.
+        
+        Args:
+            self
+            nrows (int) : integer specifying how many rows are in the log sheet IDK
+        
+        Returns:
+            None"""
         logsheet = []
         first_elem_prefix = '\ufeff'
         with open(self.path, "r") as f:
@@ -54,7 +67,17 @@ class Logsheet(PipelineObject):
     ### Logsheet path
         
     def validate_path(self, path: str) -> None:
-        """Validate the logsheet path."""
+        """Validate the logsheet path.
+        
+        Args:
+            self
+            path (string) : logsheet path as a string
+        
+        Returns:
+            None
+        
+        Raises:
+            ValueError: invalid path format"""
         # 1. Check that the path exists in the file system.
         import os
         if not isinstance(path, str):
@@ -74,11 +97,23 @@ class Logsheet(PipelineObject):
     ### Logsheet headers
     
     def validate_headers(self, headers: list) -> None:
-        """Validate the logsheet headers. These are the headers that are in the logsheet file.
+        """Validate the logsheet headers. 
+        
+        These are the headers that are in the logsheet file.
         The headers must be a list of tuples, where each tuple has 3 elements:
         1. A string (the name of the header)
         2. A type (the type of the header)
-        3. A valid variable ID (the ID of the Variable that the header corresponds to)"""
+        3. A valid variable ID (the ID of the Variable that the header corresponds to)
+        
+        Args: 
+            self
+            headers (list) : headers in the logsheet file as a list of tuples each with 3 elements
+        
+        Returns:
+            None
+        
+        Raises:
+            ValueError: incorrect ''header'' format"""
         self.validate_path(self.path)
 
         # 1. Check that the headers are a list.
@@ -116,7 +151,14 @@ class Logsheet(PipelineObject):
             
     def to_json_headers(self, headers: list) -> str:
         """Convert the headers to a JSON string.
-        Also sets the VR's name and level."""
+        Also sets the VR's name and level.
+        
+        Args:
+            self
+            headers (list) : headers in the logsheet file as a list of tuples
+            
+        Returns:
+            ''headers'' as a JSON string using ''json.dumps''"""
         str_headers = []
         for header in headers:
             # Update the Variable object with the name if it is not already set, and the level.
@@ -127,7 +169,14 @@ class Logsheet(PipelineObject):
         return json.dumps(str_headers)
 
     def from_json_headers(self, json_var: str) -> list:
-        """Convert the JSON string to a list of headers."""
+        """Convert the JSON string to a list of headers.
+        
+        Args:
+            self
+            json_var (string) : JSON string returned by ''to_json_headers''
+            
+        Returns:
+            formatted list of headers"""
         subclasses = DataObject.__subclasses__()
         str_var = json.loads(json_var)
         headers = []
@@ -144,7 +193,17 @@ class Logsheet(PipelineObject):
     ### Num header rows
             
     def validate_num_header_rows(self, num_header_rows: int) -> None:
-        """Validate the number of header rows. If it is not valid, the value is rejected."""                
+        """Validate the number of header rows. If it is not valid, the value is rejected.
+        
+        Args:
+            self
+            num_header_rows (int) : number of header rows as an integer
+            
+        Returns:
+            None
+            
+        Raises:
+            ValueError: invalid ''num_header_rows'' format"""                
         if not isinstance(num_header_rows, int | float):
             raise ValueError("Num header rows must be numeric!")
         if num_header_rows<0:
@@ -155,7 +214,19 @@ class Logsheet(PipelineObject):
     ### Class column names
         
     def validate_class_column_names(self, class_column_names: dict) -> None:
-        """Validate the class column names. Must be a dict where the keys are the column names in the logsheet and the values are the DataObject subclasses."""
+        """Validate the class column names. 
+        
+        Must be a dict where the keys are the column names in the logsheet and the values are the DataObject subclasses.
+        
+        Args:
+            self
+            class_column_names (dict) : dictionary where keys are logsheet column names & values are ''DataObject'' subcclasses
+            
+        Returns:
+            None
+            
+        Raises:
+            ValueError: incorrect format of ''class_column_names'' """
         self.validate_path(self.path)
         # 1. Check that the class column names are a dict.
         if not isinstance(class_column_names, dict):
@@ -172,7 +243,8 @@ class Logsheet(PipelineObject):
             raise ValueError("The class column names must be in the logsheet headers!")
 
     def from_json_class_column_names(self, json_var: dict) -> dict:
-        """Convert the dict from JSON string where values are class prefixes to a dict where keys are column names and values are DataObject subclasses."""     
+        """Convert the dict from JSON string where values are class prefixes to a dict where keys are column names and values are DataObject subclasses.
+        QUESTION confused about data flow/the order that these functions are called"""     
         prefix_var = json.loads(json_var)
         class_column_names = {}
         all_classes = ResearchObjectHandler._get_subclasses(ResearchObject)
@@ -184,7 +256,17 @@ class Logsheet(PipelineObject):
         return class_column_names
     
     def to_json_class_column_names(self, var: dict) -> dict:
-        """Convert the dict from a dict where keys are column names and values are DataObject subclasses to a JSON string where values are class prefixes."""        
+        """Convert ''class_column_names'' to JSON string.
+        
+        Convert the dict from a dict where keys are column names and values are DataObject subclasses to a JSON string where values are class prefixes.
+        UNCLEAR QUESTION does it return a JSON string or a dict? is the JSON string just the format of the new dict values?
+        
+        Args:
+            self
+            var (dict) : same dict as ''class_column_name'' in ''validate_class_column_names''
+        
+        Returns:
+            new dict where keys are are logsheet column names and values are a JSON sring of class prefixes IDK"""        
         prefix_var = {}
         for key in var:
             prefix_var[key] = var[key].prefix
@@ -193,7 +275,17 @@ class Logsheet(PipelineObject):
     ### Subset ID
             
     def validate_subset_id(self, subset_id: str) -> None:
-        """Validate the subset ID."""
+        """Validate the subset ID.
+        
+        Args:
+            self
+            subset_id (str) : subset ID as a string
+            
+        Returns:
+            None
+            
+        Raises:
+            ValueError: invalid ID format, must start with correct prefix"""
         if not ResearchObjectHandler.object_exists(subset_id):
             raise ValueError("Subset ID must be a valid ID!")
         if not subset_id.startswith(Subset.prefix):
@@ -201,12 +293,28 @@ class Logsheet(PipelineObject):
 
     #################### Start class-specific methods ####################
     def load_xlsx(self) -> list:
-        """Load the logsheet as a list of lists using Pandas."""        
+        """Load the logsheet as a list of lists using Pandas.
+        
+        Args:
+            self
+            
+        Returns:
+            list of logsheet values from excel"""        
         df = pd.read_excel(self.path, header = None)
         return df.values.tolist()
     
     def read_logsheet(self) -> None:
-        """Run the logsheet import process."""
+        """Run the logsheet import process.
+        
+        Args:
+            self
+        
+        Returns:
+            None
+        
+        Raises:
+            ValueError: more header rows than logsheet rows or incorrect schema format
+            QUESTION except ValueError?"""
         ds = Dataset(id = self.get_dataset_id())
         self.validate_class_column_names(self.class_column_names)
         self.validate_headers(self.headers)
