@@ -47,8 +47,7 @@ class CurrentUser():
         # cursor = self.action.conn.cursor()
         action_id = IDCreator(self.action.conn).create_action_id()
         name = "Set current user"
-        sqlquery = f"INSERT INTO actions (action_id, user, name, datetime) VALUES ('{action_id}', '{user}', '{name}', '{datetime.datetime.now(timezone.utc)}')"
-        self.action.add_sql_query(sqlquery)
-        # self.conn.commit()
-        # self.pool.return_connection(self.conn)
+        sqlquery = f"INSERT INTO actions (action_id, user, name, datetime) VALUES (?, ?, ?, ?)"
+        params = (action_id, user, name, datetime.datetime.now(timezone.utc))
+        self.action.add_sql_query(sqlquery, params)
         CurrentUser.current_user = user

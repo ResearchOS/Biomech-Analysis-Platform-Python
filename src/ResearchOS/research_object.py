@@ -24,47 +24,6 @@ class ResearchObject():
             return self.id == other.id and self is other
         return False
     
-    def __getattribute__(self, name: str) -> Any:
-        """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""        
-        subclasses = ResearchObject.__subclasses__()
-        vr_class = [x for x in subclasses if (hasattr(x,"prefix") and x.prefix == "VR")][0]
-        try:
-            value = super().__getattribute__(name) # Throw the default error.
-        except AttributeError as e:
-            raise e        
-        if isinstance(value, vr_class):
-            value = ResearchObjectHandler.load_vr_value(self, value)
-        return value
-    
-    def __setattr__(self, name, value, action: Action = None, validate: bool = True, all_attrs: DefaultAttrs = None) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        if hasattr(self, name) and getattr(self, name) == value:
-            return # No change.
-        
-        # Ensure that the criteria to set the attribute are met.
-        if not str(name).isidentifier():
-            raise ValueError(f"{name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.        
-        if name == "id":
-            raise ValueError("Cannot change the ID of a research object.")
-        if name == "prefix":
-            raise ValueError("Cannot change the prefix of a research object.")
-        if name == "name":
-            if not str(value).isidentifier():
-                raise ValueError(f"name attribute, value: {value} is not a valid attribute name.") 
-            
-        # Set the attribute.
-        if all_attrs is None:
-            all_attrs = DefaultAttrs(self)        
-        # When __setattr__ is called as the top level.
-        commit = False
-        if action is None:
-            commit = True
-            action = Action(name = "attribute_changed")            
-        ResearchObjectHandler._setattr(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
-        action.commit = commit
-        if action.commit:
-            action.execute()
-
     def __new__(cls, **kwargs):
         """Create a new research object in memory. If the object already exists in memory with this ID, return the existing object."""
         if "id" not in kwargs.keys():
@@ -79,7 +38,53 @@ class ResearchObject():
         ResearchObjectHandler.instances[id] = instance
         ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = False
         instance.__dict__["prev_loaded"] = False        
-        return instance    
+        return instance 
+    
+    def __getattribute__(self, name: str) -> Any:
+        """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""        
+        subclasses = ResearchObject.__subclasses__()
+        vr_class = [x for x in subclasses if (hasattr(x,"prefix") and x.prefix == "VR")][0]
+        try:
+            value = super().__getattribute__(name) # Throw the default error.
+        except AttributeError as e:
+            raise e        
+        if isinstance(value, vr_class):
+            value = ResearchObjectHandler.load_vr_value(self, value)
+        return value
+    
+    def __setattr__(self, name, value, action: Action = None, validate: bool = True, all_attrs: DefaultAttrs = None) -> None:
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        if hasattr(self, name) and getattr(self, name, None) == value:
+            return # No change.
+        
+        # Ensure that the criteria to set the attribute are met.
+        if not str(name).isidentifier():
+            raise ValueError(f"{name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.        
+        if name == "id":
+            raise ValueError("Cannot change the ID of a research object.")
+        if name == "prefix":
+            raise ValueError("Cannot change the prefix of a research object.")
+        if name == "name":
+            if not str(value).isidentifier():
+                raise ValueError(f"name attribute, value: {value} is not a valid attribute name.") 
+            
+        # Set the attribute. Create Action when __setattr__ is called as the top level.
+        if all_attrs is None:
+            all_attrs = DefaultAttrs(self)                
+        commit = False
+        if action is None:
+            commit = True
+            action = Action(name = "attribute_changed")            
+        
+        if name in all_attrs.default_attrs:
+            ResearchObjectHandler._set_builtin_attribute(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
+            return
+                
+        ResearchObjectHandler._set_vr_attributes(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
+
+        action.commit = commit
+        if action.commit:
+            action.execute()       
     
     def __init__(self, **orig_kwargs):
         """Initialize the research object."""
@@ -109,10 +114,7 @@ class ResearchObject():
             kwargs = default_attrs | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
         del self.__dict__["prev_loaded"] # Remove the prev_loaded attribute from the object.
         
-        if not prev_exists:
-            action.name = action_name
-            action_sqlquery = f"INSERT INTO actions (action_id, user, name, datetime, redo_of) VALUES ('{action.id}', '{action.user_object_id}', '{action.name}', '{str(action.timestamp)}', '{action.redo_of}')"
-            action.sql_queries.insert(0, (action_sqlquery,))
+        action.name = action_name
         # Set the attributes.
         for key in kwargs:
             validate = True # Default is to validate any attribute.        

@@ -24,26 +24,7 @@ complex_attrs_list = []
 
 class Logsheet(PipelineObject):
 
-    prefix = "LG"
-
-    def read_and_clean_logsheet(self, nrows: int = None) -> list:
-        """Read the logsheet (CSV only) and clean it."""
-        logsheet = []
-        if platform.system() == "Windows":
-            first_elem_prefix = "ï»¿"
-        else:
-            first_elem_prefix = '\ufeff'
-        with open(self.path, "r") as f:
-            reader = csv.reader(f, delimiter=',', quotechar='"')            
-
-            for row_num, row in enumerate(reader):                                    
-                logsheet.append(row)
-                if nrows is not None and row_num == nrows-1:
-                    break
-        
-        # 7. Check that the headers all match the logsheet.
-        logsheet[0][0] = logsheet[0][0][len(first_elem_prefix):]
-        return logsheet
+    prefix = "LG"    
 
     ### Logsheet path
         
@@ -179,6 +160,25 @@ class Logsheet(PipelineObject):
         return json.dumps(prefix_var)
 
     #################### Start class-specific methods ####################
+    def read_and_clean_logsheet(self, nrows: int = None) -> list:
+        """Read the logsheet (CSV only) and clean it."""
+        logsheet = []
+        if platform.system() == "Windows":
+            first_elem_prefix = "ï»¿"
+        else:
+            first_elem_prefix = '\ufeff'
+        with open(self.path, "r") as f:
+            reader = csv.reader(f, delimiter=',', quotechar='"')            
+
+            for row_num, row in enumerate(reader):                                    
+                logsheet.append(row)
+                if nrows is not None and row_num == nrows-1:
+                    break
+        
+        # 7. Check that the headers all match the logsheet.
+        logsheet[0][0] = logsheet[0][0][len(first_elem_prefix):]
+        return logsheet
+    
     def load_xlsx(self) -> list:
         """Load the logsheet as a list of lists using Pandas."""        
         df = pd.read_excel(self.path, header = None)
@@ -322,11 +322,11 @@ class Logsheet(PipelineObject):
                 # prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.                
                 if prev_value is not None:                    
                     if prev_value == value or value is None:
-                        continue                    
-                    raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")                
+                        continue
+                    raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
                 row_dobjs[level_idx].__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.                
                 attrs_cache_dict[row_dobjs[level_idx].id][name] = value
-                dobj = row_dobjs[level_idx]        
+                dobj = row_dobjs[level_idx]
         action.execute()
 
     def clean_value(self, type_class: type, raw_value: Any) -> Any:

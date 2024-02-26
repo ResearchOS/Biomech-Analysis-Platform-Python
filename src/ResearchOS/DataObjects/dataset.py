@@ -74,9 +74,9 @@ class Dataset(DataObject):
         # 3. Save the schema to the database.        
         schema_id = IDCreator(action.conn).create_action_id()
         sqlquery = f"INSERT INTO data_address_schemas (schema_id, levels_edge_list, dataset_id, action_id) VALUES ('{schema_id}', '{json_schema}', '{self.id}', '{action.id}')"
-        action.add_sql_query(sqlquery)
+        action.add_sql_query(sqlquery)        
 
-    def load_schema(self, action: Action) -> None:
+    def load_schema(self, action: Action) -> list:
         """Load the schema from the database and convert it via json."""
         # 1. Get the dataset ID
         id = self.id
@@ -95,8 +95,7 @@ class Dataset(DataObject):
                 sch[idx] = ResearchObjectHandler._prefix_to_class(prefix)
             schema.append(sch)  
 
-        # 6. Store the schema as an attribute of the dataset.
-        self.__dict__["schema"] = schema
+        return schema
 
     ### Dataset path methods
 
@@ -141,16 +140,17 @@ class Dataset(DataObject):
             if cls0 not in schema_graph.predecessors(cls1) or cls1 not in schema_graph.successors(cls0):
                 raise ValueError("The addresses must match the schema!")
                 
-    def save_addresses(self, addresses: list, action: Action) -> None:
+    def save_addresses(self, addresses: list, action: Action) -> list:
         """Save the addresses to the data_addresses table in the database."""        
         # 1. Get the schema_id for the current dataset_id that has not been overwritten by an Action.       
         dataset_id = self.id
         schema_id = self.get_current_schema_id(dataset_id)
-        for address_names in addresses:   
-            sqlquery = f"INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES ('{address_names[0]}', '{address_names[1]}', '{schema_id}', '{action.id}')"
-            action.add_sql_query(sqlquery)
-        self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)
-        self.__dict__["addresses"] = addresses
+        sqlquery = "INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES (?, ?, ?, ?)"
+        values = []
+        for address_names in addresses:
+            values.append((address_names[0], address_names[1], schema_id, action.id))            
+        action.add_sql_query(sqlquery, values)
+        self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)        
 
     def load_addresses(self, action: Action) -> list:
         """Load the addresses from the database."""
@@ -163,11 +163,11 @@ class Dataset(DataObject):
         addresses = conn.execute(sqlquery).fetchall()
         pool.return_connection(conn)
 
-        # 3. Convert the addresses to a list of lists.
-        addresses = [list(address) for address in addresses]        
-
-        self.__dict__["addresses"] = addresses
+        # 3. Convert the addresses to a list of lists (from a list of tuples).
+        addresses = [list(address) for address in addresses]                
         self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)
+
+        return addresses
 
     def addresses_to_graph(self, addresses: list, action: Action) -> nx.MultiDiGraph:
         """Convert the addresses edge list to a MultiDiGraph."""

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from ResearchOS.DataObjects.data_object import DataObject
     from ResearchOS.variable import Variable
 
-from ResearchOS.idcreator import IDCreator
+# from ResearchOS.idcreator import IDCreator
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
@@ -75,9 +75,9 @@ class ResearchObjectHandler:
     @staticmethod
     def _create_ro(research_object: "ResearchObject", action: Action) -> None:
         """Create the research object in the research_objects table of the database."""        
-        sqlquery = f"INSERT INTO research_objects (object_id, action_id) VALUES ('{research_object.id}', '{action.id}')"
-        action.add_sql_query(sqlquery)
-        # action.execute(commit = False)
+        sqlquery = f"INSERT INTO research_objects (object_id, action_id) VALUES (?, ?)"
+        params = (research_object.id, action.id)
+        action.add_sql_query(sqlquery, params)        
 
     @staticmethod
     def _get_most_recent_attrs(research_object: "ResearchObject", ordered_attr_result: list, default_attrs: dict = {}, action: Action = None) -> dict:
@@ -109,11 +109,10 @@ class ResearchObjectHandler:
         """Load "simple" attributes from the database."""
         # 1. Get the database cursor.
         from ResearchOS.DataObjects.data_object import DataObject
-        from ResearchOS.variable import Variable
         conn = ResearchObjectHandler.pool.get_connection()
         cursor = conn.cursor()
 
-        # 2. Get the attributes from the database.        
+        # 2. Get the attributes from the database.
         sqlquery = f"SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = '{research_object.id}'"
         unordered_attr_result = cursor.execute(sqlquery).fetchall()
         ResearchObjectHandler.pool.return_connection(conn)
@@ -127,13 +126,14 @@ class ResearchObjectHandler:
         # 3. Set the attributes of the object.
         research_object.__dict__.update(attrs)
 
-        # 4. Load the class-specific builtin attributes.
+        # 4. Load the class-specific/"complex" builtin attributes.
         for key in default_attrs.keys():
             if key in research_object.__dict__:
                 continue
             if hasattr(research_object, "load_" + key):
                 load_method = getattr(research_object, "load_" + key)
-                load_method(action)
+                value = load_method(action)
+                research_object.__dict__[key] = value
 
         dobj_subclasses = DataObject.__subclasses__()
         if research_object.__class__ in dobj_subclasses:
@@ -163,21 +163,13 @@ class ResearchObjectHandler:
         save_method = getattr(research_object, "save_" + name)
         save_method(value, action = action)
 
-        # if action.do_exec:
-        #     action.execute()
-        research_object.__dict__[name] = value 
+        research_object.__dict__[name] = value         
 
     @staticmethod
-    def _setattr(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list) -> None:
-        """Set the attribute value for the specified attribute. This method serves as ResearchObject.__setattr__()."""
-        from ResearchOS.variable import Variable  
-
-        if name in default_attrs:
-            ResearchObjectHandler._set_builtin_attribute(research_object, name, value, action, validate, default_attrs, complex_attrs)
-            return
-                
+    def _set_vr_attributes(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list) -> None:
+        from ResearchOS.variable import Variable 
+        
         # Set custom (VR) attributes: this object's "name" attribute is the VR object.
-        # conn = pool.get_connection()
         cursor = action.conn.cursor()
         if name in research_object.__dict__:
             selected_vr = research_object.__dict__[name]                      
@@ -289,7 +281,7 @@ class ResearchObjectHandler:
     @staticmethod
     def save_simple_attribute(id: str, name: str, json_value: Any, action: Action) -> Action:
         """If no store_attr method exists for the object attribute, use this default method."""                                      
-        sqlquery = f"INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES (?, ?, ?, ?)"
+        sqlquery = "INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES (?, ?, ?, ?)"
         params = (action.id, id, ResearchObjectHandler._get_attr_id(name), json_value)
         action.add_sql_query(sqlquery, params)
     

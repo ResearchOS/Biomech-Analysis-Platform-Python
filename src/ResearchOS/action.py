@@ -1,12 +1,17 @@
 import datetime, sqlite3
 from datetime import timezone
+from typing import Union
 
 from ResearchOS.idcreator import IDCreator
 from ResearchOS.current_user import CurrentUser
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
+count = 0
+
 class Action():
     """An action is a set of SQL queries that are executed together."""
+
+    latest_action_id: str = None
     
     def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None, commit: bool = False):
         pool = SQLiteConnectionPool()
@@ -18,23 +23,9 @@ class Action():
                 timestamp = datetime.datetime.now(timezone.utc)
             if not user_object_id:
                 user_object_id = CurrentUser(self).get_current_user_id()
-        if name: # During ResearchObject initialization the name is not immediately set.
-            sqlquery = f"INSERT INTO actions (action_id, user, name, datetime, redo_of) VALUES ('{id}', '{user_object_id}', '{name}', '{str(timestamp)}', '{redo_of}')"
-            self.add_sql_query(sqlquery)
-        # else:
-        #     # Loading an existing action.
-        #     sqlquery = f"SELECT * FROM actions WHERE action_id = '{id}'"
-        #     result = cursor.execute(sqlquery).fetchall()            
-        #     if result is None:
-        #         raise AssertionError(f"Action {id} does not exist.")
-        #     if len(result) > 1:
-        #         raise AssertionError(f"Action {id} is not unique.")
-        #     result = result[0]
-        #     user_object_id = result[1]
-        #     name = result[2]                        
-        #     timestamp = result[3]            
-        #     redo_of = result[4]
 
+        self.creation_query = "INSERT INTO actions (action_id, user, name, datetime, redo_of) VALUES (?, ?, ?, ?, ?)"
+        self.is_created = False # Indicates that the action has not been created in the database yet.
         self.commit = commit # False by default.
         self.id = id
         self.name = name
@@ -43,37 +34,65 @@ class Action():
         self.user_object_id = user_object_id
         self.do_exec = True
 
-    def add_sql_query(self, sqlquery: str, params: tuple = None) -> None:
-        """Add a sql query to the action."""
+    def add_sql_query(self, sqlquery: str, params: Union[tuple, list] = None) -> None:
+        """Add a sqlquery to the action. Can be a raw SQL query (one input) or a parameterized query (two inputs).
+        Parameters can be either a tuple (for one query) or a list of tuples (for multiple queries)."""
         if params:
-            self.sql_queries.append((sqlquery, params))
+            if isinstance(params, list):
+                any_wrong = any([not isinstance(p, tuple) for p in params])
+                if any_wrong:
+                    raise ValueError(f"params must be a list of tuples, not {type(p)}.")            
+            elif isinstance(params, tuple):
+                params = list(params)
+            else:
+                raise ValueError(f"params must be a tuple or list, not {type(params)}.")                            
+            self.sql_queries.append((sqlquery, params)) # Allows for multiple params to be added at once with "executemany"
         else:
             self.sql_queries.append((sqlquery,))
 
     def execute(self, return_conn: bool = True) -> None:
-        """Run all of the sql queries in the action."""        
-        # conn = pool.get_connection()
+        """Run all of the sql queries in the action."""
+        global count
+        count += 1
+        print(f"Action.execute() called {count} times.")
+        any_queries = len(self.sql_queries) > 0
+        pool = SQLiteConnectionPool(name = "main")
+
+        if not any_queries:
+            if return_conn:
+                pool.return_connection(self.conn)
+                self.conn = None
+            return        
+        
         cursor = self.conn.cursor()
-        # Ensure that all of the SQL queries are tuples: (sqlquery, params)
-        for idx, q in enumerate(self.sql_queries):
-            if not isinstance(q, (tuple)):
-                self.sql_queries[idx] = (q,)
+        if not self.is_created:
+            self.is_created = True
+            self.sql_queries.insert(0, (self.creation_query, [(self.id, self.user_object_id, self.name, self.timestamp, self.redo_of)]))
 
         # Execute all of the SQL queries.
         for query_list in self.sql_queries:
             try:
-                if len(query_list) == 1:
+                if len(query_list) == 1: # If there are no parameters.
                     cursor.execute(query_list[0])
-                else:                    
-                    cursor.execute(query_list[0], query_list[1])
-            except:                
-                # pool.return_connection(conn)
+                else: # If there are parameters.
+                    params = query_list[1]
+                    num_params = len(params)
+
+                    # I read somewhere that 50 is a good batch size.
+                    for i in range(0, num_params, 50):
+                        if i < num_params - 50:                        
+                            curr_params = params[i:i+50]
+                        else:
+                            curr_params = params[i:]
+                    cursor.execute(query_list[0], curr_params) # Execute 1-50 queries at a time.
+            except sqlite3.OperationalError as e:
                 raise ValueError(f"SQL query failed: {query_list[0]}")
         self.sql_queries = []
+
         # Commit the Action.  
-        if self.commit:            
+        if self.commit and any_queries:            
             self.conn.commit()
-        pool = SQLiteConnectionPool(name = "main")
+
         if return_conn:
             pool.return_connection(self.conn)
             self.conn = None
