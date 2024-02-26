@@ -1,6 +1,7 @@
 import json
 
 from ResearchOS.research_object import ResearchObject
+from ResearchOS.action import Action
 
 all_default_attrs = {}
 all_default_attrs["level"] = None
@@ -15,7 +16,7 @@ class Variable(ResearchObject):
     
     ## Level methods
 
-    def validate_level(self, level: type) -> None:
+    def validate_level(self, level: type, action: Action) -> None:
         """Check that the level is of a valid type."""
         from ResearchOS.DataObjects.data_object import DataObject
         if not isinstance(level, type):
@@ -23,13 +24,13 @@ class Variable(ResearchObject):
         if level not in DataObject.__subclasses__():
             raise ValueError("Level must be a DataObject.")
         
-    def to_json_level(self, level: type) -> dict:
+    def to_json_level(self, level: type, action: Action) -> dict:
         """Return the level as a JSON object."""
         if level is None:
             return json.dumps(level)
         return json.dumps(level.prefix)
 
-    def from_json_level(self, level: str) -> type:
+    def from_json_level(self, level: str, action: Action) -> type:
         """Return the level as a JSON object."""
         from ResearchOS.DataObjects.data_object import DataObject
         level_str = json.loads(level)

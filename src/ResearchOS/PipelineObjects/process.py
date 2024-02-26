@@ -76,7 +76,7 @@ class Process(PipelineObject):
         if method.__module__ not in sys.modules:
             raise ValueError("Method must be in an imported module!")
 
-    def from_json_method(self, json_method: str) -> Callable:
+    def from_json_method(self, json_method: str, action: Action) -> Callable:
         """Convert a JSON string to a method.
         Returns None if the method name is not found (e.g. if code changed locations or something)"""
         method_name = json.loads(json_method)
@@ -87,7 +87,7 @@ class Process(PipelineObject):
             attribute = getattr(attribute, attr)
         return attribute
 
-    def to_json_method(self, method: Callable) -> str:
+    def to_json_method(self, method: Callable, action: Action) -> str:
         """Convert a method to a JSON string."""
         if method is None:
             return json.dumps(None)
@@ -99,14 +99,14 @@ class Process(PipelineObject):
         if not isinstance(level, type):
             raise ValueError("Level must be a type!")
         
-    def from_json_level(self, level: str) -> type:
+    def from_json_level(self, level: str, action: Action) -> type:
         """Convert a JSON string to a Process level."""
         classes = ResearchObjectHandler._get_subclasses(ResearchObject)
         for cls in classes:
             if hasattr(cls, "prefix") and cls.prefix == level:
                 return cls
 
-    def to_json_level(self, level: type) -> str:
+    def to_json_level(self, level: type, action: Action) -> str:
         """Convert a Process level to a JSON string."""
         return json.dumps(level.prefix)
     
@@ -149,21 +149,21 @@ class Process(PipelineObject):
         if not self.is_matlab and not all([vr_name in vr_names_in_code for vr_name in vr.keys()]):
             raise ValueError("Output variables must be returned by the method.")
         
-    def from_json_input_vrs(self, input_vrs: str) -> dict:
+    def from_json_input_vrs(self, input_vrs: str, action: Action) -> dict:
         """Convert a JSON string to a dictionary of input variables."""
         input_vrs_dict = json.loads(input_vrs)
         return {key: Variable(id = value) for key, value in input_vrs_dict.items()}
     
-    def to_json_input_vrs(self, input_vrs: dict) -> str:
+    def to_json_input_vrs(self, input_vrs: dict, action: Action) -> str:
         """Convert a dictionary of input variables to a JSON string."""     
         return json.dumps({key: value.id for key, value in input_vrs.items()})
     
-    def from_json_output_vrs(self, output_vrs: str) -> dict:
+    def from_json_output_vrs(self, output_vrs: str, action: Action) -> dict:
         """Convert a JSON string to a dictionary of output variables."""
         output_vrs_dict = json.loads(output_vrs)
         return {key: Variable(id = value) for key, value in output_vrs_dict.items()}
     
-    def to_json_output_vrs(self, output_vrs: dict) -> str:
+    def to_json_output_vrs(self, output_vrs: dict, action: Action) -> str:
         """Convert a dictionary of output variables to a JSON string."""
         return json.dumps({key: value.id for key, value in output_vrs.items()})
     

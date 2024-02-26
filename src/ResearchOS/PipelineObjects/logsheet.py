@@ -47,7 +47,7 @@ class Logsheet(PipelineObject):
 
     ### Logsheet path
         
-    def validate_path(self, path: str) -> None:
+    def validate_path(self, path: str, action: Action) -> None:
         """Validate the logsheet path."""
         # 1. Check that the path exists in the file system.
         import os
@@ -64,13 +64,13 @@ class Logsheet(PipelineObject):
         
     ### Logsheet headers
     
-    def validate_headers(self, headers: list) -> None:
+    def validate_headers(self, headers: list, action: Action) -> None:
         """Validate the logsheet headers. These are the headers that are in the logsheet file.
         The headers must be a list of tuples, where each tuple has 3 elements:
         1. A string (the name of the header)
         2. A type (the type of the header)
         3. A valid variable ID (the ID of the Variable that the header corresponds to)"""
-        self.validate_path(self.path)
+        self.validate_path(self.path, action)
 
         # 1. Check that the headers are a list.
         if not isinstance(headers, list):
@@ -102,19 +102,19 @@ class Logsheet(PipelineObject):
         if len(missing) > 0:
             raise ValueError(f"The headers {missing} do not match between logsheet and code!")
             
-    def to_json_headers(self, headers: list) -> str:
+    def to_json_headers(self, headers: list, action: Action) -> str:
         """Convert the headers to a JSON string.
         Also sets the VR's name and level."""
         str_headers = []
         for header in headers:
             # Update the Variable object with the name if it is not already set, and the level.
             vr = Variable(id = header[3])
-            vr.name = header[0]
-            vr.level = header[2]
+            vr.__setattr__("name", header[0], action = action)
+            vr.__setattr__("level", header[2], action = action)
             str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, header[3]))
         return json.dumps(str_headers)
 
-    def from_json_headers(self, json_var: str) -> list:
+    def from_json_headers(self, json_var: str, action: Action) -> list:
         """Convert the JSON string to a list of headers."""
         subclasses = DataObject.__subclasses__()
         str_var = json.loads(json_var)
@@ -131,7 +131,7 @@ class Logsheet(PipelineObject):
             
     ### Num header rows
             
-    def validate_num_header_rows(self, num_header_rows: int) -> None:
+    def validate_num_header_rows(self, num_header_rows: int, action: Action) -> None:
         """Validate the number of header rows. If it is not valid, the value is rejected."""                
         if not isinstance(num_header_rows, (int, float)):
             raise ValueError("Num header rows must be numeric!")
@@ -142,9 +142,9 @@ class Logsheet(PipelineObject):
         
     ### Class column names
         
-    def validate_class_column_names(self, class_column_names: dict) -> None:
+    def validate_class_column_names(self, class_column_names: dict, action: Action) -> None:
         """Validate the class column names. Must be a dict where the keys are the column names in the logsheet and the values are the DataObject subclasses."""
-        self.validate_path(self.path)
+        self.validate_path(self.path, action)
         # 1. Check that the class column names are a dict.
         if not isinstance(class_column_names, dict):
             raise ValueError("Class column names must be a dict!")
@@ -159,7 +159,7 @@ class Logsheet(PipelineObject):
         if not all([header in headers for header in class_column_names.keys()]):
             raise ValueError("The class column names must be in the logsheet headers!")
 
-    def from_json_class_column_names(self, json_var: dict) -> dict:
+    def from_json_class_column_names(self, json_var: dict, action: Action) -> dict:
         """Convert the dict from JSON string where values are class prefixes to a dict where keys are column names and values are DataObject subclasses."""     
         prefix_var = json.loads(json_var)
         class_column_names = {}
@@ -171,7 +171,7 @@ class Logsheet(PipelineObject):
                     break
         return class_column_names
     
-    def to_json_class_column_names(self, var: dict) -> dict:
+    def to_json_class_column_names(self, var: dict, action: Action) -> dict:
         """Convert the dict from a dict where keys are column names and values are DataObject subclasses to a JSON string where values are class prefixes."""        
         prefix_var = {}
         for key in var:
@@ -187,10 +187,11 @@ class Logsheet(PipelineObject):
     def read_logsheet(self) -> None:
         """Run the logsheet import process."""
         ds = Dataset(id = self.get_dataset_id())
-        self.validate_class_column_names(self.class_column_names)
-        self.validate_headers(self.headers)
-        self.validate_num_header_rows(self.num_header_rows)
-        self.validate_path(self.path)
+        action = Action(name = "read logsheet")
+        self.validate_class_column_names(self.class_column_names, action)
+        self.validate_headers(self.headers, action)
+        self.validate_num_header_rows(self.num_header_rows, action)
+        self.validate_path(self.path, action)
 
         # 1. Load the logsheet (using built-in Python libraries)
         if self.path.endswith(("xlsx", "xls")):
@@ -273,12 +274,12 @@ class Logsheet(PipelineObject):
                 col_idx = cols_idx[idx] # The index of the column in the logsheet.
                 value = self.clean_value(header_types[col_idx], row[idx])
                 if value not in name_ids_dict[cls]:                    
-                    name_ids_dict[cls][value] = IDCreator().create_ro_id(cls)
+                    name_ids_dict[cls][value] = IDCreator(action.conn).create_ro_id(cls)
                     dobj = cls(id = name_ids_dict[cls][value], name = value) # Create the research object.                
                     name_dobjs_dict[cls][value] = dobj
+                    print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", dobj.id)
                 dobj = name_dobjs_dict[cls][value]
-                all_dobjs_ordered[-1].append(dobj) # Matrix of all research objects.
-                print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", dobj.id, "Memory Loc: ", id(dobj))
+                all_dobjs_ordered[-1].append(dobj) # Matrix of all research objects.                
 
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.
@@ -295,9 +296,7 @@ class Logsheet(PipelineObject):
         
         # Assign the values to the DataObject instances.
         # Validates that the logsheet is of valid format.
-        # i.e. Doesn't have conflicting values for one level (empty/None is OK)        
-        action = Action(name = "read logsheet")
-        action.commit = True
+        # i.e. Doesn't have conflicting values for one level (empty/None is OK)                        
         attrs_cache_dict = {}
         for row_num, row in enumerate(logsheet):
             row_dobjs = all_dobjs_ordered[row_num][1:]
@@ -323,13 +322,12 @@ class Logsheet(PipelineObject):
                 # prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.                
                 if prev_value is not None:                    
                     if prev_value == value or value is None:
-                        continue
-                    conn = action.pool.get_connection()
-                    action.pool.return_connection(conn)
+                        continue                    
                     raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")                
                 row_dobjs[level_idx].__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.                
                 attrs_cache_dict[row_dobjs[level_idx].id][name] = value
-                dobj = row_dobjs[level_idx]
+                dobj = row_dobjs[level_idx]        
+        action.execute()
 
     def clean_value(self, type_class: type, raw_value: Any) -> Any:
         """Convert to proper type and clean the value of the logsheet cell."""

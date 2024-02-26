@@ -6,6 +6,8 @@ from ResearchOS.current_user import CurrentUser
 from ResearchOS.config import Config
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.action import Action
+from ResearchOS.current_user import default_current_user
 
 sql_settings_path = os.sep.join([os.path.dirname(__file__), "config", "sql.json"])
 
@@ -21,7 +23,7 @@ class DBInitializer():
         # Reset the connection pools for each database.
         ResearchObjectHandler.pool = None
         ResearchObjectHandler.pool_data = None
-        SQLiteConnectionPool._instances = {"main": None, "data": None}                      
+        SQLiteConnectionPool._instances = {"main": None, "data": None}        
 
         # Remove database files.
         config = Config()
@@ -42,6 +44,8 @@ class DBInitializer():
         intended_tables = sql_settings["intended_tables"]
         intended_tables_data = sql_settings["intended_tables_data"]
 
+        action = Action(name = "initialize database", user_object_id = default_current_user)
+
         self.db_file = main_db_file
         self.pool = SQLiteConnectionPool(name = "main")
         ResearchObjectHandler.pool = self.pool        
@@ -49,7 +53,7 @@ class DBInitializer():
         self.create_tables()
         self.check_tables_exist(self.conn, intended_tables)
         self.pool.return_connection(self.conn)
-        self.init_current_user_id()
+        self.init_current_user_id(action)
 
         self.data_db_file = data_db_file
         self.pool_data = SQLiteConnectionPool(name = "data")
@@ -59,9 +63,9 @@ class DBInitializer():
         self.check_tables_exist(self.conn_data, intended_tables_data)
         self.pool_data.return_connection(self.conn_data)
 
-    def init_current_user_id(self, user_id: str = "US000000_000"):
+    def init_current_user_id(self, action: Action, user_id: str = default_current_user):
         """Initialize the current user ID in the settings table."""
-        CurrentUser().set_current_user_id(user_id)
+        CurrentUser(action).set_current_user_id(user_id)
 
     def check_tables_exist(self, conn: sqlite3.Connection, intended_tables: list):
         """Check that all of the tables were created."""        

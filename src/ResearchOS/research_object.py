@@ -4,6 +4,7 @@ from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.default_attrs import DefaultAttrs
+from ResearchOS.idcreator import IDCreator
 
 all_default_attrs = {}
 all_default_attrs["notes"] = None
@@ -53,19 +54,22 @@ class ResearchObject():
             
         # Set the attribute.
         if all_attrs is None:
-            all_attrs = DefaultAttrs(self)
-        if action is None:            
-            action = Action(name = "attribute_changed")
+            all_attrs = DefaultAttrs(self)        
+        # When __setattr__ is called as the top level.
+        commit = False
+        if action is None:
+            commit = True
+            action = Action(name = "attribute_changed")            
         ResearchObjectHandler._setattr(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
-        if action.do_exec:        
+        action.commit = commit
+        if action.commit:
             action.execute()
 
     def __new__(cls, **kwargs):
         """Create a new research object in memory. If the object already exists in memory with this ID, return the existing object."""
-        kwargs = ResearchObjectHandler.check_inputs(cls, kwargs)
+        if "id" not in kwargs.keys():
+            raise ValueError("id is required as a kwarg")  
         id = kwargs["id"]
-        # keys = ",".join([key for key in ResearchObjectHandler.instances.keys()])
-        # print("Keys: " + keys)
         if id in ResearchObjectHandler.instances:
             ResearchObjectHandler.counts[id] += 1
             ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = True
@@ -78,26 +82,37 @@ class ResearchObject():
         return instance    
     
     def __init__(self, **orig_kwargs):
-        """Initialize the research object."""   
+        """Initialize the research object."""
+        action = Action()        
+        id = orig_kwargs["id"]
+        if not IDCreator(action.conn).is_ro_id(id):
+            raise ValueError("id is not a valid ID.")   
+
         self.__dict__["id"] = orig_kwargs["id"] # Put the ID in the __dict__ so that it is not overwritten by the __setattr__ method.
         del orig_kwargs["id"] # Remove the ID from the kwargs so that it is not set as an attribute.        
         attrs = DefaultAttrs(self) # Get the default attributes for the class.
         default_attrs = attrs.default_attrs
 
         # Will be overwritten if creating a new object.
-        action = Action(name = f"set object attributes")
+        action_name = "set object attributes"
         kwargs = orig_kwargs # Because the defaults will have all been set, don't include them.
         prev_exists = ResearchObjectHandler.object_exists(self.id)
+        commit = True
         if not self.prev_loaded and prev_exists:
             # Load the existing object's attributes from the database.
-            ResearchObjectHandler._load_ro(self, default_attrs)
+            ResearchObjectHandler._load_ro(self, default_attrs, action)
+            commit = False
         elif not prev_exists:
             # Create a new object.
-            action = Action(name = f"created object")
+            action_name = "created object"
             ResearchObjectHandler._create_ro(self, action = action) # Create the object in the database.
             kwargs = default_attrs | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
         del self.__dict__["prev_loaded"] # Remove the prev_loaded attribute from the object.
-
+        
+        if not prev_exists:
+            action.name = action_name
+            action_sqlquery = f"INSERT INTO actions (action_id, user, name, datetime, redo_of) VALUES ('{action.id}', '{action.user_object_id}', '{action.name}', '{str(action.timestamp)}', '{action.redo_of}')"
+            action.sql_queries.insert(0, (action_sqlquery,))
         # Set the attributes.
         for key in kwargs:
             validate = True # Default is to validate any attribute.        
@@ -107,8 +122,9 @@ class ResearchObject():
             # If the attribute value is a default value, don't validate it.
             if key in default_attrs and kwargs[key] == default_attrs[key]:
                 validate = False
-            self.__setattr__(key, kwargs[key], action = action, validate = validate, all_attrs = attrs)
-            action.execute() # Commit the action to the database.    
+            self.__setattr__(key, kwargs[key], action = action, validate = validate, all_attrs = attrs)            
+        action.commit = commit
+        action.execute()
 
     def get_vr(self, name: str) -> Any:
         """Get the VR itself instead of its value."""

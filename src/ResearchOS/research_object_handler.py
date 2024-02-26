@@ -1,8 +1,8 @@
 import weakref
 from typing import Any
-import json, re, os
+import json, re
 from typing import TYPE_CHECKING
-import sqlite3, copy
+import sqlite3
 from hashlib import sha256
 import pickle
 
@@ -42,35 +42,20 @@ class ResearchObjectHandler:
         data_blob_id = time_ordered_result[0][1]
 
         # 2. Get the data_blob from the data_blobs table.
-        conn = ResearchObjectHandler.pool_data.get_connection()
-        cursor = conn.cursor()
+        conn_data = ResearchObjectHandler.pool_data.get_connection()
+        cursor_data = conn_data.cursor()
         sqlquery = "SELECT data_blob FROM data_values_blob WHERE data_blob_id = ?"        
         params = (data_blob_id,)
-        rows = cursor.execute(sqlquery, params).fetchall()
-        ResearchObjectHandler.pool_data.return_connection(conn)
-        return pickle.loads(rows[0][0])
+        rows = cursor_data.execute(sqlquery, params).fetchall()
+        ResearchObjectHandler.pool_data.return_connection(conn_data)
+        return pickle.loads(rows[0][0])     
 
     @staticmethod
-    def check_inputs(cls: type, tmp_kwargs: dict) -> None:
-        """Validate the inputs to the constructor."""        
-        # Convert the keys of the tmp_kwargs to lowercase.
-        kwargs = {}
-        for key in tmp_kwargs.keys():
-            kwargs[str(key).lower()] = tmp_kwargs[key]
-        if not kwargs or "id" not in kwargs.keys():
-            raise ValueError("id is required as a kwarg")
-        id = kwargs["id"]
-        if not IDCreator().is_ro_id(id):
-            raise ValueError("id is not a valid ID.")              
-
-        return kwargs        
-
-    @staticmethod
-    def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any) -> Any:
+    def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any, action: Action = None) -> Any:
         """Convert the JSON string to an attribute value. If there is no class-specific way to do it, then use the builtin json.loads"""
         try:
             from_json_method = eval("research_object.from_json_" + attr_name)
-            attr_value = from_json_method(attr_value_json)
+            attr_value = from_json_method(attr_value_json, action)
         except AttributeError as e:
             attr_value = json.loads(attr_value_json)
         return attr_value
@@ -80,7 +65,6 @@ class ResearchObjectHandler:
         """Return true if the specified id exists in the database, false if not."""
         pool = SQLiteConnectionPool()
         conn = pool.get_connection()
-        # db = DBConnectionFactory.create_db_connection()
         cursor = conn.cursor()
         sqlquery = f"SELECT object_id FROM research_objects WHERE object_id = '{id}'"
         cursor.execute(sqlquery)
@@ -96,7 +80,7 @@ class ResearchObjectHandler:
         # action.execute(commit = False)
 
     @staticmethod
-    def _get_most_recent_attrs(research_object: "ResearchObject", ordered_attr_result: list, default_attrs: dict = {}) -> dict:
+    def _get_most_recent_attrs(research_object: "ResearchObject", ordered_attr_result: list, default_attrs: dict = {}, action: Action = None) -> dict:
         curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
         used_attr_ids = []
@@ -114,14 +98,14 @@ class ResearchObjectHandler:
             
             # Now that the value is loaded as the proper type/format, validate it, if it is not the default value.
             if not (len(default_attrs) > 0 and attr_name in default_attrs and attr_value == default_attrs[attr_name]):
-                ResearchObjectHandler.validate(research_object, attr_name, attr_value)
+                ResearchObjectHandler.validate(research_object, attr_name, attr_value, action)
             attrs[attr_name] = attr_value
             if len(used_attr_ids) == num_attrs:
                 break # Every attribute is accounted for.
         return attrs
 
     @staticmethod
-    def _load_ro(research_object: "ResearchObject", default_attrs: dict) -> None:
+    def _load_ro(research_object: "ResearchObject", default_attrs: dict, action: Action) -> None:
         """Load "simple" attributes from the database."""
         # 1. Get the database cursor.
         from ResearchOS.DataObjects.data_object import DataObject
@@ -135,7 +119,7 @@ class ResearchObjectHandler:
         ResearchObjectHandler.pool.return_connection(conn)
         ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)         
                              
-        attrs = ResearchObjectHandler._get_most_recent_attrs(research_object, ordered_attr_result, default_attrs)   
+        attrs = ResearchObjectHandler._get_most_recent_attrs(research_object, ordered_attr_result, default_attrs, action)   
 
         if attrs is None:
             raise ValueError("No object with that ID exists.")
@@ -156,11 +140,11 @@ class ResearchObjectHandler:
             research_object.load_dataobject_vrs()
 
     @staticmethod
-    def validate(research_object: "ResearchObject", name: str, value: Any) -> None:
+    def validate(research_object: "ResearchObject", name: str, value: Any, action: Action) -> None:
         """Validate the value of the attribute."""
         if hasattr(research_object, "validate_" + name):
             validate_method = getattr(research_object, "validate_" + name)
-            validate_method(value)
+            validate_method(value, action)
 
     @staticmethod
     def _set_builtin_attribute(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list):
@@ -168,7 +152,7 @@ class ResearchObjectHandler:
 
         # Validate the value
         if validate:       
-            ResearchObjectHandler.validate(research_object, name, value)
+            ResearchObjectHandler.validate(research_object, name, value, action)
 
         if not hasattr(research_object, "save_" + name):
             # Set the attribute "name" of this object as the VR ID (as a simple attribute).
@@ -179,8 +163,8 @@ class ResearchObjectHandler:
         save_method = getattr(research_object, "save_" + name)
         save_method(value, action = action)
 
-        if action.do_exec:
-            action.execute()
+        # if action.do_exec:
+        #     action.execute()
         research_object.__dict__[name] = value 
 
     @staticmethod
@@ -193,8 +177,8 @@ class ResearchObjectHandler:
             return
                 
         # Set custom (VR) attributes: this object's "name" attribute is the VR object.
-        conn = action.pool.get_connection()
-        cursor = conn.cursor()
+        # conn = pool.get_connection()
+        cursor = action.conn.cursor()
         if name in research_object.__dict__:
             selected_vr = research_object.__dict__[name]                      
         else:            
@@ -222,7 +206,7 @@ class ResearchObjectHandler:
                 all_ids = cursor.execute(sqlquery).fetchall()
                 unassoc_vr_ids = [row[0] for row in all_ids if row[0] not in assoc_vr_ids_unique and row[0].startswith(Variable.prefix)]                
                 if not unassoc_vr_ids:
-                    action.pool.return_connection(conn)
+                    # action.pool.return_connection(conn)
                     raise ValueError("No unassociated VR with that name exists.")
                 # Load each variable and check its name. If no matches here, just take the first one.
                 for count, vr_id in enumerate(unassoc_vr_ids):
@@ -237,7 +221,7 @@ class ResearchObjectHandler:
             action.add_sql_query(sqlquery)  
         
         # Check if this value already exists in the database. If so, don't save it again.
-        pool_data =SQLiteConnectionPool(name = "data")
+        pool_data = SQLiteConnectionPool(name = "data")
         conn_data = pool_data.get_connection()
         cursor_data = conn_data.cursor()
         data_blob = pickle.dumps(value)          
@@ -263,57 +247,11 @@ class ResearchObjectHandler:
         sqlquery = "INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id, data_blob_id) VALUES (?, ?, ?, ?, ?)"
         params = (action.id, vr.id, research_object.id, schema_id, data_blob_id)        
         action.add_sql_query(sqlquery, params)
-        action.pool.return_connection(conn)
+        # action.pool.return_connection(conn)
 
-        action.execute()        
+        action.commit = True
+        action.execute(return_conn = False) # Execute the action but keep the connection.
         research_object.__dict__[name] = vr
-
-    # @staticmethod
-    # def get_vr_file_path(research_object: "ResearchObject", vr_id: str) -> str:
-    #     """Get the file path for the VR for this data object."""
-    #     from ResearchOS.DataObjects.dataset import Dataset
-    #     ds = Dataset(id = research_object.get_dataset_id())
-    #     schema = ds.schema
-    #     schema_graph = nx.MultiDiGraph(schema)
-    #     schema_order = list(nx.topological_sort(schema_graph))
-    #     ordered_levels = []
-    #     anc_nodes = nx.ancestors(ds.address_graph, research_object)
-    #     node_lineage = [research_object] + [anc_node for anc_node in anc_nodes]
-    #     for level in schema_order[0:len(node_lineage)]:
-    #         ordered_levels.append([n for n in node_lineage if isinstance(n, level)])
-    #     data_path = os.sep.join([os.path.dirname(ds.dataset_path) ,"MAT Data Files"])
-    #     if not os.path.exists(data_path):            
-    #         os.makedirs(data_path)
-    #     for level in ordered_levels[1:]:
-    #         data_path = os.path.join(data_path, level[0].name)
-    #         if not os.path.exists(data_path):         
-    #             os.makedirs(data_path)
-    #     file_path = data_path + os.sep + vr_id + ".mat"
-    #     return file_path
-
-    # @staticmethod
-    # def save_vr_to_file(research_object: "ResearchObject", ro_id: str, vr_id: str, schema_id: str, raw_value: Any) -> None:
-    #     file_path = ResearchObjectHandler.get_vr_file_path(research_object, vr_id)        
-    #     # Save the data to the file.
-    #     tmp_value = copy.deepcopy(raw_value)
-    #     value = ResearchObjectHandler.clean_value_for_save_mat(tmp_value)        
-    #     # sp.io.savemat(file_path, {"stored_data": {"key1": [1, 2, 3], "key2": [4, 5, 6], "key3": [1, "b", "cd"]}})
-    #     sp.io.savemat(file_path, {"stored_data": value})
-
-    # @staticmethod
-    # def load_vr_from_file(research_object: "ResearchObject", ro_id: str, vr_id: str, schema_id: str) -> Any:
-    #     """Load the value of this variable from the file."""
-    #     file_path = ResearchObjectHandler.get_vr_file_path(research_object, vr_id)
-    #     if not os.path.exists(file_path):
-    #         return
-
-    #     # Load the data from the file.
-    #     scipy_val = sp.io.loadmat(file_path)
-    #     data_out = scipy_val["stored_data"]        
-    #     cleaned_data = ResearchObjectHandler.clean_value_from_load_mat(data_out)
-    #     return cleaned_data
-
-
 
     @staticmethod
     def clean_value_from_load_mat(numpy_array: Any) -> Any:
@@ -347,13 +285,6 @@ class ResearchObjectHandler:
 
         # Actually clean the values.
         return np.array(value)
-        
-    # @staticmethod
-    # def is_scalar(value: Any) -> bool:
-    #     """Return True if the value is a scalar, False if not."""
-    #     if value is None:
-    #         return True
-    #     return isinstance(value, (int, float, str, bool))
     
     @staticmethod
     def save_simple_attribute(id: str, name: str, json_value: Any, action: Action) -> Action:
@@ -447,15 +378,9 @@ class ResearchObjectHandler:
         
         if hasattr(self, "to_json_" + name):
             to_json_method = getattr(self, "to_json_" + name)
-            json_value = to_json_method(value)
+            json_value = to_json_method(value, action)
         else:
-            json_value = json.dumps(value)
-        
-        # Create an Action. Must be before the ResearchObjectHandler.save_simple_attribute() method.
-        execute_action = False
-        if action is None:
-            execute_action = True
-            action = Action(name = "attribute_changed")      
+            json_value = json.dumps(value)   
 
         ResearchObjectHandler.save_simple_attribute(self.id, name, json_value, action = action)            
         # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
@@ -465,7 +390,5 @@ class ResearchObjectHandler:
             # action = self._default_store_edge_attr(target_object_id = value, name = name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
             # if self.__dict__.get(name, None) != value:
             #     execute_action = True # Need to execute an action if adding an edge.
-        if execute_action:
-            action.execute()
         self.__dict__[name] = value
     

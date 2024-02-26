@@ -14,6 +14,8 @@ config_path = os.path.join(os.path.dirname(__file__), "config/config.json")
 immutable_config_path = os.path.join(os.path.dirname(__file__), "config/immutable_config.json")
 
 class Config():
+
+    config_cache: dict = {}
     
     def __init__(self) -> None:
         self.__dict__["_config_path"] = config_path
@@ -23,6 +25,9 @@ class Config():
 
     def load_config(self, config_path: str, key: str) -> None:
         """Load all of the attributes from the config file."""        
+        if (key is None and len(Config.config_cache) > 0) or (key is not None and key in Config.config_cache):
+            self.__dict__.update(Config.config_cache)
+            return
         with open(config_path, "r") as f:
             attrs = json.load(f)
         if key is not None:
@@ -31,6 +36,7 @@ class Config():
             self.__dict__.update(key_dict)
         else:
             self.__dict__.update(attrs)
+        Config.config_cache = copy.deepcopy(self.__dict__)
 
     def save_config(self, config_path: str) -> None:
         """Save all of the attributes to the config file."""        
@@ -40,6 +46,7 @@ class Config():
         del attrs["_immutable_config_path"]
         with open(config_path, "w") as f:
             json.dump(attrs, f, indent = 4)
+        Config.config_cache = attrs
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Set the attribute and save the config file."""

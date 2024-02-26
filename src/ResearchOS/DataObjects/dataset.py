@@ -28,7 +28,7 @@ class Dataset(DataObject):
     
     ### Schema Methods
         
-    def validate_schema(self, schema: list) -> None:
+    def validate_schema(self, schema: list, action: Action) -> None:
         """Validate that the data schema follows the proper format.
         Must be a dict of dicts, where all keys are Python types matching a DataObject subclass, and the lowest levels are empty."""
         from ResearchOS.research_object import ResearchObject
@@ -72,7 +72,7 @@ class Dataset(DataObject):
         json_schema = json.dumps(str_schema)
 
         # 3. Save the schema to the database.        
-        schema_id = IDCreator().create_action_id()
+        schema_id = IDCreator(action.conn).create_action_id()
         sqlquery = f"INSERT INTO data_address_schemas (schema_id, levels_edge_list, dataset_id, action_id) VALUES ('{schema_id}', '{json_schema}', '{self.id}', '{action.id}')"
         action.add_sql_query(sqlquery)
 
@@ -99,7 +99,7 @@ class Dataset(DataObject):
 
     ### Dataset path methods
 
-    def validate_dataset_path(self, path: str) -> None:
+    def validate_dataset_path(self, path: str, action: Action) -> None:
         """Validate the dataset path."""
         import os
         if not os.path.exists(path):
@@ -107,9 +107,9 @@ class Dataset(DataObject):
         
     ### Address Methods
         
-    def validate_addresses(self, addresses: list) -> None:
+    def validate_addresses(self, addresses: list, action: Action) -> None:
         """Validate that the addresses are in the correct format."""
-        self.validate_schema(self.schema)   
+        self.validate_schema(self.schema, action)   
 
         try:
             graph = nx.MultiDiGraph()
@@ -120,7 +120,7 @@ class Dataset(DataObject):
         if not nx.is_directed_acyclic_graph(graph):
             raise ValueError("The addresses must be a directed acyclic graph!")
         
-        non_ro_id = [node for node in graph if not IDCreator().is_ro_id(node)]
+        non_ro_id = [node for node in graph if not IDCreator(action.conn).is_ro_id(node)]
         if non_ro_id:
             raise ValueError("The addresses must only include ResearchObject ID's!")
                 
@@ -148,7 +148,7 @@ class Dataset(DataObject):
         for address_names in addresses:   
             sqlquery = f"INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES ('{address_names[0]}', '{address_names[1]}', '{schema_id}', '{action.id}')"
             action.add_sql_query(sqlquery)
-        self.__dict__["address_graph"] = self.addresses_to_graph(addresses)
+        self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)
         self.__dict__["addresses"] = addresses
 
     def load_addresses(self) -> list:
@@ -168,7 +168,7 @@ class Dataset(DataObject):
         self.__dict__["addresses"] = addresses
         self.__dict__["address_graph"] = self.addresses_to_graph(addresses)
 
-    def addresses_to_graph(self, addresses: list) -> nx.MultiDiGraph:
+    def addresses_to_graph(self, addresses: list, action: Action) -> nx.MultiDiGraph:
         """Convert the addresses edge list to a MultiDiGraph."""
         G = nx.MultiDiGraph()
         # To avoid recursion, set the lines with Dataset manually so there is no self reference.
@@ -182,7 +182,7 @@ class Dataset(DataObject):
         addresses = address_copy
         subclasses = DataObject.__subclasses__()
         cls_dict = {cls.prefix: cls for cls in subclasses}
-        idcreator = IDCreator()
+        idcreator = IDCreator(action.conn)
         for address_edge in addresses:            
             cls0 = cls_dict[idcreator.get_prefix(address_edge[0])]
             cls1 = cls_dict[idcreator.get_prefix(address_edge[1])]
