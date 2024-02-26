@@ -8,6 +8,7 @@ from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.variable import Variable
 from ResearchOS.idcreator import IDCreator
 from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.action import Action
 
 all_default_attrs = {}
 all_default_attrs["conditions"] = {}
@@ -26,7 +27,7 @@ class Subset(PipelineObject):
 
     ## conditions
     
-    def validate_conditions(self, conditions: dict) -> None:
+    def validate_conditions(self, conditions: dict, action: Action) -> None:
         """Validate the condition recursively.
         Example usage:
         conditions = {
@@ -45,9 +46,9 @@ class Subset(PipelineObject):
         if isinstance(conditions, list):
             if len(conditions) != 3:
                 raise ValueError("Condition must be a list of length 3.")
-            if not IDCreator().is_ro_id(conditions[0]):
+            if not IDCreator(action.conn).is_ro_id(conditions[0]):
                 raise ValueError("Variable ID must be a valid Variable ID.")
-            if not ResearchObjectHandler.object_exists(conditions[0]):
+            if not ResearchObjectHandler.object_exists(conditions[0], action):
                 raise ValueError("Variable must be pre-existing.")
             if conditions[1] not in logic_options:
                 raise ValueError("Invalid logic.")
@@ -74,7 +75,7 @@ class Subset(PipelineObject):
                 raise ValueError("Value must be a list.")
             if not isinstance(value, (list, dict)):
                 raise ValueError("Value must be a list of lists or dicts.")
-            a = [self.validate_conditions(cond) for cond in value] # Assigned to a just to make interpreter happy.
+            a = [self.validate_conditions(cond, action) for cond in value] # Assigned to a just to make interpreter happy.
             
     def get_subset(self) -> nx.MultiDiGraph:
         """Resolve the conditions to the actual subset of data."""

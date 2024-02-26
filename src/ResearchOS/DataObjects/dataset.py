@@ -76,14 +76,15 @@ class Dataset(DataObject):
         sqlquery = f"INSERT INTO data_address_schemas (schema_id, levels_edge_list, dataset_id, action_id) VALUES ('{schema_id}', '{json_schema}', '{self.id}', '{action.id}')"
         action.add_sql_query(sqlquery)
 
-    def load_schema(self) -> None:
+    def load_schema(self, action: Action) -> None:
         """Load the schema from the database and convert it via json."""
         # 1. Get the dataset ID
         id = self.id
         # 2. Get the most recent action ID for the dataset in the data_address_schemas table.
         schema_id = self.get_current_schema_id(id)
         sqlquery = f"SELECT levels_edge_list FROM data_address_schemas WHERE schema_id = '{schema_id}'"
-        conn = ResearchObjectHandler.pool.get_connection()
+        # conn = ResearchObjectHandler.pool.get_connection()
+        conn = action.conn
         result = conn.execute(sqlquery).fetchone()
 
         # 5. If the schema is not None, convert the string to a list of types.
@@ -151,7 +152,7 @@ class Dataset(DataObject):
         self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)
         self.__dict__["addresses"] = addresses
 
-    def load_addresses(self) -> list:
+    def load_addresses(self, action: Action) -> list:
         """Load the addresses from the database."""
         pool = SQLiteConnectionPool()        
         schema_id = self.get_current_schema_id(self.id)
@@ -166,7 +167,7 @@ class Dataset(DataObject):
         addresses = [list(address) for address in addresses]        
 
         self.__dict__["addresses"] = addresses
-        self.__dict__["address_graph"] = self.addresses_to_graph(addresses)
+        self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)
 
     def addresses_to_graph(self, addresses: list, action: Action) -> nx.MultiDiGraph:
         """Convert the addresses edge list to a MultiDiGraph."""

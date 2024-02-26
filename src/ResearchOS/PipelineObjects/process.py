@@ -41,7 +41,7 @@ class Process(PipelineObject):
 
     ## mfunc_name (MATLAB function name) methods
 
-    def validate_mfunc_name(self, mfunc_name: str) -> None:
+    def validate_mfunc_name(self, mfunc_name: str, action: Action) -> None:
         self.validate_mfolder(self.mfolder)
         if not self.is_matlab and mfunc_name is None: 
             return
@@ -54,7 +54,7 @@ class Process(PipelineObject):
         
     ## mfolder (MATLAB folder) methods
         
-    def validate_mfolder(self, mfolder: str) -> None:
+    def validate_mfolder(self, mfolder: str, action: Action) -> None:
         if not self.is_matlab and mfolder is None:
             return
         if not self.is_matlab:
@@ -66,7 +66,7 @@ class Process(PipelineObject):
         
     ## method (Python method) methods
         
-    def validate_method(self, method: Callable) -> None:
+    def validate_method(self, method: Callable, action: Action) -> None:
         if method is None and self.is_matlab:
             return
         if not self.is_matlab:
@@ -95,7 +95,7 @@ class Process(PipelineObject):
     
     ## level (Process level) methods
 
-    def validate_level(self, level: type) -> None:
+    def validate_level(self, level: type, action: Action) -> None:
         if not isinstance(level, type):
             raise ValueError("Level must be a type!")
         
@@ -108,33 +108,37 @@ class Process(PipelineObject):
 
     def to_json_level(self, level: type, action: Action) -> str:
         """Convert a Process level to a JSON string."""
+        if level is None:
+            return json.dumps(None)
         return json.dumps(level.prefix)
     
     ## subset_id (Subset ID) methods
     
-    def validate_subset_id(self, subset_id: str) -> None:
+    def validate_subset_id(self, subset_id: str, action: Action) -> None:
         """Validate that the subset ID is correct."""
-        if not ResearchObjectHandler.object_exists(subset_id):
+        if not ResearchObjectHandler.object_exists(subset_id, action):
             raise ValueError("Subset ID must reference an existing Subset.")
         
     ## input & output VRs methods
         
-    def validate_input_vrs(self, inputs: dict) -> None:
-        """Validate that the input variables are correct."""        
+    def validate_input_vrs(self, inputs: dict, action: Action) -> None:
+        """Validate that the input variables are correct."""
+        input_vr_names_in_code = []
         if not self.is_matlab:
             input_vr_names_in_code = get_input_variable_names(self.method)
-        self._validate_vrs(inputs, input_vr_names_in_code)
+        self._validate_vrs(inputs, input_vr_names_in_code, action)
 
-    def validate_output_vrs(self, outputs: dict) -> None:
-        """Validate that the output variables are correct."""        
+    def validate_output_vrs(self, outputs: dict, action: Action) -> None:
+        """Validate that the output variables are correct."""
+        output_vr_names_in_code = []
         if not self.is_matlab:
             output_vr_names_in_code = get_returned_variable_names(self.method)
-        self._validate_vrs(outputs, output_vr_names_in_code)    
+        self._validate_vrs(outputs, output_vr_names_in_code, action)    
 
-    def _validate_vrs(self, vr: dict, vr_names_in_code: list) -> None:
+    def _validate_vrs(self, vr: dict, vr_names_in_code: list, action) -> None:
         """Validate that the input and output variables are correct. They should follow the same format.
         The format is a dictionary with the variable name as the key and the variable ID as the value."""       
-        self.validate_method(self.method) 
+        self.validate_method(self.method, action)
         if not isinstance(vr, dict):
             raise ValueError("Variables must be a dictionary.")
         for key, value in vr.items():
@@ -144,7 +148,7 @@ class Process(PipelineObject):
                 raise ValueError("Variable names in code must be valid variable names.")
             if not isinstance(value, Variable):
                 raise ValueError("Variable ID's must be Variable objects.")
-            if not ResearchObjectHandler.object_exists(value.id):
+            if not ResearchObjectHandler.object_exists(value.id, action):
                 raise ValueError("Variable ID's must reference existing Variables.")
         if not self.is_matlab and not all([vr_name in vr_names_in_code for vr_name in vr.keys()]):
             raise ValueError("Output variables must be returned by the method.")
@@ -179,30 +183,30 @@ class Process(PipelineObject):
 
     def run(self) -> None:
         """Execute the attached method.
-        kwargs are the input VR's."""
+        kwargs are the input VR's."""        
         ds = Dataset(id = self.get_dataset_id())
+
+        action = Action(name = f"Running {self.mfunc_name} on {self.level.__name__}s.")
         # 1. Validate that the level & method have been properly set.
-        self.validate_method(self.method)
-        self.validate_level(self.level)
+        self.validate_method(self.method, action)
+        self.validate_level(self.level, action)
 
         # TODO: Fix this to work with MATLAB.
         if not self.is_matlab:
             output_var_names_in_code = get_returned_variable_names(self.method)
 
         # 2. Validate that the input & output variables have been properly set.
-        self.validate_input_vrs(self.input_vrs)
-        self.validate_output_vrs(self.output_vrs)
+        self.validate_input_vrs(self.input_vrs, action)
+        self.validate_output_vrs(self.output_vrs, action)
 
         # 3. Validate that the subsets have been properly set.
-        self.validate_subset_id(self.subset_id)
+        self.validate_subset_id(self.subset_id, action)
 
         schema_id = self.get_current_schema_id(ds.id)
 
         # 4. Run the method.
         # Get the subset of the data.
-        subset_graph = Subset(id = self.subset_id).get_subset()
-
-        action = Action(name = f"Running {self.mfunc_name} on {self.level.__name__}s.")
+        subset_graph = Subset(id = self.subset_id).get_subset()        
 
         # Do the setup for MATLAB.
         if self.is_matlab:

@@ -133,7 +133,7 @@ class ResearchObjectHandler:
                 continue
             if hasattr(research_object, "load_" + key):
                 load_method = getattr(research_object, "load_" + key)
-                load_method()
+                load_method(action)
 
         dobj_subclasses = DataObject.__subclasses__()
         if research_object.__class__ in dobj_subclasses:
