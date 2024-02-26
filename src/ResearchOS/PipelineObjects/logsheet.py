@@ -91,7 +91,7 @@ class Logsheet(PipelineObject):
             if header[2] not in DataObject.__subclasses__():
                 raise ValueError("Third element of each header tuple must be a ResearchObject subclass!")
             # 6. Check that the third element of each header tuple is a valid variable ID.                
-            if not header[3].startswith(Variable.prefix) or not ResearchObjectHandler.object_exists(header[3]):
+            if not header[3].startswith(Variable.prefix) or not ResearchObjectHandler.object_exists(header[3], action):
                 raise ValueError("Fourth element of each header tuple must be a valid pre-existing variable ID!")
             
         logsheet = self.read_and_clean_logsheet(nrows = 1)

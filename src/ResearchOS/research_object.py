@@ -96,7 +96,7 @@ class ResearchObject():
         # Will be overwritten if creating a new object.
         action_name = "set object attributes"
         kwargs = orig_kwargs # Because the defaults will have all been set, don't include them.
-        prev_exists = ResearchObjectHandler.object_exists(self.id)
+        prev_exists = ResearchObjectHandler.object_exists(self.id, action)
         commit = True
         if not self.prev_loaded and prev_exists:
             # Load the existing object's attributes from the database.

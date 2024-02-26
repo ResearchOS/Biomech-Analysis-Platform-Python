@@ -61,16 +61,16 @@ class ResearchObjectHandler:
         return attr_value
     
     @staticmethod
-    def object_exists(id: str) -> bool:
+    def object_exists(id: str, action: Action) -> bool:
         """Return true if the specified id exists in the database, false if not."""
-        pool = SQLiteConnectionPool()
-        conn = pool.get_connection()
-        cursor = conn.cursor()
+        # pool = SQLiteConnectionPool()
+        # conn = pool.get_connection()
+        cursor = action.conn.cursor()
         sqlquery = f"SELECT object_id FROM research_objects WHERE object_id = '{id}'"
         cursor.execute(sqlquery)
-        rows = cursor.fetchall()
-        pool.return_connection(conn)
-        return len(rows) > 0
+        rows = cursor.fetchone()
+        # pool.return_connection(conn)
+        return rows is not None
     
     @staticmethod
     def _create_ro(research_object: "ResearchObject", action: Action) -> None:
