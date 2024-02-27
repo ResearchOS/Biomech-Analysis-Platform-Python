@@ -13,7 +13,7 @@ class Action():
 
     latest_action_id: str = None
     
-    def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None, commit: bool = False):        
+    def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None, commit: bool = False, exec: bool = True):        
         pool = SQLiteConnectionPool()
         self.conn = pool.get_connection()
         self.sql_queries = []
@@ -32,12 +32,20 @@ class Action():
         self.timestamp = timestamp        
         self.redo_of = redo_of               
         self.user_object_id = user_object_id
-        self.do_exec = True
+        self.exec = exec
+        self.params = []
+
+    def add_params(self, params: tuple) -> None:
+        """Add parameters to the action."""
+        if not isinstance(params, tuple):
+            raise ValueError(f"params must be a tuple, not {type(params)}.")
+        self.params.append(params)
 
     def add_sql_query(self, sqlquery: str, params: Union[tuple, list] = None) -> None:
         """Add a sqlquery to the action. Can be a raw SQL query (one input) or a parameterized query (two inputs).
-        Parameters can be either a tuple (for one query) or a list of tuples (for multiple queries)."""
-        if params:
+        Parameters can be either a tuple (for one query) or a list of tuples (for multiple queries).
+        If params is empty list, skip this."""
+        if params:            
             if isinstance(params, list):
                 any_wrong = any([not isinstance(p, tuple) for p in params])
                 if any_wrong:
@@ -47,11 +55,13 @@ class Action():
             else:
                 raise ValueError(f"params must be a tuple or list, not {type(params)}.")
             self.sql_queries.append((sqlquery, params)) # Allows for multiple params to be added at once with "executemany"
-        else:
-            self.sql_queries.append((sqlquery,))
+        elif params is None:
+                self.sql_queries.append((sqlquery,))
 
     def execute(self, return_conn: bool = True) -> None:
         """Run all of the sql queries in the action."""
+        if not self.exec:
+            return
         global count
         count += 1
         print(f"Action.execute() called {count} times.")
@@ -92,10 +102,9 @@ class Action():
         # Commit the Action.  
         if self.commit and any_queries:            
             self.conn.commit()
-
-        if return_conn:
-            pool.return_connection(self.conn)
-            self.conn = None
+            if return_conn:
+                pool.return_connection(self.conn)
+                self.conn = None
     
     @staticmethod
     def get_latest_action(user_id: str = None) -> "Action":

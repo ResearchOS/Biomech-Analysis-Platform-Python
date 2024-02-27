@@ -23,7 +23,8 @@ class ResearchObjectHandler:
     instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
     counts = {} # Keep track of the number of instances of each ID.    
     pool = SQLiteConnectionPool(name = "main")
-    pool_data = SQLiteConnectionPool(name = "data")    
+    pool_data = SQLiteConnectionPool(name = "data")
+    default_attrs = {} # Keep track of the default attributes for each class.    
 
     @staticmethod
     def load_vr_value(research_object: "DataObject", vr: "Variable") -> Any:
@@ -63,13 +64,10 @@ class ResearchObjectHandler:
     @staticmethod
     def object_exists(id: str, action: Action) -> bool:
         """Return true if the specified id exists in the database, false if not."""
-        # pool = SQLiteConnectionPool()
-        # conn = pool.get_connection()
         cursor = action.conn.cursor()
         sqlquery = f"SELECT object_id FROM research_objects WHERE object_id = '{id}'"
         cursor.execute(sqlquery)
         rows = cursor.fetchone()
-        # pool.return_connection(conn)
         return rows is not None
     
     @staticmethod
@@ -166,7 +164,7 @@ class ResearchObjectHandler:
         research_object.__dict__[name] = value         
 
     @staticmethod
-    def _set_vr_attributes(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list) -> None:
+    def _set_vr_attributes(research_object: "ResearchObject", name: str, value: Any, action: Action) -> None:
         from ResearchOS.variable import Variable 
         
         # Set custom (VR) attributes: this object's "name" attribute is the VR object.
@@ -237,6 +235,7 @@ class ResearchObjectHandler:
         # action.pool.return_connection(conn)
 
         action.commit = True
+        action.exec = True
         action.execute(return_conn = False) # Execute the action but keep the connection.
         research_object.__dict__[name] = vr
 
@@ -279,6 +278,7 @@ class ResearchObjectHandler:
         sqlquery = "INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES (?, ?, ?, ?)"
         params = (action.id, id, ResearchObjectHandler._get_attr_id(name), json_value)
         action.add_sql_query(sqlquery, params)
+        action.add_params(params)
     
     @staticmethod
     def _get_attr_name(attr_id: int) -> str:
@@ -357,7 +357,7 @@ class ResearchObjectHandler:
         raise ValueError("No class with that prefix exists.")
     
     @staticmethod
-    def _set_simple_builtin_attr(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+    def _set_simple_builtin_attr(self, name: str, value: Any, action: Action = None) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
         Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it).
         If it is not a built-in ResearchOS attribute, then no validation occurs."""
@@ -370,12 +370,5 @@ class ResearchObjectHandler:
             json_value = json.dumps(value)   
 
         ResearchObjectHandler.save_simple_attribute(self.id, name, json_value, action = action)            
-        # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
-        pattern = r"^current_[\w\d]+_id$"
-        if re.match(pattern, name):
-            pass
-            # action = self._default_store_edge_attr(target_object_id = value, name = name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
-            # if self.__dict__.get(name, None) != value:
-            #     execute_action = True # Need to execute an action if adding an edge.
         self.__dict__[name] = value
     

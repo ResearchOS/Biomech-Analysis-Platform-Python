@@ -1,4 +1,5 @@
 from typing import Any
+import json
 
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.action import Action
@@ -15,6 +16,10 @@ root_data_path = "data"
 
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
+
+    def __deepcopy__(self, memo):
+        """Raise an error if attempting to deepcopy this object."""
+        raise ValueError("Research objects cannot be deepcopied.")
 
     def __hash__(self):
         return hash(self.id)
@@ -52,7 +57,7 @@ class ResearchObject():
             value = ResearchObjectHandler.load_vr_value(self, value)
         return value
     
-    def __setattr__(self, name, value, action: Action = None, validate: bool = True, all_attrs: DefaultAttrs = None) -> None:
+    def __setattr__(self, name: str = None, value: Any = None, action: Action = None, all_attrs: DefaultAttrs = None, kwargs_dict: dict = {}) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
         if hasattr(self, name) and getattr(self, name, None) == value:
             return # No change.
@@ -74,24 +79,27 @@ class ResearchObject():
         commit = False
         if action is None:
             commit = True
-            action = Action(name = "attribute_changed")            
-        
-        if name in all_attrs.default_attrs:
-            ResearchObjectHandler._set_builtin_attribute(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
-        else:                
-            ResearchObjectHandler._set_vr_attributes(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
+            action = Action(name = "attribute_changed")
+
+        if not kwargs_dict:
+            kwargs_dict = {name: value}
+        self._setattrs(all_attrs.default_attrs, kwargs_dict, action)
 
         action.commit = commit
-        if commit:            
-            action.execute()       
+        action.exec = True
+        action.execute()
+        
+        # if name in all_attrs.default_attrs:
+        #     ResearchObjectHandler._set_builtin_attribute(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
+        # else:                
+        #     ResearchObjectHandler._set_vr_attributes(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)        
     
     def __init__(self, **orig_kwargs):
         """Initialize the research object."""
-        action = Action()        
+        action = Action(exec = False)        
         id = orig_kwargs["id"]
         if not IDCreator(action.conn).is_ro_id(id):
             raise ValueError("id is not a valid ID.")   
-
         self.__dict__["id"] = orig_kwargs["id"] # Put the ID in the __dict__ so that it is not overwritten by the __setattr__ method.
         del orig_kwargs["id"] # Remove the ID from the kwargs so that it is not set as an attribute.        
         attrs = DefaultAttrs(self) # Get the default attributes for the class.
@@ -101,31 +109,116 @@ class ResearchObject():
         action_name = "set object attributes"
         kwargs = orig_kwargs # Because the defaults will have all been set, don't include them.
         prev_exists = ResearchObjectHandler.object_exists(self.id, action)
-        commit = True
         if not self.prev_loaded and prev_exists:
             # Load the existing object's attributes from the database.
-            ResearchObjectHandler._load_ro(self, default_attrs, action)
-            commit = False
+            ResearchObjectHandler._load_ro(self, default_attrs, action)            
         elif not prev_exists:
-            # Create a new object.
+            # Create a new object.            
             action_name = "created object"
             ResearchObjectHandler._create_ro(self, action = action) # Create the object in the database.
             kwargs = default_attrs | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
         del self.__dict__["prev_loaded"] # Remove the prev_loaded attribute from the object.
-        
+
+        # Only execute the action if the object was created or if the attributes were changed.        
         action.name = action_name
+
+        self._setattrs(default_attrs, kwargs, action)
+
         # Set the attributes.
-        for key in kwargs:
-            validate = True # Default is to validate any attribute.        
-            # If previously loaded, don't overwrite a default attribute with its default value. If it was specified as a kwarg, then use that specified value.
-            if key in self.__dict__ and key not in orig_kwargs:
-                continue
-            # If the attribute value is a default value, don't validate it.
-            if key in default_attrs and kwargs[key] == default_attrs[key]:
-                validate = False
-            self.__setattr__(key, kwargs[key], action = action, validate = validate, all_attrs = attrs)
-        action.commit = commit
+        action.exec = True
+        action.commit = True
         action.execute()
+
+
+
+        
+        # action.name = action_name
+        # # Set the attributes.
+        # for key in kwargs:
+        #     validate = True # Default is to validate any attribute.        
+        #     # If previously loaded, don't overwrite a default attribute with its default value. If it was specified as a kwarg, then use that specified value.
+        #     if key in self.__dict__ and key not in orig_kwargs:
+        #         continue
+        #     # If the attribute value is a default value, don't validate it.
+        #     if key in default_attrs and kwargs[key] == default_attrs[key]:
+        #         validate = False
+        #     self.__setattr__(key, kwargs[key], action = action, validate = validate, all_attrs = attrs)
+        # action.commit = commit
+        # if action.exec:
+        #     action.execute()
+
+    def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action) -> None:
+        """Set the attributes of the object.
+        default_attrs: The default attributes of the object.
+        orig_kwargs: The original kwargs passed to the object.
+        kwargs: The kwargs to be used to set the attributes. A combination of the default attributes and the original kwargs."""
+        # 1. Set simple builtin attributes.
+        complex_attrs = {}
+        simple_sqlquery = "INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES (?, ?, ?, ?)"
+        simple_params = []
+        for key in kwargs:
+
+            if key not in default_attrs:
+                continue # Skip the attribute if it is not a default attribute.
+
+            # 1. Don't validate if the default attribute has the default values.                      
+            validate = True
+            if kwargs[key] == default_attrs[key]:
+                validate = False
+
+            # 2. Skip the complex attributes.
+            if hasattr(self, "save_" + key):
+                complex_attrs[key] = kwargs[key]
+                continue # Complex attributes are set in the next step.
+
+            # 3. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
+            if key in self.__dict__ and getattr(self, key) == kwargs[key]:
+                continue
+
+            # 4. Validate the attribute.
+            if validate:
+                ResearchObjectHandler.validate(self, key, kwargs[key], action)
+
+            if hasattr(self, "to_json_" + key):
+                to_json_method = getattr(self, "to_json_" + key)
+                json_value = to_json_method(kwargs[key], action)
+            else:
+                json_value = json.dumps(kwargs[key])  
+
+            simple_params.append((action.id, self.id, ResearchObjectHandler._get_attr_id(key), json_value))
+
+            # 6. Get the parameters for the SQL query to set the attribute.            
+            self.__dict__[key] = kwargs[key] # Set the attribute in the object's __dict__.
+
+        action.add_sql_query(simple_sqlquery, simple_params)
+
+        # 2. Set complex builtin attributes.
+        for key in complex_attrs:
+
+            # 1. Don't validate if the default attribute has the default values.
+            # Complex attributes checked for being overwritten in the previous step.                      
+            validate = True
+            if kwargs[key] == default_attrs[key]:
+                validate = False
+
+            # 2. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
+            if key in self.__dict__ and getattr(self, key) == complex_attrs[key]:
+                continue
+
+            # 3. Validate the attribute.
+            if validate:
+                ResearchObjectHandler.validate(self, key, complex_attrs[key], action)
+
+            # 4.  Save the "complex" builtin attribute to the database.
+            save_method = getattr(self, "save_" + key)
+            save_method(complex_attrs[key], action = action)
+
+            self.__dict__[key] = complex_attrs[key]
+
+        # 3. Set VR attributes.        
+        vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
+        for vr_name in vr_attrs:
+            ResearchObjectHandler._set_vr_attributes(self, vr_name, vr_attrs[vr_name], action)
 
     def get_vr(self, name: str) -> Any:
         """Get the VR itself instead of its value."""

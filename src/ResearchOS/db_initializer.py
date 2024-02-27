@@ -16,6 +16,9 @@ class DBInitializer():
 
     def __init__(self, main_db_file: str = None, data_db_file: str = None) -> None:
         """Initialize the database."""
+        # Reset default attributes.
+        ResearchObjectHandler.default_attrs = {} # Reset default attributes dictionary.
+
         # Reset research object dictionary.
         ResearchObjectHandler.instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
         ResearchObjectHandler.counts = {} # Keep track of the number of instances of each ID.
@@ -23,7 +26,7 @@ class DBInitializer():
         # Reset the connection pools for each database.
         ResearchObjectHandler.pool = None
         ResearchObjectHandler.pool_data = None
-        SQLiteConnectionPool._instances = {"main": None, "data": None}        
+        SQLiteConnectionPool._instances = {"main": None, "data": None}
 
         # Remove database files.
         config = Config()
@@ -48,13 +51,11 @@ class DBInitializer():
         self.pool = SQLiteConnectionPool(name = "main")
         ResearchObjectHandler.pool = self.pool
 
-        self.action = Action(name = "initialize database", user_object_id = default_current_user, commit = True)
-                
-        # self.conn = self.pool.get_connection()
+        self.action = Action(name = "initialize database", user_object_id = default_current_user, commit = True, exec = True)
+                        
         self.conn = self.action.conn
         self.create_tables()
         self.check_tables_exist(self.conn, intended_tables)
-        # self.pool.return_connection(self.conn)
         self.init_current_user_id()
         self.action.execute()
 

@@ -12,6 +12,7 @@ from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
+from ResearchOS.default_attrs import DefaultAttrs
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -86,12 +87,13 @@ class Logsheet(PipelineObject):
     def to_json_headers(self, headers: list, action: Action) -> str:
         """Convert the headers to a JSON string.
         Also sets the VR's name and level."""
-        str_headers = []
+        str_headers = []        
         for header in headers:
             # Update the Variable object with the name if it is not already set, and the level.
             vr = Variable(id = header[3])
-            vr.__setattr__("name", header[0], action = action)
-            vr.__setattr__("level", header[2], action = action)
+            default_attrs = DefaultAttrs(vr).default_attrs
+            kwarg_dict = {"name": header[0], "level": header[2]}
+            vr._setattrs(default_attrs, kwarg_dict, action = action)            
             str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, header[3]))
         return json.dumps(str_headers)
 
@@ -297,9 +299,10 @@ class Logsheet(PipelineObject):
         # Assign the values to the DataObject instances.
         # Validates that the logsheet is of valid format.
         # i.e. Doesn't have conflicting values for one level (empty/None is OK)                        
-        attrs_cache_dict = {}
+        # attrs_cache_dict = {}
         for row_num, row in enumerate(logsheet):
             row_dobjs = all_dobjs_ordered[row_num][1:]
+            row_attrs = [{} for _ in range(len(order))] # The list of dicts of attributes for each DataObject instance.
 
             # Assign all of the data to the appropriate DataObject instances.
             # Includes the "data object columns" so that the DataObjects have an attribute with the name of the header name.
@@ -312,21 +315,24 @@ class Logsheet(PipelineObject):
                 vr_id = header[3]                
                 value = self.clean_value(type_class, row[headers_in_logsheet.index(name)])
                 # Set up the cache dict for this data object.
-                if not row_dobjs[level_idx].id in attrs_cache_dict:
-                    attrs_cache_dict[row_dobjs[level_idx].id] = {}
+                # if not row_dobjs[level_idx].id in attrs_cache_dict:
+                #     attrs_cache_dict[row_dobjs[level_idx].id] = {}
                 # Set up the cache dict for this data object for this attribute.
-                if name not in attrs_cache_dict[row_dobjs[level_idx].id]:
-                    attrs_cache_dict[row_dobjs[level_idx].id][name] = None
+                # if name not in attrs_cache_dict[row_dobjs[level_idx].id]:
+                #     attrs_cache_dict[row_dobjs[level_idx].id][name] = None
                 print("Row: ", row_num, "Column: ", name, "Value: ", value)
-                prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
-                # prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.                
+                # prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
+                prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.                
                 if prev_value is not None:                    
                     if prev_value == value or value is None:
                         continue
                     raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
-                row_dobjs[level_idx].__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.                
-                attrs_cache_dict[row_dobjs[level_idx].id][name] = value
-                dobj = row_dobjs[level_idx]
+                row_attrs[level_idx][name] = value
+                # row_dobjs[level_idx].__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.                
+                # attrs_cache_dict[row_dobjs[level_idx].id][name] = value
+            for idx, attrs in enumerate(row_attrs):
+                row_dobjs[idx]._setattrs({}, attrs, action = action)
+            
         action.execute()
 
     def clean_value(self, type_class: type, raw_value: Any) -> Any:
