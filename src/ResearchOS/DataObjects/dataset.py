@@ -73,9 +73,9 @@ class Dataset(DataObject):
 
         # 3. Save the schema to the database.        
         schema_id = IDCreator(action.conn).create_action_id()
-        sqlquery = f"INSERT INTO data_address_schemas (schema_id, levels_edge_list, dataset_id, action_id) VALUES (?, ?, ?, ?)"
+        # sqlquery = f"INSERT INTO data_address_schemas (schema_id, levels_edge_list, dataset_id, action_id) VALUES (?, ?, ?, ?)"
         params = (schema_id, json_schema, self.id, action.id)
-        action.add_sql_query(sqlquery, params)        
+        action.add_sql_query(self.id, "data_address_schemas_insert", params, group_name = "robj_complex_attr_insert")
 
     def load_schema(self, action: Action) -> list:
         """Load the schema from the database and convert it via json."""
@@ -145,13 +145,10 @@ class Dataset(DataObject):
         """Save the addresses to the data_addresses table in the database."""        
         # 1. Get the schema_id for the current dataset_id that has not been overwritten by an Action.       
         dataset_id = self.id
-        schema_id = self.get_current_schema_id(dataset_id)
-        sqlquery = "INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES (?, ?, ?, ?)"
-        values = []
+        schema_id = self.get_current_schema_id(dataset_id)                
         for address_names in addresses:
-            values.append((address_names[0], address_names[1], schema_id, action.id))
-        if addresses:
-            action.add_sql_query(sqlquery, values)
+            params = (address_names[0], address_names[1], schema_id, action.id)
+            action.add_sql_query(self.id, "addresses_insert", params, group_name = "robj_complex_attr_insert")            
         self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)        
 
     def load_addresses(self, action: Action) -> list:

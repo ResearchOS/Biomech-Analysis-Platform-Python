@@ -1,6 +1,7 @@
 import datetime, sqlite3
 from datetime import timezone
 from typing import Union
+import os
 
 from ResearchOS.idcreator import IDCreator
 from ResearchOS.current_user import CurrentUser
@@ -8,32 +9,51 @@ from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 count = 0
 
+# Load the SQL queries from the sql directory.
+queries = {}
+dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sql")
+file_paths = []
+for file_name in os.listdir(dir):
+    if not file_name.endswith(".sql"):
+        continue
+    file_paths.append(os.path.join(dir, file_name))
+for file_path in file_paths:
+    file_name, ext = os.path.splitext(os.path.basename(file_path))
+    with open(file_path, "r") as f:
+        queries[file_name] = f.read()
+
 class Action():
     """An action is a set of SQL queries that are executed together."""
 
     latest_action_id: str = None
+    queries: dict = queries
     
-    def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None, commit: bool = False, exec: bool = True):        
+    def __init__(self, name: str = None, action_id: str = None, redo_of: str = None, user_id: str = None, timestamp: datetime.datetime = None, commit: bool = False, exec: bool = True, force_create: bool = False):        
         pool = SQLiteConnectionPool()
         self.conn = pool.get_connection()
-        self.sql_queries = []
-        if not id:
-            id = IDCreator(self.conn).create_action_id(check = False)            
-            if not timestamp:
-                timestamp = datetime.datetime.now(timezone.utc)
-            if not user_object_id:
-                user_object_id = CurrentUser(self).get_current_user_id()
+        # self.sql_queries = []
+        if not action_id:
+            action_id = IDCreator(self.conn).create_action_id(check = False)            
+        if not timestamp:
+            timestamp = datetime.datetime.now(timezone.utc)
+        if not user_id:
+            user_id = CurrentUser(self).get_current_user_id()
 
-        self.creation_query = "INSERT INTO actions (action_id, user, name, datetime, redo_of) VALUES (?, ?, ?, ?, ?)"
-        self.is_created = False # Indicates that the action has not been created in the database yet.
-        self.commit = commit # False by default.
-        self.id = id
+        # Set up for the queries.
+        self.dobjs = {}        
+        # if dobj_id:
+        #     self.dobjs[dobj_id] = {}
+
+        self.force_create = force_create
+        self.creation_params = (action_id, user_id, name, timestamp, redo_of) # The parameters for the creation query.
+        self.is_created = False # Indicates that the action has not been created in the database yet.        
+        self.id = action_id
         self.name = name
         self.timestamp = timestamp        
         self.redo_of = redo_of               
-        self.user_object_id = user_object_id
-        self.exec = exec
-        self.params = []
+        self.user_id = user_id
+        self.commit = commit # False by default. If True, the action will be committed to the database. Overrides self.exec.
+        self.exec = exec # True to run cursor.execute() and False to skip it.
 
     def add_params(self, params: tuple) -> None:
         """Add parameters to the action."""
@@ -41,22 +61,21 @@ class Action():
             raise ValueError(f"params must be a tuple, not {type(params)}.")
         self.params.append(params)
 
-    def add_sql_query(self, sqlquery: str, params: Union[tuple, list] = None) -> None:
+    def add_sql_query(self, dobj_id: str, query_name: str, params: tuple = None, group_name: str = "all") -> None:
         """Add a sqlquery to the action. Can be a raw SQL query (one input) or a parameterized query (two inputs).
-        Parameters can be either a tuple (for one query) or a list of tuples (for multiple queries).
-        If params is empty list, skip this."""
-        if params:            
-            if isinstance(params, list):
-                any_wrong = any([not isinstance(p, tuple) for p in params])
-                if any_wrong:
-                    raise ValueError(f"params must be a list of tuples, not {type(p)}.")            
-            elif isinstance(params, tuple):
-                params = [params]
-            else:
-                raise ValueError(f"params must be a tuple or list, not {type(params)}.")
-            self.sql_queries.append((sqlquery, params)) # Allows for multiple params to be added at once with "executemany"
-        elif params is None:
-                self.sql_queries.append((sqlquery,))
+        Parameters can be either a tuple (for one query) or a list of tuples (for multiple queries)."""
+        if not params:
+            return # Do I need this?
+        if not isinstance(params, tuple):            
+            raise ValueError(f"params must be a tuple or list, not {type(params)}.")
+        if group_name not in self.dobjs:
+            self.dobjs[group_name] = {}
+        if query_name not in self.dobjs[group_name]:
+            self.dobjs[group_name][query_name] = {} # Initialize the dobj_id if it doesn't exist.
+        if dobj_id not in self.dobjs[group_name][query_name]:
+            self.dobjs[group_name][query_name][dobj_id] = [] # Initialize the query_name if it doesn't exist for this dobj_id        
+        
+        self.dobjs[group_name][query_name][dobj_id].append(params) # Allows for multiple params to be added at once with "executemany"
 
     def execute(self, return_conn: bool = True) -> None:
         """Run all of the sql queries in the action."""
@@ -65,90 +84,100 @@ class Action():
         global count
         count += 1
         print(f"Action.execute() called {count} times.")
-        any_queries = len(self.sql_queries) > 0
         pool = SQLiteConnectionPool(name = "main")
 
-        if not any_queries:
-            if return_conn:
-                pool.return_connection(self.conn)
-                self.conn = None
-            return        
+        any_queries = True
+        # any_queries = False
+        # for dobj_id in self.dobjs:
+        #     if len(self.dobjs[dobj_id]) > 0:
+        #         any_queries = True
+        #         break
+
+        if not any_queries and not self.force_create:
+            return
         
         cursor = self.conn.cursor()
-        if not self.is_created:
+        if not self.is_created or self.force_create:
             self.is_created = True
-            self.sql_queries.insert(0, (self.creation_query, [(self.id, self.user_object_id, self.name, self.timestamp, self.redo_of)]))
+            cursor.execute(self.queries["action_insert"], self.creation_params)
 
         # Execute all of the SQL queries.
-        for query_list in self.sql_queries:
-            try:
-                if len(query_list) == 1: # If there are no parameters.
-                    cursor.execute(query_list[0])
-                else: # If there are parameters.
-                    params = query_list[1]
-                    num_params = len(params)
+        for group_name in self.dobjs:
+            for query_name in self.dobjs[group_name]:
+                query = self.queries[query_name]
+                params_list = []
+                for dobj_id in self.dobjs[group_name][query_name]:
+                    if len(self.dobjs[group_name][query_name][dobj_id]) == 0:
+                        continue
 
-                    # I read somewhere that 50 is a good batch size.
+                    for param in self.dobjs[group_name][query_name][dobj_id]:
+                        if param not in params_list:
+                            params_list.append(param)
+                    # if self.dobjs[group_name][query_name][dobj_id] not in params_list:
+                    #     params_list.extend(self.dobjs[group_name][query_name][dobj_id])
+                num_params = len(params_list)
+                try:
                     for i in range(0, num_params, 50):
                         if i < num_params - 50:                        
-                            curr_params = params[i:i+50]
+                            curr_params = params_list[i:i+50]
                         else:
-                            curr_params = params[i:]
-                        cursor.executemany(query_list[0], curr_params) # Execute 1-50 queries at a time.
-            except sqlite3.OperationalError as e:
-                raise ValueError(f"SQL query failed: {query_list[0]}")
-        self.sql_queries = []
+                            curr_params = params_list[i:]
+                        cursor.executemany(query, curr_params)
+                except sqlite3.OperationalError as e:
+                    cursor.rollback()
+                    raise ValueError(f"SQL query failed: {query}")
+        self.dobjs = {}
 
         # Commit the Action.  
-        if self.commit and any_queries:            
+        if self.commit:            
             self.conn.commit()
             if return_conn:
                 pool.return_connection(self.conn)
                 self.conn = None
     
-    @staticmethod
-    def get_latest_action(user_id: str = None) -> "Action":
-        """Get the most recent action performed chronologically for the current user."""
-        conn = DBConnectionFactory.create_db_connection().conn
-        if not user_id:
-            user_id = CurrentUser(conn).get_current_user_id()
-        sqlquery = f"SELECT action_id FROM actions WHERE user_object_id = '{user_id}' ORDER BY timestamp DESC LIMIT 1"
-        try:
-            result = conn.cursor().execute(sqlquery).fetchone()
-        except sqlite3.OperationalError:
-            raise AssertionError(f"User {user_id} does not exist.")
-        if result is None:
-            return None
-        id = result[0]
-        return Action(id = id)
+    # @staticmethod
+    # def get_latest_action(user_id: str = None) -> "Action":
+    #     """Get the most recent action performed chronologically for the current user."""
+    #     conn = DBConnectionFactory.create_db_connection().conn
+    #     if not user_id:
+    #         user_id = CurrentUser(conn).get_current_user_id()
+    #     sqlquery = f"SELECT action_id FROM actions WHERE user_id = '{user_id}' ORDER BY timestamp DESC LIMIT 1"
+    #     try:
+    #         result = conn.cursor().execute(sqlquery).fetchone()
+    #     except sqlite3.OperationalError:
+    #         raise AssertionError(f"User {user_id} does not exist.")
+    #     if result is None:
+    #         return None
+    #     id = result[0]
+    #     return Action(id = id)
     
-    ###############################################################################################################################
-    #################################################### end of abstract methods ##################################################
-    ###############################################################################################################################
+    # ###############################################################################################################################
+    # #################################################### end of abstract methods ##################################################
+    # ###############################################################################################################################
 
-    def next(self) -> "Action":
-        """Get the next action after this action."""
-        cursor = self.conn.cursor()
-        id = self.id
-        timestamp = self.timestamp
-        sqlquery = f"SELECT action_id FROM actions WHERE timestamp <= '{str(timestamp)}' ORDER BY timestamp DESC LIMIT 1"
-        result = cursor.execute(sqlquery).fetchone()
-        if result is None:
-            return None
-        id = result[0]
-        return Action(id = id)
+    # def next(self) -> "Action":
+    #     """Get the next action after this action."""
+    #     cursor = self.conn.cursor()
+    #     id = self.id
+    #     timestamp = self.timestamp
+    #     sqlquery = f"SELECT action_id FROM actions WHERE timestamp <= '{str(timestamp)}' ORDER BY timestamp DESC LIMIT 1"
+    #     result = cursor.execute(sqlquery).fetchone()
+    #     if result is None:
+    #         return None
+    #     id = result[0]
+    #     return Action(id = id)
 
-    def previous(self) -> "Action":
-        """Get the previous action before this action."""
-        cursor = self.conn.cursor()
-        id = self.id
-        timestamp = self.timestamp
-        sqlquery = f"SELECT action_id FROM actions WHERE timestamp >= '{str(timestamp)}' ORDER BY timestamp ASC LIMIT 1"
-        result = cursor.execute(sqlquery).fetchone()
-        if result is None:
-            return None
-        id = result[0]
-        return Action(id = id)
+    # def previous(self) -> "Action":
+    #     """Get the previous action before this action."""
+    #     cursor = self.conn.cursor()
+    #     id = self.id
+    #     timestamp = self.timestamp
+    #     sqlquery = f"SELECT action_id FROM actions WHERE timestamp >= '{str(timestamp)}' ORDER BY timestamp ASC LIMIT 1"
+    #     result = cursor.execute(sqlquery).fetchone()
+    #     if result is None:
+    #         return None
+    #     id = result[0]
+    #     return Action(id = id)
     
     
 
@@ -157,7 +186,7 @@ class Action():
     #     # Create a new action, where "redo_of" is set to self.id.
     #     action = Action(name = self.name, redo_of = self.id)
     #     cursor = self.conn.cursor()
-    #     table_names = ["data_values", "research_object_attributes", "data_address_schemas", "data_addresses"]
+    #     table_names = ["data_values", "research_attributes", "data_address_schemas", "data_addresses"]
     #     column_labels_list = [["action_id", "address_id", "schema_id", "VR_id", "PR_id", "scalar_value"], 
     #                      ["action_id", "object_id", "attr_id", "attr_value", "child_of"],
     #                      ["schema_id", "level_name", "level_index", "action_id", "dataset_id"],

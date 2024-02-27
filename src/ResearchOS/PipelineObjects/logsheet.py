@@ -90,7 +90,7 @@ class Logsheet(PipelineObject):
         str_headers = []        
         for header in headers:
             # Update the Variable object with the name if it is not already set, and the level.
-            vr = Variable(id = header[3])
+            vr = Variable(id = header[3], action = action)
             default_attrs = DefaultAttrs(vr).default_attrs
             kwarg_dict = {"name": header[0], "level": header[2]}
             vr._setattrs(default_attrs, kwarg_dict, action = action)            
@@ -224,7 +224,7 @@ class Logsheet(PipelineObject):
         vr_list = []
         vr_obj_list = []
         for idx, vr_id in enumerate(header_vrids):
-            vr = Variable(id = vr_id)
+            vr = Variable(id = vr_id, action = action)
             assert vr.level == header_levels[idx]
             vr_obj_list.append(vr)
             vr_list.append(vr.id)
@@ -277,29 +277,16 @@ class Logsheet(PipelineObject):
                 value = self.clean_value(header_types[col_idx], row[idx])
                 if value not in name_ids_dict[cls]:                    
                     name_ids_dict[cls][value] = IDCreator(action.conn).create_ro_id(cls)
-                    dobj = cls(id = name_ids_dict[cls][value], name = value) # Create the research object.                
+                    dobj = cls(id = name_ids_dict[cls][value], name = value, action = action) # Create the research object.
                     name_dobjs_dict[cls][value] = dobj
                     print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", dobj.id)
                 dobj = name_dobjs_dict[cls][value]
-                all_dobjs_ordered[-1].append(dobj) # Matrix of all research objects.                
-
-        # Arrange the address ID's that were generated into an edge list.
-        # Then assign that to the Dataset.
-        addresses = []
-        for row in all_dobjs_ordered:
-            for idx, dobj in enumerate(row):
-                if idx == 0:
-                    continue
-                ids = [row[idx-1].id, dobj.id]
-                if ids not in addresses:
-                    addresses.append(ids)
-        ds.addresses = addresses # Store addresses, also creates address_graph.
-                
+                all_dobjs_ordered[-1].append(dobj) # Matrix of all research objects.                                        
         
         # Assign the values to the DataObject instances.
         # Validates that the logsheet is of valid format.
-        # i.e. Doesn't have conflicting values for one level (empty/None is OK)                        
-        # attrs_cache_dict = {}
+        # i.e. Doesn't have conflicting values for one level (empty/None is OK)
+        attrs_cache_dict = {}
         for row_num, row in enumerate(logsheet):
             row_dobjs = all_dobjs_ordered[row_num][1:]
             row_attrs = [{} for _ in range(len(order))] # The list of dicts of attributes for each DataObject instance.
@@ -315,25 +302,38 @@ class Logsheet(PipelineObject):
                 vr_id = header[3]                
                 value = self.clean_value(type_class, row[headers_in_logsheet.index(name)])
                 # Set up the cache dict for this data object.
-                # if not row_dobjs[level_idx].id in attrs_cache_dict:
-                #     attrs_cache_dict[row_dobjs[level_idx].id] = {}
+                if not row_dobjs[level_idx].id in attrs_cache_dict:
+                    attrs_cache_dict[row_dobjs[level_idx].id] = {}
                 # Set up the cache dict for this data object for this attribute.
-                # if name not in attrs_cache_dict[row_dobjs[level_idx].id]:
-                #     attrs_cache_dict[row_dobjs[level_idx].id][name] = None
+                if name not in attrs_cache_dict[row_dobjs[level_idx].id]:
+                    attrs_cache_dict[row_dobjs[level_idx].id][name] = None
                 print("Row: ", row_num, "Column: ", name, "Value: ", value)
-                # prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
-                prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.                
+                prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
+                # prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.                
                 if prev_value is not None:                    
                     if prev_value == value or value is None:
                         continue
                     raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
-                row_attrs[level_idx][name] = value
-                # row_dobjs[level_idx].__setattr__(name, value, action = action) # Set the attribute of this DataObject instance to the value in the logsheet.                
-                # attrs_cache_dict[row_dobjs[level_idx].id][name] = value
+                attrs_cache_dict[row_dobjs[level_idx].id][name] = value
+                row_attrs[level_idx][name] = attrs_cache_dict[row_dobjs[level_idx].id][name]
             for idx, attrs in enumerate(row_attrs):
                 row_dobjs[idx]._setattrs({}, attrs, action = action)
             
+        action.exec = True
+        action.commit = True
         action.execute()
+
+        # Arrange the address ID's that were generated into an edge list.
+        # Then assign that to the Dataset.
+        addresses = []
+        for row in all_dobjs_ordered:
+            for idx, dobj in enumerate(row):
+                if idx == 0:
+                    continue
+                ids = [row[idx-1].id, dobj.id]
+                if ids not in addresses:
+                    addresses.append(ids)
+        ds.addresses = addresses # Store addresses, also creates address_graph.
 
     def clean_value(self, type_class: type, raw_value: Any) -> Any:
         """Convert to proper type and clean the value of the logsheet cell."""

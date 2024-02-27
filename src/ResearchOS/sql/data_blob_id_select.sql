@@ -1,0 +1,1 @@
+SELECT data_blob_id FROM data_values_blob WHERE data_hash = ?

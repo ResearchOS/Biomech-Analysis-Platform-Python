@@ -20,7 +20,8 @@ from ResearchOS.sqlite_pool import SQLiteConnectionPool
 class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
 
-    instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
+    # instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
+    instances = {} # Keep track of all instances of all research objects.
     counts = {} # Keep track of the number of instances of each ID.    
     pool = SQLiteConnectionPool(name = "main")
     pool_data = SQLiteConnectionPool(name = "data")
@@ -64,18 +65,13 @@ class ResearchObjectHandler:
     @staticmethod
     def object_exists(id: str, action: Action) -> bool:
         """Return true if the specified id exists in the database, false if not."""
+        # if id in ResearchObjectHandler.instances:
+        #     return True
         cursor = action.conn.cursor()
-        sqlquery = f"SELECT object_id FROM research_objects WHERE object_id = '{id}'"
-        cursor.execute(sqlquery)
+        sqlquery = "SELECT object_id FROM research_objects WHERE object_id = ?"
+        cursor.execute(sqlquery, (id,))
         rows = cursor.fetchone()
-        return rows is not None
-    
-    @staticmethod
-    def _create_ro(research_object: "ResearchObject", action: Action) -> None:
-        """Create the research object in the research_objects table of the database."""        
-        sqlquery = f"INSERT INTO research_objects (object_id, action_id) VALUES (?, ?)"
-        params = (research_object.id, action.id)
-        action.add_sql_query(sqlquery, params)        
+        return rows is not None               
 
     @staticmethod
     def _get_most_recent_attrs(research_object: "ResearchObject", ordered_attr_result: list, default_attrs: dict = {}, action: Action = None) -> dict:
@@ -145,23 +141,67 @@ class ResearchObjectHandler:
             validate_method(value, action)
 
     @staticmethod
-    def _set_builtin_attribute(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list):
+    def _set_builtin_attributes(research_object: "ResearchObject", default_attrs: dict, kwargs: dict, action: Action):
         """Responsible for setting the value of all builtin attributes, simple or not."""  
 
-        # Validate the value
-        if validate:       
-            ResearchObjectHandler.validate(research_object, name, value, action)
+        complex_attrs = {}
+        for key in kwargs:
 
-        if not hasattr(research_object, "save_" + name):
-            # Set the attribute "name" of this object as the VR ID (as a simple attribute).
-            ResearchObjectHandler._set_simple_builtin_attr(research_object, name, value, action, validate)
-            return        
+            if key not in default_attrs:
+                continue # Skip the attribute if it is not a default attribute.
 
-        # Save the "complex" builtin attribute to the database.
-        save_method = getattr(research_object, "save_" + name)
-        save_method(value, action = action)
+            # 1. Don't validate if the default attribute has the default values.                      
+            validate = True
+            if kwargs[key] == default_attrs[key]:
+                validate = False
 
-        research_object.__dict__[name] = value         
+            # 2. Skip the complex attributes.
+            if hasattr(research_object, "save_" + key):
+                complex_attrs[key] = kwargs[key]
+                continue # Complex attributes are set in the next step.
+
+            # 3. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
+            if key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
+                continue
+
+            # 4. Validate the attribute.
+            if validate:
+                ResearchObjectHandler.validate(research_object, key, kwargs[key], action)
+
+            if hasattr(research_object, "to_json_" + key):
+                to_json_method = getattr(research_object, "to_json_" + key)
+                json_value = to_json_method(kwargs[key], action)
+            else:
+                json_value = json.dumps(kwargs[key])  
+
+            simple_params = (action.id, research_object.id, ResearchObjectHandler._get_attr_id(key), json_value)
+            action.add_sql_query(research_object.id, "robj_simple_attr_insert", simple_params, group_name = "robj_simple_attr_insert")
+
+            # 6. Get the parameters for the SQL query to set the attribute.            
+            research_object.__dict__[key] = kwargs[key] # Set the attribute in the object's __dict__.        
+
+        # 2. Set complex builtin attributes.
+        for key in complex_attrs:
+
+            # 1. Don't validate if the default attribute has the default values.
+            # Complex attributes checked for being overwritten in the previous step.                      
+            validate = True
+            if kwargs[key] == default_attrs[key]:
+                validate = False
+
+            # 2. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
+            if key in research_object.__dict__ and getattr(research_object, key) == complex_attrs[key]:
+                continue
+
+            # 3. Validate the attribute.
+            if validate:
+                ResearchObjectHandler.validate(research_object, key, complex_attrs[key], action)
+
+            # 4.  Save the "complex" builtin attribute to the database.
+            save_method = getattr(research_object, "save_" + key)
+            save_method(complex_attrs[key], action = action)
+
+            research_object.__dict__[key] = complex_attrs[key]     
 
     @staticmethod
     def _set_vr_attributes(research_object: "ResearchObject", name: str, value: Any, action: Action) -> None:
@@ -195,15 +235,15 @@ class ResearchObjectHandler:
                     raise ValueError("No unassociated VR with that name exists.")
                 # Load each variable and check its name. If no matches here, just take the first one.
                 for count, vr_id in enumerate(unassoc_vr_ids):
-                    vr = Variable(id = vr_id)
+                    vr = Variable(id = vr_id, action = action)
                     if count == 0:
                         selected_vr = vr
                     if vr.name == name:
                         selected_vr = vr
                         break
 
-            sqlquery = f"INSERT INTO vr_dataobjects (action_id, dataobject_id, vr_id) VALUES ('{action.id}', '{research_object.id}', '{selected_vr.id}')"
-            action.add_sql_query(sqlquery)  
+            params = (action.id, research_object.id, selected_vr.id)
+            action.add_sql_query(research_object.id, "vr_to_dobj_insert", params, group_name = "robj_vr_attr_insert")  
         
         # Check if this value already exists in the database. If so, don't save it again.
         pool_data = SQLiteConnectionPool(name = "data")
@@ -211,16 +251,14 @@ class ResearchObjectHandler:
         cursor_data = conn_data.cursor()
         data_blob = pickle.dumps(value)          
         data_hash = sha256(data_blob).hexdigest()
-        sqlquery = f"SELECT data_blob_id FROM data_values_blob WHERE data_hash = ?"
         params = (data_hash,)
-        rows = cursor_data.execute(sqlquery, params).fetchall()
+        rows = cursor_data.execute(action.queries["data_blob_id_select"], params).fetchall()
         if rows:
             data_blob_id = rows[0][0]
         else:
-            # Save this new value to the data_blob_values table in the data db.
-            sqlquery = "INSERT INTO data_values_blob (data_hash, data_blob) VALUES (?, ?)"                    
+            # Save this new value to the data_blob_values table in the data db.                  
             params = (data_hash, data_blob)
-            cursor_data.execute(sqlquery, params)
+            cursor_data.execute(action.queries["data_value_in_blob_insert"], params)
             conn_data.commit()
             data_blob_id = cursor_data.lastrowid
         pool_data.return_connection(conn_data)
@@ -228,15 +266,13 @@ class ResearchObjectHandler:
         # Put the data_blob_id into the data_values table.
         vr = selected_vr
         ds_id = research_object.get_dataset_id()
-        schema_id = vr.get_current_schema_id(ds_id)        
-        sqlquery = "INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id, data_blob_id) VALUES (?, ?, ?, ?, ?)"
+        schema_id = vr.get_current_schema_id(ds_id)
         params = (action.id, vr.id, research_object.id, schema_id, data_blob_id)        
-        action.add_sql_query(sqlquery, params)
-        # action.pool.return_connection(conn)
+        action.add_sql_query(research_object.id, "vr_value_for_dobj_insert", params, group_name = "robj_vr_attr_insert")
 
-        action.commit = True
-        action.exec = True
-        action.execute(return_conn = False) # Execute the action but keep the connection.
+        # action.commit = True
+        # action.exec = True
+        # action.execute(return_conn = False) # Execute the action but keep the connection.
         research_object.__dict__[name] = vr
 
     @staticmethod

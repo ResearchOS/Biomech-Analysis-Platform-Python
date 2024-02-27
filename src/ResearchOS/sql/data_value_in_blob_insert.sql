@@ -1,0 +1,1 @@
+INSERT INTO data_values_blob (data_hash, data_blob) VALUES (?, ?)

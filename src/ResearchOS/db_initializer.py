@@ -20,7 +20,8 @@ class DBInitializer():
         ResearchObjectHandler.default_attrs = {} # Reset default attributes dictionary.
 
         # Reset research object dictionary.
-        ResearchObjectHandler.instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
+        # ResearchObjectHandler.instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
+        ResearchObjectHandler.instances = {} # Keep track of all instances of all research objects.
         ResearchObjectHandler.counts = {} # Keep track of the number of instances of each ID.
         
         # Reset the connection pools for each database.
@@ -51,7 +52,7 @@ class DBInitializer():
         self.pool = SQLiteConnectionPool(name = "main")
         ResearchObjectHandler.pool = self.pool
 
-        self.action = Action(name = "initialize database", user_object_id = default_current_user, commit = True, exec = True)
+        self.action = Action(name = "initialize database", user_id = default_current_user, commit = True, exec = True, force_create = True)
                         
         self.conn = self.action.conn
         self.create_tables()
