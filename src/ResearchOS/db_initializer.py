@@ -89,9 +89,8 @@ class DBInitializer():
 
         # Data objects data values. Lists all data values for all data objects.
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values_blob (
-                        data_blob_id INTEGER PRIMARY KEY,
-                        data_blob BLOB NOT NULL,
-                        data_hash TEXT NOT NULL UNIQUE
+                       data_blob_hash TEXT PRIMARY KEY, 
+                       data_blob BLOB NOT NULL                        
                         )""")        
 
     def create_tables(self):
@@ -152,12 +151,12 @@ class DBInitializer():
                         dataobject_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
                         vr_id TEXT NOT NULL,
-                        data_blob_id INTEGER NOT NULL,
+                        data_blob_hash TEXT NOT NULL,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
                         FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (dataobject_id, schema_id, vr_id, data_blob_id)
+                        PRIMARY KEY (dataobject_id, schema_id, vr_id, data_blob_hash)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.

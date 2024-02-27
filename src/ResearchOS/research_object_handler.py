@@ -250,24 +250,32 @@ class ResearchObjectHandler:
         conn_data = pool_data.get_connection()
         cursor_data = conn_data.cursor()
         data_blob = pickle.dumps(value)          
-        data_hash = sha256(data_blob).hexdigest()
-        params = (data_hash,)
-        rows = cursor_data.execute(action.queries["data_blob_id_select"], params).fetchall()
-        if rows:
-            data_blob_id = rows[0][0]
-        else:
-            # Save this new value to the data_blob_values table in the data db.                  
-            params = (data_hash, data_blob)
+        data_blob_hash = sha256(data_blob).hexdigest()
+        params = (data_blob_hash,)
+        found = cursor_data.execute(action.queries["data_blob_hash_select"], params).fetchall()
+        # if not found:
+        #     # Check if it already exists in the action queue.
+        #     if "robj_vr_attr_insert" in action.dobjs and "vr_value_for_dobj_insert" in action.dobjs["robj_vr_attr_insert"]:
+        #         for dobj_id in action.dobjs["robj_vr_attr_insert"]["vr_value_for_dobj_insert"]:
+        #             for entry in action.dobjs["robj_vr_attr_insert"]["vr_value_for_dobj_insert"][dobj_id]:
+        #                 data_blob_hash_stored = entry[4]                    
+        #                 if data_blob_hash_stored == data_blob_hash:
+        #                     found = True
+        #                     break
+        #             if found:
+        #                 break
+        if not found:
+            # Save this new value to the data_blob_values table in the data db.
+            params = (data_blob_hash, data_blob)
             cursor_data.execute(action.queries["data_value_in_blob_insert"], params)
             conn_data.commit()
-            data_blob_id = cursor_data.lastrowid
         pool_data.return_connection(conn_data)
 
         # Put the data_blob_id into the data_values table.
         vr = selected_vr
         ds_id = research_object.get_dataset_id()
         schema_id = vr.get_current_schema_id(ds_id)
-        params = (action.id, vr.id, research_object.id, schema_id, data_blob_id)        
+        params = (action.id, vr.id, research_object.id, schema_id, data_blob_hash)        
         action.add_sql_query(research_object.id, "vr_value_for_dobj_insert", params, group_name = "robj_vr_attr_insert")
 
         # action.commit = True
