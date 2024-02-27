@@ -178,15 +178,11 @@ class ResearchObjectHandler:
             # Then, put the vr_id into the vr_dataobjects table.
             # Check if there is an existing variable that should be used (from a different DataObject, e.g. another Trial).            
             selected_vr = None
-            sqlquery = f"SELECT vr_id, is_active FROM vr_dataobjects WHERE dataobject_id = '{research_object.id}'"
-            associated_result = cursor.execute(sqlquery).fetchall()
+            sqlquery = "SELECT vr_id FROM vr_dataobjects WHERE dataobject_id = ? AND is_active = ?"
+            associated_result = cursor.execute(sqlquery, (research_object.id, 1)).fetchall()
             vr_ids = [row[0] for row in associated_result]
-            is_active_int = [row[1] for row in associated_result]
-            assoc_vr_ids_unique = list(set(vr_ids))
-            vr_ids_unique_dict = {vr_id: is_active_int[vr_ids.index(vr_id)] for vr_id in assoc_vr_ids_unique}                        
-            for vr_id, is_active in vr_ids_unique_dict.items():
-                if is_active != 1:
-                    continue
+            assoc_vr_ids_unique = list(set(vr_ids))                      
+            for vr_id in assoc_vr_ids_unique:
                 vr = Variable(id = vr_id)
                 if vr.name == name:
                     selected_vr = vr
@@ -194,11 +190,10 @@ class ResearchObjectHandler:
 
             # If no associated VR with that name exists, then select an unassociated VR with that name.
             if not selected_vr: 
-                sqlquery = f"SELECT object_id FROM research_objects"
-                all_ids = cursor.execute(sqlquery).fetchall()
-                unassoc_vr_ids = [row[0] for row in all_ids if row[0] not in assoc_vr_ids_unique and row[0].startswith(Variable.prefix)]                
+                sqlquery = "SELECT object_id FROM research_objects WHERE object_id LIKE ?"
+                all_ids = cursor.execute(sqlquery, (Variable.prefix + "%",)).fetchall()
+                unassoc_vr_ids = [row[0] for row in all_ids if row[0] not in assoc_vr_ids_unique]                
                 if not unassoc_vr_ids:
-                    # action.pool.return_connection(conn)
                     raise ValueError("No unassociated VR with that name exists.")
                 # Load each variable and check its name. If no matches here, just take the first one.
                 for count, vr_id in enumerate(unassoc_vr_ids):
