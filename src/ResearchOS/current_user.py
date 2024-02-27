@@ -17,11 +17,7 @@ class CurrentUser():
 
     def __init__(self, action: "Action") -> None:
         """Initialize the CurrentUser class."""
-        # pool = SQLiteConnectionPool()            
-        # conn = pool.get_connection()
         self.action = action
-        # self.action.conn = conn
-        # self.pool = pool        
     
     def get_current_user_id(self, is_init: bool = False) -> str:
         """Get the current user from the actions table in the database.
@@ -43,11 +39,10 @@ class CurrentUser():
     
     def set_current_user_id(self, user: str = default_current_user) -> None:
         """Set the current user in the actions table in the database.
-        This is the only action that does not affect any other table besides Actions. It is a special case."""
-        # cursor = self.action.conn.cursor()
-        action_id = IDCreator(self.action.conn).create_action_id()
-        name = "Set current user"
+        This is the only action that does not affect any other table besides Actions. It is a special case."""        
+        action_id = IDCreator(self.action.conn).create_action_id()        
         sqlquery = f"INSERT INTO actions (action_id, user, name, datetime) VALUES (?, ?, ?, ?)"
-        params = (action_id, user, name, datetime.datetime.now(timezone.utc))
+        params = (action_id, user, self.action.name, datetime.datetime.now(timezone.utc))
         self.action.add_sql_query(sqlquery, params)
+        self.action.is_created = True # So the query doesn't happen twice.
         CurrentUser.current_user = user

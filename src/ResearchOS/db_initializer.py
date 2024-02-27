@@ -44,16 +44,19 @@ class DBInitializer():
         intended_tables = sql_settings["intended_tables"]
         intended_tables_data = sql_settings["intended_tables_data"]
 
-        action = Action(name = "initialize database", user_object_id = default_current_user)
-
         self.db_file = main_db_file
         self.pool = SQLiteConnectionPool(name = "main")
-        ResearchObjectHandler.pool = self.pool        
-        self.conn = self.pool.get_connection()
+        ResearchObjectHandler.pool = self.pool
+
+        self.action = Action(name = "initialize database", user_object_id = default_current_user, commit = True)
+                
+        # self.conn = self.pool.get_connection()
+        self.conn = self.action.conn
         self.create_tables()
         self.check_tables_exist(self.conn, intended_tables)
-        self.pool.return_connection(self.conn)
-        self.init_current_user_id(action)
+        # self.pool.return_connection(self.conn)
+        self.init_current_user_id()
+        self.action.execute()
 
         self.data_db_file = data_db_file
         self.pool_data = SQLiteConnectionPool(name = "data")
@@ -63,9 +66,9 @@ class DBInitializer():
         self.check_tables_exist(self.conn_data, intended_tables_data)
         self.pool_data.return_connection(self.conn_data)
 
-    def init_current_user_id(self, action: Action, user_id: str = default_current_user):
+    def init_current_user_id(self, user_id: str = default_current_user):
         """Initialize the current user ID in the settings table."""
-        CurrentUser(action).set_current_user_id(user_id)
+        CurrentUser(self.action).set_current_user_id(user_id)        
 
     def check_tables_exist(self, conn: sqlite3.Connection, intended_tables: list):
         """Check that all of the tables were created."""        

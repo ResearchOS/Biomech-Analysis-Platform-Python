@@ -78,12 +78,11 @@ class ResearchObject():
         
         if name in all_attrs.default_attrs:
             ResearchObjectHandler._set_builtin_attribute(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
-            return
-                
-        ResearchObjectHandler._set_vr_attributes(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
+        else:                
+            ResearchObjectHandler._set_vr_attributes(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)
 
         action.commit = commit
-        if action.commit:
+        if commit:            
             action.execute()       
     
     def __init__(self, **orig_kwargs):
@@ -124,7 +123,7 @@ class ResearchObject():
             # If the attribute value is a default value, don't validate it.
             if key in default_attrs and kwargs[key] == default_attrs[key]:
                 validate = False
-            self.__setattr__(key, kwargs[key], action = action, validate = validate, all_attrs = attrs)            
+            self.__setattr__(key, kwargs[key], action = action, validate = validate, all_attrs = attrs)
         action.commit = commit
         action.execute()
 

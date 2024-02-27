@@ -13,7 +13,7 @@ class Action():
 
     latest_action_id: str = None
     
-    def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None, commit: bool = False):
+    def __init__(self, name: str = None, id: str = None, redo_of: str = None, user_object_id: str = None, timestamp: datetime.datetime = None, commit: bool = False):        
         pool = SQLiteConnectionPool()
         self.conn = pool.get_connection()
         self.sql_queries = []
@@ -43,9 +43,9 @@ class Action():
                 if any_wrong:
                     raise ValueError(f"params must be a list of tuples, not {type(p)}.")            
             elif isinstance(params, tuple):
-                params = list(params)
+                params = [params]
             else:
-                raise ValueError(f"params must be a tuple or list, not {type(params)}.")                            
+                raise ValueError(f"params must be a tuple or list, not {type(params)}.")
             self.sql_queries.append((sqlquery, params)) # Allows for multiple params to be added at once with "executemany"
         else:
             self.sql_queries.append((sqlquery,))
@@ -84,7 +84,7 @@ class Action():
                             curr_params = params[i:i+50]
                         else:
                             curr_params = params[i:]
-                    cursor.execute(query_list[0], curr_params) # Execute 1-50 queries at a time.
+                        cursor.executemany(query_list[0], curr_params) # Execute 1-50 queries at a time.
             except sqlite3.OperationalError as e:
                 raise ValueError(f"SQL query failed: {query_list[0]}")
         self.sql_queries = []
