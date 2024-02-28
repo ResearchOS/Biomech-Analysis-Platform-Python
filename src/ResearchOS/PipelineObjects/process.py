@@ -20,11 +20,15 @@ all_default_attrs = {}
 all_default_attrs["is_matlab"] = False
 all_default_attrs["mfolder"] = None
 all_default_attrs["mfunc_name"] = None
+
 all_default_attrs["method"] = None
 all_default_attrs["level"] = None
 all_default_attrs["input_vrs"] = {}
 all_default_attrs["output_vrs"] = {}
 all_default_attrs["subset_id"] = None
+
+all_default_attrs["import_file_ext"] = None
+all_default_attrs["import_file_vr_name"] = None
 
 complex_attrs_list = []
 
@@ -42,23 +46,21 @@ class Process(PipelineObject):
     ## mfunc_name (MATLAB function name) methods
 
     def validate_mfunc_name(self, mfunc_name: str, action: Action) -> None:
-        self.validate_mfolder(self.mfolder)
+        # self.validate_mfolder(self.mfolder, action)
         if not self.is_matlab and mfunc_name is None: 
             return
         if not isinstance(mfunc_name, str):
             raise ValueError("Function name must be a string!")
         if not str(mfunc_name).isidentifier():
             raise ValueError("Function name must be a valid variable name!")
-        if not os.path.exists(os.path.join(self.mfolder, mfunc_name + ".m")):
-            raise ValueError("Function name must reference an existing MATLAB function in the specified folder.")
+        # if not os.path.exists(os.path.join(self.mfolder, mfunc_name + ".m")):
+        #     raise ValueError("Function name must reference an existing MATLAB function in the specified folder.")
         
     ## mfolder (MATLAB folder) methods
         
     def validate_mfolder(self, mfolder: str, action: Action) -> None:
         if not self.is_matlab and mfolder is None:
             return
-        if not self.is_matlab:
-            raise ValueError("mfolder must be None if is_matlab is False.")
         if not isinstance(mfolder, str):
             raise ValueError("Path must be a string!")
         if not os.path.exists(mfolder):
@@ -69,8 +71,8 @@ class Process(PipelineObject):
     def validate_method(self, method: Callable, action: Action) -> None:
         if method is None and self.is_matlab:
             return
-        if not self.is_matlab:
-            raise ValueError("Method must be None if is_matlab is False.")
+        if not self.is_matlab and method is None:
+            raise ValueError("Method cannot be None if is_matlab is False.")
         if not isinstance(method, Callable):
             raise ValueError("Method must be a callable function!")
         if method.__module__ not in sys.modules:
@@ -135,7 +137,7 @@ class Process(PipelineObject):
             output_vr_names_in_code = get_returned_variable_names(self.method)
         self._validate_vrs(outputs, output_vr_names_in_code, action)    
 
-    def _validate_vrs(self, vr: dict, vr_names_in_code: list, action) -> None:
+    def _validate_vrs(self, vr: dict, vr_names_in_code: list, action: Action) -> None:
         """Validate that the input and output variables are correct. They should follow the same format.
         The format is a dictionary with the variable name as the key and the variable ID as the value."""       
         self.validate_method(self.method, action)
@@ -152,6 +154,25 @@ class Process(PipelineObject):
                 raise ValueError("Variable ID's must reference existing Variables.")
         if not self.is_matlab and not all([vr_name in vr_names_in_code for vr_name in vr.keys()]):
             raise ValueError("Output variables must be returned by the method.")
+        
+    ## import_file_ext
+        
+    def validate_import_file_ext(self, file_ext: str, action: Action) -> None:
+        if not isinstance(file_ext, str):
+            raise ValueError("File extension must be a string.")
+        if not file_ext.startswith("."):
+            raise ValueError("File extension must start with a period.")
+        
+    ## import_file_vr_name
+        
+    def validate_import_file_vr_name(self, vr_name: str, action: Action) -> None:
+        self.validate_input_vrs(self.input_vrs, action)
+        if not isinstance(vr_name, str):
+            raise ValueError("Variable name must be a string.")
+        if not str(vr_name).isidentifier():
+            raise ValueError("Variable name must be a valid variable name.")
+        if vr_name not in self.input_vrs:
+            raise ValueError("Variable name must be a valid input variable name.")
         
     def from_json_input_vrs(self, input_vrs: str, action: Action) -> dict:
         """Convert a JSON string to a dictionary of input variables."""
@@ -202,6 +223,12 @@ class Process(PipelineObject):
         # 3. Validate that the subsets have been properly set.
         self.validate_subset_id(self.subset_id, action)
 
+        if self.is_matlab:
+            self.validate_mfunc_name(self.mfunc_name, action)
+            self.validate_mfolder(self.mfolder, action)
+            self.validate_import_file_ext(self.import_file_ext, action)
+            self.validate_import_file_vr_name(self.import_file_vr_name, action)
+
         schema_id = self.get_current_schema_id(ds.id)
 
         # 4. Run the method.
@@ -248,7 +275,7 @@ class Process(PipelineObject):
                 data_path = os.path.join(data_path, level[0].name)
             # TODO: Make the name of this variable not hard-coded.
             if "c3dFilePath" in vr_values_in:
-                vr_values_in["c3dFilePath"] = data_path + ".c3d"
+                vr_values_in[self.import_file_vr_name] = data_path + self.import_file_ext
 
             # Check if the values for the input variables are up to date. If so, skip this node.
             check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_values_in.items()}
@@ -258,7 +285,7 @@ class Process(PipelineObject):
                 hash_val = sha256(blob).hexdigest()
 
                 # Get the ID for this hash.
-                sqlquery = "SELECT data_blob_id FROM data_values_blob WHERE data_hash = ?"
+                sqlquery = "SELECT data_blob_hash FROM data_values_blob WHERE data_blob_hash = ?"
                 result = cursor_data.execute(sqlquery, (hash_val,)).fetchall() 
                 # If None, then do processing.
                 if len(result) == 0:
@@ -283,7 +310,7 @@ class Process(PipelineObject):
             # NOTE: For now, assuming that there is only one return statement in the entire method.
             if self.is_matlab:
                 vr_vals_in = list(vr_values_in.values())
-                fcn = getattr(eng, self.mfunc_name)                
+                fcn = getattr(eng, self.mfunc_name)
                 vr_values_out = fcn(*vr_vals_in, nargout=len(self.output_vrs))
             else:
                 vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
@@ -298,7 +325,7 @@ class Process(PipelineObject):
             idx = -1 # For MATLAB. Requires that the args are in the proper order.
             for vr_name, vr in self.output_vrs.items():
                 if not self.is_matlab:
-                    idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out, and the order in the output_vrs dict are probably different.
+                    idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out and the order in the output_vrs dict are probably different.
                 else:
                     idx += 1                
                 self.__setattr__(node, vr_name, vr_values_out[idx], action = action)
@@ -307,4 +334,4 @@ class Process(PipelineObject):
         if self.is_matlab:
             eng.rmpath(self.mfolder, nargout=0)   
 
-        pool.return_connection(conn)
+        pool_data.return_connection(conn)

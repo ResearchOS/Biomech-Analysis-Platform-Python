@@ -40,6 +40,9 @@ def get_returned_variable_names(func: Callable):
 
 def get_input_variable_names(func: Callable):
     """Get the names of the input variables of a function."""
+    if func is None:
+        return
+    
     sig = inspect.signature(func)
     parameters = sig.parameters
 
