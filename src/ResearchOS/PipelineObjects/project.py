@@ -1,4 +1,5 @@
 from typing import Any
+import os
 
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
@@ -20,8 +21,10 @@ class Project(PipelineObject):
 
     ## current_analysis_id
     
-    def validate_current_analysis_id(self, id: str) -> None:
-        """Validate the current analysis ID. If it is not valid, the value is rejected."""        
+    def validate_current_analysis_id(self, id: str, default: Any) -> None:
+        """Validate the current analysis ID. If it is not valid, the value is rejected."""
+        if id == default:
+            return
         if not isinstance(id, str):
             raise ValueError("Specified value is not a string!")
         if not self.is_id(id):
@@ -34,8 +37,10 @@ class Project(PipelineObject):
         
     ## current_dataset_id
     
-    def validate_current_dataset_id(self, id: str) -> None:
+    def validate_current_dataset_id(self, id: str, default: Any) -> None:
         """Validate the current dataset ID. If it is not valid, the value is rejected."""
+        if id == default:
+            return
         if not self.is_id(id):
             raise ValueError("Specified value is not an ID!")
         parsed_id = self.parse_id(id)
@@ -46,22 +51,15 @@ class Project(PipelineObject):
         
     ## project_path
         
-    def validate_project_path(self, path: str) -> None:
+    def validate_project_path(self, path: str, default: Any) -> None:
         """Validate the project path. If it is not valid, the value is rejected."""
-        # 1. Check that the path exists in the file system.
-        import os
+        if path == default:
+            return
+        # 1. Check that the path exists in the file system.        
         if not isinstance(path, str):
             raise ValueError("Specified path is not a string!")
         if not os.path.exists(path):
             raise ValueError("Specified path is not a path or does not currently exist!")        
     
 if __name__=="__main__":
-    from ResearchOS import Analysis
-    pj = Project(name = "Test")
-    an1 = Analysis()      
-    an2 = Analysis()
-    pj.current_analysis_id = an1.id
-    pj.add_analysis_id(an2.id)
-    ans = pj.get_analyses()
-    pj.project_path = 'Test'
-    print(pj)
+    pass

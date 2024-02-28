@@ -1,5 +1,5 @@
-from typing import Any, TYPE_CHECKING
-import json, copy
+from typing import Any
+import json, copy, os
 
 import networkx as nx
 
@@ -28,10 +28,12 @@ class Dataset(DataObject):
     
     ### Schema Methods
         
-    def validate_schema(self, schema: list, action: Action) -> None:
+    def validate_schema(self, schema: list, action: Action, default: Any) -> None:
         """Validate that the data schema follows the proper format.
         Must be a dict of dicts, where all keys are Python types matching a DataObject subclass, and the lowest levels are empty."""
         from ResearchOS.research_object import ResearchObject
+        if schema == default:
+            return
         subclasses = ResearchObject.__subclasses__()
         dataobj_subclasses = DataObject.__subclasses__()
         vr = [x for x in subclasses if hasattr(x,"prefix") and x.prefix == "VR"][0]                
@@ -100,17 +102,20 @@ class Dataset(DataObject):
 
     ### Dataset path methods
 
-    def validate_dataset_path(self, path: str, action: Action) -> None:
-        """Validate the dataset path."""
-        import os
+    def validate_dataset_path(self, path: str, action: Action, default: Any) -> None:
+        """Validate the dataset path."""        
+        if path == default:
+            return
         if not os.path.exists(path):
             raise ValueError("Specified path is not a path or does not currently exist!")
         
     ### Address Methods
         
-    def validate_addresses(self, addresses: list, action: Action) -> None:
+    def validate_addresses(self, addresses: list, action: Action, default: Any) -> None:
         """Validate that the addresses are in the correct format."""
-        self.validate_schema(self.schema, action)   
+        if addresses == default:
+            return
+        self.validate_schema(self.schema, action, None)   
 
         try:
             graph = nx.MultiDiGraph()

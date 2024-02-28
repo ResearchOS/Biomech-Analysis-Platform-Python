@@ -1,3 +1,4 @@
+from typing import Any
 import json
 
 from ResearchOS.research_object import ResearchObject
@@ -16,8 +17,10 @@ class Variable(ResearchObject):
     
     ## Level methods
 
-    def validate_level(self, level: type, action: Action) -> None:
+    def validate_level(self, level: type, action: Action, default: Any) -> None:
         """Check that the level is of a valid type."""
+        if level == default:
+            return
         from ResearchOS.DataObjects.data_object import DataObject
         if not isinstance(level, type):
             raise ValueError("Level must be a type.")

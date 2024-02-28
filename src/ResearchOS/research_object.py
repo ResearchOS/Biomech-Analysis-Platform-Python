@@ -59,9 +59,6 @@ class ResearchObject():
     
     def __setattr__(self, name: str = None, value: Any = None, action: Action = None, all_attrs: DefaultAttrs = None, kwargs_dict: dict = {}) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        if hasattr(self, name) and getattr(self, name, None) == value:
-            return # No change.
-        
         # Ensure that the criteria to set the attribute are met.
         if not str(name).isidentifier():
             raise ValueError(f"{name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.        
@@ -135,15 +132,23 @@ class ResearchObject():
         default_attrs: The default attributes of the object.
         orig_kwargs: The original kwargs passed to the object.
         kwargs: The kwargs to be used to set the attributes. A combination of the default attributes and the original kwargs."""
-        # 1. Set simple builtin attributes.
+        del_keys = []
+        for key in kwargs:
+            try:
+                if hasattr(self, key) and getattr(self, key, None) == kwargs[key]:
+                    del_keys.append(key) # No change.
+            except ValueError:
+                pass # Allow the Variable to not exist yet.
+            
+        for key in del_keys:
+            del kwargs[key]
+        # 1. Set simple & complex builtin attributes.
         ResearchObjectHandler._set_builtin_attributes(self, default_attrs, kwargs, action)
 
-        # 3. Set VR attributes.        
+        # 2. Set VR attributes.        
         vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
         for vr_name in vr_attrs:
             ResearchObjectHandler._set_vr_attributes(self, vr_name, vr_attrs[vr_name], action)
-            # if vr_name == "Side_Of_Interest":
-            #     a = getattr(self, vr_name)
 
     def get_vr(self, name: str) -> Any:
         """Get the VR itself instead of its value."""

@@ -1,5 +1,5 @@
 from typing import Any
-import json, csv, platform
+import json, csv, platform, os
 
 import networkx as nx
 
@@ -29,10 +29,11 @@ class Logsheet(PipelineObject):
 
     ### Logsheet path
         
-    def validate_path(self, path: str, action: Action) -> None:
+    def validate_path(self, path: str, action: Action, default: Any) -> None:
         """Validate the logsheet path."""
+        if path == default:
+            return
         # 1. Check that the path exists in the file system.
-        import os
         if not isinstance(path, str):
             raise ValueError("Path must be a string!")
         if not os.path.exists(path):
@@ -46,13 +47,15 @@ class Logsheet(PipelineObject):
         
     ### Logsheet headers
     
-    def validate_headers(self, headers: list, action: Action) -> None:
+    def validate_headers(self, headers: list, action: Action, default: Any) -> None:
         """Validate the logsheet headers. These are the headers that are in the logsheet file.
         The headers must be a list of tuples, where each tuple has 3 elements:
         1. A string (the name of the header)
         2. A type (the type of the header)
         3. A valid variable ID (the ID of the Variable that the header corresponds to)"""
-        self.validate_path(self.path, action)
+        if headers == default:
+            return
+        self.validate_path(self.path, action, None)
 
         # 1. Check that the headers are a list.
         if not isinstance(headers, list):
@@ -114,8 +117,10 @@ class Logsheet(PipelineObject):
             
     ### Num header rows
             
-    def validate_num_header_rows(self, num_header_rows: int, action: Action) -> None:
-        """Validate the number of header rows. If it is not valid, the value is rejected."""                
+    def validate_num_header_rows(self, num_header_rows: int, action: Action, default: Any) -> None:
+        """Validate the number of header rows. If it is not valid, the value is rejected."""
+        if num_header_rows == default:
+            return
         if not isinstance(num_header_rows, (int, float)):
             raise ValueError("Num header rows must be numeric!")
         if num_header_rows<0:
@@ -125,9 +130,11 @@ class Logsheet(PipelineObject):
         
     ### Class column names
         
-    def validate_class_column_names(self, class_column_names: dict, action: Action) -> None:
+    def validate_class_column_names(self, class_column_names: dict, action: Action, default: Any) -> None:
         """Validate the class column names. Must be a dict where the keys are the column names in the logsheet and the values are the DataObject subclasses."""
-        self.validate_path(self.path, action)
+        if class_column_names == default:
+            return
+        self.validate_path(self.path, action, None)
         # 1. Check that the class column names are a dict.
         if not isinstance(class_column_names, dict):
             raise ValueError("Class column names must be a dict!")
@@ -190,10 +197,10 @@ class Logsheet(PipelineObject):
         """Run the logsheet import process."""
         ds = Dataset(id = self.get_dataset_id())
         action = Action(name = "read logsheet")
-        self.validate_class_column_names(self.class_column_names, action)
-        self.validate_headers(self.headers, action)
-        self.validate_num_header_rows(self.num_header_rows, action)
-        self.validate_path(self.path, action)
+        self.validate_class_column_names(self.class_column_names, action, None)
+        self.validate_headers(self.headers, action, None)
+        self.validate_num_header_rows(self.num_header_rows, action, None)
+        self.validate_path(self.path, action, None)
 
         # 1. Load the logsheet (using built-in Python libraries)
         if self.path.endswith(("xlsx", "xls")):

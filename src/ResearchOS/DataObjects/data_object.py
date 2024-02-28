@@ -21,11 +21,11 @@ class DataObject(ResearchObject):
             raise AttributeError("No such attribute.")
         if action is None:
             action = Action(name = "delete_attribute")
-        vr_id = self.__dict__[name].id
-        sqlquery = f"INSERT INTO vr_dataobjects (action_id, dataobject_id, vr_id, is_active) VALUES ('{action.id}', '{self.id}', '{vr_id}', 0)"
+        vr_id = self.__dict__[name].id        
+        params = (action.id, self.id, vr_id)
         if action is None:
             action = Action(name = "delete_attribute")
-        action.add_sql_query(sqlquery)
+        action.add_sql_query(self.id, "vr_to_dobj_insert_inactive", params)
         action.execute()
         del self.__dict__[name]
 
@@ -35,12 +35,13 @@ class DataObject(ResearchObject):
         # Get the schema_id.
         # TODO: Put the schema_id into the data_values table.
         # 1. Get all of the VRs for the current object.
-        from ResearchOS.variable import Variable        
+        from ResearchOS.variable import Variable
 
-        sqlquery = f"SELECT vr_id FROM vr_dataobjects WHERE dataobject_id = '{self.id}' AND is_active = 1"
+        sqlquery = "SELECT vr_id FROM vr_dataobjects WHERE dataobject_id = ? AND is_active = 1"
+        params = (self.id,)
         conn = ResearchObjectHandler.pool.get_connection()
         cursor = conn.cursor()
-        vr_ids = cursor.execute(sqlquery).fetchall()
+        vr_ids = cursor.execute(sqlquery, params).fetchall()
         vr_ids = [x[0] for x in vr_ids]
         ResearchObjectHandler.pool.return_connection(conn)
         for vr_id in vr_ids:

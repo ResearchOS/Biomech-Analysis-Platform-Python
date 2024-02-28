@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from ResearchOS.DataObjects.data_object import DataObject
     from ResearchOS.variable import Variable
 
-# from ResearchOS.idcreator import IDCreator
+from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
@@ -133,7 +133,7 @@ class ResearchObjectHandler:
         for default_attr_name, default_attr_value in default_attrs.items():
             curr_value = research_object.__dict__[default_attr_name]
             if curr_value != default_attr_value:
-                ResearchObjectHandler.validate(research_object, default_attr_name, curr_value, action)
+                ResearchObjectHandler.validate(research_object, default_attr_name, curr_value, action, default_attr_value)
 
         # 6. Load the VR attributes. No validation is necessary here.
         dobj_subclasses = DataObject.__subclasses__()
@@ -141,39 +141,37 @@ class ResearchObjectHandler:
             research_object.load_dataobject_vrs()
 
     @staticmethod
-    def validate(research_object: "ResearchObject", name: str, value: Any, action: Action) -> None:
-        """Validate the value of the attribute."""
-        if hasattr(research_object, "validate_" + name):
-            validate_method = getattr(research_object, "validate_" + name)
-            validate_method(value, action)
+    def validate(research_object: "ResearchObject", name: str, value: Any, action: Action, default: Any) -> None:
+        """Validate the value of the attribute."""        
+        if not hasattr(research_object, "validate_" + name):
+            return
+        
+        # defaults = DefaultAttrs(research_object)
+        validate_method = getattr(research_object, "validate_" + name)
+        validate_method(value, action, default)
 
     @staticmethod
     def _set_builtin_attributes(research_object: "ResearchObject", default_attrs: dict, kwargs: dict, action: Action):
         """Responsible for setting the value of all builtin attributes, simple or not."""  
 
+        # !. Set simple builtin attributes.
         complex_attrs = {}
         for key in kwargs:
 
             if key not in default_attrs:
                 continue # Skip the attribute if it is not a default attribute.
 
-            # 1. Don't validate if the default attribute has the default values.                      
-            validate = True
-            if kwargs[key] == default_attrs[key]:
-                validate = False
-
-            # 2. Skip the complex attributes.
+            # 1. Skip the complex attributes.
             if hasattr(research_object, "save_" + key):
                 complex_attrs[key] = kwargs[key]
                 continue # Complex attributes are set in the next step.
 
-            # 3. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
+            # 2. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
             if key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
                 continue
 
-            # 4. Validate the attribute.
-            if validate:
-                ResearchObjectHandler.validate(research_object, key, kwargs[key], action)
+            # 3. Validate the attribute.
+            ResearchObjectHandler.validate(research_object, key, kwargs[key], action, default_attrs[key])
 
             if hasattr(research_object, "to_json_" + key):
                 to_json_method = getattr(research_object, "to_json_" + key)
@@ -184,27 +182,20 @@ class ResearchObjectHandler:
             simple_params = (action.id, research_object.id, ResearchObjectHandler._get_attr_id(key), json_value)
             action.add_sql_query(research_object.id, "robj_simple_attr_insert", simple_params, group_name = "robj_simple_attr_insert")
 
-            # 6. Get the parameters for the SQL query to set the attribute.            
+            # 4. Get the parameters for the SQL query to set the attribute.            
             research_object.__dict__[key] = kwargs[key] # Set the attribute in the object's __dict__.        
 
         # 2. Set complex builtin attributes.
         for key in complex_attrs:
 
-            # 1. Don't validate if the default attribute has the default values.
-            # Complex attributes checked for being overwritten in the previous step.                      
-            validate = True
-            if kwargs[key] == default_attrs[key]:
-                validate = False
-
-            # 2. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
+            # 1. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
             if key in research_object.__dict__ and getattr(research_object, key) == complex_attrs[key]:
                 continue
 
-            # 3. Validate the attribute.
-            if validate:
-                ResearchObjectHandler.validate(research_object, key, complex_attrs[key], action)
+            # 2. Validate the attribute.
+            ResearchObjectHandler.validate(research_object, key, complex_attrs[key], action, default_attrs[key])
 
-            # 4.  Save the "complex" builtin attribute to the database.
+            # 3.  Save the "complex" builtin attribute to the database.
             save_method = getattr(research_object, "save_" + key)
             save_method(complex_attrs[key], action = action)
 

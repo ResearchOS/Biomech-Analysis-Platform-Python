@@ -9,6 +9,8 @@ def get_returned_variable_names(func: Callable):
     :param func: The function to analyze.
     :return: A list of variable names returned by the function.
     """
+    if func is None:
+        return
     # Get the source code of the function
     func_code = inspect.getsource(func)
     

@@ -27,7 +27,7 @@ class Subset(PipelineObject):
 
     ## conditions
     
-    def validate_conditions(self, conditions: dict, action: Action) -> None:
+    def validate_conditions(self, conditions: dict, action: Action, default: Any) -> None:
         """Validate the condition recursively.
         Example usage:
         conditions = {
@@ -41,7 +41,9 @@ class Subset(PipelineObject):
                 }
             ]
         }
-        """        
+        """
+        if conditions == default:
+            return
         # Validate a single condition.
         if isinstance(conditions, list):
             if len(conditions) != 3:
@@ -75,7 +77,7 @@ class Subset(PipelineObject):
                 raise ValueError("Value must be a list.")
             if not isinstance(value, (list, dict)):
                 raise ValueError("Value must be a list of lists or dicts.")
-            a = [self.validate_conditions(cond, action) for cond in value] # Assigned to a just to make interpreter happy.
+            a = [self.validate_conditions(cond, action, default = default) for cond in value] # Assigned to a just to make interpreter happy.
             
     def get_subset(self) -> nx.MultiDiGraph:
         """Resolve the conditions to the actual subset of data."""
