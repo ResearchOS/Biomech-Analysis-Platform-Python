@@ -17,14 +17,14 @@ from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 all_default_attrs = {}
+all_default_attrs["is_matlab"] = False
+all_default_attrs["mfolder"] = None
+all_default_attrs["mfunc_name"] = None
 all_default_attrs["method"] = None
 all_default_attrs["level"] = None
 all_default_attrs["input_vrs"] = {}
 all_default_attrs["output_vrs"] = {}
 all_default_attrs["subset_id"] = None
-all_default_attrs["is_matlab"] = False
-all_default_attrs["mfolder"] = None
-all_default_attrs["mfunc_name"] = None
 
 complex_attrs_list = []
 
@@ -174,12 +174,12 @@ class Process(PipelineObject):
     def set_input_vrs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict."""
         action = Action(name = "set_input_vrs")
-        self.__setattr__("input_vrs", kwargs, action = action)
+        self.__setattr__("input_vrs", kwargs)
 
     def set_output_vrs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict."""
         action = Action(name = "set_output_vrs")
-        self.__setattr__("output_vrs", kwargs, action = action)
+        self.__setattr__("output_vrs", kwargs)
 
     def run(self) -> None:
         """Execute the attached method.

@@ -83,17 +83,16 @@ class Action():
             return
         global count
         count += 1
-        print(f"Action.execute() called {count} times.")
+        # print(f"Action.execute() called {count} times.")
         pool = SQLiteConnectionPool(name = "main")
 
-        any_queries = True
-        # any_queries = False
-        # for dobj_id in self.dobjs:
-        #     if len(self.dobjs[dobj_id]) > 0:
-        #         any_queries = True
-        #         break
+        any_queries = False
+        if self.dobjs:
+            any_queries = True
 
         if not any_queries and not self.force_create:
+            pool.return_connection(self.conn)
+            self.conn = None
             return
         
         cursor = self.conn.cursor()
@@ -129,7 +128,8 @@ class Action():
         self.dobjs = {}
 
         # Commit the Action.  
-        if self.commit:            
+        if self.commit:
+            # print("Commit count:", count)
             self.conn.commit()
             if return_conn:
                 pool.return_connection(self.conn)

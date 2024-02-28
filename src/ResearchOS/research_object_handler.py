@@ -75,6 +75,8 @@ class ResearchObjectHandler:
 
     @staticmethod
     def _get_most_recent_attrs(research_object: "ResearchObject", ordered_attr_result: list, default_attrs: dict = {}, action: Action = None) -> dict:
+        """Given a list of all attributes for this object, return the most recent attributes.
+        NOTE: Does NOT validate the attributes here."""
         curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
         used_attr_ids = []
@@ -89,10 +91,7 @@ class ResearchObjectHandler:
             used_attr_ids.append(attr_id)                        
             attr_name = ResearchObjectHandler._get_attr_name(attr_id)            
             attr_value = ResearchObjectHandler.from_json(research_object, attr_name, attr_value_json) # Translate the attribute from string to the proper type/format.
-            
-            # Now that the value is loaded as the proper type/format, validate it, if it is not the default value.
-            if not (len(default_attrs) > 0 and attr_name in default_attrs and attr_value == default_attrs[attr_name]):
-                ResearchObjectHandler.validate(research_object, attr_name, attr_value, action)
+                        
             attrs[attr_name] = attr_value
             if len(used_attr_ids) == num_attrs:
                 break # Every attribute is accounted for.
@@ -107,8 +106,9 @@ class ResearchObjectHandler:
         cursor = conn.cursor()
 
         # 2. Get the attributes from the database.
-        sqlquery = f"SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = '{research_object.id}'"
-        unordered_attr_result = cursor.execute(sqlquery).fetchall()
+        sqlquery = "SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = ?"
+        params = (research_object.id,)
+        unordered_attr_result = cursor.execute(sqlquery, params).fetchall()
         ResearchObjectHandler.pool.return_connection(conn)
         ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)         
                              
@@ -121,14 +121,21 @@ class ResearchObjectHandler:
         research_object.__dict__.update(attrs)
 
         # 4. Load the class-specific/"complex" builtin attributes.
-        for key in default_attrs.keys():
-            if key in research_object.__dict__:
-                continue
-            if hasattr(research_object, "load_" + key):
-                load_method = getattr(research_object, "load_" + key)
+        for attr_name in default_attrs.keys():
+            if attr_name in research_object.__dict__:
+                continue # Skip the simple attributes.
+            if hasattr(research_object, "load_" + attr_name):
+                load_method = getattr(research_object, "load_" + attr_name)
                 value = load_method(action)
-                research_object.__dict__[key] = value
+                research_object.__dict__[attr_name] = value
 
+        # 5. Validate the simple & complex builtin attributes.
+        for default_attr_name, default_attr_value in default_attrs.items():
+            curr_value = research_object.__dict__[default_attr_name]
+            if curr_value != default_attr_value:
+                ResearchObjectHandler.validate(research_object, default_attr_name, curr_value, action)
+
+        # 6. Load the VR attributes. No validation is necessary here.
         dobj_subclasses = DataObject.__subclasses__()
         if research_object.__class__ in dobj_subclasses:
             research_object.load_dataobject_vrs()
