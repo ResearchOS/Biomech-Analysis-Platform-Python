@@ -176,7 +176,7 @@ class Dataset(DataObject):
         for idx, address in enumerate(addresses):
             if address[0] == self.id: # Include the Dataset as the source node.
                 cls1 = ResearchObjectHandler._prefix_to_class(address[1])
-                G.add_edge(self, cls1(id = address[1]))
+                G.add_edge(self, cls1(id = address[1], action = action))
                 address_copy.remove(address)
 
         addresses = address_copy
@@ -186,7 +186,7 @@ class Dataset(DataObject):
         for address_edge in addresses:            
             cls0 = cls_dict[idcreator.get_prefix(address_edge[0])]
             cls1 = cls_dict[idcreator.get_prefix(address_edge[1])]
-            G.add_edge(cls0(id = address_edge[0]), cls1(id = address_edge[1]))
+            G.add_edge(cls0(id = address_edge[0], action = action), cls1(id = address_edge[1], action = action))
         return G
     
 if __name__=="__main__":

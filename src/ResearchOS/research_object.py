@@ -142,6 +142,8 @@ class ResearchObject():
         vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
         for vr_name in vr_attrs:
             ResearchObjectHandler._set_vr_attributes(self, vr_name, vr_attrs[vr_name], action)
+            # if vr_name == "Side_Of_Interest":
+            #     a = getattr(self, vr_name)
 
     def get_vr(self, name: str) -> Any:
         """Get the VR itself instead of its value."""

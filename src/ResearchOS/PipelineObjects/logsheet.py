@@ -307,9 +307,9 @@ class Logsheet(PipelineObject):
                 # Set up the cache dict for this data object for this attribute.
                 if name not in attrs_cache_dict[row_dobjs[level_idx].id]:
                     attrs_cache_dict[row_dobjs[level_idx].id][name] = None
-                print("Row: ", row_num, "Column: ", name, "Value: ", value)
+                print("Row: ", row_num+self.num_header_rows+1, "Column: ", name, "Value: ", value)
                 prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
-                # prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.                
+                # prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.
                 if prev_value is not None:                    
                     if prev_value == value or value is None:
                         continue
@@ -317,11 +317,7 @@ class Logsheet(PipelineObject):
                 attrs_cache_dict[row_dobjs[level_idx].id][name] = value
                 row_attrs[level_idx][name] = attrs_cache_dict[row_dobjs[level_idx].id][name]
             for idx, attrs in enumerate(row_attrs):
-                row_dobjs[idx]._setattrs({}, attrs, action = action)
-            
-        action.exec = True
-        action.commit = True
-        action.execute()
+                row_dobjs[idx]._setattrs({}, attrs, action = action)                           
 
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.
@@ -333,7 +329,13 @@ class Logsheet(PipelineObject):
                 ids = [row[idx-1].id, dobj.id]
                 if ids not in addresses:
                     addresses.append(ids)
-        ds.addresses = addresses # Store addresses, also creates address_graph.
+        all_default_attrs = DefaultAttrs(ds)
+        ds._setattrs(all_default_attrs.default_attrs, {"addresses": addresses}, action = action)
+        # ds.addresses = addresses # Store addresses, also creates address_graph.
+
+        action.exec = True
+        action.commit = True
+        action.execute() # Commit the action.
 
     def clean_value(self, type_class: type, raw_value: Any) -> Any:
         """Convert to proper type and clean the value of the logsheet cell."""
