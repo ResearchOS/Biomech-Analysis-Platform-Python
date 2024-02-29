@@ -17,6 +17,7 @@ from ResearchOS.code_inspector import get_returned_variable_names, get_input_var
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.default_attrs import DefaultAttrs
+from ResearchOS.sql.sql_joiner_most_recent import sql_joiner, sql_joiner_most_recent
 
 all_default_attrs = {}
 all_default_attrs["is_matlab"] = False
@@ -305,67 +306,74 @@ class Process(PipelineObject):
                 vr_values_in[self.import_file_vr_name] = data_path + self.import_file_ext
 
             # Get the latest (active) action_id where this DataObject was assigned a value to any of the output VR's.
-            # TODO: Check vr_dataobjects table to ensure that this is an ACTIVE connection.
+            # If the connection between each output VR and this DataObject is not active, then run the process.
             cursor = action.conn.cursor()
             output_vr_ids = [vr.id for vr in self.output_vrs.values()]
-            sqlquery = "SELECT action_id, dataobject_id, vr_id FROM data_values WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
-            params = tuple([node.id] + output_vr_ids)
-            result = cursor.execute(sqlquery, params).fetchall()
-            time_ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num = 0)
-            most_recent_result = []
-            for row in time_ordered_result:
-                if row not in most_recent_result:
-                    most_recent_result.append(row)
-            if len(most_recent_result) < len(output_vr_ids):
-                output_vrs_earliest_time = datetime.min.replace(tzinfo=timezone.utc)
-            else:
-                sqlquery = "SELECT datetime FROM actions WHERE action_id IN ({}) ORDER BY datetime".format(",".join("?" * len(result)))
-                params = tuple([r[0] for r in most_recent_result])
-                result = cursor.execute(sqlquery, params).fetchall()
-                output_vrs_earliest_time = datetime.strptime(result[0][0], "%Y-%m-%d %H:%M:%S.%f%z")
-
-
-            # Check if the values for all the input variables are up to date. If so, skip this node.
-            check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_values_in.items()}
             run_process = False
-            input_vrs_latest_time = None
-            for vr_name, vr_val in check_vr_values_in.items():
-                data_blob = pickle.dumps(vr_val)
-                data_blob_hash = sha256(data_blob).hexdigest()            
 
-                # Handle hard-coded variables!
-                # Check if the action ID that set this variable's hard-coded value occurs after the last time this DataObject was assigned a value to any of the output VR's
-                vr = input_vrs_names_dict[vr_name]
-                if vr.hard_coded_value is not None:
-                    sqlquery = "SELECT action_id FROM simple_attributes WHERE object_id = ? AND attr_id = ? AND attr_value = ?"
-                    attr_id = ResearchObjectHandler._get_attr_id("hard_coded_value")
-                    params = (vr.id, attr_id, json.dumps(vr.hard_coded_value))
+            sqlquery_raw = "SELECT is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
+            sqlquery = sql_joiner_most_recent(sqlquery_raw)
+            params = ([node.id] + output_vr_ids)
+            result = cursor.execute(sqlquery, params).fetchall()
+            all_vrs_active = all([row[0] for row in result if row[0] == 1])
+            if not all_vrs_active:
+                run_process = True
+            else:
+                sqlquery_raw = "SELECT action_id FROM data_values WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
+                sqlquery = sql_joiner(sqlquery_raw) # The data is ordered. The most recent action_id is the first one.
+                params = tuple([node.id] + output_vr_ids)
+                result = cursor.execute(sqlquery, params).fetchall() # The latest action ID 
+                if len(result) == 0:
+                    output_vrs_earliest_time = datetime.min.replace(tzinfo=timezone.utc)
+                else:                
+                    most_recent_action_id = result[-1][0] # Get the latest action_id.
+                    sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
+                    params = (most_recent_action_id,)
                     result = cursor.execute(sqlquery, params).fetchall()
-                    if len(result) == 0:
-                        run_process = True
-                        break
-                    sqlquery = "SELECT datetime FROM actions WHERE action_id IN ({}) ORDER BY datetime DESC LIMIT 1".format(",".join("?" * len(result)))
-                    params = tuple([r for r, in result])
-                    result = cursor.execute(sqlquery, params).fetchall()
-                    input_vrs_latest_time = datetime.strptime(result[0][0], "%Y-%m-%d %H:%M:%S.%f%z")
-                    if input_vrs_latest_time > output_vrs_earliest_time:
-                        run_process = True
-                        break
-                else:
-                    # If not None, check if it's the most recent value for this data object & vr.
-                    # TODO: Fix this check, it should NOT check the current DataObject, it should check the one(s?) where the vr_id came from.
-                    sqlquery = "SELECT action_id, data_blob_hash FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND schema_id = ? AND data_blob_hash = ?"
-                    params = (node.id, self.input_vrs[vr_name].id, schema_id, data_blob_hash)
-                    result = cursor.execute(sqlquery, params).fetchall()
-                    if len(result) == 0:
-                        run_process = True
-                        break
+                    output_vrs_earliest_time = datetime.strptime(result[0][0], "%Y-%m-%d %H:%M:%S.%f%z")
 
-                    time_ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num = 0)
-                    latest_data_blob_hash = time_ordered_result[0][1]
-                    if latest_data_blob_hash != data_blob_hash:
-                        run_process = True
-                        break
+
+                # Check if the values for all the input variables are up to date. If so, skip this node.
+                check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_values_in.items()}            
+                input_vrs_latest_time = None
+                for vr_name, vr_val in check_vr_values_in.items():
+                    data_blob = pickle.dumps(vr_val)
+                    data_blob_hash = sha256(data_blob).hexdigest()            
+
+                    # Handle hard-coded variables!
+                    # Check if the action ID that set this variable's hard-coded value occurs after the last time this DataObject was assigned a value to any of the output VR's
+                    vr = input_vrs_names_dict[vr_name]
+                    if vr.hard_coded_value is not None:
+                        sqlquery_raw = "SELECT action_id FROM simple_attributes WHERE object_id = ? AND attr_id = ? AND attr_value = ?"
+                        sqlquery = sql_joiner(sqlquery_raw)
+                        attr_id = ResearchObjectHandler._get_attr_id("hard_coded_value")
+                        params = (vr.id, attr_id, json.dumps(vr.hard_coded_value))
+                        result = cursor.execute(sqlquery, params).fetchall()
+                        if len(result) == 0:
+                            run_process = True
+                            break
+                        sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
+                        params = (result[0][0],)
+                        result = cursor.execute(sqlquery, params).fetchall()
+                        input_vrs_latest_time = datetime.strptime(result[0][0], "%Y-%m-%d %H:%M:%S.%f%z")
+                        if input_vrs_latest_time > output_vrs_earliest_time:
+                            run_process = True
+                            break
+                    else:
+                        # If not None, check if it's the most recent value for this data object & vr.
+                        # TODO: Fix this check, it should NOT check the current DataObject, it should check the one(s?) where the vr_id came from.
+                        sqlquery_raw = "SELECT action_id, data_blob_hash FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND schema_id = ? AND data_blob_hash = ?"
+                        sqlquery = sql_joiner(sqlquery_raw)
+                        params = (node.id, self.input_vrs[vr_name].id, schema_id, data_blob_hash)
+                        result = cursor.execute(sqlquery, params).fetchall()
+                        if len(result) == 0:
+                            run_process = True
+                            break
+
+                        latest_data_blob_hash = result[0][1]
+                        if latest_data_blob_hash != data_blob_hash:
+                            run_process = True
+                            break
 
             if not run_process:
                 print(f"Skipping {node.name} ({node.id}).")
