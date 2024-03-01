@@ -117,11 +117,16 @@ class ResearchObjectHandler:
         params = (research_object.id,)
         ordered_attr_result = cursor.execute(sqlquery, params).fetchall()
         ResearchObjectHandler.pool.return_connection(conn) 
-                             
-        attrs = ResearchObjectHandler._get_most_recent_attrs(research_object, ordered_attr_result, default_attrs, action)   
 
-        if attrs is None:
+        if not ordered_attr_result:
             raise ValueError("No object with that ID exists.")
+
+        # TODO: 
+        attrs = {}
+        for row in ordered_attr_result:
+            attr_name = ResearchObjectHandler._get_attr_name(row[0])
+            attr_value = ResearchObjectHandler.from_json(research_object, attr_name, row[1], action)
+            attrs[attr_name] = attr_value        
 
         # 3. Set the attributes of the object.
         research_object.__dict__.update(attrs)
