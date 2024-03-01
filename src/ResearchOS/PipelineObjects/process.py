@@ -17,7 +17,7 @@ from ResearchOS.code_inspector import get_returned_variable_names, get_input_var
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.default_attrs import DefaultAttrs
-from ResearchOS.sql.sql_joiner_most_recent import sql_joiner_most_recent
+from ResearchOS.sql.sql_runner import sql_order_result
 
 all_default_attrs = {}
 all_default_attrs["is_matlab"] = False
@@ -115,8 +115,9 @@ class Process(PipelineObject):
         if not isinstance(level, type):
             raise ValueError("Level must be a type!")
         
-    def from_json_level(self, level: str, action: Action) -> type:
+    def from_json_level(self, json_level: str, action: Action) -> type:
         """Convert a JSON string to a Process level."""
+        level = json.loads(json_level)
         classes = ResearchObjectHandler._get_subclasses(ResearchObject)
         for cls in classes:
             if hasattr(cls, "prefix") and cls.prefix == level:
@@ -313,16 +314,16 @@ class Process(PipelineObject):
 
             # Check that all output VR connections are active.
             sqlquery_raw = "SELECT is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
-            sqlquery = sql_joiner_most_recent(sqlquery_raw)
+            sqlquery = sql_order_result(action, sqlquery_raw, ["is_active"], single = True, user = True, computer = False)
             params = ([node.id] + output_vr_ids)
             result = cursor.execute(sqlquery, params).fetchall()            
             all_vrs_active = all([row[0] for row in result if row[0] == 1]) # Returns True if result is empty.
-            if not all_vrs_active:
+            if not result or not all_vrs_active:
                 run_process = True
             else:
                 # Get the latest action_id
                 sqlquery_raw = "SELECT action_id FROM data_values WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
-                sqlquery = sql_joiner_most_recent(sqlquery_raw) # The data is ordered. The most recent action_id is the first one.
+                sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False) # The data is ordered. The most recent action_id is the first one.
                 params = tuple([node.id] + output_vr_ids)
                 result = cursor.execute(sqlquery, params).fetchall() # The latest action ID
                 if len(result) == 0:
@@ -347,7 +348,7 @@ class Process(PipelineObject):
                     vr = input_vrs_names_dict[vr_name]
                     if vr.hard_coded_value is not None:
                         sqlquery_raw = "SELECT action_id FROM simple_attributes WHERE object_id = ? AND attr_id = ? AND attr_value = ?"
-                        sqlquery = sql_joiner_most_recent(sqlquery_raw)
+                        sqlquery = sql_order_result(action, sqlquery_raw, ["object_id", "attr_id", "attr_value"], single = True, user = True, computer = False)
                         attr_id = ResearchObjectHandler._get_attr_id("hard_coded_value")
                         params = (vr.id, attr_id, json.dumps(vr.hard_coded_value))
                         result = cursor.execute(sqlquery, params).fetchall()
@@ -364,8 +365,8 @@ class Process(PipelineObject):
                     else:
                         # If not None, check if it's the most recent value for this vr, for any dataobject.
                         sqlquery_raw = "SELECT action_id, data_blob_hash FROM data_values WHERE vr_id = ? AND schema_id = ?"
-                        sqlquery = sql_joiner_most_recent(sqlquery_raw)
-                        params = (node.id, self.input_vrs[vr_name].id, schema_id, data_blob_hash)
+                        sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "schema_id"], single = True, user = True, computer = False)
+                        params = (self.input_vrs[vr_name].id, schema_id)
                         result = cursor.execute(sqlquery, params).fetchall()
                         if len(result) == 0:
                             run_process = True

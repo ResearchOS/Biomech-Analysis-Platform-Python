@@ -61,7 +61,7 @@ class ResearchObjectHandler:
     def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any, action: Action = None) -> Any:
         """Convert the JSON string to an attribute value. If there is no class-specific way to do it, then use the builtin json.loads"""
         try:
-            from_json_method = getattr(research_object,"from_json_" + attr_name)
+            from_json_method = getattr(research_object, "from_json_" + attr_name)
             attr_value = from_json_method(attr_value_json, action)
         except AttributeError as e:
             attr_value = json.loads(attr_value_json)
@@ -125,7 +125,11 @@ class ResearchObjectHandler:
         attrs = {}
         for row in ordered_attr_result:
             attr_name = ResearchObjectHandler._get_attr_name(row[0])
-            attr_value = ResearchObjectHandler.from_json(research_object, attr_name, row[1], action)
+            if hasattr(research_object, "load_" + attr_name):
+                load_method = getattr(research_object, "load_" + attr_name)
+                attr_value = load_method(action)
+            else:
+                attr_value = ResearchObjectHandler.from_json(research_object, attr_name, row[1], action)
             attrs[attr_name] = attr_value        
 
         # 3. Set the attributes of the object.
@@ -143,8 +147,7 @@ class ResearchObjectHandler:
         # 5. Validate the simple & complex builtin attributes.
         for default_attr_name, default_attr_value in default_attrs.items():
             curr_value = research_object.__dict__[default_attr_name]
-            if curr_value != default_attr_value:
-                ResearchObjectHandler.validate(research_object, default_attr_name, curr_value, action, default_attr_value)
+            ResearchObjectHandler.validate(research_object, default_attr_name, curr_value, action, default_attr_value)
 
         # 6. Load the VR attributes. No validation is necessary here.
         dobj_subclasses = DataObject.__subclasses__()
@@ -156,8 +159,7 @@ class ResearchObjectHandler:
         """Validate the value of the attribute."""        
         if not hasattr(research_object, "validate_" + name):
             return
-        
-        # defaults = DefaultAttrs(research_object)
+                
         validate_method = getattr(research_object, "validate_" + name)
         validate_method(value, action, default)
 
@@ -430,17 +432,18 @@ class ResearchObjectHandler:
     def get_user_computer_path(research_object, attr_name: str, action: Action) -> str:
         """Get a user- and computer-specific path, which is a simple attribute in the database."""
         # Load the most recent path.
-        attr_id = ResearchObjectHandler._get_attr_id(research_object, attr_name)
+        attr_id = ResearchObjectHandler._get_attr_id(attr_name)
         sqlquery_raw = "SELECT action_id, attr_value FROM simple_attributes WHERE attr_id = ? AND object_id = ?"
-        sqlquery = sql_joiner_most_recent(sqlquery_raw)
+        sqlquery = sql_order_result(action, sqlquery_raw, ["attr_id", "object_id"], single = True, user = True, computer = True)
         params = (attr_id, research_object.id)
         result = action.conn.execute(sqlquery, params).fetchall()
         if not result:
             return None
         path = result[0][1]
+        path = json.loads(path)
 
         # Get the timestamp of this action_id
-        sqlquery = "SELECT timestamp FROM actions WHERE action_id = ?"
+        sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
         params = (result[0][0],)
         timestamp_path = action.conn.execute(sqlquery, params).fetchone()[0]
         
@@ -448,15 +451,15 @@ class ResearchObjectHandler:
         sqlquery_raw = "SELECT action_id FROM users_computers WHERE user_id = ? AND computer_id = ?"
         sqlquery = sql_joiner_most_recent(sqlquery_raw)
         params = (CurrentUser.current_user, COMPUTER_ID)
-        action_id_users = action.conn.execute(sqlquery).fetchone()[0]
+        action_id_users = action.conn.execute(sqlquery, params).fetchone()[0]
 
         # Get the timestamp for when the user ID was set.
-        sqlquery = "SELECT timestamp FROM actions WHERE action_id = ?"
+        sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
         params = (action_id_users,)
         timestamp_users = action.conn.execute(sqlquery, params).fetchone()[0]
 
-        timestamp_path = datetime.strptime(timestamp_path, "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=timezone.utc)
-        timestamp_users = datetime.strptime(timestamp_users, "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=timezone.utc)
+        timestamp_path = datetime.strptime(timestamp_path, "%Y-%m-%d %H:%M:%S.%f%z").replace(tzinfo=timezone.utc)
+        timestamp_users = datetime.strptime(timestamp_users, "%Y-%m-%d %H:%M:%S.%f%z").replace(tzinfo=timezone.utc)
 
         if timestamp_path < timestamp_users:
             return None
