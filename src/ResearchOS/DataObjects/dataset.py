@@ -109,6 +109,10 @@ class Dataset(DataObject):
         if not os.path.exists(path):
             raise ValueError("Specified path is not a path or does not currently exist!")
         
+    def load_dataset_path(self, action: Action) -> str:
+        """Load the dataset path from the database in a computer-specific way."""
+        return ResearchObjectHandler.get_user_computer_path(self, "dataset_path", action)
+        
     ### Address Methods
         
     def validate_addresses(self, addresses: list, action: Action, default: Any) -> None:

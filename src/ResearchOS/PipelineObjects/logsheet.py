@@ -45,6 +45,10 @@ class Logsheet(PipelineObject):
         if not path.endswith(("csv", "xlsx", "xls")):
             raise ValueError("Specified file is not a CSV!")
         
+    def load_path(self, action: Action) -> None:
+        """Load the logsheet path."""
+        return ResearchObjectHandler.get_user_computer_path(self, "path", action)
+        
     ### Logsheet headers
     
     def validate_headers(self, headers: list, action: Action, default: Any) -> None:

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import sqlite3
 from hashlib import sha256
 import pickle
+from datetime import datetime, timezone
 
 import numpy as np
 
@@ -13,9 +14,12 @@ if TYPE_CHECKING:
     from ResearchOS.DataObjects.data_object import DataObject
     from ResearchOS.variable import Variable
 
-from ResearchOS.default_attrs import DefaultAttrs
+# from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
+from ResearchOS.sql.sql_joiner_most_recent import sql_joiner_most_recent
+from ResearchOS.current_user import CurrentUser
+from ResearchOS.get_computer_id import COMPUTER_ID
 
 class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
@@ -56,7 +60,7 @@ class ResearchObjectHandler:
     def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any, action: Action = None) -> Any:
         """Convert the JSON string to an attribute value. If there is no class-specific way to do it, then use the builtin json.loads"""
         try:
-            from_json_method = eval("research_object.from_json_" + attr_name)
+            from_json_method = getattr(research_object,"from_json_" + attr_name)
             attr_value = from_json_method(attr_value_json, action)
         except AttributeError as e:
             attr_value = json.loads(attr_value_json)
@@ -106,11 +110,11 @@ class ResearchObjectHandler:
         cursor = conn.cursor()
 
         # 2. Get the attributes from the database.
-        sqlquery = "SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = ?"
+        sqlquery_raw = "SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = ?"
+        sqlquery = sql_joiner_most_recent(sqlquery_raw)
         params = (research_object.id,)
-        unordered_attr_result = cursor.execute(sqlquery, params).fetchall()
-        ResearchObjectHandler.pool.return_connection(conn)
-        ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)         
+        ordered_attr_result = cursor.execute(sqlquery, params).fetchall()
+        ResearchObjectHandler.pool.return_connection(conn) 
                              
         attrs = ResearchObjectHandler._get_most_recent_attrs(research_object, ordered_attr_result, default_attrs, action)   
 
@@ -400,18 +404,53 @@ class ResearchObjectHandler:
         raise ValueError("No class with that prefix exists.")
     
     @staticmethod
-    def _set_simple_builtin_attr(self, name: str, value: Any, action: Action = None) -> None:
+    def _set_simple_builtin_attr(research_object, name: str, value: Any, action: Action = None) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
         Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it).
         If it is not a built-in ResearchOS attribute, then no validation occurs."""
         # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.     
         
-        if hasattr(self, "to_json_" + name):
-            to_json_method = getattr(self, "to_json_" + name)
+        if hasattr(research_object, "to_json_" + name):
+            to_json_method = getattr(research_object, "to_json_" + name)
             json_value = to_json_method(value, action)
         else:
             json_value = json.dumps(value)   
 
-        ResearchObjectHandler.save_simple_attribute(self.id, name, json_value, action = action)            
-        self.__dict__[name] = value
-    
+        ResearchObjectHandler.save_simple_attribute(research_object.id, name, json_value, action = action)            
+        research_object.__dict__[name] = value
+
+    @staticmethod
+    def get_user_computer_path(research_object, attr_name: str, action: Action) -> str:
+        """Get a user- and computer-specific path, which is a simple attribute in the database."""
+        # Load the most recent path.
+        attr_id = ResearchObjectHandler._get_attr_id(research_object, attr_name)
+        sqlquery_raw = "SELECT action_id, attr_value FROM simple_attributes WHERE attr_id = ? AND object_id = ?"
+        sqlquery = sql_joiner_most_recent(sqlquery_raw)
+        params = (attr_id, research_object.id)
+        result = action.conn.execute(sqlquery, params).fetchall()
+        if not result:
+            return None
+        path = result[0][1]
+
+        # Get the timestamp of this action_id
+        sqlquery = "SELECT timestamp FROM actions WHERE action_id = ?"
+        params = (result[0][0],)
+        timestamp_path = action.conn.execute(sqlquery, params).fetchone()[0]
+        
+        # Check if the action_id is after the current user/computer action_id.
+        sqlquery_raw = "SELECT action_id FROM users_computers WHERE user_id = ? AND computer_id = ?"
+        sqlquery = sql_joiner_most_recent(sqlquery_raw)
+        params = (CurrentUser.current_user, COMPUTER_ID)
+        action_id_users = action.conn.execute(sqlquery).fetchone()[0]
+
+        # Get the timestamp for when the user ID was set.
+        sqlquery = "SELECT timestamp FROM actions WHERE action_id = ?"
+        params = (action_id_users,)
+        timestamp_users = action.conn.execute(sqlquery, params).fetchone()[0]
+
+        timestamp_path = datetime.strptime(timestamp_path, "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=timezone.utc)
+        timestamp_users = datetime.strptime(timestamp_users, "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=timezone.utc)
+
+        if timestamp_path < timestamp_users:
+            return None
+        return path    

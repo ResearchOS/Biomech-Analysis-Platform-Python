@@ -52,12 +52,13 @@ class DBInitializer():
         self.pool = SQLiteConnectionPool(name = "main")
         ResearchObjectHandler.pool = self.pool
 
-        self.action = Action(name = "initialize database", user_id = default_current_user, commit = True, exec = True, force_create = True)
+        self.action = Action(name = "initialize database", commit = True, exec = True, force_create = True)
                         
         self.conn = self.action.conn
         self.create_tables()
         self.check_tables_exist(self.conn, intended_tables)
-        self.init_current_user_id()
+        self.init_current_user_computer_id()
+        self.action.add_sql_query("init", "current_user_computer_id_insert", self.action.db_init_params)
         self.action.execute()
 
         self.data_db_file = data_db_file
@@ -68,9 +69,9 @@ class DBInitializer():
         self.check_tables_exist(self.conn_data, intended_tables_data)
         self.pool_data.return_connection(self.conn_data)
 
-    def init_current_user_id(self, user_id: str = default_current_user):
+    def init_current_user_computer_id(self, user_id: str = default_current_user):
         """Initialize the current user ID in the settings table."""
-        CurrentUser(self.action).set_current_user_id(user_id)        
+        CurrentUser(self.action).set_current_user_computer_id(user_id)
 
     def check_tables_exist(self, conn: sqlite3.Connection, intended_tables: list):
         """Check that all of the tables were created."""        
@@ -115,11 +116,9 @@ class DBInitializer():
         # Actions table. Lists all actions that have been performed, and their timestamps.
         cursor.execute("""CREATE TABLE IF NOT EXISTS actions (
                         action_id TEXT PRIMARY KEY,
-                        user TEXT NOT NULL,
                         name TEXT NOT NULL,
                         datetime TEXT NOT NULL,
                         redo_of TEXT,
-                        FOREIGN KEY (user) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         FOREIGN KEY (redo_of) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
 
@@ -203,7 +202,15 @@ class DBInitializer():
                         FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
                         PRIMARY KEY (action_id, source_object_id, target_object_id)
-                        )""")        
+                        )""")
+        
+        # Users_Computers table. Maps all users to their computers.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS users_computers (
+                        action_id TEXT PRIMARY KEY,
+                        user_id TEXT NOT NULL,
+                        computer_id TEXT NOT NULL,
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        )""")
 
 
         

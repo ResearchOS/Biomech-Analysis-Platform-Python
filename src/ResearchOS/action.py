@@ -28,38 +28,26 @@ class Action():
     latest_action_id: str = None
     queries: dict = queries
     
-    def __init__(self, name: str = None, action_id: str = None, redo_of: str = None, user_id: str = None, timestamp: datetime.datetime = None, commit: bool = False, exec: bool = True, force_create: bool = False):        
+    def __init__(self, name: str = None, action_id: str = None, redo_of: str = None, timestamp: datetime.datetime = None, commit: bool = False, exec: bool = True, force_create: bool = False):        
         pool = SQLiteConnectionPool()
         self.conn = pool.get_connection()
-        # self.sql_queries = []
         if not action_id:
             action_id = IDCreator(self.conn).create_action_id(check = False)            
         if not timestamp:
             timestamp = datetime.datetime.now(timezone.utc)
-        if not user_id:
-            user_id = CurrentUser(self).get_current_user_id()
 
         # Set up for the queries.
-        self.dobjs = {}        
-        # if dobj_id:
-        #     self.dobjs[dobj_id] = {}
+        self.dobjs = {}
 
         self.force_create = force_create
-        self.creation_params = (action_id, user_id, name, timestamp, redo_of) # The parameters for the creation query.
+        self.creation_params = (action_id, name, timestamp, redo_of) # The parameters for the creation query.
         self.is_created = False # Indicates that the action has not been created in the database yet.        
         self.id = action_id
         self.name = name
         self.timestamp = timestamp        
-        self.redo_of = redo_of               
-        self.user_id = user_id
+        self.redo_of = redo_of
         self.commit = commit # False by default. If True, the action will be committed to the database. Overrides self.exec.
         self.exec = exec # True to run cursor.execute() and False to skip it.
-
-    def add_params(self, params: tuple) -> None:
-        """Add parameters to the action."""
-        if not isinstance(params, tuple):
-            raise ValueError(f"params must be a tuple, not {type(params)}.")
-        self.params.append(params)
 
     def add_sql_query(self, dobj_id: str, query_name: str, params: tuple = None, group_name: str = "all") -> None:
         """Add a sqlquery to the action. Can be a raw SQL query (one input) or a parameterized query (two inputs).

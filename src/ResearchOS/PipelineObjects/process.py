@@ -17,7 +17,7 @@ from ResearchOS.code_inspector import get_returned_variable_names, get_input_var
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.default_attrs import DefaultAttrs
-from ResearchOS.sql.sql_joiner_most_recent import sql_joiner, sql_joiner_most_recent
+from ResearchOS.sql.sql_joiner_most_recent import sql_joiner_most_recent
 
 all_default_attrs = {}
 all_default_attrs["is_matlab"] = False
