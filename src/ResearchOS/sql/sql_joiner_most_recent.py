@@ -2,34 +2,41 @@ import re
 
 def sql_joiner_most_recent(sqlquery: str) -> str:
     """Takes a basic SQL query and returns a query to return the single most recent result per WHERE condition."""
-    join_query = """SELECT is_active
-                    FROM (
-                        SELECT
-                            vr_dataobjects.is_active,
-                            ROW_NUMBER() OVER (PARTITION BY vr_dataobjects.is_active, vr_dataobjects.dataobject_id, vr_dataobjects.vr_id ORDER BY actions.datetime DESC) AS row_num
-                        FROM vr_dataobjects
-                        JOIN actions ON vr_dataobjects.action_id = actions.action_id
-                        WHERE vr_dataobjects.dataobject_id = ?
-                        AND vr_dataobjects.vr_id IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                    ) AS ranked
-                    WHERE row_num = 1;"""
-    return join_query
-
-def sql_joiner(sqlquery: str) -> str:
-    """Takes a basic SQL query and returns a JOIN query to order the result, most recent first.
-    NOTE: this function assumes that the SQL query is in the following format:
-    SELECT <columns> FROM <table> WHERE <where_criteria>
-    NOTE 2: this function does not ensure that there is only one result per WHERE condition. i.e., it does not check for outdated values."""
 
     # Extract the components of the SQL query
-    columns, table, where_criteria = extract_sql_components(sqlquery)
+    columns, table, where_criteria_w_tables = extract_sql_components(sqlquery)
 
-    # Define the JOIN query
-    table_cols = ", ".join([f"{table}.{col}" for col in columns])
-    join_query = f"SELECT {table_cols} FROM {table} JOIN actions ON {table}.action_id = actions.action_id WHERE {where_criteria} ORDER BY actions.datetime DESC"
-
-    # join_query = f"SELECT DISTINCT {table_cols} FROM {table} outerr JOIN actions a ON outerr.action_id = a.action_id WHERE ({where_col_names_with_table}) = (SELECT {columns_str} FROM {table} innerr WHERE {inner_where_str} ORDER BY a.datetime DESC LIMIT 1) AND {where_criteria_with_table};"    
+    # Define the JOIN query    
+    columns_w_table_str = ", ".join([f"{table}.{col}" for col in columns])
+    columns_str = ", ".join(columns)
+    where_columns = col_names_in_where(sqlquery)
+    where_columns_str = ", ".join([f"{table}.{col}" for col in where_columns])
+    join_query = f"""SELECT {columns_str} 
+                FROM (
+                    SELECT {columns_w_table_str}, ROW_NUMBER() OVER (PARTITION BY {where_columns_str} ORDER BY actions.datetime DESC) AS row_num
+                    FROM {table}
+                    JOIN actions ON {table}.action_id = actions.action_id
+                    WHERE {where_criteria_w_tables}
+                    ORDER BY actions.datetime DESC
+                ) AS ranked
+                WHERE row_num = 1;"""
     return join_query
+
+# def sql_joiner(sqlquery: str) -> str:
+#     """Takes a basic SQL query and returns a JOIN query to order the result, most recent first.
+#     NOTE: this function assumes that the SQL query is in the following format:
+#     SELECT <columns> FROM <table> WHERE <where_criteria>
+#     NOTE 2: this function does not ensure that there is only one result per WHERE condition. i.e., it does not check for outdated values."""
+
+#     # Extract the components of the SQL query
+#     columns, table, where_criteria = extract_sql_components(sqlquery)
+
+#     # Define the JOIN query
+#     table_cols = ", ".join([f"{table}.{col}" for col in columns])
+#     join_query = f"SELECT {table_cols} FROM {table} JOIN actions ON {table}.action_id = actions.action_id WHERE {where_criteria} ORDER BY actions.datetime DESC"
+
+#     # join_query = f"SELECT DISTINCT {table_cols} FROM {table} outerr JOIN actions a ON outerr.action_id = a.action_id WHERE ({where_col_names_with_table}) = (SELECT {columns_str} FROM {table} innerr WHERE {inner_where_str} ORDER BY a.datetime DESC LIMIT 1) AND {where_criteria_with_table};"    
+#     return join_query
 
 def extract_sql_components(sql_statement: str) -> tuple:
     # Define regular expressions for SELECT, FROM, and WHERE clauses

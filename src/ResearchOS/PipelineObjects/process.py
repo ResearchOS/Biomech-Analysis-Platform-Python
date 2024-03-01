@@ -3,7 +3,7 @@ from typing import Callable
 import json, sys, os, pickle
 import importlib
 from hashlib import sha256
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 import networkx as nx
 
@@ -38,8 +38,9 @@ complex_attrs_list = []
 try:
     import matlab.engine
     eng = matlab.engine.start_matlab()
+    matlab_loaded = True
 except:
-    pass
+    matlab_loaded = False
 
 
 class Process(PipelineObject):
@@ -219,12 +220,10 @@ class Process(PipelineObject):
     
     def set_input_vrs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict."""
-        action = Action(name = "set_input_vrs")
         self.__setattr__("input_vrs", kwargs)
 
     def set_output_vrs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict."""
-        action = Action(name = "set_output_vrs")
         self.__setattr__("output_vrs", kwargs)
 
     def run(self) -> None:
@@ -264,7 +263,7 @@ class Process(PipelineObject):
         subset_graph = Subset(id = self.subset_id).get_subset()        
 
         # Do the setup for MATLAB.
-        if self.is_matlab:
+        if self.is_matlab and matlab_loaded:
             eng.addpath(self.mfolder, nargout=0)
 
         level_nodes = sorted([node for node in subset_graph if isinstance(node, self.level)], key = lambda x: x.name)
@@ -274,8 +273,9 @@ class Process(PipelineObject):
         schema_order = list(nx.topological_sort(schema_graph))
         pool = SQLiteConnectionPool()
         for node in level_nodes:
-            # Get the values for the input variables for this DataObject node.
             print(f"Running {self.mfunc_name} on {node.name}.")
+
+            # Get the values for the input variables for this DataObject node.            
             vr_values_in = {}
             anc_nodes = nx.ancestors(subset_graph, node)
             node_lineage = [node] + [anc_node for anc_node in anc_nodes]
@@ -294,7 +294,7 @@ class Process(PipelineObject):
                 if not vr_found:
                     raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
                 
-            # Get the lineage so I can get the file path.
+            # Get the lineage so I can get the file path for import functions.
             ordered_levels = []
             for level in schema_order:
                 ordered_levels.append([n for n in node_lineage if isinstance(n, level)])
@@ -305,28 +305,30 @@ class Process(PipelineObject):
             if self.import_file_vr_name in vr_values_in:
                 vr_values_in[self.import_file_vr_name] = data_path + self.import_file_ext
 
-            # Get the latest (active) action_id where this DataObject was assigned a value to any of the output VR's.
+            # Get the latest action_id where this DataObject was assigned a value to any of the output VR's AND the connection between each output VR and this DataObject is active.
             # If the connection between each output VR and this DataObject is not active, then run the process.
             cursor = action.conn.cursor()
             output_vr_ids = [vr.id for vr in self.output_vrs.values()]
             run_process = False
 
+            # Check that all output VR connections are active.
             sqlquery_raw = "SELECT is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
             sqlquery = sql_joiner_most_recent(sqlquery_raw)
             params = ([node.id] + output_vr_ids)
-            result = cursor.execute(sqlquery, params).fetchall()
-            all_vrs_active = all([row[0] for row in result if row[0] == 1])
+            result = cursor.execute(sqlquery, params).fetchall()            
+            all_vrs_active = all([row[0] for row in result if row[0] == 1]) # Returns True if result is empty.
             if not all_vrs_active:
                 run_process = True
             else:
+                # Get the latest action_id
                 sqlquery_raw = "SELECT action_id FROM data_values WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
-                sqlquery = sql_joiner(sqlquery_raw) # The data is ordered. The most recent action_id is the first one.
+                sqlquery = sql_joiner_most_recent(sqlquery_raw) # The data is ordered. The most recent action_id is the first one.
                 params = tuple([node.id] + output_vr_ids)
-                result = cursor.execute(sqlquery, params).fetchall() # The latest action ID 
+                result = cursor.execute(sqlquery, params).fetchall() # The latest action ID
                 if len(result) == 0:
                     output_vrs_earliest_time = datetime.min.replace(tzinfo=timezone.utc)
                 else:                
-                    most_recent_action_id = result[-1][0] # Get the latest action_id.
+                    most_recent_action_id = result[0][0] # Get the latest action_id.
                     sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
                     params = (most_recent_action_id,)
                     result = cursor.execute(sqlquery, params).fetchall()
@@ -345,7 +347,7 @@ class Process(PipelineObject):
                     vr = input_vrs_names_dict[vr_name]
                     if vr.hard_coded_value is not None:
                         sqlquery_raw = "SELECT action_id FROM simple_attributes WHERE object_id = ? AND attr_id = ? AND attr_value = ?"
-                        sqlquery = sql_joiner(sqlquery_raw)
+                        sqlquery = sql_joiner_most_recent(sqlquery_raw)
                         attr_id = ResearchObjectHandler._get_attr_id("hard_coded_value")
                         params = (vr.id, attr_id, json.dumps(vr.hard_coded_value))
                         result = cursor.execute(sqlquery, params).fetchall()
@@ -360,10 +362,9 @@ class Process(PipelineObject):
                             run_process = True
                             break
                     else:
-                        # If not None, check if it's the most recent value for this data object & vr.
-                        # TODO: Fix this check, it should NOT check the current DataObject, it should check the one(s?) where the vr_id came from.
-                        sqlquery_raw = "SELECT action_id, data_blob_hash FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND schema_id = ? AND data_blob_hash = ?"
-                        sqlquery = sql_joiner(sqlquery_raw)
+                        # If not None, check if it's the most recent value for this vr, for any dataobject.
+                        sqlquery_raw = "SELECT action_id, data_blob_hash FROM data_values WHERE vr_id = ? AND schema_id = ?"
+                        sqlquery = sql_joiner_most_recent(sqlquery_raw)
                         params = (node.id, self.input_vrs[vr_name].id, schema_id, data_blob_hash)
                         result = cursor.execute(sqlquery, params).fetchall()
                         if len(result) == 0:
@@ -381,9 +382,11 @@ class Process(PipelineObject):
 
             # NOTE: For now, assuming that there is only one return statement in the entire method.
             if self.is_matlab:
+                if not matlab_loaded:
+                    raise ValueError("MATLAB is not loaded.")
                 vr_vals_in = list(vr_values_in.values())
                 fcn = getattr(eng, self.mfunc_name)
-                vr_values_out = fcn(*vr_vals_in, nargout=len(self.output_vrs))
+                vr_values_out = fcn(*vr_vals_in, nargout=len(self.output_vrs))                    
             else:
                 vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
             if not isinstance(vr_values_out, tuple):
