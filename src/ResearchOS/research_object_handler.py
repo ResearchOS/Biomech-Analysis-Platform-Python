@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.sql.sql_joiner_most_recent import sql_joiner_most_recent
+from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.current_user import CurrentUser
 from ResearchOS.get_computer_id import COMPUTER_ID
 
@@ -110,8 +111,9 @@ class ResearchObjectHandler:
         cursor = conn.cursor()
 
         # 2. Get the attributes from the database.
-        sqlquery_raw = "SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = ?"
-        sqlquery = sql_joiner_most_recent(sqlquery_raw)
+        sqlquery_raw = "SELECT attr_id, attr_value FROM simple_attributes WHERE object_id = ?"
+        unique_cols = ["object_id", "attr_id"]
+        sqlquery = sql_order_result(action, sqlquery_raw, unique_cols, single = True, user = True, computer = True)        
         params = (research_object.id,)
         ordered_attr_result = cursor.execute(sqlquery, params).fetchall()
         ResearchObjectHandler.pool.return_connection(conn) 

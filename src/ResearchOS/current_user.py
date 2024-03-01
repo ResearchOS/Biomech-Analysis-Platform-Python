@@ -27,8 +27,7 @@ class CurrentUser():
             return CurrentUser.current_user
         cursor = self.action.conn.cursor()
 
-        sqlquery_raw = "SELECT user_id FROM users_computers WHERE computer_id = ?"
-        sqlquery = sql_joiner_most_recent(sqlquery_raw)
+        sqlquery = "SELECT user_id FROM users_computers WHERE computer_id = ?"
         result = cursor.execute(sqlquery, (COMPUTER_ID,)).fetchone()
         if result is None:
             raise ValueError("current user does not exist because there are no users for this computer")
@@ -38,55 +37,61 @@ class CurrentUser():
     
     def set_current_user_computer_id(self, user: str = default_current_user) -> None:
         """Set the current user in the user_computer_id table in the database.
-        This is the only action that does not affect any other table besides Actions. It is a special case."""        
-        action_id = IDCreator(self.action.conn).create_action_id()
-        params = (action_id, user, COMPUTER_ID)
+        This is the only action that does not affect any other table besides Actions. It is a special case."""
+        params = (self.action.id, user, COMPUTER_ID)
         self.action.db_init_params = params
         CurrentUser.current_user = user
         CurrentUser.computer_id = COMPUTER_ID
 
     def _get_timestamps_when_current(self, type: str, user_or_computer_id: str = None, ) -> list:
         """Get the timestamps when the current user OR computer was active, across all computers/users, respectively.
+        Returns an N x 2 list of timestamps, where N is the number of times that this user was set to current.
         Note that the timestamps are "[)", meaning the end time is not included. This is because the end time is the start time of the next action."""
         cursor = self.action.conn.cursor()
         if user_or_computer_id is None:
             if type == "user":
+                col_name = "user_id"
                 user_or_computer_id = self.get_current_user_id()
             elif type == "computer":
+                col_name = "computer_id"
                 user_or_computer_id = COMPUTER_ID
-        sqlquery = "SELECT action_id, user_id FROM users_computers"
+        sqlquery = f"SELECT action_id, {col_name} FROM users_computers"
         result = cursor.execute(sqlquery).fetchall()
         action_ids = []
-        idx_last_current = []
+        idx_last_current = -1 # Initialize
         for idx, r in enumerate(result):
             # This row is the current user.
             if r[1] == user_or_computer_id:
                 idx_last_current = idx
-                action_ids.append(r[0])
+                action_ids.append([r[0]])
+
+            if idx==0:
+                continue
+
             # The previous row was the current user. Not using elif covers the case of two consecutive rows being the current user.
             if idx_last_current == idx-1:
-                action_ids[-1].append(r[0])
+                action_ids[-2].append(r[0]) # Insert into the second to last row.
             
         # Make it a 1D list.
         action_ids_vector = []
         for t in action_ids:
             action_ids_vector.extend(t) 
 
-        sqlquery = "SELECT timestamp FROM actions WHERE action_id IN ({})".format(",".join("?" * len(action_ids_vector)))
+        sqlquery = "SELECT datetime FROM actions WHERE action_id IN ({})".format(",".join("?" * len(action_ids_vector)))
         result = cursor.execute(sqlquery, action_ids_vector).fetchall()
 
         timestamp_2d = []
         for i in range(0, len(result), 2):
-            if i+1 <= len(result):
-                timestamp_2d.append([result[i], result[i+1]]) # [start, end) format.
+            if i+1 < len(result):
+                timestamp_2d.append([result[i][0], result[i+1][0]]) # [start, end) format.
             else:
                 # Cover the case where the user is the current user at the end of the list.
                 end_time = str(datetime.max.replace(tzinfo=timezone.utc)) # Make it a string.
-                timestamp_2d.append([result[i], end_time])
+                timestamp_2d.append([result[i][0], end_time])
 
         return timestamp_2d
 
-    def get_overlapping_timestamps(timestamps_1: list, timestamps_2: list) -> list:
+    def get_overlapping_timestamps(self, timestamps_1: list, timestamps_2: list) -> list:
         """Get the overlapping timestamps between the two lists."""
         overlapping_timestamps = []
         for t1 in timestamps_1:
@@ -128,9 +133,9 @@ class CurrentUser():
     def get_timestamps_when_current(self, user_id: str = None, computer_id: str = None, user: bool = True, computer: bool = True) -> list:
         """Get the timestamps when the current user and/or computer was active."""
         if user:
-            user_timestamps = self.get_timestamps_when_current(type = "user", user_id = user_id)
+            user_timestamps = self._get_timestamps_when_current(type = "user", user_or_computer_id = user_id)
         if computer:
-            computer_timestamps = self.get_timestamps_when_current(type = "computer", computer_id = computer_id)
+            computer_timestamps = self._get_timestamps_when_current(type = "computer", user_or_computer_id = computer_id)
         if user and computer:
             timestamps = self.get_overlapping_timestamps(user_timestamps, computer_timestamps)
         elif user:
