@@ -1,11 +1,14 @@
 from typing import Any
 from typing import Callable
-import json, sys, os, pickle
+import json, sys, os
+import pickle
 import importlib
 from hashlib import sha256
 from datetime import datetime, timezone
+import logging, time
 
 import networkx as nx
+from memory_profiler import profile
 
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.variable import Variable
@@ -33,14 +36,12 @@ all_default_attrs["subset_id"] = None
 all_default_attrs["import_file_ext"] = None
 all_default_attrs["import_file_vr_name"] = None
 
-complex_attrs_list = []
+computer_specific_attr_names = ["mfolder"]
 
-try:
-    import matlab.engine
-    eng = matlab.engine.start_matlab()
-    matlab_loaded = True
-except:
-    matlab_loaded = False
+log_stream = open("logfile_run_process.log", "w")
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, filename = "logfile.log", filemode = "w", format = "%(asctime)s - %(levelname)s - %(message)s")
 
 
 class Process(PipelineObject):
@@ -93,8 +94,9 @@ class Process(PipelineObject):
         """Convert a JSON string to a method.
         Returns None if the method name is not found (e.g. if code changed locations or something)"""
         method_name = json.loads(json_method)
-        module_name, *attribute_path = method_name.split(".")        
-        module = importlib.import_module(module_name)
+        module_name, *attribute_path = method_name.split(".")
+        if module_name not in sys.modules:
+            module = importlib.import_module(module_name)
         attribute = module
         for attr in attribute_path:
             attribute = getattr(attribute, attr)
@@ -259,6 +261,17 @@ class Process(PipelineObject):
 
         schema_id = self.get_current_schema_id(ds.id)
 
+        matlab_loaded = True
+        if "matlab" not in sys.modules:
+            matlab_loaded = False
+            try:            
+                import matlab.engine
+                eng = matlab.engine.start_matlab()
+                matlab_loaded = True
+            except:
+                matlab_loaded = False                
+            
+
         # 4. Run the method.
         # Get the subset of the data.
         subset_graph = Subset(id = self.subset_id).get_subset()        
@@ -272,150 +285,11 @@ class Process(PipelineObject):
         schema = ds.schema
         schema_graph = nx.MultiDiGraph(schema)
         schema_order = list(nx.topological_sort(schema_graph))
+        
         pool = SQLiteConnectionPool()
         for node in level_nodes:
-            print(f"Running {self.mfunc_name} on {node.name}.")
-
-            # Get the values for the input variables for this DataObject node.            
-            vr_values_in = {}
-            anc_nodes = nx.ancestors(subset_graph, node)
-            node_lineage = [node] + [anc_node for anc_node in anc_nodes]
-            input_vrs_names_dict = {}
-            for var_name_in_code, vr in self.input_vrs.items():
-                vr_found = False
-                input_vrs_names_dict[var_name_in_code] = vr
-                if vr.hard_coded_value is not None:
-                    vr_values_in[var_name_in_code] = vr.hard_coded_value
-                    vr_found = True                
-                for curr_node in node_lineage:
-                    if hasattr(curr_node, vr.name):
-                        vr_values_in[var_name_in_code] = getattr(curr_node, vr.name)
-                        vr_found = True
-                        break
-                if not vr_found:
-                    raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
-                
-            # Get the lineage so I can get the file path for import functions.
-            ordered_levels = []
-            for level in schema_order:
-                ordered_levels.append([n for n in node_lineage if isinstance(n, level)])
-            data_path = ds.dataset_path
-            for level in ordered_levels[1:]:
-                data_path = os.path.join(data_path, level[0].name)
-            # TODO: Make the name of this variable not hard-coded.
-            if self.import_file_vr_name in vr_values_in:
-                vr_values_in[self.import_file_vr_name] = data_path + self.import_file_ext
-
-            # Get the latest action_id where this DataObject was assigned a value to any of the output VR's AND the connection between each output VR and this DataObject is active.
-            # If the connection between each output VR and this DataObject is not active, then run the process.
-            cursor = action.conn.cursor()
-            output_vr_ids = [vr.id for vr in self.output_vrs.values()]
-            run_process = False
-
-            # Check that all output VR connections are active.
-            sqlquery_raw = "SELECT is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
-            sqlquery = sql_order_result(action, sqlquery_raw, ["is_active"], single = True, user = True, computer = False)
-            params = ([node.id] + output_vr_ids)
-            result = cursor.execute(sqlquery, params).fetchall()            
-            all_vrs_active = all([row[0] for row in result if row[0] == 1]) # Returns True if result is empty.
-            if not result or not all_vrs_active:
-                run_process = True
-            else:
-                # Get the latest action_id
-                sqlquery_raw = "SELECT action_id FROM data_values WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
-                sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False) # The data is ordered. The most recent action_id is the first one.
-                params = tuple([node.id] + output_vr_ids)
-                result = cursor.execute(sqlquery, params).fetchall() # The latest action ID
-                if len(result) == 0:
-                    output_vrs_earliest_time = datetime.min.replace(tzinfo=timezone.utc)
-                else:                
-                    most_recent_action_id = result[0][0] # Get the latest action_id.
-                    sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
-                    params = (most_recent_action_id,)
-                    result = cursor.execute(sqlquery, params).fetchall()
-                    output_vrs_earliest_time = datetime.strptime(result[0][0], "%Y-%m-%d %H:%M:%S.%f%z")
-
-
-                # Check if the values for all the input variables are up to date. If so, skip this node.
-                check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_values_in.items()}            
-                input_vrs_latest_time = None
-                for vr_name, vr_val in check_vr_values_in.items():
-                    data_blob = pickle.dumps(vr_val)
-                    data_blob_hash = sha256(data_blob).hexdigest()            
-
-                    # Handle hard-coded variables!
-                    # Check if the action ID that set this variable's hard-coded value occurs after the last time this DataObject was assigned a value to any of the output VR's
-                    vr = input_vrs_names_dict[vr_name]
-                    if vr.hard_coded_value is not None:
-                        sqlquery_raw = "SELECT action_id FROM simple_attributes WHERE object_id = ? AND attr_id = ? AND attr_value = ?"
-                        sqlquery = sql_order_result(action, sqlquery_raw, ["object_id", "attr_id", "attr_value"], single = True, user = True, computer = False)
-                        attr_id = ResearchObjectHandler._get_attr_id("hard_coded_value")
-                        params = (vr.id, attr_id, json.dumps(vr.hard_coded_value))
-                        result = cursor.execute(sqlquery, params).fetchall()
-                        if len(result) == 0:
-                            run_process = True
-                            break
-                        sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
-                        params = (result[0][0],)
-                        result = cursor.execute(sqlquery, params).fetchall()
-                        input_vrs_latest_time = datetime.strptime(result[0][0], "%Y-%m-%d %H:%M:%S.%f%z")
-                        if input_vrs_latest_time > output_vrs_earliest_time:
-                            run_process = True
-                            break
-                    else:
-                        # If not None, check if it's the most recent value for this vr, for any dataobject.
-                        sqlquery_raw = "SELECT action_id, data_blob_hash FROM data_values WHERE vr_id = ? AND schema_id = ?"
-                        sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "schema_id"], single = True, user = True, computer = False)
-                        params = (self.input_vrs[vr_name].id, schema_id)
-                        result = cursor.execute(sqlquery, params).fetchall()
-                        if len(result) == 0:
-                            run_process = True
-                            break
-
-                        latest_data_blob_hash = result[0][1]
-                        if latest_data_blob_hash != data_blob_hash:
-                            run_process = True
-                            break
-
-            if not run_process:
-                print(f"Skipping {node.name} ({node.id}).")
-                continue
-
-            # NOTE: For now, assuming that there is only one return statement in the entire method.
-            if self.is_matlab:
-                if not matlab_loaded:
-                    raise ValueError("MATLAB is not loaded.")
-                vr_vals_in = list(vr_values_in.values())
-                fcn = getattr(eng, self.mfunc_name)
-                vr_values_out = fcn(*vr_vals_in, nargout=len(self.output_vrs))                    
-            else:
-                vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
-            if not isinstance(vr_values_out, tuple):
-                vr_values_out = (vr_values_out,)
-            if len(vr_values_out) != len(self.output_vrs):
-                raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
-            if not self.is_matlab and not all(vr in self.output_vrs for vr in output_var_names_in_code):
-                raise ValueError("All of the variable names returned by this method must have been previously registered with this Process instance.")            
-
-            # Set the output variables for this DataObject node.
-            idx = -1 # For MATLAB. Requires that the args are in the proper order.
-            kwargs_dict = {}
-            for vr_name, vr in self.output_vrs.items():
-                if not self.is_matlab:
-                    idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out and the order in the output_vrs dict are probably different.
-                else:
-                    idx += 1
-                kwargs_dict[vr_name] = vr_values_out[idx]                
-
-            ResearchObject._setattrs(node, {}, kwargs_dict, action = action)
-
-            # Save the output variables to the database.
-            # NOTE: By doing this here, is it possible to pick up a computation from where it was left off?
-            # If not, can save the output variables to the database after the entire process is done.
-            action.commit = True
-            action.exec = True
-            action.execute(return_conn = False)
-
+            self.run_node(node, schema_id, schema_order, action, pool, ds, subset_graph, matlab_loaded, eng)
+            
         for vr_name, vr in self.output_vrs.items():
             print(f"Saved VR {vr_name} (VR: {vr.id}).")
                 
@@ -423,3 +297,170 @@ class Process(PipelineObject):
             eng.rmpath(self.mfolder, nargout=0)   
 
         pool.return_connection(action.conn)
+
+    @profile(stream=log_stream)
+    def run_node(self, node: ResearchObject, schema_id: str, schema_order: list, action: Action, pool: SQLiteConnectionPool, ds: Dataset, subset_graph: nx.MultiDiGraph, matlab_loaded: bool, eng) -> None:
+        start_node_msg = f"Running {self.mfunc_name} on {node.name}."
+        start_node_time = time.time()
+        logging.info(start_node_msg)
+        print(start_node_msg)
+        time.sleep(0.1) # Give breathing room for MATLAB?
+
+        # Get the values for the input variables for this DataObject node.            
+        vr_values_in = {}
+        anc_nodes = nx.ancestors(subset_graph, node)
+        node_lineage = [node] + [anc_node for anc_node in anc_nodes]
+        input_vrs_names_dict = {}
+        for var_name_in_code, vr in self.input_vrs.items():
+            vr_found = False
+            input_vrs_names_dict[var_name_in_code] = vr
+            if vr.hard_coded_value is not None: 
+                vr_values_in[var_name_in_code] = vr.hard_coded_value
+                vr_found = True                
+            for curr_node in node_lineage:
+                if hasattr(curr_node, vr.name):
+                    vr_values_in[var_name_in_code] = getattr(curr_node, vr.name)
+                    vr_found = True
+                    break
+            if not vr_found:
+                raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
+            
+        # Get the lineage so I can get the file path for import functions.
+        ordered_levels = []
+        for level in schema_order:
+            ordered_levels.append([n for n in node_lineage if isinstance(n, level)])
+        data_path = ds.dataset_path
+        for level in ordered_levels[1:]:
+            data_path = os.path.join(data_path, level[0].name)
+        # TODO: Make the name of this variable not hard-coded.
+        if self.import_file_vr_name in vr_values_in:
+            vr_values_in[self.import_file_vr_name] = data_path + self.import_file_ext
+
+        # Get the latest action_id where this DataObject was assigned a value to any of the output VR's AND the connection between each output VR and this DataObject is active.
+        # If the connection between each output VR and this DataObject is not active, then run the process.
+        cursor = action.conn.cursor()
+        output_vr_ids = [vr.id for vr in self.output_vrs.values()]
+        run_process = False
+
+        # Check that all output VR connections are active.
+        sqlquery_raw = "SELECT is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
+        sqlquery = sql_order_result(action, sqlquery_raw, ["is_active"], single = True, user = True, computer = False)
+        params = ([node.id] + output_vr_ids)
+        result = cursor.execute(sqlquery, params).fetchall()            
+        all_vrs_active = all([row[0] for row in result if row[0] == 1]) # Returns True if result is empty.
+        if not result or not all_vrs_active:
+            run_process = True
+        else:
+            # Get the latest action_id
+            sqlquery_raw = "SELECT action_id FROM data_values WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
+            sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False) # The data is ordered. The most recent action_id is the first one.
+            params = tuple([node.id] + output_vr_ids)
+            result = cursor.execute(sqlquery, params).fetchall() # The latest action ID
+            if len(result) == 0:
+                output_vrs_earliest_time = datetime.min.replace(tzinfo=timezone.utc)
+            else:                
+                most_recent_action_id = result[0][0] # Get the latest action_id.
+                sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
+                params = (most_recent_action_id,)
+                result = cursor.execute(sqlquery, params).fetchall()
+                output_vrs_earliest_time = datetime.strptime(result[0][0], "%Y-%m-%d %H:%M:%S.%f%z")
+
+
+            # Check if the values for all the input variables are up to date. If so, skip this node.
+            check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_values_in.items()}            
+            input_vrs_latest_time = None
+            for vr_name, vr_val in check_vr_values_in.items():
+                start_time = time.time()
+                data_blob = pickle.dumps(vr_val)
+                end_time = time.time()
+                execute_time = end_time - start_time
+                logging.debug(f"Pickling name: {vr_name}, type: {type(vr_val)}, size: {sys.getsizeof(data_blob)} took {execute_time} seconds.")
+                data_blob_hash = sha256(data_blob).hexdigest()            
+
+                # Handle hard-coded variables!
+                # Check if the action ID that set this variable's hard-coded value occurs after the last time this DataObject was assigned a value to any of the output VR's
+                vr = input_vrs_names_dict[vr_name]
+                if vr.hard_coded_value is not None:
+                    sqlquery_raw = "SELECT action_id FROM simple_attributes WHERE object_id = ? AND attr_id = ? AND attr_value = ?"
+                    sqlquery = sql_order_result(action, sqlquery_raw, ["object_id", "attr_id", "attr_value"], single = True, user = True, computer = False)
+                    attr_id = ResearchObjectHandler._get_attr_id("hard_coded_value")
+                    params = (vr.id, attr_id, json.dumps(vr.hard_coded_value))
+                    result = cursor.execute(sqlquery, params).fetchall()
+                    if len(result) == 0:
+                        run_process = True
+                        break
+                    sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
+                    params = (result[0][0],)
+                    result = cursor.execute(sqlquery, params).fetchall()
+                    input_vrs_latest_time = datetime.strptime(result[0][0], "%Y-%m-%d %H:%M:%S.%f%z")
+                    if input_vrs_latest_time > output_vrs_earliest_time:
+                        run_process = True
+                        break
+                else:
+                    # If not None, check if it's the most recent value for this vr, for any dataobject.
+                    sqlquery_raw = "SELECT action_id, data_blob_hash FROM data_values WHERE vr_id = ? AND schema_id = ?"
+                    sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "schema_id"], single = True, user = True, computer = False)
+                    params = (self.input_vrs[vr_name].id, schema_id)
+                    result = cursor.execute(sqlquery, params).fetchall()
+                    if len(result) == 0:
+                        run_process = True
+                        break
+
+                    latest_data_blob_hash = result[0][1]
+                    if latest_data_blob_hash != data_blob_hash:
+                        run_process = True
+                        break
+
+        if not run_process:
+            skip_msg = f"Skipping {node.name} ({node.id})."
+            logging.info(skip_msg)
+            print(skip_msg)
+            return
+
+        # NOTE: For now, assuming that there is only one return statement in the entire method.
+        start_run_time = time.time()
+        if self.is_matlab:
+            if not matlab_loaded:
+                raise ValueError("MATLAB is not loaded.")
+            vr_vals_in = list(vr_values_in.values())
+            fcn = getattr(eng, self.mfunc_name)
+            vr_values_out = fcn(*vr_vals_in, nargout=len(self.output_vrs))                    
+        else:
+            vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
+        if not isinstance(vr_values_out, tuple):
+            vr_values_out = (vr_values_out,)
+        if len(vr_values_out) != len(self.output_vrs):
+            raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
+        if not self.is_matlab and not all(vr in self.output_vrs for vr in output_var_names_in_code):
+            raise ValueError("All of the variable names returned by this method must have been previously registered with this Process instance.")
+        end_run_time = time.time()
+        run_time = end_run_time - start_run_time
+        run_msg = f"Running {self.mfunc_name} on {node.name} took {run_time} seconds."
+        logging.debug(run_msg)
+
+        # Set the output variables for this DataObject node.
+        idx = -1 # For MATLAB. Requires that the args are in the proper order.
+        kwargs_dict = {}
+        for vr_name, vr in self.output_vrs.items():
+            if not self.is_matlab:
+                idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out and the order in the output_vrs dict are probably different.
+            else:
+                idx += 1
+            kwargs_dict[vr_name] = vr_values_out[idx]                
+
+        ResearchObject._setattrs(node, {}, kwargs_dict, action = action)
+
+        end_node_before_execute_time = time.time()
+        run_node_before_execute_time = end_node_before_execute_time - start_node_time
+        logging.debug(f"Running {node.name} without execute took {run_node_before_execute_time} seconds.")
+
+        # Save the output variables to the database.
+        # NOTE: By doing this here, is it possible to pick up a computation from where it was left off?
+        # If not, can save the output variables to the database after the entire process is done.
+        action.commit = True
+        action.exec = True
+        action.execute(return_conn = False)
+
+        end_node_after_execute_time = time.time()
+        action_execute_time = end_node_after_execute_time - end_node_before_execute_time
+        logging.debug(f"Action.execute() for {node.name} took {action_execute_time} seconds.")

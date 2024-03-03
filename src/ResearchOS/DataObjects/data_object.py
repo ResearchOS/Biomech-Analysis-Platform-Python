@@ -6,7 +6,7 @@ from ResearchOS.action import Action
 
 all_default_attrs = {}
 
-complex_attrs_list = []
+computer_specific_attr_names = []
 
 class DataObject(ResearchObject):
     """The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors."""    

@@ -4,7 +4,7 @@ from ResearchOS.DataObjects.data_object import DataObject
 
 all_default_attrs = {}
 
-complex_attrs_list = []
+computer_specific_attr_names = []
 
 class Condition(DataObject):
 

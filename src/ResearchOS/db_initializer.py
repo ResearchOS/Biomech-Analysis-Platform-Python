@@ -20,8 +20,8 @@ class DBInitializer():
         ResearchObjectHandler.default_attrs = {} # Reset default attributes dictionary.
 
         # Reset research object dictionary.
-        # ResearchObjectHandler.instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
-        ResearchObjectHandler.instances = {} # Keep track of all instances of all research objects.
+        ResearchObjectHandler.instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
+        # ResearchObjectHandler.instances = {} # Keep track of all instances of all research objects.
         ResearchObjectHandler.counts = {} # Keep track of the number of instances of each ID.
         
         # Reset the connection pools for each database.

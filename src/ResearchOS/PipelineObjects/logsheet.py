@@ -2,6 +2,7 @@ from typing import Any
 import json, csv, platform, os
 
 import networkx as nx
+# from memory_profiler import profile
 
 # import pandas as pd
 from ResearchOS.DataObjects.data_object import DataObject
@@ -21,7 +22,9 @@ all_default_attrs["headers"] = []
 all_default_attrs["num_header_rows"] = None
 all_default_attrs["class_column_names"] = {}
 
-complex_attrs_list = []
+computer_specific_attr_names = ["path"]
+
+# read_logsheet_stream = open("logfile_read_logsheet.log", "w")
 
 class Logsheet(PipelineObject):
 
@@ -197,6 +200,7 @@ class Logsheet(PipelineObject):
         df = pd.read_excel(self.path, header = None)
         return df.values.tolist()
     
+    # @profile(stream = read_logsheet_stream)
     def read_logsheet(self) -> None:
         """Run the logsheet import process."""
         ds = Dataset(id = self.get_dataset_id())
@@ -278,7 +282,8 @@ class Logsheet(PipelineObject):
             name_dobjs_dict[cls] = {}
 
         # Create the DataObject instances in the dict.        
-        all_dobjs_ordered = [] # The list of lists of DataObject instances, ordered by the order of the schema.                
+        all_dobjs_ordered = [] # The list of lists of DataObject instances, ordered by the order of the schema.
+        id_creator = IDCreator(action.conn)
         for row_num, row in enumerate(dobj_names):
             row = row[1:]
             all_dobjs_ordered.append([ds]) # Add the Dataset to the beginning of each row.
@@ -286,8 +291,8 @@ class Logsheet(PipelineObject):
                 cls = order[idx] # The class to create.
                 col_idx = cols_idx[idx] # The index of the column in the logsheet.
                 value = self.clean_value(header_types[col_idx], row[idx])
-                if value not in name_ids_dict[cls]:                    
-                    name_ids_dict[cls][value] = IDCreator(action.conn).create_ro_id(cls)
+                if value not in name_ids_dict[cls]:
+                    name_ids_dict[cls][value] = id_creator.create_ro_id(cls)
                     dobj = cls(id = name_ids_dict[cls][value], name = value, action = action) # Create the research object.
                     name_dobjs_dict[cls][value] = dobj
                     print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", dobj.id)

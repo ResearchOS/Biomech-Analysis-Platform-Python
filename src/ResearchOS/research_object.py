@@ -1,18 +1,22 @@
 from typing import Any
 import json
 
-from ResearchOS.research_object_handler import ResearchObjectHandler
-from ResearchOS.action import Action
-from ResearchOS.sqlite_pool import SQLiteConnectionPool
-from ResearchOS.default_attrs import DefaultAttrs
-from ResearchOS.idcreator import IDCreator
+# from memory_profiler import profile
+
+from .research_object_handler import ResearchObjectHandler
+from .action import Action
+from .sqlite_pool import SQLiteConnectionPool
+from .default_attrs import DefaultAttrs
+from .idcreator import IDCreator
 
 all_default_attrs = {}
 all_default_attrs["notes"] = None
 
-complex_attrs_list = []
+computer_specific_attr_names = []
 
 root_data_path = "data"
+
+# setattr_log = open("logfile_setattrs.log", "w")
 
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
@@ -98,7 +102,7 @@ class ResearchObject():
         self.__dict__["id"] = orig_kwargs["id"] # Put the ID in the __dict__ so that it is not overwritten by the __setattr__ method.
         del orig_kwargs["id"] # Remove the ID from the kwargs so that it is not set as an attribute.        
         attrs = DefaultAttrs(self) # Get the default attributes for the class.
-        default_attrs = attrs.default_attrs
+        default_attrs_dict = attrs.default_attrs
         prev_loaded = self.prev_loaded
         del self.__dict__["prev_loaded"]
 
@@ -111,15 +115,15 @@ class ResearchObject():
             query_name = "robj_exists_insert"
             params = (self.id, action.id)
             action.add_sql_query(id, query_name, params, group_name = "robj_insert")
-            kwargs = default_attrs | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
+            kwargs = default_attrs_dict | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
         else:
             kwargs = orig_kwargs # Because the defaults will have all been set, don't include them.
         
         if not prev_loaded and prev_exists:
             # Load the existing object's attributes from the database.
-            ResearchObjectHandler._load_ro(self, default_attrs, action)                          
+            ResearchObjectHandler._load_ro(self, attrs, action)                          
 
-        self._setattrs(default_attrs, kwargs, action)
+        self._setattrs(default_attrs_dict, kwargs, action)
 
         # Set the attributes.
         if finish_action:
@@ -127,6 +131,7 @@ class ResearchObject():
             action.commit = True
             action.execute()
 
+    # @profile(stream = setattr_log)
     def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action) -> None:
         """Set the attributes of the object.
         default_attrs: The default attributes of the object.

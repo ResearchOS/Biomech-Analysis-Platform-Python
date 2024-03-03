@@ -8,7 +8,7 @@ all_default_attrs = {}
 all_default_attrs["level"] = None
 all_default_attrs["hard_coded_value"] = None
 
-complex_attrs_list = []
+computer_specific_attr_names = []
 
 class Variable(ResearchObject):
     """Variable class."""

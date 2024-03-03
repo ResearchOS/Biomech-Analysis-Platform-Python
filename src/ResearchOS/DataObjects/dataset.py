@@ -16,7 +16,7 @@ all_default_attrs["schema"] = [] # Dict of empty dicts, where each key is the cl
 all_default_attrs["dataset_path"] = None # str
 all_default_attrs["addresses"] = [] # Dict of empty dicts, where each key is the ID of the object and the value is a dict with the subclasses' ID's.
 
-complex_attrs_list = ["schema", "addresses"]
+computer_specific_attr_names = ["dataset_path"]
 
 class Dataset(DataObject):
     """A dataset is one set of data.

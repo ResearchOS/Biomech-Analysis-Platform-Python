@@ -8,7 +8,7 @@ all_default_attrs["current_analysis_id"] = None
 all_default_attrs["current_dataset_id"] = None
 all_default_attrs["project_path"] = None
 
-complex_attrs_list = []
+computer_specific_attr_names = []
 
 class Project(PipelineObject):
     """A project is a collection of analyses.

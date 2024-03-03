@@ -13,7 +13,7 @@ from ResearchOS.action import Action
 all_default_attrs = {}
 all_default_attrs["conditions"] = {}
 
-complex_attrs_list = []
+computer_specific_attr_names = []
 
 numeric_logic_options = (">", "<", ">=", "<=", )
 any_type_logic_options = ("==", '=', "!=", "in", "not in", "is", "is not", "contains", "not contains")

@@ -16,11 +16,12 @@ class DefaultAttrs():
             return
         
         from ResearchOS.research_object import all_default_attrs as ro_default_attrs
-        from ResearchOS.research_object import complex_attrs_list as ro_complex_attrs
         from ResearchOS.PipelineObjects.pipeline_object import all_default_attrs as p_default_attrs
-        from ResearchOS.PipelineObjects.pipeline_object import complex_attrs_list as p_complex_attrs
         from ResearchOS.DataObjects.data_object import all_default_attrs as d_default_attrs
-        from ResearchOS.DataObjects.data_object import complex_attrs_list as d_complex_attrs
+
+        from ResearchOS.research_object import computer_specific_attr_names as ro_computer_specific_attr_names
+        from ResearchOS.PipelineObjects.pipeline_object import computer_specific_attr_names as p_computer_specific_attr_names
+        from ResearchOS.DataObjects.data_object import computer_specific_attr_names as d_computer_specific_attr_names
 
         from ResearchOS.DataObjects.data_object import DataObject
         from ResearchOS.PipelineObjects.pipeline_object import PipelineObject        
@@ -30,23 +31,20 @@ class DefaultAttrs():
         except ImportError:
             raise ImportError(f"The class {cls} could not be imported.")        
         class_default_attrs = getattr(module, "all_default_attrs")
-        # class_complex_attrs = getattr(module, "complex_attrs_list")
+        class_computer_specific_attr_names = getattr(module, "computer_specific_attr_names")
 
         if cls in DataObject.__subclasses__():
             parent_default_attrs = d_default_attrs
-            # parent_complex_attrs = d_complex_attrs
+            parent_computer_specific_attr_names = d_computer_specific_attr_names
         elif cls in PipelineObject.__subclasses__():
             parent_default_attrs = p_default_attrs
-            # parent_complex_attrs = p_complex_attrs
+            parent_computer_specific_attr_names = p_computer_specific_attr_names
         else:
             # Variable class
             parent_default_attrs = {}
-            # parent_complex_attrs = []
+            parent_computer_specific_attr_names = []
 
         ro_default_attrs["name"] = research_object.id
         self.default_attrs = {**ro_default_attrs, **parent_default_attrs, **class_default_attrs}
-        self.default_ro_attrs = ro_default_attrs
-        self.default_parent_attrs = parent_default_attrs
-        self.default_class_attrs = class_default_attrs
-        # self.complex_attrs = ro_complex_attrs + parent_complex_attrs + class_complex_attrs        
+        self.computer_specific_attr_names = ro_computer_specific_attr_names + parent_computer_specific_attr_names + class_computer_specific_attr_names
         ResearchObjectHandler.default_attrs[cls] = self.__dict__

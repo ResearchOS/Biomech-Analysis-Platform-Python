@@ -6,6 +6,7 @@ import sqlite3
 from hashlib import sha256
 import pickle
 from datetime import datetime, timezone
+import logging, time, sys
 
 import numpy as np
 
@@ -25,8 +26,8 @@ from ResearchOS.get_computer_id import COMPUTER_ID
 class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
 
-    # instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
-    instances = {} # Keep track of all instances of all research objects.
+    instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
+    # instances = {} # Keep track of all instances of all research objects.
     counts = {} # Keep track of the number of instances of each ID.    
     pool = SQLiteConnectionPool(name = "main")
     pool_data = SQLiteConnectionPool(name = "data")
@@ -103,8 +104,10 @@ class ResearchObjectHandler:
         return attrs
 
     @staticmethod
-    def _load_ro(research_object: "ResearchObject", default_attrs: dict, action: Action) -> None:
+    def _load_ro(research_object: "ResearchObject", all_attrs: dict, action: Action) -> None:
         """Load "simple" attributes from the database."""
+        default_attrs = all_attrs.default_attrs
+        computer_specific_attr_names = all_attrs.computer_specific_attr_names
         # 1. Get the database cursor.
         from ResearchOS.DataObjects.data_object import DataObject
         conn = ResearchObjectHandler.pool.get_connection()
@@ -113,24 +116,34 @@ class ResearchObjectHandler:
         # 2. Get the attributes from the database.
         sqlquery_raw = "SELECT attr_id, attr_value FROM simple_attributes WHERE object_id = ?"
         unique_cols = ["object_id", "attr_id"]
-        sqlquery = sql_order_result(action, sqlquery_raw, unique_cols, single = True, user = True, computer = True)        
+        sqlquery = sql_order_result(action, sqlquery_raw, unique_cols, single = True, user = True, computer = False)        
         params = (research_object.id,)
-        ordered_attr_result = cursor.execute(sqlquery, params).fetchall()
+        ordered_attr_result_all_computers = cursor.execute(sqlquery, params).fetchall()
+        sqlquery = sql_order_result(action, sqlquery_raw, unique_cols, single = True, user = True, computer = True)
+        ordered_attr_result_computer = cursor.execute(sqlquery, params).fetchall()
         ResearchObjectHandler.pool.return_connection(conn) 
 
-        if not ordered_attr_result:
+        if not ordered_attr_result_all_computers:
             raise ValueError("No object with that ID exists.")
+        
+        if not ordered_attr_result_computer and computer_specific_attr_names:
+            raise ValueError("No computer-specific attributes exist for this object.")
 
-        # TODO: 
+        # The attributes that are not computer-specific.
         attrs = {}
-        for row in ordered_attr_result:
+        for row in ordered_attr_result_all_computers:
+            attr_name = ResearchObjectHandler._get_attr_name(row[0])            
+            attrs[attr_name] = json.loads(row[1])
+
+        # The attributes that are computer-specific.
+        for row in ordered_attr_result_computer:
             attr_name = ResearchObjectHandler._get_attr_name(row[0])
             if hasattr(research_object, "load_" + attr_name):
                 load_method = getattr(research_object, "load_" + attr_name)
                 attr_value = load_method(action)
             else:
                 attr_value = ResearchObjectHandler.from_json(research_object, attr_name, row[1], action)
-            attrs[attr_name] = attr_value        
+            attrs[attr_name] = attr_value
 
         # 3. Set the attributes of the object.
         research_object.__dict__.update(attrs)
@@ -220,6 +233,7 @@ class ResearchObjectHandler:
         
         # Set custom (VR) attributes: this object's "name" attribute is the VR object.
         cursor = action.conn.cursor()
+        logging.info(f"Setting VR attribute: {name} for object: {research_object.id}")
         if name in research_object.__dict__:
             selected_vr = research_object.__dict__[name]                      
         else:            
@@ -261,7 +275,11 @@ class ResearchObjectHandler:
         pool_data = SQLiteConnectionPool(name = "data")
         conn_data = pool_data.get_connection()
         cursor_data = conn_data.cursor()
-        data_blob = pickle.dumps(value)          
+        data_blob = pickle.dumps(value)
+        start_time = time.time()
+        end_time = time.time()
+        execute_time = end_time - start_time
+        logging.debug(f"Pickling name: {selected_vr.name}, type: {type(value)}, size: {sys.getsizeof(data_blob)} took {execute_time} seconds.")
         data_blob_hash = sha256(data_blob).hexdigest()
         params = (data_blob_hash,)
         hash_found = cursor_data.execute(action.queries["data_blob_hash_select"], params).fetchall()

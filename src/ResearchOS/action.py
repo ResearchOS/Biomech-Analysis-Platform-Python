@@ -1,10 +1,9 @@
 import datetime, sqlite3
 from datetime import timezone
-from typing import Union
 import os
 
 from ResearchOS.idcreator import IDCreator
-from ResearchOS.current_user import CurrentUser
+# from ResearchOS.current_user import CurrentUser
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 count = 0

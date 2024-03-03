@@ -2,7 +2,7 @@ from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 all_default_attrs = {}
 
-complex_attrs_list = []
+computer_specific_attr_names = []
 
 class Analysis(PipelineObject):
 

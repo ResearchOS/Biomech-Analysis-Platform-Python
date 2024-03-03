@@ -10,7 +10,7 @@ all_default_attrs = {}
 all_default_attrs["attr1"] = None
 
 # This variable must always be present.
-complex_attrs_list = []
+computer_specific_attr_names = []
 
 class Template(PipelineObject, DataObject):
 
