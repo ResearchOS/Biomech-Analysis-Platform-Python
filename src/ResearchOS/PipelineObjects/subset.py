@@ -104,7 +104,7 @@ class Subset(PipelineObject):
         return G.subgraph(nodes_for_subgraph) # Maintains the relationships between all of the nodes in the subgraph.
 
     def meets_conditions(self, node_id: str, conditions: dict, G: nx.MultiDiGraph, subclasses: list) -> bool:
-        """Check if the node_id meets the conditions."""
+        """Check if the node_id meets the conditions.""" 
         if isinstance(conditions, dict):
             if "and" in conditions:
                 for cond in conditions["and"]:
