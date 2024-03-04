@@ -5,15 +5,17 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.sdist]
 exclude = [
   "/.github",
+  "/.venv",
   "/docs",
+  "/how_to",
   "mkdocs.yml",
   "requirements_dev.txt",
-  "/archive",
   "pypi_upload_instructions.md",
   "dev_env_file.py",
-  "/src/ResearchOS/tests",
-  "/src/ResearchOS/dev_database.db",
-  "/src/ResearchOS/config_no_prod/"
+  "researchos.db",
+  "researchos_data.db",
+  "Spr23TWW_OA_AllSubjects_032323_TEST.csv",
+  "Spr23TWW_OA_AllSubjects_032323.xlsx",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -21,8 +23,8 @@ packages = ["src/ResearchOS"]
 
 [project]
 name = "ResearchOS"
-version = "0.0.6"
-requires-python = ">=3.0"
+version = "0.0.12"
+requires-python = ">=3.0.0"
 authors = [
     {name = "Mitchell Tillman <mtillman14@gmail.com>"},
 ]
@@ -42,6 +44,20 @@ classifiers = [
     "Topic :: Utilities",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent"
+]
+# Runtime dependencies
+dependencies = [
+  "networkx>=3.2.1",
+  "numpy>=1.26.4"
+]
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+  "pytest",
+  "mkdocstrings",
+  "mkdocs-material",
+  "mkdocstrings-python"
 ]
 
 [project.urls]

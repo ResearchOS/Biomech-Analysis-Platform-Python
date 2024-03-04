@@ -1,0 +1,1 @@
+INSERT INTO users_computers (action_id, user_id, computer_id) VALUES (?, ?, ?);

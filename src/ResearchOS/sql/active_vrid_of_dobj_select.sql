@@ -1,0 +1,1 @@
+SELECT vr_id FROM vr_dataobjects WHERE dataobject_id = ? AND is_active = ?

@@ -1,20 +1,30 @@
 from typing import Any
-import os
+import json
 
-from ResearchOS.research_object_handler import ResearchObjectHandler
-from ResearchOS.action import Action
-from ResearchOS.sqlite_pool import SQLiteConnectionPool
-from ResearchOS.default_attrs import DefaultAttrs
+# from memory_profiler import profile
+
+from .research_object_handler import ResearchObjectHandler
+from .action import Action
+from .sqlite_pool import SQLiteConnectionPool
+from .default_attrs import DefaultAttrs
+from .idcreator import IDCreator
+from ResearchOS.sql.sql_runner import sql_order_result
 
 all_default_attrs = {}
 all_default_attrs["notes"] = None
 
-complex_attrs_list = []
+computer_specific_attr_names = []
 
 root_data_path = "data"
 
+# setattr_log = open("logfile_setattrs.log", "w")
+
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
+
+    def __deepcopy__(self, memo):
+        """Raise an error if attempting to deepcopy this object."""
+        raise ValueError("Research objects cannot be deepcopied.")
 
     def __hash__(self):
         return hash(self.id)
@@ -22,83 +32,153 @@ class ResearchObject():
     def __eq__(self, other):
         if isinstance(other, ResearchObject):
             return self.id == other.id and self is other
-        return self == other
-    
-    def __getattribute__(self, name: str) -> Any:
-        """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""
-        from ResearchOS.DataObjects.data_object import DataObject
-        subclasses = DataObject.__subclasses__()
-        vr_class = [x for x in subclasses if x.prefix == "VR"][0]
-        try:
-            value = super().__getattribute__(name) # Throw the default error.
-        except AttributeError as e:
-            raise e        
-        if not isinstance(value, vr_class):
-            return value
-        
-        value = ResearchObjectHandler.load_vr_value(self, value)
-        return value
-
+        return False
+     
     def __new__(cls, **kwargs):
         """Create a new research object in memory. If the object already exists in memory with this ID, return the existing object."""
-        kwargs = ResearchObjectHandler.check_inputs(cls, kwargs)
+        if "id" not in kwargs.keys():
+            raise ValueError("id is required as a kwarg")  
         id = kwargs["id"]
+        if not IDCreator(None).is_ro_id(id):
+            raise ValueError("id is not a valid ID.")
+        del kwargs["id"]
         if id in ResearchObjectHandler.instances:
             ResearchObjectHandler.counts[id] += 1
             ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = True
+            ResearchObjectHandler.instances[id].__dict__["_initialized"] = False
             return ResearchObjectHandler.instances[id]
+        
         ResearchObjectHandler.counts[id] = 1
         instance = super(ResearchObject, cls).__new__(cls)
         ResearchObjectHandler.instances[id] = instance
-        ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = False
-        return instance
+        instance.__dict__["id"] = id # Put the ID in the object.
+        instance.__dict__["prev_loaded"] = False
+        instance.__dict__["_initialized"] = False
+        return instance 
     
-    def __init__(self, **orig_kwargs):
-        """Initialize the research object."""   
-        self.__dict__["id"] = orig_kwargs["id"] # Put the ID in the __dict__ so that it is not overwritten by the __setattr__ method.
-        del orig_kwargs["id"] # Remove the ID from the kwargs so that it is not set as an attribute.        
-        attrs = DefaultAttrs(self.__class__) # Get the default attributes for the class.
-        default_attrs = attrs.default_attrs
-        default_attrs["name"] = self.id # Set the default name to the object's ID.
+    # def __getattribute__(self, name: str) -> Any:
+    #     """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""
+    #     from ResearchOS.variable import Variable
+    #     try:
+    #         value = super().__getattribute__(name) # Throw the default error.
+    #     except AttributeError as e:
+    #         raise e        
+    #     if isinstance(value, Variable):
+    #         action = Action(name = "attribute_access")
+    #         value = ResearchObjectHandler.load_vr_value(self, action, value)
+    #     return value
+    
+    def __setattr__(self, name: str = None, value: Any = None, action: Action = None, all_attrs: DefaultAttrs = None, kwargs_dict: dict = {}) -> None:
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""        
+        if not self._initialized:
+            self.__dict__[name] = value
+            return
+        # Ensure that the criteria to set the attribute are met.
+        if not str(name).isidentifier():
+            raise ValueError(f"{name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.        
+        if name == "id":
+            raise ValueError("Cannot change the ID of a research object.")
+        if name == "prefix":
+            raise ValueError("Cannot change the prefix of a research object.")
+        if name == "name":
+            if not str(value).isidentifier():
+                raise ValueError(f"name attribute, value: {value} is not a valid attribute name.") 
+            
+        # Set the attribute. Create Action when __setattr__ is called as the top level.
+        if all_attrs is None:
+            all_attrs = DefaultAttrs(self)                
+        commit = False
+        if action is None:
+            commit = True
+            action = Action(name = "attribute_changed")
 
-        # Will be overwritten if creating a new object.
-        action = Action(name = f"set object attributes")
-        kwargs = orig_kwargs # Because the defaults will have all been set, don't include them.
-        prev_exists = ResearchObjectHandler.object_exists(self.id)
-        if not self.prev_loaded and prev_exists:
-            # Load the existing object's attributes from the database.
-            ResearchObjectHandler._load_ro(self, default_attrs)
-        elif not prev_exists:
+        if not kwargs_dict:
+            kwargs_dict = {name: value}
+        self._setattrs(all_attrs.default_attrs, kwargs_dict, action)
+
+        action.commit = commit
+        action.exec = True
+        action.execute()     
+    
+    def __init__(self, action: Action = None, **orig_kwargs):
+        """Initialize the research object."""
+        orig_kwargs = self.__dict__ | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
+        prev_loaded = orig_kwargs["prev_loaded"]
+        del orig_kwargs["id"] # Remove the ID from the kwargs so that it is not set as an attribute.        
+        del orig_kwargs["prev_loaded"] # Remove the _initialized attribute from the kwargs so that it is not set as an attribute.
+        del orig_kwargs["_initialized"]
+        
+        finish_action = False
+        if action is None:
+            action = Action(name = "__init__", exec = False) # One data object.
+            finish_action = True
+        
+        attrs = DefaultAttrs(self) # Get the default attributes for the class.
+        default_attrs_dict = attrs.default_attrs
+
+        if prev_loaded:
+            prev_exists = True
+        else:
+            prev_exists = ResearchObjectHandler.object_exists(self.id, action)        
+        if not prev_exists:
             # Create a new object.
-            action = Action(name = f"created object")
-            ResearchObjectHandler._create_ro(self, action = action) # Create the object in the database.
-            kwargs = default_attrs | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
-        del self.__dict__["prev_loaded"] # Remove the prev_loaded attribute from the object.
+            query_name = "robj_exists_insert"
+            params = (self.id, action.id)
+            action.add_sql_query(id, query_name, params, group_name = "robj_insert")
+            kwargs = default_attrs_dict | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
+        else:
+            kwargs = orig_kwargs # Because the defaults will have all been set, don't include them.
+        
+        if prev_exists:
+            # Load the existing object's attributes from the database.
+            ResearchObjectHandler._load_ro(self, attrs, action)
+        # if prev_exists and prev_loaded:
+        #     finish_action = False
+
+        if prev_exists:
+            self._initialized = True
+            # Remove default kwargs values, and kwargs with values already in the object.
+            # Kind of hacky but works for now.
+            tmp_kwargs = kwargs.copy()
+            for key in tmp_kwargs:
+                if key in self.__dict__ and key in kwargs and self.__dict__[key] == kwargs[key]:
+                    del kwargs[key]
+                if key in default_attrs_dict and key in kwargs and default_attrs_dict[key] == kwargs[key]:
+                    del kwargs[key]
+
+        self._setattrs(default_attrs_dict, kwargs, action)
 
         # Set the attributes.
-        for key in kwargs:
-            validate = True # Default is to validate any attribute.        
-            # If previously loaded, don't overwrite a default attribute with its default value. If it was specified as a kwarg, then use that specified value.
-            if key in self.__dict__ and key not in orig_kwargs:
-                continue
-            # If the attribute value is a default value, don't validate it.
-            if key in default_attrs and kwargs[key] == default_attrs[key]:
-                validate = False
-            self.__setattr__(key, kwargs[key], action = action, validate = validate, all_attrs = attrs)
-            action.execute(commit = True) # Commit the action to the database.
-        # action.execute(commit = True) # Commit the action to the database.
+        if finish_action:
+            action.exec = True
+            action.commit = True
+            action.execute()
 
-    def __setattr__(self, name, value, action: Action = None, validate: bool = True, all_attrs: DefaultAttrs = None) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-        if all_attrs is None:
-            all_attrs = DefaultAttrs(self.__class__)
-        if action is None:            
-            action = Action(name = "attribute_changed")
-            action.do_exec = True
-        else:
-            action.do_exec = False
-        ResearchObjectHandler._setattr(self, name, value, action, validate, all_attrs.default_attrs, all_attrs.complex_attrs)        
-        action.execute()
+        self._initialized = True
+
+    # @profile(stream = setattr_log)
+    def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action) -> None:
+        """Set the attributes of the object.
+        default_attrs: The default attributes of the object.
+        orig_kwargs: The original kwargs passed to the object.
+        kwargs: The kwargs to be used to set the attributes. A combination of the default attributes and the original kwargs."""
+        del_keys = []
+        if self._initialized:
+            for key in kwargs:
+                try:
+                    if key in self.__dict__ and self.__dict__[key] == kwargs[key]:
+                        del_keys.append(key) # No change.
+                except ValueError:
+                    pass # Allow the Variable to not exist yet.
+            
+        for key in del_keys:
+            del kwargs[key]
+        # 1. Set simple & complex builtin attributes.
+        ResearchObjectHandler._set_builtin_attributes(self, default_attrs, kwargs, action)
+
+        # 2. Set VR attributes.        
+        vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
+        ResearchObjectHandler._set_vr_values(self, vr_attrs, action)
 
     def get_vr(self, name: str) -> Any:
         """Get the VR itself instead of its value."""
@@ -106,7 +186,9 @@ class ResearchObject():
 
     def get_dataset_id(self) -> str:
         """Get the most recent dataset ID."""        
-        sqlquery = f"SELECT action_id, dataset_id FROM data_address_schemas"
+        sqlquery = f"SELECT dataset_id FROM data_address_schemas"
+        # action = Action(name = "get_dataset_id")
+        # sqlquery = sql_order_result(action, sqlquery_raw, ["dataset_id"], single = True, user = True, computer = False)
         pool = SQLiteConnectionPool()
         conn = pool.get_connection()
         cursor = conn.cursor()
@@ -115,16 +197,8 @@ class ResearchObject():
         # ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num=0)
         if not result:
             raise ValueError("Need to create a dataset and set up its schema first.")
-        dataset_id = result[-1][1]        
+        dataset_id = result[-1][0]        
         return dataset_id
-    
-    def get_vr_file_path(self, vr_id: str, dataset_id: str, levels: list) -> str:
-        """Get the file path for a VR."""
-        subfolder = ""
-        for level in levels:
-            if level is not None:
-                subfolder += level + os.sep
-        return root_data_path + os.sep + dataset_id + subfolder + vr_id + ".json"    
 
     def get_current_schema_id(self, dataset_id: str) -> str:
         conn = ResearchObjectHandler.pool.get_connection()
@@ -140,222 +214,4 @@ class ResearchObject():
         schema_id = conn.execute(sqlquery).fetchone()
         schema_id = schema_id[0] if schema_id else None
         ResearchObjectHandler.pool.return_connection(conn)
-        return schema_id    
-
-
-
-
-
-        
-
-
-#     def _default_store_edge_attr(self, target_object_id: str, name: str, value: Any, action: Action) -> None:
-#         """Create a digraph edge between the current object and the target object with the specified attribute."""
-#         json_value = json.dumps(value, indent = 4)
-#         sqlquery = f"INSERT INTO research_object_attributes (action_id, object_id, attr_id, attr_value, target_object_id) VALUES ('{action.id}', '{self.id}', '{ResearchObject._get_attr_id(name, value)}', '{json_value}', '{target_object_id}')"
-#         action.add_sql_query(sqlquery)
-#         return action
-
-    
-#     def _is_orphan_with_removal(self, id: str) -> bool:
-#         """Check if the object would be orphaned if the specified object ID were removed from its list of parent ID's."""
-#         if not self.is_id(id):
-#             raise ValueError("Invalid ID.")
-#         if not self._is_source(id):
-#             raise ValueError("ID is not a source object of the current object.")
-#         if len(self._get_all_source_object_ids(type(self))) == 1:
-#             return True
-
-#     ###############################################################################################################################
-#     #################################################### end of dunder methods ####################################################
-#     ###############################################################################################################################
-
-#     @abstractmethod
-#     def get_all_ids(cls) -> list[str]:
-#         """Get all object IDs of the specified class."""
-#         cursor = Action.conn.cursor()
-#         sqlquery = "SELECT object_id FROM research_objects"
-#         cursor.execute(sqlquery)
-#         rows = cursor.fetchall()
-#         return [row[0] for row in rows if (row[0] is not None and row[0].startswith(cls.prefix))] 
-    
-#     ###############################################################################################################################
-#     #################################################### end of abstract methods ##################################################
-#     ###############################################################################################################################
-
-#     def abstract_id(self) -> str:
-#         """Return the abstract ID of the current object."""
-#         return self.parse_id(self.id)[1]
-
-#     def is_instance_object(self) -> bool:
-#         """Return true if the object is an instance object, false if it is an abstract object."""
-#         return self.parse_id(self.id)[2] is not None
-    
-#     def _is_id_of_class(self, id: str, cls: type) -> bool:
-#         """True if the ID is of the proper type, False if not."""
-#         return id.startswith(cls.prefix)
-
-#     def _is_id_or_none(self, id: str) -> bool:
-#         """Check if the given ID matches the pattern of a valid research object ID, or is None."""              
-#         if id is None or self.is_id(id):
-#             return True
-#         return False
-
-#     def _get_all_source_object_ids(self, cls) -> list[str]:
-#         """Get all source object ids of the specified target object of the specified type. Immediate neighbors only, equivalent to predecessors() method"""
-#         sql = f'SELECT object_id, attr_value FROM research_object_attributes WHERE target_object_id = "{self.id}"'
-#         return self.__get_all_related_object_ids(cls, sql)
-    
-#     def _get_all_target_object_ids(self, cls) -> list[str]:
-#         """Get all target object ids of the specified source object of the specified type. Immediate neighbors only, equivalent to successors() method"""
-#         sql = f'SELECT target_object_id, attr_value FROM research_object_attributes WHERE object_id = "{self.id} AND target_object_id IS NOT NULL"'
-#         return self.__get_all_related_object_ids(cls, sql)
-
-#     def __get_all_related_object_ids(self, cls, sql) -> list[str]:
-#         """Called by _get_all_source_object_ids and _get_all_target_object_ids.
-#         Get all related object ids of the specified object of the specified type, either source of target objects."""
-#         # TODO: Ensure that the edges are not outdated, check the "exists" property of the edge.
-#         cursor = Action.conn.cursor()
-#         cursor.execute(sql)
-#         data = []
-#         for row in cursor:
-#             if row[0] is None:
-#                 continue
-#             if row[0].startswith(cls.prefix):                
-#                 data.append(row[0])
-#         return data
-    
-#     def _is_source(self, id: str) -> bool:
-#         """Check if the specified object ID is a source object of the current object."""        
-#         sql = f"SELECT object_id FROM research_object_attributes WHERE target_object_id = '{self.id}' AND object_id = '{id}'"
-#         cursor = Action.conn.cursor()
-#         cursor.execute(sql)
-#         return len(cursor.fetchall()) > 0
-    
-#     def _is_target(self, id: str) -> bool:
-#         """Check if the specified object ID is a target object of the current object."""        
-#         sql = f"SELECT target_object_id FROM research_object_attributes WHERE object_id = '{self.id}' AND target_object_id = '{id}'"
-#         cursor = Action.conn.cursor()
-#         cursor.execute(sql)
-#         return len(cursor.fetchall()) > 0
-    
-#     def _add_target_object_id(self, id: str, cls: type) -> None:
-#         """Add a target object ID to the current source object in the database."""
-#         if not self.is_id(id):
-#             raise ValueError("Invalid ID.")    
-#         if not self._is_id_of_class(id, cls):
-#             raise ValueError("ID is of the wrong class!")          
-#         if self._is_target(id):
-#             return # Already exists.
-#         action = Action(name = "add_target_object_id")
-#         json_value = json.dumps(True)
-#         sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', '{id}', {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME, True)}, '{json_value}')"        
-#         action.add_sql_query(sql)
-#         action.execute()
-
-#     def _remove_target_object_id(self, id: str, cls: type) -> None:
-#         """Remove a target object ID from the current source object."""
-#         if not self.is_id(id):
-#             raise ValueError("Invalid ID.")   
-#         if not self._is_id_of_class(id, cls):
-#             raise ValueError("ID is of the wrong class!")           
-#         if not self._is_target(id):
-#             return
-#         action = Action(name = "remove_target_object_id")
-#         json_value = json.dumps(False)
-#         sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{self.id}', {id}, {ResearchObject._get_attr_id(DEFAULT_NAME_ATTRIBUTE_NAME)}, '{json_value}')"        
-#         action.add_sql_query(sql)
-#         action.execute()   
-
-#     def _add_source_object_id(self, id: str) -> None:
-#         """Add a source object ID to the current target object in the database.
-#         NOTE: I really don't like the way that this method came out. Too many exceptions for too many classes."""           
-#         if not self.is_id(id):
-#             raise ValueError("Invalid ID.")
-        
-#         prefix = self.parse_id(id)[0]
-#         classes = self._get_subclasses(ResearchObject)
-#         cls = None
-#         for c in classes:
-#             if c.prefix == prefix:
-#                 cls = c
-#                 break
-#         source_obj = cls(id = id)
-#         attr_name = "current_" + cls.__name__.lower() + "_id"
-#         if prefix not in self._current_source_type_prefixes:
-#             raise ValueError("ID is of the wrong class, cannot be linked to this class type!")        
-#         source_obj.__setattr__(attr_name, self.id)
-#         if prefix not in self._source_type_prefixes:
-#             raise ValueError("ID is of the wrong class, cannot be linked to this class type!")
-
-#         if self._is_source(id):
-#             return # Already exists
-#         action = Action(name = "add_source_object_id")
-#         json_value = json.dumps(True)
-#         sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{id}', '{self.id}, {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME)}, '{json_value}')"        
-#         action.add_sql_query(sql)
-#         action.execute()
-
-#     def _remove_source_object_id(self, id: str) -> None:
-#         """Remove a source object ID from the current target object in the database."""
-#         if not self._is_id(id):
-#             raise ValueError("Invalid ID.")      
-#         if not self._is_id_of_class(id, cls):
-#             raise ValueError("ID is of the wrong class!")
-#         if not self._is_source(id):
-#             return
-#         json_value = json.dumps(False)
-#         action = Action(name = "remove_source_object_id")
-#         sql = f"INSERT INTO research_object_attributes (action_id, object_id, target_object_id, attr_id, attr_value) VALUES ('{action.id}', '{id}', {self.id}, {ResearchObject._get_attr_id(DEFAULT_EXISTS_ATTRIBUTE_NAME)}, '{json_value}')"        
-#         action.add_sql_query(sql)
-#         action.execute()
-
-#     def _gen_obj_or_none(self, ids, cls: type) -> "ResearchObject":
-#         """Generate the objects of the specified class, or None if the IDs argument is None or []."""
-#         if ids is None or len(ids) == 0:
-#             return None
-#         return [cls(id = id) for id in ids]
-    
-#     ###############################################################################################################################
-#     #################################################### end of parentage methods #################################################
-#     ############################################################################################################################### 
-
-#     def get_abstract_object(self) -> "ResearchObject":
-#         """Return the abstract object corresponding to the given the instance object. If abstract is given, return self."""
-#         if not self.is_instance_object():
-#             return self
-#         abstract_id = self.parse_id()[1]
-#         cls = type(self)
-#         return cls(id = abstract_id)
-        
-#     def copy_to_new_instance(self, new_id: str = None) -> "ResearchObject":
-#         """Copy the current object to a new object with a new instance ID but the same abstract ID. Return the new object."""
-#         cls = type(self)
-#         if new_id is None:
-#             abstract_id = self.parse_id(self.id)[1]
-#             new_id = cls.create_id(cls, abstract = abstract_id)
-#         new_object = cls(copy = True, id = new_id)        
-#         attrs = self.__dict__
-#         for key, value in attrs.items():
-#             if key == "id":
-#                 continue
-#             # No validation because that would've already happened when the original object was created.
-#             new_object.__setattr__(key, value, validate = False)
-#         return new_object
-
-#     ###############################################################################################################################
-#     ############################################ end of abstract/instance relation methods ########################################
-#     ###############################################################################################################################     
-    
-#     def _open_path(self, path: str) -> None:
-#         """Open a file or directory in the default application."""
-#         import os
-#         import subprocess
-#         if os.path.isdir(path):
-#             subprocess.Popen(["open", path])
-#         else:
-#             subprocess.Popen(["open", "-R", path])
-    
-# if __name__=="__main__":
-#     # Cannot run anything from here because Action is a circular import.
-#     pass
+        return schema_id

@@ -1,5 +1,5 @@
-from typing import Any, TYPE_CHECKING
-import json, copy
+from typing import Any
+import json, copy, os
 
 import networkx as nx
 
@@ -16,7 +16,7 @@ all_default_attrs["schema"] = [] # Dict of empty dicts, where each key is the cl
 all_default_attrs["dataset_path"] = None # str
 all_default_attrs["addresses"] = [] # Dict of empty dicts, where each key is the ID of the object and the value is a dict with the subclasses' ID's.
 
-complex_attrs_list = ["schema", "addresses"]
+computer_specific_attr_names = ["dataset_path"]
 
 class Dataset(DataObject):
     """A dataset is one set of data.
@@ -26,29 +26,21 @@ class Dataset(DataObject):
 
     prefix: str = "DS"
 
-    # def __init__(self, **kwargs):
-    #     """Initialize the attributes that are required by ResearchOS.
-    #     Other attributes can be added & modified later."""
-    #     super().__init__(all_default_attrs, **kwargs)
-
-    # def __setattr__(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
-    #     """Set the attribute value. If the attribute value is not valid, an error is thrown."""
-    #     ResearchObjectHandler._setattr_type_specific(self, name, value, action, validate, complex_attrs_list)
-
-    def load(self) -> None:
-        """Load the dataset-specific attributes from the database in an attribute-specific way.
-        Args: 
-            self
-        Returns:
-            None"""
-        self.load_schema() # Load the dataset schema.
-        self.load_addresses() # Load the dataset addresses.
-        DataObject.load(self) # Load the attributes specific to it being a DataObject.
-
+    def __init__(self, schema: list = all_default_attrs["schema"], 
+                 dataset_path: str = all_default_attrs["dataset_path"], 
+                 addresses: list = all_default_attrs["addresses"], **kwargs):                 
+        """Create a new dataset."""
+        self.schema = schema
+        self.dataset_path = dataset_path
+        self.addresses = addresses
+        super().__init__(**kwargs)
+    
     ### Schema Methods
         
-    def validate_schema(self, schema: list) -> None:
+    def validate_schema(self, schema: list, action: Action, default: Any) -> None:
         """Validate that the data schema follows the proper format.
+        Must be a dict of dicts, where all keys are Python types matching a DataObject subclass, and the lowest levels are empty.
+        
         Args:
             self
             schema (list) : dict of dicts, all keys are Python types matching a DataObject subclass, and the lowest levels are empty
@@ -56,8 +48,12 @@ class Dataset(DataObject):
             None
         Raises:
             ValueError: Incorrect schema type"""
-        subclasses = DataObject.__subclasses__()
-        vr = [x for x in subclasses if x.prefix == "VR"][0]                
+        from ResearchOS.research_object import ResearchObject
+        if schema == default:
+            return
+        subclasses = ResearchObject.__subclasses__()
+        dataobj_subclasses = DataObject.__subclasses__()
+        vr = [x for x in subclasses if hasattr(x,"prefix") and x.prefix == "VR"][0]                
             
         graph = nx.MultiDiGraph()
         try:
@@ -67,9 +63,9 @@ class Dataset(DataObject):
         if not nx.is_directed_acyclic_graph(graph):
             raise ValueError("The schema must be a directed acyclic graph!")
         
-        non_subclass = [node for node in graph if node not in subclasses]
+        non_subclass = [node for node in graph if node not in dataobj_subclasses]
         if non_subclass:
-            raise ValueError("The schema must only include ResearchObject subclasses!")
+            raise ValueError("The schema must only include DataObject subclasses!")
         
         if Dataset not in graph:
             raise ValueError("The schema must include the Dataset class as a source node!")
@@ -101,22 +97,21 @@ class Dataset(DataObject):
         json_schema = json.dumps(str_schema)
 
         # 3. Save the schema to the database.        
-        schema_id = IDCreator().create_action_id()
-        sqlquery = f"INSERT INTO data_address_schemas (schema_id, levels_edge_list, dataset_id, action_id) VALUES ('{schema_id}', '{json_schema}', '{self.id}', '{action.id}')"
-        action.add_sql_query(sqlquery)
+        schema_id = IDCreator(action.conn).create_action_id()
+        # sqlquery = f"INSERT INTO data_address_schemas (schema_id, levels_edge_list, dataset_id, action_id) VALUES (?, ?, ?, ?)"
+        params = (schema_id, json_schema, self.id, action.id)
+        action.add_sql_query(self.id, "data_address_schemas_insert", params, group_name = "robj_complex_attr_insert")
 
-    def load_schema(self) -> None:
-        """Load the schema from the database and convert it via json.
-        Args:
-            self
-        Returns:
-            None"""
+    def load_schema(self, action: Action) -> list:
+        """Load the schema from the database and convert it via json."""
+
         # 1. Get the dataset ID
         id = self.id
         # 2. Get the most recent action ID for the dataset in the data_address_schemas table.
         schema_id = self.get_current_schema_id(id)
         sqlquery = f"SELECT levels_edge_list FROM data_address_schemas WHERE schema_id = '{schema_id}'"
-        conn = ResearchObjectHandler.pool.get_connection()
+        # conn = ResearchObjectHandler.pool.get_connection()
+        conn = action.conn
         result = conn.execute(sqlquery).fetchone()
 
         # 5. If the schema is not None, convert the string to a list of types.
@@ -127,28 +122,34 @@ class Dataset(DataObject):
                 sch[idx] = ResearchObjectHandler._prefix_to_class(prefix)
             schema.append(sch)  
 
-        # 6. Store the schema as an attribute of the dataset.
-        self.__dict__["schema"] = schema
+        return schema
 
     ### Dataset path methods
 
-    def validate_dataset_path(self, path: str) -> None:
+    def validate_dataset_path(self, path: str, action: Action, default: Any) -> None:
         """Validate the dataset path.
+        
         Args:
             self
             path (string): your dataset path
         Returns:
             None
         Raises:
-            ValueError: given path does not exist"""
-        import os
+            ValueError: given path does not exist"""        
+        if path == default:
+            return
         if not os.path.exists(path):
             raise ValueError("Specified path is not a path or does not currently exist!")
         
-    ### Address Methods
+    def load_dataset_path(self, action: Action) -> str:
+        """Load the dataset path from the database in a computer-specific way."""
+        return ResearchObjectHandler.get_user_computer_path(self, "dataset_path", action)
         
-    def validate_addresses(self, addresses: list) -> None:
+    ### Address Methods
+
+    def validate_addresses(self, addresses: list, action: Action, default: Any) -> None:
         """Validate that the addresses are in the correct format.
+        
         Args:
             self
             addresses (list) : list of addresses IDK
@@ -156,7 +157,9 @@ class Dataset(DataObject):
             None
         Raises:
             ValueError: invalid address provided"""
-        self.validate_schema(self.schema)   
+        if addresses == default:
+            return
+        self.validate_schema(self.schema, action, None)   
 
         try:
             graph = nx.MultiDiGraph()
@@ -167,7 +170,7 @@ class Dataset(DataObject):
         if not nx.is_directed_acyclic_graph(graph):
             raise ValueError("The addresses must be a directed acyclic graph!")
         
-        non_ro_id = [node for node in graph if not IDCreator().is_ro_id(node)]
+        non_ro_id = [node for node in graph if not IDCreator(action.conn).is_ro_id(node)]
         if non_ro_id:
             raise ValueError("The addresses must only include ResearchObject ID's!")
                 
@@ -186,8 +189,8 @@ class Dataset(DataObject):
             cls1 = ResearchObjectHandler._prefix_to_class(address_edge[1])
             if cls0 not in schema_graph.predecessors(cls1) or cls1 not in schema_graph.successors(cls0):
                 raise ValueError("The addresses must match the schema!")
-                
-    def save_addresses(self, addresses: list, action: Action) -> None:
+
+    def save_addresses(self, addresses: list, action: Action) -> list:
         """Save the addresses to the data_addresses table in the database.
         Args:
             self
@@ -197,18 +200,14 @@ class Dataset(DataObject):
             None"""        
         # 1. Get the schema_id for the current dataset_id that has not been overwritten by an Action.       
         dataset_id = self.id
-        schema_id = self.get_current_schema_id(dataset_id)
-        for address_names in addresses:   
-            sqlquery = f"INSERT INTO data_addresses (target_object_id, source_object_id, schema_id, action_id) VALUES ('{address_names[0]}', '{address_names[1]}', '{schema_id}', '{action.id}')"
-            action.add_sql_query(sqlquery)
-        self.__dict__["address_graph"] = self.addresses_to_object_graph(addresses)
+        schema_id = self.get_current_schema_id(dataset_id)                
+        for address_names in addresses:
+            params = (address_names[0], address_names[1], schema_id, action.id)
+            action.add_sql_query(self.id, "addresses_insert", params, group_name = "robj_complex_attr_insert")            
+        # self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)        
 
-    def load_addresses(self) -> list:
-        """Load the addresses from the database.
-        Args:
-            self
-        Returns:
-            list of addresses"""
+    def load_addresses(self, action: Action) -> list:
+        """Load the addresses from the database."""
         pool = SQLiteConnectionPool()        
         schema_id = self.get_current_schema_id(self.id)
         conn = pool.get_connection()
@@ -218,34 +217,23 @@ class Dataset(DataObject):
         addresses = conn.execute(sqlquery).fetchall()
         pool.return_connection(conn)
 
-        # 3. Convert the addresses to a list of lists.
-        addresses = [list(address) for address in addresses]        
+        # 3. Convert the addresses to a list of lists (from a list of tuples).
+        addresses = [list(address) for address in addresses]                
+        # self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)
 
-        self.__dict__["addresses"] = addresses
-        self.__dict__["address_graph"] = self.addresses_to_object_graph(addresses)
+        return addresses
 
-    def addresses_to_object_graph(self, addresses: list) -> nx.MultiDiGraph:
-        """Convert the addresses to a MultiDiGraph.
+    def get_addresses_graph(self) -> nx.MultiDiGraph:
+        """Convert the addresses edge list to a MultiDiGraph.
         Args:
             self
             addresses (list) : list of addresses
         Returns:
             nx.MultiDiGraph of addresses"""
+        # action = Action("get_addresses_graph")
+        addresses = self.addresses
         G = nx.MultiDiGraph()
-        # To avoid recursion, set the lines with Dataset manually so there is no self reference.
-        address_copy = copy.deepcopy(addresses)
-        if addresses:            
-            for idx, address in enumerate(addresses):
-                if address[0] == self.id:
-                    cls1 = ResearchObjectHandler._prefix_to_class(address[1])
-                    G.add_edge(self, cls1(id = address[1]))
-                    address_copy.remove(address)
-
-        addresses = address_copy
-        for address_edge in addresses:
-            cls0 = ResearchObjectHandler._prefix_to_class(address_edge[0])
-            cls1 = ResearchObjectHandler._prefix_to_class(address_edge[1])
-            G.add_edge(cls0(id = address_edge[0]), cls1(id = address_edge[1]))
+        G.add_edges_from(addresses)
         return G
     
 if __name__=="__main__":

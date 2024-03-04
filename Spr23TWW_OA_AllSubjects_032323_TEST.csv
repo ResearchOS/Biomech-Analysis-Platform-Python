@@ -24,25 +24,25 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_021,probe,,1,,"R arm, torso, pelvis",1,
 ,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_022,probe,,1,,L leg ,1,
 ,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_023,probe,,1,,R leg,1,
-111822,Lisbon,OA,66,m,1A 2B 3C 4D,2,Lisbon_024,Static Calibration ,,1,,,1,
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_025,Straight Line Gait,,1,,Practice - L start,313,2189
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_026,Straight Line Gait,,1,,Practice - R start,331,2137
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_027,Straight Line Gait,,1,,Practice - L start,95,2079
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_028,Straight Line Gait,,1,,Practice - R start,245,1996
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_029,Straight Line Gait,,1,,L start,324,2015
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_030,Straight Line Gait,,1,,R start ,196,1926
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_031,Straight Line Gait,,1,,L start,226,1986
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_032,Straight Line Gait,,1,,R start,351,2074
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_033,Straight Line Gait,,1,,R start,266,2047
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_034,Straight Line Gait,,1,,R start,127,1917
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_035,Straight Line Gait,,1,,L start,52,1992
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_036,Straight Line Gait,,1,,L start,439,2160
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_037,Straight Line Gait,,1,,R start,500,2138
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_038,Straight Line Gait,,1,,L start -  R upper arm lost rigid body for a moment,334,2051
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_039,Straight Line Gait,,1,,R start,318,2017
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_040,Straight Line Gait,,1,,L start,390,2037
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_041,Straight Line Gait,,1,,L start,364,2213
-,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_042,Straight Line Gait,,1,,R start,443,2322
+111822,Lisbon,OA,66,m,1A 2B 3C 4D,2,Lisbon_024,Static Calibration,L,1,,,1,
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_025,Straight Line Gait,L,1,,Practice - L start,313,2189
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_026,Straight Line Gait,L,1,,Practice - R start,331,2137
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_027,Straight Line Gait,L,1,,Practice - L start,95,2079
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_028,Straight Line Gait,L,1,,Practice - R start,245,1996
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_029,Straight Line Gait,L,1,,L start,324,2015
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_030,Straight Line Gait,L,1,,R start ,196,1926
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_031,Straight Line Gait,L,1,,L start,226,1986
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_032,Straight Line Gait,L,1,,R start,351,2074
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_033,Straight Line Gait,L,1,,R start,266,2047
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_034,Straight Line Gait,L,1,,R start,127,1917
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_035,Straight Line Gait,L,1,,L start,52,1992
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_036,Straight Line Gait,L,1,,L start,439,2160
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_037,Straight Line Gait,L,1,,R start,500,2138
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_038,Straight Line Gait,L,1,,L start -  R upper arm lost rigid body for a moment,334,2051
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_039,Straight Line Gait,L,1,,R start,318,2017
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_040,Straight Line Gait,L,1,,L start,390,2037
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_041,Straight Line Gait,L,1,,L start,364,2213
+,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_042,Straight Line Gait,L,1,,R start,443,2322
 ,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_043,TWW Pre-planned,L,1,,Practice - R start,128,1914
 ,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_044,TWW Pre-planned,L,1,,Practice - L start,367,2091
 ,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_045,TWW Pre-planned,L,1,,R start,353,1997
@@ -90,51 +90,51 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_087,TWW Late-cued,L,1,,R start,676,2154
 ,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_088,TWW Late-cued,L,1,,L start,610,2212
 ,Lisbon,OA,,,1A 2B 3C 4D,,Lisbon_089,Catch Late-cued,L,1,,L start,430,2062
-80222,Baltimore,OA,71,f,1A 2B 3C 4D,2,Baltimore_001,Shoe heel height,,1,,motive crashed before trial 002,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_002,probe,,0,,reset color camera settings,1,
-,Baltimore,OA,71,f,1A 2B 3C 4D,,Baltimore_003,probe,,1,,,1,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_004,probe,,1,,,1,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_005,probe,,1,,,1,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_006,probe,,0,,,1,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_007,probe,,1,,,1,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_008,Static Calibration ,,0,,Switched this static cal to 0 for the code - so it does not use this for the dynamic version,1,1238
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_009,Dynamic Calibration,,1,,hula & squat,781,2157
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_010,miniBEST 1,,0,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_011,probe,,0,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_012,probe,,1,,,1,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_013,Static Calibration ,,1,,,1,1212
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_014,miniBEST 1,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_015,miniBEST 2,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_016,miniBEST 3 Trial 1,,1,,"R start - Subject started before instructions ended, so mocap started late",,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_017,miniBEST 3,,0,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_018,miniBEST 3 Trial 1,,1,,L,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_019,miniBEST 3 Trial 2,,1,,R,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_020,miniBEST 3 Trial 2,,1,,L,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_021,miniBEST 4 & 5,,1,,L & R,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_022,miniBEST 6,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_023,miniBEST 7,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_024,miniBEST 8,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_025,miniBEST 9,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_026,miniBEST 10,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_027,miniBEST 11,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_028,miniBEST 12,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_029,miniBEST 13,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_030,miniBEST 14,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_031,miniBEST 14 Trial 2,,1,,,,
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_032,Straight Line Gait,,1,,L start - Practice,467,2225
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_033,Straight Line Gait,,1,,Practice,439,2064
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_034,Straight Line Gait,,1,,L start,400,2134
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_035,Straight Line Gait,,1,,L start,540,2402
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_036,Straight Line Gait,,1,,R start - took break before this trial,271,2039
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_037,Straight Line Gait,,1,,L start,493,2234
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_038,Straight Line Gait,,1,,R start,478,2182
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_039,Straight Line Gait,,1,,L start,549,2179
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_040,Straight Line Gait,,1,,R start,438,1976
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_041,Straight Line Gait,,1,,L start,482,2244
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_042,Straight Line Gait,,1,,L start,498,1862
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_043,Straight Line Gait,,1,,R start,339,2082
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_044,Straight Line Gait,,1,,R start,456,1997
-,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_045,Straight Line Gait,,1,,R start,462,1994
+80222,Baltimore,OA,71,f,1A 2B 3C 4D,2,Baltimore_001,Shoe heel height,L,1,,motive crashed before trial 002,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_002,probe,L,0,,reset color camera settings,1,
+,Baltimore,OA,71,f,1A 2B 3C 4D,,Baltimore_003,probe,L,1,,,1,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_004,probe,L,1,,,1,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_005,probe,L,1,,,1,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_006,probe,L,0,,,1,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_007,probe,L,1,,,1,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_008,Static Calibration ,L,0,,Switched this static cal to 0 for the code - so it does not use this for the dynamic version,1,1238
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_009,Dynamic Calibration,L,1,,hula & squat,781,2157
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_010,miniBEST 1,L,0,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_011,probe,L,0,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_012,probe,L,1,,,1,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_013,Static Calibration ,L,1,,,1,1212
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_014,miniBEST 1,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_015,miniBEST 2,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_016,miniBEST 3 Trial 1,L,1,,"R start - Subject started before instructions ended, so mocap started late",,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_017,miniBEST 3,L,0,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_018,miniBEST 3 Trial 1,L,1,,L,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_019,miniBEST 3 Trial 2,L,1,,R,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_020,miniBEST 3 Trial 2,L,1,,L,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_021,miniBEST 4 & 5,L,1,,L & R,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_022,miniBEST 6,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_023,miniBEST 7,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_024,miniBEST 8,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_025,miniBEST 9,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_026,miniBEST 10,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_027,miniBEST 11,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_028,miniBEST 12,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_029,miniBEST 13,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_030,miniBEST 14,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_031,miniBEST 14 Trial 2,L,1,,,,
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_032,Straight Line Gait,L,1,,L start - Practice,467,2225
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_033,Straight Line Gait,L,1,,Practice,439,2064
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_034,Straight Line Gait,L,1,,L start,400,2134
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_035,Straight Line Gait,L,1,,L start,540,2402
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_036,Straight Line Gait,L,1,,R start - took break before this trial,271,2039
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_037,Straight Line Gait,L,1,,L start,493,2234
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_038,Straight Line Gait,L,1,,R start,478,2182
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_039,Straight Line Gait,L,1,,L start,549,2179
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_040,Straight Line Gait,L,1,,R start,438,1976
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_041,Straight Line Gait,L,1,,L start,482,2244
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_042,Straight Line Gait,L,1,,L start,498,1862
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_043,Straight Line Gait,L,1,,R start,339,2082
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_044,Straight Line Gait,L,1,,R start,456,1997
+,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_045,Straight Line Gait,L,1,,R start,462,1994
 ,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_046,TWW Pre-planned,L,1,,L start - Practice,444,1936
 ,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_047,TWW Pre-planned,L,1,,R start - Practice,303,1905
 ,Baltimore,OA,,,1A 2B 3C 4D,,Baltimore_048,TWW Pre-planned,L,1,,L start,379,1924
@@ -629,8 +629,6 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,Nairobi,YA,,,1A 2B 3C 4D,,Nairobi_002,Static Height Weight Cal,,0,,No force plate readings,21,1503
 ,Nairobi,YA,,,1A 2B 3C 4D,,Nairobi_003,Static Height Weight Cal,,1,,,22,
 ,Nairobi,YA,,,1A 2B 3C 4D,1,Nairobi_004,Mocap Dynamic Cal - Hip,,1,,,388,2474
-,Nairobi,YA,,,1A 2B 3C 4D,,Nairobi_004,Mocap Dynamic Cal - Shoulder,,0,,,2847,4196
-,Nairobi,YA,,,1A 2B 3C 4D,,Nairobi_004,Mocap Dynamic Cal - Elbow Knee,,0,,,4504,5133
 ,Nairobi,YA,,,1A 2B 3C 4D,,Nairobi_005,IMU Dynamic Cal,,1,,,21,
 ,Nairobi,YA,,,1A 2B 3C 4D,,Nairobi_006,Straight Line Gait,,1,,,883,2169
 ,Nairobi,YA,,,1A 2B 3C 4D,,Nairobi_007,Straight Line Gait,,0,,,905,2225
@@ -699,8 +697,6 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,Tokyo,YA,,,1A 2B 3C 4D,,Tokyo_002,Static Height Weight Cal,,0,,,21,
 ,Tokyo,YA,,,1A 2B 3C 4D,,Tokyo_003,Static Height Weight Cal,,1,,,23,
 ,Tokyo,YA,,,1A 2B 3C 4D,,Tokyo_004,Mocap Dynamic Cal - Hip,,1,,,267,3347
-,Tokyo,YA,,,1A 2B 3C 4D,,Tokyo_004,Mocap Dynamic Cal - Shoulder,,0,,,3742,5184
-,Tokyo,YA,,,1A 2B 3C 4D,,Tokyo_004,Mocap Dynamic Cal - Elbow Knee,,0,,,5450,6585
 ,Tokyo,YA,,,1A 2B 3C 4D,,Tokyo_005,IMU Dynamic Cal,,1,,,22,
 ,Tokyo,YA,,,1A 2B 3C 4D,,Tokyo_006,Straight Line Gait,,1,,,645,1995
 ,Tokyo,YA,,,1A 2B 3C 4D,,Tokyo_007,Straight Line Gait,,1,,,611,1917
@@ -773,8 +769,6 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,Denver,YA,,,1A 2B 3C 4D,,Denver_010,Static Height Weight Cal,,0,,"No FP, good IMU",1,
 ,Denver,YA,30,m,1A 2B 3C 4D,,Denver_011,Static Height Weight Cal,,1,,,22,1116
 ,Denver,YA,,,1A 2B 3C 4D,,Denver_012,Mocap Dynamic Cal - Hip,,1,,,365,2310
-,Denver,YA,,,1A 2B 3C 4D,,Denver_012,Mocap Dynamic Cal - Shoulder,,0,,,3014,4578
-,Denver,YA,,,1A 2B 3C 4D,,Denver_012,Mocap Dynamic Cal - Elbow Knee,,0,,,5138,5863
 ,Denver,YA,,,1A 2B 3C 4D,,Denver_013,Straight Line Gait,,1,,,775,2277
 ,Denver,YA,,,1A 2B 3C 4D,,Denver_014,Straight Line Gait,,1,,,807,2373
 ,Denver,YA,,,1A 2B 3C 4D,,Denver_015,Straight Line Gait,,1,,,801,2384
@@ -848,8 +842,6 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,Berlin,YA,,,1A 2B 3C 4D,,Berlin_002,,,1,,Calibration T pose with extra markers,23,
 ,Berlin,YA,26,m,1A 2B 3C 4D,,Berlin_003,Static Height Weight Cal,,1,,,23,
 ,Berlin,YA,,,1A 2B 3C 4D,,Berlin_004,Mocap Dynamic Cal - Hip,,1,,,312,2320
-,Berlin,YA,,,1A 2B 3C 4D,,Berlin_004,Mocap Dynamic Cal - Shoulder,,0,,,2666,4226
-,Berlin,YA,,,1A 2B 3C 4D,,Berlin_004,Mocap Dynamic Cal - Elbow Knee,,0,,,4651,5638
 ,Berlin,YA,,,1A 2B 3C 4D,,Berlin_005,IMU Dynamic Cal,,1,,IMU 1 is upside down,23,
 ,Berlin,YA,,,1A 2B 3C 4D,,Berlin_006,Straight Line Gait,,1,,,853,2710
 ,Berlin,YA,,,1A 2B 3C 4D,,Berlin_007,Straight Line Gait,,1,,,785,2679
@@ -919,8 +911,6 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,Oslo,YA,,,1A 2B 3C 4D,,Oslo_002,,,0,,T pose with extra markers,1,380
 ,Oslo,YA,25,f,1A 2B 3C 4D,,Oslo_003,Static Height Weight Cal,,1,,T pose with extra markers,23,
 ,Oslo,YA,,,1A 2B 3C 4D,,Oslo_004,Mocap Dynamic Cal - Hip,,1,,,497,2472
-,Oslo,YA,,,1A 2B 3C 4D,,Oslo_004,Mocap Dynamic Cal - Shoulder,,0,,,2833,3960
-,Oslo,YA,,,1A 2B 3C 4D,,Oslo_004,Mocap Dynamic Cal - Elbow Knee,,0,,,4249,5035
 ,Oslo,YA,,,1A 2B 3C 4D,,Oslo_005,IMU Dynamic Cal,,1,,,22,11255
 ,Oslo,YA,,,1A 2B 3C 4D,,Oslo_006,Straight Line Gait,,1,,Practice,820,2462
 ,Oslo,YA,,,1A 2B 3C 4D,,Oslo_007,Straight Line Gait,,1,,Practice,790,2710
@@ -985,8 +975,6 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,Oslo,YA,,,1A 2B 3C 4D,,Oslo_066,TUG,,1,,TUG,1,2321
 ,Oslo,YA,,,1A 2B 3C 4D,,Oslo_067,TUG,,1,,TUG,63,1784
 42021,Boston,YA,30,m,1A 2B 3C 4D,1,Boston_001,Mocap Dynamic Cal - Hip,,1,Wears blocky boots,,1,2569
-,Boston,YA,,,1A 2B 3C 4D,,Boston_001,Mocap Dynamic Cal - Shoulder,,0,,,3072,4407
-,Boston,YA,,,1A 2B 3C 4D,,Boston_001,Mocap Dynamic Cal - Elbow Knee,,0,,,5255,6002
 ,Boston,YA,,,1A 2B 3C 4D,,Boston_002,IMU Dynamic Cal,,1,,,23,
 ,Boston,YA,,,1A 2B 3C 4D,,Boston_003,Static Height Weight Cal,,0,,,1,
 ,Boston,YA,,,1A 2B 3C 4D,,Boston_004,Static Height Weight Cal,,1,,,1,
@@ -1048,8 +1036,6 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,Boston,YA,,,1A 2B 3C 4D,,Boston_060,TUG,,1,,TUG,1,
 ,Boston,YA,,,1A 2B 3C 4D,,Boston_061,TUG,,1,,TUG,1,
 42121,Chicago,YA,29,m,1A 2B 3C 4D,1,Chicago_001,Mocap Dynamic Cal - Hip,,1,,,461,2164
-,Chicago,YA,,,1A 2B 3C 4D,,Chicago_001,Mocap Dynamic Cal - Shoulder,,0,,,2507,3341
-,Chicago,YA,,,1A 2B 3C 4D,,Chicago_001,Mocap Dynamic Cal - Elbow Knee,,0,,no imu,3686,4555
 ,Chicago,YA,,,1A 2B 3C 4D,,Chicago_002,IMU Dynamic Cal,,1,,imu start,1,
 ,Chicago,YA,,,1A 2B 3C 4D,,Chicago_003,Static Height Weight Cal,,1,,,1,
 ,Chicago,YA,,,1A 2B 3C 4D,,Chicago_004,Straight Line Gait,,1,,stomp foot 3 times before and after trial,1478,3192
@@ -1110,12 +1096,8 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,Chicago,YA,,,1A 2B 3C 4D,,Chicago_059,TUG,,1,,TUG,156,
 ,Chicago,YA,,,1A 2B 3C 4D,,Chicago_060,TUG,,1,,TUG,1,1955
 42621,Seattle,YA,20,m,1A 2B 3C 4D,1,Seattle_001,Mocap Dynamic Cal - Hip,,0,,,345,2889
-,Seattle,YA,,,1A 2B 3C 4D,,Seattle_001,Mocap Dynamic Cal - Shoulder,,0,,,3216,4868
-,Seattle,YA,,,1A 2B 3C 4D,,Seattle_001,Mocap Dynamic Cal - Elbow Knee,,0,,,5156,6468
 ,Seattle,YA,,,1A 2B 3C 4D,,Seattle_002,Static Height Weight Cal,,0,,,1,
 ,Seattle,YA,20,m,1A 2B 3C 4D,,Seattle_003,Mocap Dynamic Cal - Hip,,1,,,376,3096
-,Seattle,YA,,,1A 2B 3C 4D,,Seattle_003,Mocap Dynamic Cal - Shoulder,,0,,,3450,5003
-,Seattle,YA,,,1A 2B 3C 4D,,Seattle_003,Mocap Dynamic Cal - Elbow Knee,,0,,,5334,6662
 ,Seattle,YA,,,1A 2B 3C 4D,,Seattle_004,IMU Dynamic Cal,,1,,,22,
 ,Seattle,YA,,,1A 2B 3C 4D,,Seattle_005,Static Height Weight Cal,,0,,,22,
 ,Seattle,YA,,,1A 2B 3C 4D,,Seattle_006,Static Height Weight Cal,,1,,,23,
@@ -1179,13 +1161,9 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,Seattle,YA,,,1A 2B 3C 4D,,Seattle_064,TUG,,1,,TUG,447,1740
 ,Seattle,YA,,,1A 2B 3C 4D,,Seattle_065,TUG,,1,,TUG,451,1786
 42721,London,YA,20,m,1A 2B 3C 4D,1,London_001,Mocap Dynamic Cal - Hip,,0,,,690,2357
-,London,YA,,,1A 2B 3C 4D,,London_001,Mocap Dynamic Cal - Shoulder,,0,,,2762,3980
-,London,YA,,,1A 2B 3C 4D,,London_001,Mocap Dynamic Cal - Elbow Knee,,0,,,4540,6826
 ,London,YA,,,1A 2B 3C 4D,,London_002,IMU Dynamic Cal,,1,,,1,
 ,London,YA,,,1A 2B 3C 4D,,London_003,Static Height Weight Cal,,0,,,1,
 ,London,YA,20,m,1A 2B 3C 4D,,London_004,Mocap Dynamic Cal - Hip,,1,,,482,2042
-,London,YA,,,1A 2B 3C 4D,,London_004,Mocap Dynamic Cal - Shoulder,,0,,,2500,3549
-,London,YA,,,1A 2B 3C 4D,,London_004,Mocap Dynamic Cal - Elbow Knee,,0,,,4026,4839
 ,London,YA,,,1A 2B 3C 4D,,London_005,Static Height Weight Cal,,1,,,15,
 ,London,YA,,,1A 2B 3C 4D,,London_006,Straight Line Gait,,1,,,740,2025
 ,London,YA,,,1A 2B 3C 4D,,London_007,Straight Line Gait,,1,,"Assymetrical armswing, no swing on the right arm",675,2036
@@ -1249,8 +1227,6 @@ First Row of Subject,Per Trial Row,First Row of Subject,First Row of Subject,Fir
 ,London,YA,,,1A 2B 3C 4D,,London_065,TUG,,1,,TUG,1,
 ,London,YA,,,1A 2B 3C 4D,,London_066,TUG,,1,,TUG,1,
 42821,Paris,YA,19,m,1A 2B 3C 4D,1,Paris_001,Mocap Dynamic Cal - Hip,,1,,,575,2578
-,Paris,YA,,,1A 2B 3C 4D,,Paris_001,Mocap Dynamic Cal - Shoulder,,0,,,3108,4288
-,Paris,YA,,,1A 2B 3C 4D,,Paris_001,Mocap Dynamic Cal - Elbow Knee,,0,,,4777,5972
 ,Paris,YA,,,1A 2B 3C 4D,,Paris_002,IMU Dynamic Cal,,1,,,1,12424
 ,Paris,YA,,,1A 2B 3C 4D,,Paris_003,Static Height Weight Cal,,1,,,1,827
 ,Paris,YA,,,1A 2B 3C 4D,,Paris_004,Straight Line Gait,,0,,,1,

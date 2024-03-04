@@ -1,10 +1,9 @@
-import networkx as nx
-from ResearchOS.research_object import ResearchObject
-# from ResearchOS.research_object import DEFAULT_EXISTS_ATTRIBUTE_NAME
-
-from ResearchOS.action import Action
-
 import json
+
+import networkx as nx
+
+from ResearchOS.research_object import ResearchObject
+from ResearchOS.action import Action
 
 class ResearchObjectDigraph(nx.MultiDiGraph):
     """Research Object Digraph."""

@@ -1,129 +1,89 @@
 import weakref
 from typing import Any
-import json, re, os
+import json, re
 from typing import TYPE_CHECKING
 import sqlite3
+from hashlib import sha256
+import pickle
+from datetime import datetime, timezone
+import logging, time, sys
+
+import numpy as np
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
+    from ResearchOS.DataObjects.data_object import DataObject
     from ResearchOS.variable import Variable
-    # from ResearchOS.DataObjects.data_object import DataObject
 
 # from ResearchOS.default_attrs import DefaultAttrs
-# from ResearchOS.db_connection_factory import DBConnectionFactory
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
-from ResearchOS.idcreator import IDCreator
+from ResearchOS.sql.sql_joiner_most_recent import sql_joiner_most_recent
+from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.current_user import CurrentUser
+from ResearchOS.get_computer_id import COMPUTER_ID
 
 class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
 
     instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
-    counts = {} # Keep track of the number of instances of each ID.
-    pool = SQLiteConnectionPool()
+    # instances = {} # Keep track of all instances of all research objects.
+    counts = {} # Keep track of the number of instances of each ID.    
+    pool = SQLiteConnectionPool(name = "main")
+    pool_data = SQLiteConnectionPool(name = "data")
+    default_attrs = {} # Keep track of the default attributes for each class.    
 
     @staticmethod
-    def load_vr_value(research_object: "ResearchObject", vr: "Variable") -> Any:
-        """Load the value of the variable."""        
+    def load_vr_value(research_object: "DataObject", action: Action, vr: "Variable") -> Any:
+        """Load the value of the variable for this DataObject."""
+        # 1. Get the latest data_blob_id.
         dataset_id = research_object.get_dataset_id()        
         schema_id = research_object.get_current_schema_id(dataset_id)
-        conn = ResearchObjectHandler.pool.get_connection()
+        conn = action.conn
         cursor = conn.cursor()
-        sqlquery = f"SELECT scalar_value FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
-        rows = cursor.execute(sqlquery).fetchall()        
+        sqlquery_raw = f"SELECT action_id, data_blob_hash FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "dataobject_id", "schema_id"], single = True, user = True, computer = False)
+        time_ordered_result = cursor.execute(sqlquery).fetchall()
         ResearchObjectHandler.pool.return_connection(conn)
-        if len(rows) == 0:
-            raise ValueError("No value exists for that VR.")
-        value = json.loads(rows[0][0])
-        if value is None:
-            # Get the file path.
-            path = vr.get_vr_file_path(vr.id, dataset_id, schema_id)
-            if os.path.exists(path):
-                with open(path, "r") as f:
-                    value = json.load(path)
-        return value
+        if len(time_ordered_result) == 0:
+            raise ValueError("No value exists for that VR for this DataObject.")
+            # return "Missing"              
+        data_blob_id = time_ordered_result[0][1]
+
+        # 2. Get the data_blob from the data_blobs table.
+        conn_data = ResearchObjectHandler.pool_data.get_connection()
+        cursor_data = conn_data.cursor()
+        sqlquery = "SELECT data_blob FROM data_values_blob WHERE data_blob_hash = ?"        
+        params = (data_blob_id,)
+        rows = cursor_data.execute(sqlquery, params).fetchall()
+        ResearchObjectHandler.pool_data.return_connection(conn_data)
+        return pickle.loads(rows[0][0])     
 
     @staticmethod
-    def _set_attr_validator(research_object: "ResearchObject", attr_name: str, attr_value: Any, validate: bool = True) -> None:
-        """Set the attribute validator for the specified attribute."""
-        if not attr_name.isidentifier():
-            raise ValueError(f"{attr_name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.
-        # if attr_name in research_object.__dict__ and research_object.__dict__.get(attr_name, None) == attr_value:
-        #     return # No change.
-        if attr_name == "id":
-            raise ValueError("Cannot change the ID of a research object.")
-        if attr_name == "prefix":
-            raise ValueError("Cannot change the prefix of a research object.")
-        # Validate the value        
-        if validate:                                                      
-            ResearchObjectHandler.validator(research_object, attr_name, attr_value)
-
-    @staticmethod
-    def check_inputs(cls: type, tmp_kwargs: dict) -> None:
-        """Validate the inputs to the constructor."""        
-        # Convert the keys of the tmp_kwargs to lowercase.
-        kwargs = {}
-        for key in tmp_kwargs.keys():
-            kwargs[str(key).lower()] = tmp_kwargs[key]
-        if not kwargs or "id" not in kwargs.keys():
-            raise ValueError("id is required as a kwarg")
-        id = kwargs["id"]
-        if not IDCreator().is_ro_id(id):
-            raise ValueError("id is not a valid ID.")              
-
-        return kwargs
-    
-    @staticmethod
-    def validator(research_object: "ResearchObject", attr_name: str, attr_value: Any)  -> Any:
-        """Validate the attribute value. If the attribute value is not valid, an error is thrown."""
-        try:            
-            validate_method = eval("research_object.validate_" + attr_name)
-            validate_method(attr_value)
-        except AttributeError as e:
-            pass
-
-    @staticmethod
-    def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any) -> Any:
+    def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any, action: Action = None) -> Any:
         """Convert the JSON string to an attribute value. If there is no class-specific way to do it, then use the builtin json.loads"""
         try:
-            from_json_method = eval("research_object.from_json_" + attr_name)
-            attr_value = from_json_method(attr_value_json)
+            from_json_method = getattr(research_object, "from_json_" + attr_name)
+            attr_value = from_json_method(attr_value_json, action)
         except AttributeError as e:
             attr_value = json.loads(attr_value_json)
         return attr_value
     
     @staticmethod
-    def to_json(research_object: "ResearchObject", attr_name: str, attr_value: Any) -> Any:        
-        """Convert the attribute value to a JSON string. If there is no class-specific way to do it, then use the builtin json.dumps"""
-        try:
-            to_json_method = eval("research_object.to_json_" + attr_name)
-            attr_value_json = to_json_method(attr_value)
-        except AttributeError as e:
-            attr_value_json = json.dumps(attr_value)
-        return attr_value_json
-    
-    @staticmethod
-    def object_exists(id: str) -> bool:
+    def object_exists(id: str, action: Action) -> bool:
         """Return true if the specified id exists in the database, false if not."""
-        pool = SQLiteConnectionPool()
-        conn = pool.get_connection()
-        # db = DBConnectionFactory.create_db_connection()
-        cursor = conn.cursor()
-        sqlquery = f"SELECT object_id FROM research_objects WHERE object_id = '{id}'"
-        cursor.execute(sqlquery)
-        rows = cursor.fetchall()
-        pool.return_connection(conn)
-        return len(rows) > 0
-    
-    @staticmethod
-    def _create_ro(research_object: "ResearchObject", action: Action) -> None:
-        """Create the research object in the research_objects table of the database."""        
-        sqlquery = f"INSERT INTO research_objects (object_id, action_id) VALUES ('{research_object.id}', '{action.id}')"
-        action.add_sql_query(sqlquery)
-        # action.execute(commit = False)
+        # if id in ResearchObjectHandler.instances:
+        #     return True
+        cursor = action.conn.cursor()
+        sqlquery = "SELECT object_id FROM research_objects WHERE object_id = ?"
+        cursor.execute(sqlquery, (id,))
+        rows = cursor.fetchone()
+        return rows is not None               
 
     @staticmethod
-    def _get_most_recent_attrs(research_object: "ResearchObject", ordered_attr_result: list, default_attrs: dict = {}) -> dict:
+    def _get_most_recent_attrs(research_object: "ResearchObject", ordered_attr_result: list, default_attrs: dict = {}, action: Action = None) -> dict:
+        """Given a list of all attributes for this object, return the most recent attributes.
+        NOTE: Does NOT validate the attributes here."""
         curr_obj_attr_ids = [row[1] for row in ordered_attr_result]
         num_attrs = len(list(set(curr_obj_attr_ids))) # Get the number of unique action ID's.
         used_attr_ids = []
@@ -138,140 +98,224 @@ class ResearchObjectHandler:
             used_attr_ids.append(attr_id)                        
             attr_name = ResearchObjectHandler._get_attr_name(attr_id)            
             attr_value = ResearchObjectHandler.from_json(research_object, attr_name, attr_value_json) # Translate the attribute from string to the proper type/format.
-            
-            # Now that the value is loaded as the proper type/format, validate it, if it is not the default value.
-            if not (len(default_attrs) > 0 and attr_name in default_attrs and attr_value == default_attrs[attr_name]):
-                ResearchObjectHandler.validator(research_object, attr_name, attr_value)
+                        
             attrs[attr_name] = attr_value
             if len(used_attr_ids) == num_attrs:
                 break # Every attribute is accounted for.
         return attrs
 
     @staticmethod
-    def _load_ro(research_object: "ResearchObject", default_attrs: dict) -> None:
+    def _load_ro(research_object: "ResearchObject", all_attrs: dict, action: Action) -> None:
         """Load "simple" attributes from the database."""
+        default_attrs = all_attrs.default_attrs
+        computer_specific_attr_names = all_attrs.computer_specific_attr_names
         # 1. Get the database cursor.
-        # db = DBConnectionFactory.create_db_connection()
-        conn = ResearchObjectHandler.pool.get_connection()
+        from ResearchOS.DataObjects.data_object import DataObject
+        # conn = ResearchObjectHandler.pool.get_connection()
+        conn = action.conn
         cursor = conn.cursor()
 
-        # 2. Get the attributes from the database.        
-        sqlquery = f"SELECT action_id, attr_id, attr_value FROM simple_attributes WHERE object_id = '{research_object.id}'"
-        unordered_attr_result = cursor.execute(sqlquery).fetchall()
-        ResearchObjectHandler.pool.return_connection(conn)
-        ordered_attr_result = ResearchObjectHandler._get_time_ordered_result(unordered_attr_result, action_col_num = 0)
-        # if len(unordered_attr_result) == 0:
-        #     raise ValueError("No object with that ID exists.")          
-                             
-        attrs = ResearchObjectHandler._get_most_recent_attrs(research_object, ordered_attr_result, default_attrs)   
+        # 2. Get the attributes from the database.
+        sqlquery_raw = "SELECT attr_id, attr_value FROM simple_attributes WHERE object_id = ?"
+        unique_cols = ["object_id", "attr_id"]
+        sqlquery = sql_order_result(action, sqlquery_raw, unique_cols, single = True, user = True, computer = False)        
+        params = (research_object.id,)
+        ordered_attr_result_all_computers = cursor.execute(sqlquery, params).fetchall()
+        sqlquery = sql_order_result(action, sqlquery_raw, unique_cols, single = True, user = True, computer = True)
+        ordered_attr_result_computer = cursor.execute(sqlquery, params).fetchall()
+        # ResearchObjectHandler.pool.return_connection(conn) 
 
-        if attrs is None:
+        if not ordered_attr_result_all_computers:
             raise ValueError("No object with that ID exists.")
+        
+        if not ordered_attr_result_computer and computer_specific_attr_names:
+            raise ValueError("No computer-specific attributes exist for this object.")
+
+        # The attributes that are not computer-specific.
+        attrs = {}
+        for row in ordered_attr_result_all_computers:
+            attr_name = ResearchObjectHandler._get_attr_name(row[0])            
+            attrs[attr_name] = json.loads(row[1])
+
+        # The attributes that are computer-specific.
+        for row in ordered_attr_result_computer:
+            attr_name = ResearchObjectHandler._get_attr_name(row[0])
+            if hasattr(research_object, "load_" + attr_name):
+                load_method = getattr(research_object, "load_" + attr_name)
+                attr_value = load_method(action)
+            else:
+                attr_value = ResearchObjectHandler.from_json(research_object, attr_name, row[1], action)
+            attrs[attr_name] = attr_value
 
         # 3. Set the attributes of the object.
         research_object.__dict__.update(attrs)
 
-        # 4. Load the class-specific attributes.        
-        research_object.load()
+        # 4. Load the class-specific/"complex" builtin attributes.
+        for attr_name in default_attrs.keys():
+            if attr_name in research_object.__dict__:
+                continue # Skip the simple attributes.
+            if hasattr(research_object, "load_" + attr_name):
+                load_method = getattr(research_object, "load_" + attr_name)
+                value = load_method(action)
+                research_object.__dict__[attr_name] = value
+
+        # 5. Validate the simple & complex builtin attributes.
+        for default_attr_name, default_attr_value in default_attrs.items():
+            curr_value = research_object.__dict__[default_attr_name]
+            ResearchObjectHandler.validate(research_object, default_attr_name, curr_value, action, default_attr_value)
+
+        # 6. Load the VR attributes. No validation is necessary here.
+        dobj_subclasses = DataObject.__subclasses__()
+        if research_object.__class__ in dobj_subclasses:
+            research_object.load_dataobject_vrs()
 
     @staticmethod
-    def _set_builtin_attribute(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list):
-        """Responsible for setting the value of all builtin attributes, simple or not."""
-        # 1. If the attribute name is in default_attrs, it is a builtin attribute, so set the attribute value.
-        simple = False
-
-        if name not in complex_attrs:
-            simple = True
-
-        ResearchObjectHandler._set_attr_validator(research_object, attr_name=name, attr_value=value, validate=validate) # Validate the attribute.
-
-        if simple:
-            # Set the attribute "name" of this object as the VR ID (as a simple attribute).
-            ResearchObjectHandler._set_simple_builtin_attr(research_object, name, value, action, validate)
-            return        
-
-        # Save the attribute to the database.
-        save_method = eval("research_object.save_" + name)
-        save_method(value, action = action)
-
-        if action.do_exec:
-            action.execute()
-        research_object.__dict__[name] = value 
-
-    @staticmethod
-    def _setattr(research_object: "ResearchObject", name: str, value: Any, action: Action, validate: bool, default_attrs: dict, complex_attrs: list) -> None:
-        """Set the attribute value for the specified attribute. This method serves as ResearchObject.__setattr__()."""
-        from ResearchOS.variable import Variable  
-
-        if name in default_attrs:
-            ResearchObjectHandler._set_builtin_attribute(research_object, name, value, action, validate, default_attrs, complex_attrs)
+    def validate(research_object: "ResearchObject", name: str, value: Any, action: Action, default: Any) -> None:
+        """Validate the value of the attribute."""        
+        if not hasattr(research_object, "validate_" + name):
             return
-        
-        conn = action.pool.get_connection()
-        cursor = conn.cursor()
-        if name in research_object.__dict__:
-            # The VR already exists for this name in the research object
-            vr = research_object.__dict__[name]
-            vr_id = vr.id
-        else:            
-            # Search through pre-existing unassociated VR for one with this name. If it's not in the vr_dataobjects table, it's unassociated.
-            # Then, put the vr_id into the vr_dataobjects table.
-            # Check if there is an existing variable that should be used (from a different DataObject, e.g. another Trial).
-            selected_vr = None
-            sqlquery = f"SELECT vr_id FROM vr_dataobjects"
-            associated_result = cursor.execute(sqlquery).fetchall()
-            vr_ids = [row[0] for row in associated_result]
-            for vr_id in vr_ids:
-                vr = Variable(id = vr_id)
-                if vr.name == name:
-                    selected_vr = vr
-                    break
+                
+        validate_method = getattr(research_object, "validate_" + name)
+        validate_method(value, action, default)
 
-            # If no associated VR with that name exists, then select an unassociated VR with that name.
-            if not selected_vr: 
-                sqlquery = f"SELECT object_id FROM research_objects"
-                all_ids = cursor.execute(sqlquery).fetchall()
-                unassoc_vr_ids = [row[0] for row in all_ids if row[0] not in vr_ids and row[0].startswith(Variable.prefix)]
-                if not unassoc_vr_ids:
-                    action.pool.return_connection(conn)
-                    raise ValueError("No unassociated VR with that name exists.")
-                # Load each variable and check its name. If no matches here, just take the first one.
-                for count, vr_id in enumerate(unassoc_vr_ids):
-                    vr = Variable(id = vr_id)
-                    if count == 0:
-                        selected_vr = vr
-                    if vr.name == name:
-                        selected_vr = vr
-                        break
-
-            sqlquery = f"INSERT INTO vr_dataobjects (action_id, dataobject_id, vr_id) VALUES ('{action.id}', '{research_object.id}', '{selected_vr.id}')"
-            action.add_sql_query(sqlquery)        
-
-        # Put the value into the data_values table.
-        vr = selected_vr
-        ds_id = research_object.get_dataset_id()
-        schema_id = vr.get_current_schema_id(ds_id)
-        if ResearchObjectHandler.is_scalar(value):
-            json_value = json.dumps(value)
-            sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, scalar_value, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{json_value}', '{schema_id}')"
-        else:
-            sqlquery = f"INSERT INTO data_values (action_id, vr_id, dataobject_id, schema_id) VALUES ('{action.id}', '{vr_id}', '{research_object.id}', '{schema_id}')"
-        action.add_sql_query(sqlquery)
-        research_object.__dict__[name] = vr
-        action.pool.return_connection(conn)
-        
     @staticmethod
-    def is_scalar(value: Any) -> bool:
-        """Return True if the value is a scalar, False if not."""
-        if value is None:
-            return True
-        return isinstance(value, (int, float, str, bool))
+    def _set_builtin_attributes(research_object: "ResearchObject", default_attrs: dict, kwargs: dict, action: Action):
+        """Responsible for setting the value of all builtin attributes, simple or not."""  
+
+        # !. Set simple builtin attributes.
+        complex_attrs = {}
+        for key in kwargs:
+
+            if key not in default_attrs:
+                continue # Skip the attribute if it is not a default attribute.
+
+            # 1. Skip the complex attributes.
+            if hasattr(research_object, "save_" + key):
+                complex_attrs[key] = kwargs[key]
+                continue # Complex attributes are set in the next step.
+
+            # 2. If previously initialized, skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
+            if research_object._initialized and key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
+                continue
+
+            # 3. Validate the attribute.
+            ResearchObjectHandler.validate(research_object, key, kwargs[key], action, default_attrs[key])
+
+            if hasattr(research_object, "to_json_" + key):
+                to_json_method = getattr(research_object, "to_json_" + key)
+                json_value = to_json_method(kwargs[key], action)
+            else:
+                json_value = json.dumps(kwargs[key])  
+
+            simple_params = (action.id, research_object.id, ResearchObjectHandler._get_attr_id(key), json_value)
+            action.add_sql_query(research_object.id, "robj_simple_attr_insert", simple_params, group_name = "robj_simple_attr_insert")
+
+            # 4. Get the parameters for the SQL query to set the attribute.            
+            research_object.__dict__[key] = kwargs[key] # Set the attribute in the object's __dict__.        
+
+        # 2. Set complex builtin attributes.
+        for key in complex_attrs:
+
+            # 1. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
+            if key in research_object.__dict__ and getattr(research_object, key) == complex_attrs[key]:
+                continue
+
+            # 2. Validate the attribute.
+            ResearchObjectHandler.validate(research_object, key, complex_attrs[key], action, default_attrs[key])
+
+            # 3.  Save the "complex" builtin attribute to the database.
+            save_method = getattr(research_object, "save_" + key)
+            save_method(complex_attrs[key], action = action)
+
+            research_object.__dict__[key] = complex_attrs[key]
+
+    @staticmethod
+    def _set_vr_values(research_object: "ResearchObject", vr_values: dict, action: Action) -> None:
+        """Set the values of the VR attributes."""
+        if not vr_values:
+            return
+        # 1. Get hash of each value.
+        vr_hashes_dict = {}
+        for vr, value in vr_values.items():
+            data_blob = pickle.dumps(value)
+            data_blob_hash = sha256(data_blob).hexdigest()
+            vr_hashes_dict[vr] = {"hash": data_blob_hash, "blob": data_blob}
+            # vr_hashes_dict[vr]["hash"] = data_blob_hash
+            # vr_hashes_dict[vr]["blob"] = data_blob
+
+            vr_values[vr] = data_blob_hash # Replace the value with the hash to relieve memory pressure.
+
+        # 2. Check which VR's hashes are already in the data database so as not to duplicate a primary key.
+        pool_data = SQLiteConnectionPool(name = "data")
+        conn_data = pool_data.get_connection()
+        cursor_data = conn_data.cursor()
+        vr_hashes = tuple([vr_hash["hash"] for vr_hash in vr_hashes_dict.values()])
+        sqlquery = "SELECT data_blob_hash FROM data_values_blob WHERE data_blob_hash IN ({})".format(", ".join("?" * len(vr_hashes)))
+        result = cursor_data.execute(sqlquery, vr_hashes).fetchall()
+        pool_data.return_connection(conn_data)
+        vr_hashes_stored = []
+        for row in result:
+            hash = row[0]
+            for vr in vr_hashes_dict:
+                if hash == vr_hashes_dict[vr]["hash"]:
+                    vr_hashes_stored.append(vr)
+                    break            
+
+        # 2. Insert the values into the proper tables.
+        schema_id = research_object.get_current_schema_id(research_object.get_dataset_id())
+        for vr in vr_hashes_dict:
+            blob_params = (research_object.id, (vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["blob"]))
+            vr_dobj_params = (action.id, research_object.id, vr.id)
+            vr_value_params = (action.id, vr.id, research_object.id, schema_id, vr_hashes_dict[vr]["hash"])
+            if not vr in vr_hashes_stored:
+                if not action.is_redundant_params(research_object.id, "data_value_in_blob_insert", blob_params, group_name = "robj_vr_attr_insert"):
+                    action.add_sql_query(research_object.id, "data_value_in_blob_insert", (vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["blob"]), group_name = "robj_vr_attr_insert")
+            # No danger of duplicating primary keys, so no need to check if they previously existed.
+            if not action.is_redundant_params(research_object.id, "vr_to_dobj_insert", vr_dobj_params, group_name = "robj_vr_attr_insert"):
+                action.add_sql_query(research_object.id, "vr_to_dobj_insert", vr_dobj_params, group_name = "robj_vr_attr_insert")
+            if not action.is_redundant_params(research_object.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert"):
+                action.add_sql_query(research_object.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert")
+
+    @staticmethod
+    def clean_value_from_load_mat(numpy_array: Any) -> Any:
+        """Ensure that all data types are from scipy.io.loadmat are Pythonic."""
+        if isinstance(numpy_array, np.ndarray) and numpy_array.dtype.names is not None:
+            return {name: ResearchObjectHandler.clean_value_from_load_mat(numpy_array[name]) for name in numpy_array.dtype.names}
+        elif isinstance(numpy_array, np.ndarray):
+            numpy_array_tmp = numpy_array
+            if numpy_array.size == 1:
+                numpy_array_tmp = numpy_array[0]
+            return numpy_array_tmp.tolist()
+        else:
+            return numpy_array
+
+    @staticmethod
+    def clean_value_for_save_mat(value: Any) -> Any:
+        """Ensure that all data types are compatible with the scipy.io.savemat method."""
+        # Recursive.
+        if isinstance(value, (dict, set)):
+            for key in value.keys():
+                value[key] = ResearchObjectHandler.clean_value_for_save_mat(value[key])
+            return value
+
+        if isinstance(value, (list, tuple)):
+            if len(value) == 0:
+                return value
+            if isinstance(value[0], (list, tuple, dict, set)):
+                for i, item in enumerate(value):
+                    value[i] = ResearchObjectHandler.clean_value_for_save_mat(item)
+                return value
+
+        # Actually clean the values.
+        return np.array(value)
     
     @staticmethod
     def save_simple_attribute(id: str, name: str, json_value: Any, action: Action) -> Action:
         """If no store_attr method exists for the object attribute, use this default method."""                                      
-        sqlquery = f"INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES ('{action.id}', '{id}', '{ResearchObjectHandler._get_attr_id(name)}', '{json_value}')"                
-        action.add_sql_query(sqlquery)
+        sqlquery = "INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES (?, ?, ?, ?)"
+        params = (action.id, id, ResearchObjectHandler._get_attr_id(name), json_value)
+        action.add_sql_query(sqlquery, params)
+        action.add_params(params)
     
     @staticmethod
     def _get_attr_name(attr_id: int) -> str:
@@ -350,29 +394,54 @@ class ResearchObjectHandler:
         raise ValueError("No class with that prefix exists.")
     
     @staticmethod
-    def _set_simple_builtin_attr(self, name: str, value: Any, action: Action = None, validate: bool = True) -> None:
+    def _set_simple_builtin_attr(research_object, name: str, value: Any, action: Action = None) -> None:
         """Set the attributes of a research object in memory and in the SQL database.
         Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it).
         If it is not a built-in ResearchOS attribute, then no validation occurs."""
         # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.     
         
-        json_value = ResearchObjectHandler.to_json(self, name, value) # Convert the value to JSON
-        
-        # Create an Action. Must be before the ResearchObjectHandler.save_simple_attribute() method.
-        execute_action = False
-        if action is None:
-            execute_action = True
-            action = Action(name = "attribute_changed")      
+        if hasattr(research_object, "to_json_" + name):
+            to_json_method = getattr(research_object, "to_json_" + name)
+            json_value = to_json_method(value, action)
+        else:
+            json_value = json.dumps(value)   
 
-        ResearchObjectHandler.save_simple_attribute(self.id, name, json_value, action = action)            
-        # If the attribute contains the words "current" and "id" and the ID has been validated, add a digraph edge between the two objects with an attribute.
-        pattern = r"^current_[\w\d]+_id$"
-        if re.match(pattern, name):
-            pass
-            # action = self._default_store_edge_attr(target_object_id = value, name = name, value = DEFAULT_EXISTS_ATTRIBUTE_VALUE, action = action)
-            # if self.__dict__.get(name, None) != value:
-            #     execute_action = True # Need to execute an action if adding an edge.
-        if execute_action:
-            action.execute()
-        self.__dict__[name] = value
-    
+        ResearchObjectHandler.save_simple_attribute(research_object.id, name, json_value, action = action)            
+        research_object.__dict__[name] = value
+
+    @staticmethod
+    def get_user_computer_path(research_object, attr_name: str, action: Action) -> str:
+        """Get a user- and computer-specific path, which is a simple attribute in the database."""
+        # Load the most recent path.
+        attr_id = ResearchObjectHandler._get_attr_id(attr_name)
+        sqlquery_raw = "SELECT action_id, attr_value FROM simple_attributes WHERE attr_id = ? AND object_id = ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["attr_id", "object_id"], single = True, user = True, computer = True)
+        params = (attr_id, research_object.id)
+        result = action.conn.execute(sqlquery, params).fetchall()
+        if not result:
+            return None
+        path = result[0][1]
+        path = json.loads(path)
+
+        # Get the timestamp of this action_id
+        sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
+        params = (result[0][0],)
+        timestamp_path = action.conn.execute(sqlquery, params).fetchone()[0]
+        
+        # Check if the action_id is after the current user/computer action_id.
+        sqlquery_raw = "SELECT action_id FROM users_computers WHERE user_id = ? AND computer_id = ?"
+        sqlquery = sql_joiner_most_recent(sqlquery_raw)
+        params = (CurrentUser.current_user, COMPUTER_ID)
+        action_id_users = action.conn.execute(sqlquery, params).fetchone()[0]
+
+        # Get the timestamp for when the user ID was set.
+        sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
+        params = (action_id_users,)
+        timestamp_users = action.conn.execute(sqlquery, params).fetchone()[0]
+
+        timestamp_path = datetime.strptime(timestamp_path, "%Y-%m-%d %H:%M:%S.%f%z").replace(tzinfo=timezone.utc)
+        timestamp_users = datetime.strptime(timestamp_users, "%Y-%m-%d %H:%M:%S.%f%z").replace(tzinfo=timezone.utc)
+
+        if timestamp_path < timestamp_users:
+            return None
+        return path    
