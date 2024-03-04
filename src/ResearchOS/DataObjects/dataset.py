@@ -25,6 +25,15 @@ class Dataset(DataObject):
     2. data schema: The schema of the dataset (specified as a list of classes)"""
 
     prefix: str = "DS"
+
+    def __init__(self, schema: list = all_default_attrs["schema"], 
+                 dataset_path: str = all_default_attrs["dataset_path"], 
+                 addresses: list = all_default_attrs["addresses"], **kwargs):                 
+        """Create a new dataset."""
+        self.schema = schema
+        self.dataset_path = dataset_path
+        self.addresses = addresses
+        super().__init__(**kwargs)
     
     ### Schema Methods
         

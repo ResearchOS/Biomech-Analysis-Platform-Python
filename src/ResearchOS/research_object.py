@@ -105,7 +105,8 @@ class ResearchObject():
         orig_kwargs = self.__dict__ | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
         prev_loaded = orig_kwargs["prev_loaded"]
         del orig_kwargs["id"] # Remove the ID from the kwargs so that it is not set as an attribute.        
-        del orig_kwargs["_initialized"] # Remove the _initialized attribute from the kwargs so that it is not set as an attribute.
+        del orig_kwargs["prev_loaded"] # Remove the _initialized attribute from the kwargs so that it is not set as an attribute.
+        del orig_kwargs["_initialized"]
         
         finish_action = False
         if action is None:

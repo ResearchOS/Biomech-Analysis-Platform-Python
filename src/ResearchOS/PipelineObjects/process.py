@@ -309,7 +309,9 @@ class Process(PipelineObject):
         # 4. Run the method.
         # Get the subset of the data.
         subset = Subset(id = self.subset_id, action = action)
-        subset_graph = subset.get_subset()        
+        # subset_graph = subset.get_subset()
+        G = nx.MultiDiGraph()
+        subset_graph = G.add_edges_from(ds.addresses)
 
         # Do the setup for MATLAB.
         if self.is_matlab and matlab_loaded:
