@@ -39,7 +39,15 @@ class Dataset(DataObject):
         
     def validate_schema(self, schema: list, action: Action, default: Any) -> None:
         """Validate that the data schema follows the proper format.
-        Must be a dict of dicts, where all keys are Python types matching a DataObject subclass, and the lowest levels are empty."""
+        Must be a dict of dicts, where all keys are Python types matching a DataObject subclass, and the lowest levels are empty.
+        
+        Args:
+            self
+            schema (list) : dict of dicts, all keys are Python types matching a DataObject subclass, and the lowest levels are empty
+        Returns:
+            None
+        Raises:
+            ValueError: Incorrect schema type"""
         from ResearchOS.research_object import ResearchObject
         if schema == default:
             return
@@ -71,7 +79,13 @@ class Dataset(DataObject):
         #     raise ValueError("The schema must include the Dataset class as a source node and not a target node!")
 
     def save_schema(self, schema: list, action: Action) -> None:
-        """Save the schema to the database."""
+        """Save the schema to the database. One cohesive action.
+        Args:
+            self
+            schema (list) : dict of dicts, all keys are Python types matching a DataObject subclass, and the lowest levels are empty
+            action (Action) : a set of sequal queries that perform multiple action with one Action object call
+        Returns:
+            None"""
         # 1. Convert the list of types to a list of str.
         str_schema = []
         for sch in schema:
@@ -90,6 +104,7 @@ class Dataset(DataObject):
 
     def load_schema(self, action: Action) -> list:
         """Load the schema from the database and convert it via json."""
+
         # 1. Get the dataset ID
         id = self.id
         # 2. Get the most recent action ID for the dataset in the data_address_schemas table.
@@ -112,7 +127,15 @@ class Dataset(DataObject):
     ### Dataset path methods
 
     def validate_dataset_path(self, path: str, action: Action, default: Any) -> None:
-        """Validate the dataset path."""        
+        """Validate the dataset path.
+        
+        Args:
+            self
+            path (string): your dataset path
+        Returns:
+            None
+        Raises:
+            ValueError: given path does not exist"""        
         if path == default:
             return
         if not os.path.exists(path):
@@ -123,9 +146,17 @@ class Dataset(DataObject):
         return ResearchObjectHandler.get_user_computer_path(self, "dataset_path", action)
         
     ### Address Methods
-        
+
     def validate_addresses(self, addresses: list, action: Action, default: Any) -> None:
-        """Validate that the addresses are in the correct format."""
+        """Validate that the addresses are in the correct format.
+        
+        Args:
+            self
+            addresses (list) : list of addresses IDK
+        Returns:
+            None
+        Raises:
+            ValueError: invalid address provided"""
         if addresses == default:
             return
         self.validate_schema(self.schema, action, None)   
@@ -158,9 +189,15 @@ class Dataset(DataObject):
             cls1 = ResearchObjectHandler._prefix_to_class(address_edge[1])
             if cls0 not in schema_graph.predecessors(cls1) or cls1 not in schema_graph.successors(cls0):
                 raise ValueError("The addresses must match the schema!")
-                
+
     def save_addresses(self, addresses: list, action: Action) -> list:
-        """Save the addresses to the data_addresses table in the database."""        
+        """Save the addresses to the data_addresses table in the database.
+        Args:
+            self
+            addresses (list) : list of addresses IDK
+            action (Action) : IDK
+        Returns:
+            None"""        
         # 1. Get the schema_id for the current dataset_id that has not been overwritten by an Action.       
         dataset_id = self.id
         schema_id = self.get_current_schema_id(dataset_id)                
@@ -187,7 +224,12 @@ class Dataset(DataObject):
         return addresses
 
     def get_addresses_graph(self) -> nx.MultiDiGraph:
-        """Convert the addresses edge list to a MultiDiGraph."""
+        """Convert the addresses edge list to a MultiDiGraph.
+        Args:
+            self
+            addresses (list) : list of addresses
+        Returns:
+            nx.MultiDiGraph of addresses"""
         # action = Action("get_addresses_graph")
         addresses = self.addresses
         G = nx.MultiDiGraph()
