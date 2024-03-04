@@ -28,12 +28,29 @@ class Process(PipelineObject):
     prefix = "PR"
 
     def load(self) -> None:
-        """Load the dataset-specific attributes from the database in an attribute-specific way."""
+        """Load the dataset-specific attributes from the database in an attribute-specific way.
+        
+        Args:
+            self
+            
+        Returns:
+            None"""
         pass
         # PipelineObject.load(self) # Load the attributes specific to it being a PipelineObject.
 
     #################### Start class-specific attributes ###################
     def validate_method(self, method: Callable) -> None:
+        '''Validates existance and format of the method IDK
+        
+        Args:
+            self
+            method (Callable) : IDK what callable is
+        
+        Returns:
+            None
+        
+        Raises:
+            ValueError: incorrect inputted method format'''
         if not isinstance(method, Callable):
             raise ValueError("Method must be a callable function!")
         if method.__module__ not in sys.modules:
@@ -41,7 +58,14 @@ class Process(PipelineObject):
 
     def from_json_method(self, json_method: str) -> Callable:
         """Convert a JSON string to a method.
-        Returns None if the method name is not found (e.g. if code changed locations or something)"""
+        
+        Args:
+            self
+            json_method (string) : JSON method to convert as a string
+        
+        Returns:
+            Callable: IDK note add fancy linking thing once you know what a callable
+            Returns None if the method name is not found (e.g. if code changed locations or something)"""
         method_name = json.loads(json_method)
         module_name, *attribute_path = method_name.split(".")        
         module = importlib.import_module(module_name)
@@ -51,7 +75,14 @@ class Process(PipelineObject):
         return attribute
 
     def to_json_method(self, method: Callable) -> str:
-        """Convert a method to a JSON string."""
+        """Convert a method to a JSON string.
+        
+        Args:
+            self
+            method (Callable) : IDK
+        
+        Returns:
+            the method as a JSON string"""
         if method is None:
             return json.dumps(None)
         return json.dumps(method.__module__ + "." + method.__qualname__)
@@ -61,7 +92,14 @@ class Process(PipelineObject):
             raise ValueError("Level must be a type!")
         
     def from_json_level(self, level: str) -> type:
-        """Convert a JSON string to a Process level."""
+        """Convert a JSON string to a Process level.
+        
+        Args:
+            self
+            level (string) : IDK
+            
+        Returns:
+            the JSON ''level'' as a type"""
         classes = ResearchObjectHandler._get_subclasses(ResearchObject)
         for cls in classes:
             if hasattr(cls, "prefix") and cls.prefix == level:
