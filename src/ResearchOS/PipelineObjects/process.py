@@ -79,7 +79,7 @@ class Process(PipelineObject):
         
         Args:
             self
-            method (Callable) : IDK
+            method (Callable) : python object representing code thats about to be run
         
         Returns:
             the method as a JSON string"""

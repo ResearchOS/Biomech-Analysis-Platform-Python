@@ -87,7 +87,7 @@ class Dataset(DataObject):
         Args:
             self
             schema (list) : dict of dicts, all keys are Python types matching a DataObject subclass, and the lowest levels are empty
-            action (Action) : IDK
+            action (Action) : a set of sequal queries that perform multiple action with one Action object call
         Returns:
             None"""
         # 1. Convert the list of types to a list of str.
