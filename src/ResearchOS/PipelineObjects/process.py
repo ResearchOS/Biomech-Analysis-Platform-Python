@@ -48,6 +48,31 @@ class Process(PipelineObject):
 
     prefix = "PR"
 
+    _initialized = False
+
+    def __init__(self, is_matlab: bool = all_default_attrs["is_matlab"], 
+                 mfolder: str = all_default_attrs["mfolder"], 
+                 mfunc_name: str = all_default_attrs["mfunc_name"], 
+                 method: Callable = all_default_attrs["method"], 
+                 level: type = all_default_attrs["level"], 
+                 input_vrs: dict = all_default_attrs["input_vrs"], 
+                 output_vrs: dict = all_default_attrs["output_vrs"], 
+                 subset_id: str = all_default_attrs["subset_id"], 
+                 import_file_ext: str = all_default_attrs["import_file_ext"], 
+                 import_file_vr_name: str = all_default_attrs["import_file_vr_name"], 
+                 **kwargs) -> None:
+        self.is_matlab = is_matlab
+        self.mfolder = mfolder
+        self.mfunc_name = mfunc_name
+        self.method = method
+        self.level = level
+        self.input_vrs = input_vrs
+        self.output_vrs = output_vrs
+        self.subset_id = subset_id
+        self.import_file_ext = import_file_ext
+        self.import_file_vr_name = import_file_vr_name
+        super().__init__(**kwargs)
+
     ## mfunc_name (MATLAB function name) methods
 
     def validate_mfunc_name(self, mfunc_name: str, action: Action, default: Any) -> None:
@@ -205,8 +230,12 @@ class Process(PipelineObject):
         
     def from_json_input_vrs(self, input_vrs: str, action: Action) -> dict:
         """Convert a JSON string to a dictionary of input variables."""
-        input_vrs_dict = json.loads(input_vrs)
-        return {key: Variable(id = value) for key, value in input_vrs_dict.items()}
+        input_vr_ids_dict = json.loads(input_vrs)
+        input_vrs_dict = {}
+        for name, vr_id in input_vr_ids_dict.items():
+            vr = Variable(id = vr_id, action = action)
+            input_vrs_dict[name] = vr
+        return input_vrs_dict
     
     def to_json_input_vrs(self, input_vrs: dict, action: Action) -> str:
         """Convert a dictionary of input variables to a JSON string."""     
@@ -215,7 +244,11 @@ class Process(PipelineObject):
     def from_json_output_vrs(self, output_vrs: str, action: Action) -> dict:
         """Convert a JSON string to a dictionary of output variables."""
         output_vrs_dict = json.loads(output_vrs)
-        return {key: Variable(id = value) for key, value in output_vrs_dict.items()}
+        output_vrs_dict = {}
+        for name, vr_id in output_vrs_dict.items():
+            vr = Variable(id = vr_id, action = action)
+            output_vrs_dict[name] = vr
+        return output_vrs_dict
     
     def to_json_output_vrs(self, output_vrs: dict, action: Action) -> str:
         """Convert a dictionary of output variables to a JSON string."""
@@ -265,6 +298,7 @@ class Process(PipelineObject):
         if "matlab" not in sys.modules:
             matlab_loaded = False
             try:            
+                print("Importing MATLAB.")
                 import matlab.engine
                 eng = matlab.engine.start_matlab()
                 matlab_loaded = True
@@ -274,7 +308,8 @@ class Process(PipelineObject):
 
         # 4. Run the method.
         # Get the subset of the data.
-        subset_graph = Subset(id = self.subset_id).get_subset()        
+        subset = Subset(id = self.subset_id, action = action)
+        subset_graph = subset.get_subset()        
 
         # Do the setup for MATLAB.
         if self.is_matlab and matlab_loaded:
@@ -448,6 +483,7 @@ class Process(PipelineObject):
                 idx += 1
             kwargs_dict[vr_name] = vr_values_out[idx]                
 
+        vr_values_out = []
         ResearchObject._setattrs(node, {}, kwargs_dict, action = action)
 
         end_node_before_execute_time = time.time()

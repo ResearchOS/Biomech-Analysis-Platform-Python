@@ -1,5 +1,9 @@
-from typing import Any
+from typing import Any, TYPE_CHECKING
 import json
+
+if TYPE_CHECKING:
+    from ResearchOS.action import Action
+    from ResearchOS.DataObjects.data_object import DataObject
 
 import networkx as nx
 
@@ -82,28 +86,35 @@ class Subset(PipelineObject):
     def get_subset(self) -> nx.MultiDiGraph:
         """Resolve the conditions to the actual subset of data."""
         # 1. Get the dataset.
-        ds = Dataset(id = self.get_dataset_id())
+        dataset_id = self.get_dataset_id()
+        ds = Dataset(id = dataset_id)
 
-        # 2. For each node in the address_graph, check if it meets the conditions.
+        # 2. For each node_id in the address_graph, check if it meets the conditions.
         nodes_for_subgraph = []
-        G = ds.address_graph
+        G = ds.get_addresses_graph()
         sorted_nodes = list(nx.topological_sort(G))
-        for idx, node in enumerate(sorted_nodes):
-            # ro = ResearchObjectHandler._prefix_to_class(node.prefix)(id = node.id)
-            if not self.meets_conditions(node, self.conditions, G):
+        subclasses = ResearchObjectHandler.get_subclasses()
+        for idx, node_id in enumerate(sorted_nodes):
+            # cls = [cls for cls in subclasses if cls.prefix == node_id[0:2]][0]
+            if not self.meets_conditions(node_id, self.conditions, G, subclasses):
                 continue
-            curr_nodes = [node]
-            curr_nodes.extend(nx.ancestors(G, node))
-            nodes_for_subgraph.extend([node for node in curr_nodes if node not in nodes_for_subgraph])
+            curr_nodes = [node_id]
+            curr_nodes.extend(nx.ancestors(G, node_id))
+            nodes_for_subgraph.extend([node_id for node_id in curr_nodes if node_id not in nodes_for_subgraph])
         return G.subgraph(nodes_for_subgraph) # Maintains the relationships between all of the nodes in the subgraph.
 
-    def meets_conditions(self, node: Any, conditions: dict, G: nx.MultiDiGraph) -> bool:
-        """Check if the node meets the conditions."""
+    def meets_conditions(self, node_id: str, conditions: dict, G: nx.MultiDiGraph, subclasses: list) -> bool:
+        """Check if the node_id meets the conditions."""
         if isinstance(conditions, dict):
             if "and" in conditions:
-                return all([self.meets_conditions(node, cond, G) for cond in conditions["and"]])
+                for cond in conditions["and"]:
+                    cls = [cls for cls in subclasses if cls.prefix == cond[0][0:2]][0]
+                    if not self.meets_conditions(node_id, cond, G, subclasses):
+                        return False
+                return True
+                # return all([self.meets_conditions(node_id, cond, G) for cond in conditions["and"]])
             if "or" in conditions:
-                return any([self.meets_conditions(node, cond, G) for cond in conditions["or"]])
+                return any([self.meets_conditions(node_id, cond, G) for cond in conditions["or"]])
                     
         # Check the condition.
         vr_id = conditions[0]
@@ -112,17 +123,17 @@ class Subset(PipelineObject):
         vr = Variable(id = vr_id)
         vr_name = vr.name
         if not hasattr(node, vr_name):
-            anc_nodes = nx.ancestors(G, node)
+            anc_nodes = nx.ancestors(G, node_id)
             found_attr = False
             for anc_node in anc_nodes:
                 if not hasattr(anc_node, vr_name):
                     continue
                 found_attr = True
                 break
-            if found_attr and self.meets_conditions(anc_node, conditions, G):
+            if found_attr and self.meets_conditions(anc_node, conditions, G, subclasses):
                 return True
             return False
-        vr_value = getattr(node, vr_name)
+        vr_value = getattr(node_id, vr_name)
 
         # This is probably shoddy logic, but it'll serve as a first pass to handle None types.
         if logic in plural_logic:

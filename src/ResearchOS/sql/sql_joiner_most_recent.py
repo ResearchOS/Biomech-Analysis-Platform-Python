@@ -60,6 +60,8 @@ def extract_sql_components(sql_statement: str) -> tuple:
     return columns, table, table_where_criteria
 
 def append_table_to_columns(where_criteria, table_name = "outerr"):
+    if not where_criteria:
+        return ""
     # Split the WHERE criteria into individual conditions
     conditions = where_criteria.split(' AND ')
 

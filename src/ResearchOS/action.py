@@ -51,6 +51,8 @@ class Action():
     def add_sql_query(self, dobj_id: str, query_name: str, params: tuple = None, group_name: str = "all") -> None:
         """Add a sqlquery to the action. Can be a raw SQL query (one input) or a parameterized query (two inputs).
         Parameters can be either a tuple (for one query) or a list of tuples (for multiple queries)."""
+        if query_name not in self.queries:
+            raise ValueError(f"{query_name} is not a valid query name.")
         if not params:
             return # Do I need this?
         if not isinstance(params, tuple):            
@@ -64,6 +66,18 @@ class Action():
         
         self.dobjs[group_name][query_name][dobj_id].append(params) # Allows for multiple params to be added at once with "executemany"
 
+    def is_redundant_params(self, dobj_id: str, query_name: str, params: tuple, group_name: str = "all") -> bool:
+        """Check if the parameters are redundant."""
+        if group_name not in self.dobjs:
+            return False
+        if query_name not in self.dobjs[group_name]:
+            return False
+        if dobj_id not in self.dobjs[group_name][query_name]:
+            return False
+        if params in self.dobjs[group_name][query_name][dobj_id]:
+            return True
+        return False
+
     def execute(self, return_conn: bool = True) -> None:
         """Run all of the sql queries in the action."""
         if not self.exec:
@@ -72,6 +86,9 @@ class Action():
         count += 1
         # print(f"Action.execute() called {count} times.")
         pool = SQLiteConnectionPool(name = "main")
+        
+        # The queries that use the other database.
+        data_query_names = ["data_value_in_blob_insert"]
 
         any_queries = False
         if self.dobjs:
@@ -87,6 +104,15 @@ class Action():
             self.is_created = True
             cursor.execute(self.queries["action_insert"], self.creation_params)
 
+        uses_data = False
+        for group_name in self.dobjs:
+            if any(query in data_query_names for query in self.dobjs[group_name]):
+                pool_data = SQLiteConnectionPool(name = "data")            
+                conn_data = pool_data.get_connection()
+                cursor_data = conn_data.cursor()
+                uses_data = True
+                break
+
         # Execute all of the SQL queries.
         for group_name in self.dobjs:
             for query_name in self.dobjs[group_name]:
@@ -100,8 +126,6 @@ class Action():
                     for param in self.dobjs[group_name][query_name][dobj_id]:
                         if param not in params_list:
                             params_list.append(param)
-                    # if self.dobjs[group_name][query_name][dobj_id] not in params_list:
-                    #     params_list.extend(self.dobjs[group_name][query_name][dobj_id])
                 num_params = len(params_list)
                 try:
                     for i in range(0, num_params, 50):
@@ -109,9 +133,14 @@ class Action():
                             curr_params = params_list[i:i+50]
                         else:
                             curr_params = params_list[i:]
-                        cursor.executemany(query, curr_params)
+                        if query_name in data_query_names:
+                            cursor_data.executemany(query, curr_params)
+                        else:
+                            cursor.executemany(query, curr_params)
                 except sqlite3.OperationalError as e:
-                    cursor.rollback()
+                    self.conn.rollback()
+                    if uses_data:
+                        conn_data.rollback()
                     raise ValueError(f"SQL query failed: {query}")
         self.dobjs = {}
 
@@ -119,9 +148,13 @@ class Action():
         if self.commit:
             # print("Commit count:", count)
             self.conn.commit()
+            if uses_data:
+                conn_data.commit()
             if return_conn:
-                pool.return_connection(self.conn)
+                pool.return_connection(self.conn)                
                 self.conn = None   
+                if uses_data:
+                    pool_data.return_connection(conn_data)
 
 if __name__=="__main__":    
     action = Action(name = "Test Action")    

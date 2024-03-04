@@ -13,6 +13,7 @@ class DefaultAttrs():
         cls = research_object.__class__
         if cls in ResearchObjectHandler.default_attrs:
             self.__dict__ = ResearchObjectHandler.default_attrs[cls]
+            self.__dict__["name"] = research_object.id
             return
         
         from ResearchOS.research_object import all_default_attrs as ro_default_attrs

@@ -34,19 +34,20 @@ class ResearchObjectHandler:
     default_attrs = {} # Keep track of the default attributes for each class.    
 
     @staticmethod
-    def load_vr_value(research_object: "DataObject", vr: "Variable") -> Any:
+    def load_vr_value(research_object: "DataObject", action: Action, vr: "Variable") -> Any:
         """Load the value of the variable for this DataObject."""
         # 1. Get the latest data_blob_id.
         dataset_id = research_object.get_dataset_id()        
         schema_id = research_object.get_current_schema_id(dataset_id)
-        conn = ResearchObjectHandler.pool.get_connection()
+        conn = action.conn
         cursor = conn.cursor()
-        sqlquery = f"SELECT action_id, data_blob_hash FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
-        result = cursor.execute(sqlquery).fetchall()
+        sqlquery_raw = f"SELECT action_id, data_blob_hash FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "dataobject_id", "schema_id"], single = True, user = True, computer = False)
+        time_ordered_result = cursor.execute(sqlquery).fetchall()
         ResearchObjectHandler.pool.return_connection(conn)
-        if len(result) == 0:
-            raise ValueError("No value exists for that VR.")
-        time_ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num = 0)                
+        if len(time_ordered_result) == 0:
+            raise ValueError("No value exists for that VR for this DataObject.")
+            # return "Missing"              
         data_blob_id = time_ordered_result[0][1]
 
         # 2. Get the data_blob from the data_blobs table.
@@ -110,7 +111,8 @@ class ResearchObjectHandler:
         computer_specific_attr_names = all_attrs.computer_specific_attr_names
         # 1. Get the database cursor.
         from ResearchOS.DataObjects.data_object import DataObject
-        conn = ResearchObjectHandler.pool.get_connection()
+        # conn = ResearchObjectHandler.pool.get_connection()
+        conn = action.conn
         cursor = conn.cursor()
 
         # 2. Get the attributes from the database.
@@ -121,7 +123,7 @@ class ResearchObjectHandler:
         ordered_attr_result_all_computers = cursor.execute(sqlquery, params).fetchall()
         sqlquery = sql_order_result(action, sqlquery_raw, unique_cols, single = True, user = True, computer = True)
         ordered_attr_result_computer = cursor.execute(sqlquery, params).fetchall()
-        ResearchObjectHandler.pool.return_connection(conn) 
+        # ResearchObjectHandler.pool.return_connection(conn) 
 
         if not ordered_attr_result_all_computers:
             raise ValueError("No object with that ID exists.")
@@ -192,8 +194,8 @@ class ResearchObjectHandler:
                 complex_attrs[key] = kwargs[key]
                 continue # Complex attributes are set in the next step.
 
-            # 2. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
-            if key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
+            # 2. If previously initialized, skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
+            if research_object._initialized and key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
                 continue
 
             # 3. Validate the attribute.
@@ -225,93 +227,54 @@ class ResearchObjectHandler:
             save_method = getattr(research_object, "save_" + key)
             save_method(complex_attrs[key], action = action)
 
-            research_object.__dict__[key] = complex_attrs[key]     
+            research_object.__dict__[key] = complex_attrs[key]
 
     @staticmethod
-    def _set_vr_attributes(research_object: "ResearchObject", name: str, value: Any, action: Action) -> None:
-        from ResearchOS.variable import Variable 
-        
-        # Set custom (VR) attributes: this object's "name" attribute is the VR object.
-        cursor = action.conn.cursor()
-        logging.info(f"Setting VR attribute: {name} for object: {research_object.id}")
-        if name in research_object.__dict__:
-            selected_vr = research_object.__dict__[name]                      
-        else:            
-            # Search through pre-existing unassociated VR for one with this name and is_active = 1. If it's not in the vr_dataobjects table with is_active = 1, it's unassociated.
-            # Then, put the vr_id into the vr_dataobjects table.
-            # Check if there is an existing variable that should be used (from a different DataObject, e.g. another Trial).            
-            selected_vr = None
-            sqlquery = "SELECT vr_id FROM vr_dataobjects WHERE dataobject_id = ? AND is_active = ?"
-            associated_result = cursor.execute(sqlquery, (research_object.id, 1)).fetchall()
-            vr_ids = [row[0] for row in associated_result]
-            assoc_vr_ids_unique = list(set(vr_ids))                      
-            for vr_id in assoc_vr_ids_unique:
-                vr = Variable(id = vr_id)
-                if vr.name == name:
-                    selected_vr = vr
-                    break
+    def _set_vr_values(research_object: "ResearchObject", vr_values: dict, action: Action) -> None:
+        """Set the values of the VR attributes."""
+        if not vr_values:
+            return
+        # 1. Get hash of each value.
+        vr_hashes_dict = {}
+        for vr, value in vr_values.items():
+            data_blob = pickle.dumps(value)
+            data_blob_hash = sha256(data_blob).hexdigest()
+            vr_hashes_dict[vr] = {"hash": data_blob_hash, "blob": data_blob}
+            # vr_hashes_dict[vr]["hash"] = data_blob_hash
+            # vr_hashes_dict[vr]["blob"] = data_blob
 
-            # If no associated VR with that name exists, then select an unassociated VR with that name.
-            if not selected_vr: 
-                sqlquery = "SELECT object_id FROM research_objects WHERE object_id LIKE ?"
-                all_ids = cursor.execute(sqlquery, (Variable.prefix + "%",)).fetchall()
-                unassoc_vr_ids = [row[0] for row in all_ids if row[0] not in assoc_vr_ids_unique]                
-                if not unassoc_vr_ids:
-                    raise ValueError("No unassociated VR with that name exists.")
-                # Load each variable and check its name. If no matches here, just take the first one.
-                for count, vr_id in enumerate(unassoc_vr_ids):
-                    vr = Variable(id = vr_id, action = action)
-                    if count == 0:
-                        selected_vr = vr
-                    if vr.name == name:
-                        selected_vr = vr
-                        break
+            vr_values[vr] = data_blob_hash # Replace the value with the hash to relieve memory pressure.
 
-            # If no VR with that name is associated with this data object, then create a new one.
-            params = (action.id, research_object.id, selected_vr.id)
-            action.add_sql_query(research_object.id, "vr_to_dobj_insert", params, group_name = "robj_vr_attr_insert")  
-        
-        # Check if this value already exists in the database. If so, don't save it again.
+        # 2. Check which VR's hashes are already in the data database so as not to duplicate a primary key.
         pool_data = SQLiteConnectionPool(name = "data")
         conn_data = pool_data.get_connection()
         cursor_data = conn_data.cursor()
-        data_blob = pickle.dumps(value)
-        start_time = time.time()
-        end_time = time.time()
-        execute_time = end_time - start_time
-        logging.debug(f"Pickling name: {selected_vr.name}, type: {type(value)}, size: {sys.getsizeof(data_blob)} took {execute_time} seconds.")
-        data_blob_hash = sha256(data_blob).hexdigest()
-        params = (data_blob_hash,)
-        hash_found = cursor_data.execute(action.queries["data_blob_hash_select"], params).fetchall()
-        if not hash_found:
-            # Check if it already exists in the action queue.
-            if "robj_vr_attr_insert" in action.dobjs and "vr_value_for_dobj_insert" in action.dobjs["robj_vr_attr_insert"]:
-                for dobj_id in action.dobjs["robj_vr_attr_insert"]["vr_value_for_dobj_insert"]:
-                    for params in action.dobjs["robj_vr_attr_insert"]["vr_value_for_dobj_insert"][dobj_id]:
-                        data_blob_hash_stored = params[4]
-                        if data_blob_hash_stored == data_blob_hash:
-                            hash_found = True
-                            break
-                    if hash_found:
-                        break
-                    
-        if not hash_found:
-            # Save this new value to the data_blob_values table in the data db.
-            params = (data_blob_hash, data_blob)
-            cursor_data.execute(action.queries["data_value_in_blob_insert"], params)
-            conn_data.commit()
-
+        vr_hashes = tuple([vr_hash["hash"] for vr_hash in vr_hashes_dict.values()])
+        sqlquery = "SELECT data_blob_hash FROM data_values_blob WHERE data_blob_hash IN ({})".format(", ".join("?" * len(vr_hashes)))
+        result = cursor_data.execute(sqlquery, vr_hashes).fetchall()
         pool_data.return_connection(conn_data)
+        vr_hashes_stored = []
+        for row in result:
+            hash = row[0]
+            for vr in vr_hashes_dict:
+                if hash == vr_hashes_dict[vr]["hash"]:
+                    vr_hashes_stored.append(vr)
+                    break            
 
-        # Put the data_blob_id into the data_values table, whether the hash was found or not.
-        vr = selected_vr
-        ds_id = research_object.get_dataset_id()
-        schema_id = vr.get_current_schema_id(ds_id)
-        params = (action.id, vr.id, research_object.id, schema_id, data_blob_hash)        
-        action.add_sql_query(research_object.id, "vr_value_for_dobj_insert", params, group_name = "robj_vr_attr_insert")
-
-        
-        research_object.__dict__[name] = selected_vr
+        # 2. Insert the values into the proper tables.
+        schema_id = research_object.get_current_schema_id(research_object.get_dataset_id())
+        for vr in vr_hashes_dict:
+            blob_params = (research_object.id, (vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["blob"]))
+            vr_dobj_params = (action.id, research_object.id, vr.id)
+            vr_value_params = (action.id, vr.id, research_object.id, schema_id, vr_hashes_dict[vr]["hash"])
+            if not vr in vr_hashes_stored:
+                if not action.is_redundant_params(research_object.id, "data_value_in_blob_insert", blob_params, group_name = "robj_vr_attr_insert"):
+                    action.add_sql_query(research_object.id, "data_value_in_blob_insert", (vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["blob"]), group_name = "robj_vr_attr_insert")
+            # No danger of duplicating primary keys, so no need to check if they previously existed.
+            if not action.is_redundant_params(research_object.id, "vr_to_dobj_insert", vr_dobj_params, group_name = "robj_vr_attr_insert"):
+                action.add_sql_query(research_object.id, "vr_to_dobj_insert", vr_dobj_params, group_name = "robj_vr_attr_insert")
+            if not action.is_redundant_params(research_object.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert"):
+                action.add_sql_query(research_object.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert")
 
     @staticmethod
     def clean_value_from_load_mat(numpy_array: Any) -> Any:

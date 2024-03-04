@@ -155,7 +155,7 @@ class DBInitializer():
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
                         FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (dataobject_id, schema_id, vr_id, data_blob_hash)
+                        PRIMARY KEY (dataobject_id, vr_id, data_blob_hash, schema_id)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.
@@ -178,7 +178,8 @@ class DBInitializer():
                         dataset_id TEXT NOT NULL,
                         levels_edge_list TEXT NOT NULL,
                         FOREIGN KEY (dataset_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
+                        PRIMARY KEY (dataset_id, schema_id)
                         )""")
         
         # Variable -> DataObjects table. Lists all variables and which data objects they are associated with.
@@ -189,7 +190,8 @@ class DBInitializer():
                         is_active INTEGER NOT NULL DEFAULT 1,
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
+                        PRIMARY KEY (dataobject_id, vr_id, action_id)
                         )""")
         
         # PipelineObjects Graph table. Lists all pipeline objects and their relationships.

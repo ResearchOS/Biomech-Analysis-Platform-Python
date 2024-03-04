@@ -158,7 +158,7 @@ class Dataset(DataObject):
         for address_names in addresses:
             params = (address_names[0], address_names[1], schema_id, action.id)
             action.add_sql_query(self.id, "addresses_insert", params, group_name = "robj_complex_attr_insert")            
-        self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)        
+        # self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)        
 
     def load_addresses(self, action: Action) -> list:
         """Load the addresses from the database."""
@@ -173,29 +173,16 @@ class Dataset(DataObject):
 
         # 3. Convert the addresses to a list of lists (from a list of tuples).
         addresses = [list(address) for address in addresses]                
-        self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)
+        # self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)
 
         return addresses
 
-    def addresses_to_graph(self, addresses: list, action: Action) -> nx.MultiDiGraph:
+    def get_addresses_graph(self) -> nx.MultiDiGraph:
         """Convert the addresses edge list to a MultiDiGraph."""
+        # action = Action("get_addresses_graph")
+        addresses = self.addresses
         G = nx.MultiDiGraph()
-        # To avoid recursion, set the lines with Dataset manually so there is no self reference.
-        address_copy = copy.deepcopy(addresses)
-        for idx, address in enumerate(addresses):
-            if address[0] == self.id: # Include the Dataset as the source node.
-                cls1 = ResearchObjectHandler._prefix_to_class(address[1])
-                G.add_edge(self, cls1(id = address[1], action = action))
-                address_copy.remove(address)
-
-        addresses = address_copy
-        subclasses = DataObject.__subclasses__()
-        cls_dict = {cls.prefix: cls for cls in subclasses}
-        idcreator = IDCreator(action.conn)
-        for address_edge in addresses:            
-            cls0 = cls_dict[idcreator.get_prefix(address_edge[0])]
-            cls1 = cls_dict[idcreator.get_prefix(address_edge[1])]
-            G.add_edge(cls0(id = address_edge[0], action = action), cls1(id = address_edge[1], action = action))
+        G.add_edges_from(addresses)
         return G
     
 if __name__=="__main__":

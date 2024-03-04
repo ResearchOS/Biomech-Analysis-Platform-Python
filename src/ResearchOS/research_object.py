@@ -8,6 +8,7 @@ from .action import Action
 from .sqlite_pool import SQLiteConnectionPool
 from .default_attrs import DefaultAttrs
 from .idcreator import IDCreator
+from ResearchOS.sql.sql_runner import sql_order_result
 
 all_default_attrs = {}
 all_default_attrs["notes"] = None
@@ -38,31 +39,40 @@ class ResearchObject():
         if "id" not in kwargs.keys():
             raise ValueError("id is required as a kwarg")  
         id = kwargs["id"]
+        if not IDCreator(None).is_ro_id(id):
+            raise ValueError("id is not a valid ID.")
+        del kwargs["id"]
         if id in ResearchObjectHandler.instances:
             ResearchObjectHandler.counts[id] += 1
             ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = True
+            ResearchObjectHandler.instances[id].__dict__["_initialized"] = False
             return ResearchObjectHandler.instances[id]
+        
         ResearchObjectHandler.counts[id] = 1
         instance = super(ResearchObject, cls).__new__(cls)
         ResearchObjectHandler.instances[id] = instance
-        ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = False
-        instance.__dict__["prev_loaded"] = False        
+        instance.__dict__["id"] = id # Put the ID in the object.
+        instance.__dict__["prev_loaded"] = False
+        instance.__dict__["_initialized"] = False
         return instance 
     
-    def __getattribute__(self, name: str) -> Any:
-        """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""        
-        subclasses = ResearchObject.__subclasses__()
-        vr_class = [x for x in subclasses if (hasattr(x,"prefix") and x.prefix == "VR")][0]
-        try:
-            value = super().__getattribute__(name) # Throw the default error.
-        except AttributeError as e:
-            raise e        
-        if isinstance(value, vr_class):
-            value = ResearchObjectHandler.load_vr_value(self, value)
-        return value
+    # def __getattribute__(self, name: str) -> Any:
+    #     """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""
+    #     from ResearchOS.variable import Variable
+    #     try:
+    #         value = super().__getattribute__(name) # Throw the default error.
+    #     except AttributeError as e:
+    #         raise e        
+    #     if isinstance(value, Variable):
+    #         action = Action(name = "attribute_access")
+    #         value = ResearchObjectHandler.load_vr_value(self, action, value)
+    #     return value
     
     def __setattr__(self, name: str = None, value: Any = None, action: Action = None, all_attrs: DefaultAttrs = None, kwargs_dict: dict = {}) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""        
+        if not self._initialized:
+            self.__dict__[name] = value
+            return
         # Ensure that the criteria to set the attribute are met.
         if not str(name).isidentifier():
             raise ValueError(f"{name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.        
@@ -91,25 +101,24 @@ class ResearchObject():
         action.execute()     
     
     def __init__(self, action: Action = None, **orig_kwargs):
-        """Initialize the research object."""        
-        id = orig_kwargs["id"]
-        if not IDCreator(None).is_ro_id(id):
-            raise ValueError("id is not a valid ID.")
+        """Initialize the research object."""
+        orig_kwargs = self.__dict__ | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
+        prev_loaded = orig_kwargs["prev_loaded"]
+        del orig_kwargs["id"] # Remove the ID from the kwargs so that it is not set as an attribute.        
+        del orig_kwargs["_initialized"] # Remove the _initialized attribute from the kwargs so that it is not set as an attribute.
+        
         finish_action = False
         if action is None:
             action = Action(name = "__init__", exec = False) # One data object.
             finish_action = True
-        self.__dict__["id"] = orig_kwargs["id"] # Put the ID in the __dict__ so that it is not overwritten by the __setattr__ method.
-        del orig_kwargs["id"] # Remove the ID from the kwargs so that it is not set as an attribute.        
+        
         attrs = DefaultAttrs(self) # Get the default attributes for the class.
         default_attrs_dict = attrs.default_attrs
-        prev_loaded = self.prev_loaded
-        del self.__dict__["prev_loaded"]
 
         if prev_loaded:
             prev_exists = True
         else:
-            prev_exists = ResearchObjectHandler.object_exists(self.id, action)
+            prev_exists = ResearchObjectHandler.object_exists(self.id, action)        
         if not prev_exists:
             # Create a new object.
             query_name = "robj_exists_insert"
@@ -119,9 +128,22 @@ class ResearchObject():
         else:
             kwargs = orig_kwargs # Because the defaults will have all been set, don't include them.
         
-        if not prev_loaded and prev_exists:
+        if prev_exists:
             # Load the existing object's attributes from the database.
-            ResearchObjectHandler._load_ro(self, attrs, action)                          
+            ResearchObjectHandler._load_ro(self, attrs, action)
+        # if prev_exists and prev_loaded:
+        #     finish_action = False
+
+        if prev_exists:
+            self._initialized = True
+            # Remove default kwargs values, and kwargs with values already in the object.
+            # Kind of hacky but works for now.
+            tmp_kwargs = kwargs.copy()
+            for key in tmp_kwargs:
+                if key in self.__dict__ and key in kwargs and self.__dict__[key] == kwargs[key]:
+                    del kwargs[key]
+                if key in default_attrs_dict and key in kwargs and default_attrs_dict[key] == kwargs[key]:
+                    del kwargs[key]
 
         self._setattrs(default_attrs_dict, kwargs, action)
 
@@ -131,6 +153,8 @@ class ResearchObject():
             action.commit = True
             action.execute()
 
+        self._initialized = True
+
     # @profile(stream = setattr_log)
     def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action) -> None:
         """Set the attributes of the object.
@@ -138,12 +162,13 @@ class ResearchObject():
         orig_kwargs: The original kwargs passed to the object.
         kwargs: The kwargs to be used to set the attributes. A combination of the default attributes and the original kwargs."""
         del_keys = []
-        for key in kwargs:
-            try:
-                if hasattr(self, key) and getattr(self, key, None) == kwargs[key]:
-                    del_keys.append(key) # No change.
-            except ValueError:
-                pass # Allow the Variable to not exist yet.
+        if self._initialized:
+            for key in kwargs:
+                try:
+                    if key in self.__dict__ and self.__dict__[key] == kwargs[key]:
+                        del_keys.append(key) # No change.
+                except ValueError:
+                    pass # Allow the Variable to not exist yet.
             
         for key in del_keys:
             del kwargs[key]
@@ -152,8 +177,7 @@ class ResearchObject():
 
         # 2. Set VR attributes.        
         vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
-        for vr_name in vr_attrs:
-            ResearchObjectHandler._set_vr_attributes(self, vr_name, vr_attrs[vr_name], action)
+        ResearchObjectHandler._set_vr_values(self, vr_attrs, action)
 
     def get_vr(self, name: str) -> Any:
         """Get the VR itself instead of its value."""
@@ -161,7 +185,9 @@ class ResearchObject():
 
     def get_dataset_id(self) -> str:
         """Get the most recent dataset ID."""        
-        sqlquery = f"SELECT action_id, dataset_id FROM data_address_schemas"
+        sqlquery = f"SELECT dataset_id FROM data_address_schemas"
+        # action = Action(name = "get_dataset_id")
+        # sqlquery = sql_order_result(action, sqlquery_raw, ["dataset_id"], single = True, user = True, computer = False)
         pool = SQLiteConnectionPool()
         conn = pool.get_connection()
         cursor = conn.cursor()
@@ -170,7 +196,7 @@ class ResearchObject():
         # ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num=0)
         if not result:
             raise ValueError("Need to create a dataset and set up its schema first.")
-        dataset_id = result[-1][1]        
+        dataset_id = result[-1][0]        
         return dataset_id
 
     def get_current_schema_id(self, dataset_id: str) -> str:

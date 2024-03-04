@@ -1,17 +1,18 @@
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ResearchOS.action import Action
+from ResearchOS.action import Action
 
 # from sql_joiner_most_recent import col_names_in_where, extract_sql_components, append_table_to_columns
 from ResearchOS.sql.sql_joiner_most_recent import extract_sql_components
 from ResearchOS.current_user import CurrentUser
 
-def sql_order_result(action: "Action", sqlquery: str, unique_cols: list = None, single: bool = True, user: bool = True, computer: bool = True) -> None:
+def sql_order_result(action: Action, sqlquery: str, unique_cols: list = None, single: bool = True, user: bool = True, computer: bool = True) -> None:
     """Takes in a basic SQL query, parses it, and returns the rows of that table ordered by the datetime column of the Actions table
     If "single" is True, returns only the single most recent value for each unique combination of WHERE conditions."""
     
     # Get the action_id's of the current user & computer in the Actions table.
+    if action is None:
+        raise ValueError("Need to pass in an action object.")
     current_user = CurrentUser(action)
     current_user_timestamps = current_user.get_timestamps_when_current(user = user, computer = computer)
 

@@ -28,7 +28,17 @@ computer_specific_attr_names = ["path"]
 
 class Logsheet(PipelineObject):
 
-    prefix = "LG"    
+    prefix = "LG"
+    _initialized = False
+
+    def __init__(self, path: str = all_default_attrs["path"], headers: list = all_default_attrs["headers"],
+                num_header_rows: int = all_default_attrs["num_header_rows"], class_column_names: dict = all_default_attrs["class_column_names"], **kwargs):
+        self.path = path
+        self.headers = headers
+        self.num_header_rows = num_header_rows
+        self.class_column_names = class_column_names
+        super().__init__(**kwargs)
+        self._initialized = True
 
     ### Logsheet path
         
@@ -83,8 +93,10 @@ class Logsheet(PipelineObject):
             if header[2] not in DataObject.__subclasses__():
                 raise ValueError("Third element of each header tuple must be a ResearchObject subclass!")
             # 6. Check that the third element of each header tuple is a valid variable ID.                
-            if not header[3].startswith(Variable.prefix) or not ResearchObjectHandler.object_exists(header[3], action):
-                raise ValueError("Fourth element of each header tuple must be a valid pre-existing variable ID!")
+            if not isinstance(header[3],(str, Variable)):
+                raise ValueError("Fourth element of each header tuple must be a valid pre-existing variable ID OR the variable object itself!")
+            if isinstance(header[3], str) and not (header[3].startswith(Variable.prefix) and ResearchObjectHandler.object_exists(header[3], action)):
+                raise ValueError("Fourth element of each header tuple (if provided as a str) must be a valid pre-existing variable ID!")
             
         logsheet = self.read_and_clean_logsheet(nrows = 1)
         headers_in_logsheet = logsheet[0]
@@ -100,11 +112,14 @@ class Logsheet(PipelineObject):
         str_headers = []        
         for header in headers:
             # Update the Variable object with the name if it is not already set, and the level.
-            vr = Variable(id = header[3], action = action)
+            if isinstance(header[3], Variable):
+                vr = header[3]                
+            else:
+                vr = Variable(id = header[3], action = action)
             default_attrs = DefaultAttrs(vr).default_attrs
             kwarg_dict = {"name": header[0], "level": header[2]}
-            vr._setattrs(default_attrs, kwarg_dict, action = action)            
-            str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, header[3]))
+            vr._setattrs(default_attrs, kwarg_dict, action = action)
+            str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, vr.id))
         return json.dumps(str_headers)
 
     def from_json_headers(self, json_var: str, action: Action) -> list:
@@ -239,7 +254,10 @@ class Logsheet(PipelineObject):
         vr_list = []
         vr_obj_list = []
         for idx, vr_id in enumerate(header_vrids):
-            vr = Variable(id = vr_id, action = action)
+            if isinstance(vr_id, Variable):
+                vr = vr_id
+            else:
+                vr = Variable(id = vr_id, action = action)
             assert vr.level == header_levels[idx]
             vr_obj_list.append(vr)
             vr_list.append(vr.id)
@@ -331,7 +349,7 @@ class Logsheet(PipelineObject):
                         continue
                     raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
                 attrs_cache_dict[row_dobjs[level_idx].id][name] = value
-                row_attrs[level_idx][name] = attrs_cache_dict[row_dobjs[level_idx].id][name]
+                row_attrs[level_idx][vr_id] = attrs_cache_dict[row_dobjs[level_idx].id][name]
             for idx, attrs in enumerate(row_attrs):
                 row_dobjs[idx]._setattrs({}, attrs, action = action)                           
 
