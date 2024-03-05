@@ -12,7 +12,7 @@ import copy
 from inspect_locals import inspect_locals
 
 import numpy as np
-from memory_profiler import profile
+# from memory_profiler import profile
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
@@ -28,6 +28,8 @@ from ResearchOS.current_user import CurrentUser
 from ResearchOS.get_computer_id import COMPUTER_ID
 
 set_vr_values_log = open("logfile_set_vr_values.log", "w")
+
+do_run = False
 
 class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
@@ -232,7 +234,7 @@ class ResearchObjectHandler:
             research_object.__dict__[key] = complex_attrs[key]
 
     @staticmethod
-    @profile(stream = set_vr_values_log)
+    # @profile(stream = set_vr_values_log)
     def _set_vr_values(research_object: "ResearchObject", vr_values: dict, action: Action) -> None:
         """Set the values of the VR attributes."""
         if not vr_values:
@@ -241,7 +243,7 @@ class ResearchObjectHandler:
         start_pickle_hash_time = time.time()
         logging.info(f"Setting VR values for {research_object.id}.")
         vr_hashes_dict = {}
-        inspect_locals(locals())
+        inspect_locals(locals(), do_run)
         for vr, value in vr_values.items():
             # time.sleep(0.01)
             start_pickle_time = time.time()
@@ -251,7 +253,7 @@ class ResearchObjectHandler:
             data_blob_hash = sha256(data_blob).hexdigest()
             hash_dur = time.time() - start_hash_time
             vr_hashes_dict[vr] = {"hash": data_blob_hash, "blob": data_blob}
-            inspect_locals(locals())
+            inspect_locals(locals(), do_run)
 
             if pickle_dur > 2 or hash_dur > 2:
                 logging.warning(f"Time to pickle {vr.id} ({vr.name}): {pickle_dur} seconds.")
@@ -260,9 +262,9 @@ class ResearchObjectHandler:
                 logging.debug(f"Time to pickle {vr.id} ({vr.name}): {pickle_dur} seconds.")
                 logging.debug(f"Time to hash {vr.id} ({vr.name}): {hash_dur} seconds.")
 
-            inspect_locals(locals())
+            inspect_locals(locals(), do_run)
             vr_values[vr] = data_blob_hash # Replace the value with the hash to relieve memory pressure.
-            inspect_locals(locals())
+            inspect_locals(locals(), do_run)
         logging.debug(f"Time to pickle and hash VR output values: {time.time() - start_pickle_hash_time} seconds.")
 
         # 2. Check which VR's hashes are already in the data database so as not to duplicate a primary key.
@@ -281,7 +283,7 @@ class ResearchObjectHandler:
                     vr_hashes_prev_exist.append(vr)
                     break    
 
-        inspect_locals(locals())
+        inspect_locals(locals(), do_run)
 
         # 2. Insert the values into the proper tables.
         schema_id = research_object.get_current_schema_id(research_object.get_dataset_id())
@@ -302,7 +304,7 @@ class ResearchObjectHandler:
             if not action.is_redundant_params(research_object.id, "vr_value_for_dobj_insert", vr_value_pk, group_name = "robj_vr_attr_insert"):
                 action.add_sql_query(research_object.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert")
 
-        inspect_locals(locals())
+        inspect_locals(locals(), do_run)
 
     @staticmethod
     def clean_value_from_load_mat(numpy_array: Any) -> Any:

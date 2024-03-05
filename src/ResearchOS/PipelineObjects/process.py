@@ -9,7 +9,7 @@ import logging, time
 import gc
 
 import networkx as nx
-from memory_profiler import profile
+# from memory_profiler import profile
 
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.variable import Variable
@@ -46,6 +46,8 @@ log_stream = open("logfile_run_process.log", "w")
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, filename = "logfile.log", filemode = "w", format = "%(asctime)s - %(levelname)s - %(message)s")
+
+do_run = False
 
 
 class Process(PipelineObject):
@@ -337,6 +339,7 @@ class Process(PipelineObject):
                 eng = matlab.engine.start_matlab()
                 matlab_loaded = True
             except:
+                print("Failed to import MATLB.")
                 matlab_loaded = False                
             
 
@@ -365,11 +368,11 @@ class Process(PipelineObject):
         schema_order = list(nx.topological_sort(schema_graph))
         
         pool = SQLiteConnectionPool()
-        for node_id in level_node_ids_sorted:
+        for node_id in level_node_ids_sorted[:60]:
             self.run_node(node_id, schema_id, schema_order, action, self.level, ds, subset_graph, matlab_loaded, eng)
             # gc.collect()
 
-            inspect_locals(locals())
+            inspect_locals(locals(), do_run)
             
         for vr_name, vr in self.output_vrs.items():
             print(f"Saved VR {vr_name} (VR: {vr.id}).")
@@ -379,12 +382,12 @@ class Process(PipelineObject):
 
         pool.return_connection(action.conn)
 
-    @profile(stream=log_stream)
-    def run_node(self, node_id: str, schema_id: str, schema_order: list, action: Action, level: type, ds: Dataset, subset_graph: nx.MultiDiGraph, matlab_loaded: bool, eng) -> None:
-        load_node_msg = f"Loading {level.__name__} {node_id}."
+    # @profile(stream=log_stream)
+    def run_node(self, node_id: str, schema_id: str, schema_order: list, action: Action, pr_level: type, ds: Dataset, subset_graph: nx.MultiDiGraph, matlab_loaded: bool, eng) -> None:
+        load_node_msg = f"Loading {pr_level.__name__} {node_id}."
         load_node_time = time.time()    
         logging.info(load_node_msg)    
-        node = level(id = node_id, action = action)
+        node = pr_level(id = node_id, action = action)
         logging.debug(f"Loading took {time.time() - load_node_time} seconds.")
         start_node_msg = f"Running {self.mfunc_name} on {node.name} ({node.id})."
         start_node_time = time.time()
@@ -392,7 +395,7 @@ class Process(PipelineObject):
         print(start_node_msg)
         # time.sleep(0.1) # Give breathing room for MATLAB?
 
-        inspect_locals(locals())
+        inspect_locals(locals(), do_run)
         start_input_vrs_time = time.time()
         logging.info(f"Loading input VR's for {node.name} ({node.id}).")
         # Get the values for the input variables for this DataObject node. 
@@ -417,13 +420,17 @@ class Process(PipelineObject):
                 vr_found = True
                 continue
             else:
+                if var_name_in_code == "fpsUsed":
+                    vr.level = ResearchObjectHandler._prefix_to_class("SJ")
+                else:
+                    vr.level = node.__class__
                 curr_node = [tmp_node for tmp_node in node_lineage if isinstance(tmp_node, vr.level)][0]
                 value = curr_node.load_vr_value(vr, action)
                 vr_values_in[var_name_in_code] = value
                 vr_found = True
             if not vr_found:
                 raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
-        inspect_locals(locals())
+        inspect_locals(locals(), do_run)
             
         done_input_vrs_time = time.time()
         logging.debug(f"Loading input VR's for {node.name} ({node.id}) took {done_input_vrs_time - start_input_vrs_time} seconds.")
@@ -524,7 +531,7 @@ class Process(PipelineObject):
             return
 
         # NOTE: For now, assuming that there is only one return statement in the entire method.
-        inspect_locals(locals())
+        inspect_locals(locals(), do_run)
         start_run_time = time.time()
         if self.is_matlab:
             if not matlab_loaded:
@@ -554,13 +561,13 @@ class Process(PipelineObject):
             else:
                 idx += 1
             kwargs_dict[vr] = vr_values_out[idx]   
-        inspect_locals(locals())             
+        inspect_locals(locals(), do_run)             
 
         vr_values_out = []
         print(f"Size of action = ", sys.getsizeof(action.dobjs))
         node._setattrs({}, kwargs_dict, action = action)
         kwargs_dict = {}    
-        inspect_locals(locals())    
+        inspect_locals(locals(), True)    
 
         end_node_before_execute_time = time.time()
         run_node_before_execute_time = end_node_before_execute_time - start_node_time
@@ -577,4 +584,4 @@ class Process(PipelineObject):
         action_execute_time = end_node_after_execute_time - end_node_before_execute_time
         logging.debug(f"Action.execute() for {node.name} took {action_execute_time} seconds.")
         del node
-        inspect_locals(locals())
+        inspect_locals(locals(), do_run)

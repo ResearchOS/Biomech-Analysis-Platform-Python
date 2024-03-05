@@ -1,7 +1,7 @@
 from typing import Any
 import json
 
-from memory_profiler import profile
+# from memory_profiler import profile
 
 from .research_object_handler import ResearchObjectHandler
 from .action import Action
@@ -154,7 +154,7 @@ class ResearchObject():
             action.commit = True
             action.execute()
 
-    @profile(stream = setattr_log)
+    # @profile(stream = setattr_log)
     def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action) -> None:
         """Set the attributes of the object.
         default_attrs: The default attributes of the object.
