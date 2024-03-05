@@ -66,7 +66,7 @@ class Action():
         
         self.dobjs[group_name][query_name][dobj_id].append(params) # Allows for multiple params to be added at once with "executemany"
 
-    def is_redundant_params(self, dobj_id: str, query_name: str, params: tuple, group_name: str = "all") -> bool:
+    def is_redundant_params(self, dobj_id: str, query_name: str, primary_key: tuple, group_name: str = "all") -> bool:
         """Check if the parameters are redundant."""
         if group_name not in self.dobjs:
             return False
@@ -74,7 +74,7 @@ class Action():
             return False
         if dobj_id not in self.dobjs[group_name][query_name]:
             return False
-        if params in self.dobjs[group_name][query_name][dobj_id]:
+        if any([primary_key in tup for tup in self.dobjs[group_name][query_name][dobj_id]]):
             return True
         return False
 
@@ -106,9 +106,11 @@ class Action():
 
         uses_data = False
         for group_name in self.dobjs:
-            if any(query in data_query_names for query in self.dobjs[group_name]):
-                pool_data = SQLiteConnectionPool(name = "data")            
-                conn_data = pool_data.get_connection()
+            if any(query in data_query_names for query in self.dobjs[group_name]):                
+                if not hasattr(self, "conn_data"):
+                    pool_data = SQLiteConnectionPool(name = "data")
+                    self.conn_data = pool_data.get_connection()
+                conn_data = self.conn_data
                 cursor_data = conn_data.cursor()
                 uses_data = True
                 break
@@ -155,6 +157,7 @@ class Action():
                 self.conn = None   
                 if uses_data:
                     pool_data.return_connection(conn_data)
+                    del self.conn_data
 
 if __name__=="__main__":    
     action = Action(name = "Test Action")    

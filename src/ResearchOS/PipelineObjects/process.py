@@ -6,6 +6,7 @@ import importlib
 from hashlib import sha256
 from datetime import datetime, timezone
 import logging, time
+import gc
 
 import networkx as nx
 from memory_profiler import profile
@@ -13,6 +14,7 @@ from memory_profiler import profile
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.variable import Variable
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.research_object_handler import ResearchObjectHandler
@@ -21,6 +23,8 @@ from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.sql.sql_runner import sql_order_result
+
+from inspect_locals import inspect_locals
 
 all_default_attrs = {}
 all_default_attrs["is_matlab"] = False
@@ -273,9 +277,9 @@ class Process(PipelineObject):
     
     def from_json_output_vrs(self, output_vrs: str, action: Action) -> dict:
         """Convert a JSON string to a dictionary of output variables."""
-        output_vrs_dict = json.loads(output_vrs)
+        output_vr_ids_dict = json.loads(output_vrs)
         output_vrs_dict = {}
-        for name, vr_id in output_vrs_dict.items():
+        for name, vr_id in output_vr_ids_dict.items():
             vr = Variable(id = vr_id, action = action)
             output_vrs_dict[name] = vr
         return output_vrs_dict
@@ -294,13 +298,13 @@ class Process(PipelineObject):
 
     def run(self) -> None:
         """Execute the attached method.
-        kwargs are the input VR's."""        
-        ds = Dataset(id = self.get_dataset_id())
+        kwargs are the input VR's."""      
+        action = Action(name = f"Running {self.mfunc_name} on {self.level.__name__}s.")  
+        ds = Dataset(id = self.get_dataset_id(), action = action)
 
         defaults = DefaultAttrs(self)
         default_attrs = defaults.default_attrs
-
-        action = Action(name = f"Running {self.mfunc_name} on {self.level.__name__}s.")
+        
         # 1. Validate that the level & method have been properly set.
         self.validate_method(self.method, action, default = default_attrs["method"])
         self.validate_level(self.level, action, default = default_attrs["level"])
@@ -340,22 +344,32 @@ class Process(PipelineObject):
         # Get the subset of the data.
         subset = Subset(id = self.subset_id, action = action)
         # subset_graph = subset.get_subset()
-        G = nx.MultiDiGraph()
-        subset_graph = G.add_edges_from(ds.addresses)
+        subset_graph = nx.MultiDiGraph()
+        subset_graph.add_edges_from(ds.addresses)
 
         # Do the setup for MATLAB.
         if self.is_matlab and matlab_loaded:
             eng.addpath(self.mfolder, nargout=0)
 
-        level_nodes = sorted([node for node in subset_graph if isinstance(node, self.level)], key = lambda x: x.name)
+        level_node_ids = [node for node in subset_graph if node.startswith(self.level.prefix)]
+        name_attr_id = ResearchObjectHandler._get_attr_id("name")
+        sqlquery_raw = "SELECT object_id, attr_value FROM simple_attributes WHERE attr_id = ? AND object_id LIKE ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["object_id"], single = True, user = True, computer = False)
+        params = (name_attr_id, f"{self.level.prefix}%")
+        level_nodes_ids_names = action.conn.cursor().execute(sqlquery, params).fetchall()
+        level_nodes_ids_names.sort(key = lambda x: x[1])
+        level_node_ids_sorted = [row[0] for row in level_nodes_ids_names if row[0] in level_node_ids]
         # Iterate over each data object at this level (e.g. all ros.Trial objects in the subset.)
         schema = ds.schema
         schema_graph = nx.MultiDiGraph(schema)
         schema_order = list(nx.topological_sort(schema_graph))
         
         pool = SQLiteConnectionPool()
-        for node in level_nodes:
-            self.run_node(node, schema_id, schema_order, action, pool, ds, subset_graph, matlab_loaded, eng)
+        for node_id in level_node_ids_sorted:
+            self.run_node(node_id, schema_id, schema_order, action, self.level, ds, subset_graph, matlab_loaded, eng)
+            # gc.collect()
+
+            inspect_locals(locals())
             
         for vr_name, vr in self.output_vrs.items():
             print(f"Saved VR {vr_name} (VR: {vr.id}).")
@@ -366,42 +380,67 @@ class Process(PipelineObject):
         pool.return_connection(action.conn)
 
     @profile(stream=log_stream)
-    def run_node(self, node: ResearchObject, schema_id: str, schema_order: list, action: Action, pool: SQLiteConnectionPool, ds: Dataset, subset_graph: nx.MultiDiGraph, matlab_loaded: bool, eng) -> None:
-        start_node_msg = f"Running {self.mfunc_name} on {node.name}."
+    def run_node(self, node_id: str, schema_id: str, schema_order: list, action: Action, level: type, ds: Dataset, subset_graph: nx.MultiDiGraph, matlab_loaded: bool, eng) -> None:
+        load_node_msg = f"Loading {level.__name__} {node_id}."
+        load_node_time = time.time()    
+        logging.info(load_node_msg)    
+        node = level(id = node_id, action = action)
+        logging.debug(f"Loading took {time.time() - load_node_time} seconds.")
+        start_node_msg = f"Running {self.mfunc_name} on {node.name} ({node.id})."
         start_node_time = time.time()
         logging.info(start_node_msg)
         print(start_node_msg)
-        time.sleep(0.1) # Give breathing room for MATLAB?
+        # time.sleep(0.1) # Give breathing room for MATLAB?
 
-        # Get the values for the input variables for this DataObject node.            
-        vr_values_in = {}
-        anc_nodes = nx.ancestors(subset_graph, node)
-        node_lineage = [node] + [anc_node for anc_node in anc_nodes]
+        inspect_locals(locals())
+        start_input_vrs_time = time.time()
+        logging.info(f"Loading input VR's for {node.name} ({node.id}).")
+        # Get the values for the input variables for this DataObject node. 
+        # Get the lineage so I can get the file path for import functions and create the lineage.        
+        anc_node_ids = nx.ancestors(subset_graph, node_id)
+        anc_node_ids_list = [node for node in nx.topological_sort(subset_graph.subgraph(anc_node_ids))][::-1]
+        anc_node_ids_list.remove(ds.id)
+        anc_nodes = []
+        # Skip the lowest level (the Process level) and the highest level (dataset)
+        for idx, level in enumerate(schema_order[1:-1]):
+            anc_nodes.append(level(id = anc_node_ids_list[idx], action = action))          
+        vr_values_in = {}        
+        node_lineage = [node] + anc_nodes + [ds] # Smallest to largest.        
         input_vrs_names_dict = {}
         for var_name_in_code, vr in self.input_vrs.items():
             vr_found = False
             input_vrs_names_dict[var_name_in_code] = vr
+            if var_name_in_code == self.import_file_vr_name:
+                continue # Skip the import file variable.
             if vr.hard_coded_value is not None: 
                 vr_values_in[var_name_in_code] = vr.hard_coded_value
-                vr_found = True                
-            for curr_node in node_lineage:
-                if hasattr(curr_node, vr.name):
-                    vr_values_in[var_name_in_code] = getattr(curr_node, vr.name)
-                    vr_found = True
-                    break
+                vr_found = True
+                continue
+            else:
+                curr_node = [tmp_node for tmp_node in node_lineage if isinstance(tmp_node, vr.level)][0]
+                value = curr_node.load_vr_value(vr, action)
+                vr_values_in[var_name_in_code] = value
+                vr_found = True
             if not vr_found:
                 raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
+        inspect_locals(locals())
             
-        # Get the lineage so I can get the file path for import functions.
-        ordered_levels = []
-        for level in schema_order:
-            ordered_levels.append([n for n in node_lineage if isinstance(n, level)])
-        data_path = ds.dataset_path
-        for level in ordered_levels[1:]:
-            data_path = os.path.join(data_path, level[0].name)
+        done_input_vrs_time = time.time()
+        logging.debug(f"Loading input VR's for {node.name} ({node.id}) took {done_input_vrs_time - start_input_vrs_time} seconds.")
+                    
+        data_path = ds.dataset_path        
+        for node in node_lineage[1::-1]:
+            data_path = os.path.join(data_path, node.name)        
         # TODO: Make the name of this variable not hard-coded.
-        if self.import_file_vr_name in vr_values_in:
-            vr_values_in[self.import_file_vr_name] = data_path + self.import_file_ext
+        if self.import_file_vr_name is not None:
+            file_path = data_path + self.import_file_ext
+            rel_path = os.path.relpath(file_path, ds.dataset_path)
+            if not os.path.exists(file_path):
+                print(f"File {rel_path} does not exist. Skipping {node.name} ({node.id}).")
+                return
+            vr_values_in[self.import_file_vr_name] = file_path
+        get_file_path_time = time.time()
+        logging.debug(f"Getting file path for {node.name} ({node.id}) took {get_file_path_time - done_input_vrs_time} seconds.")
 
         # Get the latest action_id where this DataObject was assigned a value to any of the output VR's AND the connection between each output VR and this DataObject is active.
         # If the connection between each output VR and this DataObject is not active, then run the process.
@@ -485,13 +524,14 @@ class Process(PipelineObject):
             return
 
         # NOTE: For now, assuming that there is only one return statement in the entire method.
+        inspect_locals(locals())
         start_run_time = time.time()
         if self.is_matlab:
             if not matlab_loaded:
                 raise ValueError("MATLAB is not loaded.")
             vr_vals_in = list(vr_values_in.values())
             fcn = getattr(eng, self.mfunc_name)
-            vr_values_out = fcn(*vr_vals_in, nargout=len(self.output_vrs))                    
+            vr_values_out = fcn(*vr_vals_in, nargout=len(self.output_vrs))                               
         else:
             vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
         if not isinstance(vr_values_out, tuple):
@@ -513,10 +553,14 @@ class Process(PipelineObject):
                 idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out and the order in the output_vrs dict are probably different.
             else:
                 idx += 1
-            kwargs_dict[vr_name] = vr_values_out[idx]                
+            kwargs_dict[vr] = vr_values_out[idx]   
+        inspect_locals(locals())             
 
         vr_values_out = []
-        ResearchObject._setattrs(node, {}, kwargs_dict, action = action)
+        print(f"Size of action = ", sys.getsizeof(action.dobjs))
+        node._setattrs({}, kwargs_dict, action = action)
+        kwargs_dict = {}    
+        inspect_locals(locals())    
 
         end_node_before_execute_time = time.time()
         run_node_before_execute_time = end_node_before_execute_time - start_node_time
@@ -532,3 +576,5 @@ class Process(PipelineObject):
         end_node_after_execute_time = time.time()
         action_execute_time = end_node_after_execute_time - end_node_before_execute_time
         logging.debug(f"Action.execute() for {node.name} took {action_execute_time} seconds.")
+        del node
+        inspect_locals(locals())

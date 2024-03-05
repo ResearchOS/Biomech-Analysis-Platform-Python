@@ -155,7 +155,7 @@ class DBInitializer():
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
                         FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (dataobject_id, vr_id, data_blob_hash, schema_id)
+                        PRIMARY KEY (action_id, dataobject_id, vr_id, data_blob_hash, schema_id)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.

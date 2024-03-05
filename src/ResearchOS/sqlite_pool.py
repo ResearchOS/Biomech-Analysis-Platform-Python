@@ -42,7 +42,7 @@ class SQLiteConnectionPool:
             raise sqlite3.Error("No available connections")
         conn = self.pool.get(block=True)
         self.checked_out_connections.add(conn)
-        print("Got a connection. Remaining: " + str(self.pool.qsize()))
+        # print("Got a connection. Remaining: " + str(self.pool.qsize()))
         return conn
 
     def return_connection(self, connection):
@@ -55,7 +55,7 @@ class SQLiteConnectionPool:
         else:
             self.pool.put(connection)
         self.checked_out_connections.discard(connection)
-        print("Returned a connection. Remaining: " + str(self.pool.qsize()))
+        # print("Returned a connection. Remaining: " + str(self.pool.qsize()))
         return
 
     def close_all(self):

@@ -13,7 +13,7 @@ class DefaultAttrs():
         cls = research_object.__class__
         if cls in ResearchObjectHandler.default_attrs:
             self.__dict__ = ResearchObjectHandler.default_attrs[cls]
-            self.__dict__["name"] = research_object.id
+            self.__dict__["default_attrs"]["name"] = research_object.id
             return
         
         from ResearchOS.research_object import all_default_attrs as ro_default_attrs
@@ -45,7 +45,7 @@ class DefaultAttrs():
             parent_default_attrs = {}
             parent_computer_specific_attr_names = []
 
-        ro_default_attrs["name"] = research_object.id
+        class_default_attrs["name"] = research_object.id
         self.default_attrs = {**ro_default_attrs, **parent_default_attrs, **class_default_attrs}
         self.computer_specific_attr_names = ro_computer_specific_attr_names + parent_computer_specific_attr_names + class_computer_specific_attr_names
         ResearchObjectHandler.default_attrs[cls] = self.__dict__

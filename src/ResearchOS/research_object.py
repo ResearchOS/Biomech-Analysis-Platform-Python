@@ -1,7 +1,7 @@
 from typing import Any
 import json
 
-# from memory_profiler import profile
+from memory_profiler import profile
 
 from .research_object_handler import ResearchObjectHandler
 from .action import Action
@@ -17,7 +17,7 @@ computer_specific_attr_names = []
 
 root_data_path = "data"
 
-# setattr_log = open("logfile_setattrs.log", "w")
+setattr_log = open("logfile_setattrs.log", "w")
 
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
@@ -135,8 +135,7 @@ class ResearchObject():
         # if prev_exists and prev_loaded:
         #     finish_action = False
 
-        if prev_exists:
-            self._initialized = True
+        if prev_exists:            
             # Remove default kwargs values, and kwargs with values already in the object.
             # Kind of hacky but works for now.
             tmp_kwargs = kwargs.copy()
@@ -146,6 +145,7 @@ class ResearchObject():
                 if key in default_attrs_dict and key in kwargs and default_attrs_dict[key] == kwargs[key]:
                     del kwargs[key]
 
+        self._initialized = True
         self._setattrs(default_attrs_dict, kwargs, action)
 
         # Set the attributes.
@@ -154,9 +154,7 @@ class ResearchObject():
             action.commit = True
             action.execute()
 
-        self._initialized = True
-
-    # @profile(stream = setattr_log)
+    @profile(stream = setattr_log)
     def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action) -> None:
         """Set the attributes of the object.
         default_attrs: The default attributes of the object.

@@ -302,8 +302,8 @@ class Logsheet(PipelineObject):
         Raises:
             ValueError: more header rows than logsheet rows or incorrect schema format
             QUESTION except ValueError?"""
-        ds = Dataset(id = self.get_dataset_id())
         action = Action(name = "read logsheet")
+        ds = Dataset(id = self.get_dataset_id(), action = action)        
         self.validate_class_column_names(self.class_column_names, action, None)
         self.validate_headers(self.headers, action, None)
         self.validate_num_header_rows(self.num_header_rows, action, None)
