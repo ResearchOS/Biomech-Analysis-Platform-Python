@@ -363,6 +363,9 @@ class Process(PipelineObject):
         # 3. Validate that the subsets have been properly set.
         self.validate_subset_id(self.subset_id, action, default = default_attrs["subset_id"])
 
+        # 4. Validate vrs_source_pr
+        self.validate_vrs_source_pr(self.vrs_source_pr, action, default = default_attrs["vrs_source_pr"])
+
         if self.is_matlab:
             self.validate_mfunc_name(self.mfunc_name, action, default = default_attrs["mfunc_name"])
             self.validate_mfolder(self.mfolder, action, default = default_attrs["mfolder"])
