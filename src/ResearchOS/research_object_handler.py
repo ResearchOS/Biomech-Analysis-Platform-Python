@@ -247,7 +247,7 @@ class ResearchObjectHandler:
         for vr, value in vr_values.items():
             # time.sleep(0.01)
             start_pickle_time = time.time()
-            data_blob = copy.deepcopy(pickle.dumps(value, protocol = 4))
+            data_blob = pickle.dumps(value, protocol = 4)
             pickle_dur = time.time() - start_pickle_time
             start_hash_time = time.time()
             data_blob_hash = sha256(data_blob).hexdigest()

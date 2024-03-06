@@ -368,11 +368,15 @@ class Process(PipelineObject):
         schema_order = list(nx.topological_sort(schema_graph))
         
         pool = SQLiteConnectionPool()
+        eng.quit()
         for node_id in level_node_ids_sorted[:60]:
+            eng = matlab.engine.start_matlab()
+            eng.addpath(self.mfolder, nargout=0)
             self.run_node(node_id, schema_id, schema_order, action, self.level, ds, subset_graph, matlab_loaded, eng)
-            # gc.collect()
+            inspect_locals(locals(), True)
+            eng.quit()
 
-            inspect_locals(locals(), do_run)
+            inspect_locals(locals(), True)
             
         for vr_name, vr in self.output_vrs.items():
             print(f"Saved VR {vr_name} (VR: {vr.id}).")
