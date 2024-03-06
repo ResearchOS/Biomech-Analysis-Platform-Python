@@ -7,6 +7,7 @@ from hashlib import sha256
 from datetime import datetime, timezone
 import logging, time
 import subprocess
+import re
 
 import networkx as nx
 import scipy
@@ -27,6 +28,7 @@ from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.config import Config
 
 from inspect_locals import inspect_locals
+import json
 
 all_default_attrs = {}
 all_default_attrs["is_matlab"] = False
@@ -338,21 +340,19 @@ class Process(PipelineObject):
         if self.is_matlab:
             parent_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             matlab_runner_path = os.path.join(parent_folder, "matlab", "matlab_runner.m")
-            matlab_process = subprocess.Popen(["matlab", "-nodesktop", "-nosplash","-r", f"run('{matlab_runner_path}');"], stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-            matlab_loaded = True
-
-        # matlab_loaded = True
-        # if "matlab" not in sys.modules:
-        #     matlab_loaded = False
-        #     try:            
-        #         print("Importing MATLAB.")
-        #         import matlab.engine
-        #         eng = matlab.engine.start_matlab()
-        #         matlab_loaded = True
-        #     except:
-        #         print("Failed to import MATLB.")
-        #         matlab_loaded = False                
-            
+            if os.name == "nt": # Windows
+                script_path = "matlab"
+                # matlab_process = subprocess.Popen(["matlab", "-nodesktop", "-nosplash","-r", f"run('{matlab_runner_path}');"], stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+            elif os.name == "posix": # Mac or Linux
+                for item in os.listdir("/Applications"):
+                    if not item.startswith("MATLAB_R"):
+                        continue
+                    version_match = re.match(r"MATLAB_R(\d{4}[ab])", item)
+                    if version_match:
+                        break
+                script_path = os.path.join("/Applications", item, "bin", "matlab")
+            matlab_process = subprocess.Popen([script_path, "-nodesktop", "-nosplash","-r", f"run('{matlab_runner_path}');"], stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)            
+            matlab_loaded = True                         
 
         # 4. Run the method.
         # Get the subset of the data.
@@ -360,10 +360,6 @@ class Process(PipelineObject):
         # subset_graph = subset.get_subset()
         subset_graph = nx.MultiDiGraph()
         subset_graph.add_edges_from(ds.addresses)
-
-        # Do the setup for MATLAB.
-        # if self.is_matlab and matlab_loaded:
-        #     eng.addpath(self.mfolder, nargout=0)
 
         level_node_ids = [node for node in subset_graph if node.startswith(self.level.prefix)]
         name_attr_id = ResearchObjectHandler._get_attr_id("name")
@@ -381,17 +377,15 @@ class Process(PipelineObject):
         process_run_file_path = os.path.join(config.process_run_tmp_folder, config.process_run_file_name)
         
         pool = SQLiteConnectionPool()
+        count = 0
         for node_id in level_node_ids_sorted[:60]:
+            count += 1
             self.run_node(node_id, schema_id, schema_order, action, self.level, ds, subset_graph, matlab_loaded, process_run_file_path)
-            # gc.collect()
 
             inspect_locals(locals(), do_run)
             
         for vr_name, vr in self.output_vrs.items():
             print(f"Saved VR {vr_name} (VR: {vr.id}).")
-                
-        # if self.is_matlab:
-        #     eng.rmpath(self.mfolder, nargout=0)   
 
         pool.return_connection(action.conn)
 
@@ -406,7 +400,6 @@ class Process(PipelineObject):
         start_node_time = time.time()
         logging.info(start_node_msg)
         print(start_node_msg)
-        # time.sleep(0.1) # Give breathing room for MATLAB?
 
         inspect_locals(locals(), do_run)
         start_input_vrs_time = time.time()
@@ -443,7 +436,6 @@ class Process(PipelineObject):
                 vr_found = True
             if not vr_found:
                 raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
-        inspect_locals(locals(), do_run)
             
         done_input_vrs_time = time.time()
         logging.debug(f"Loading input VR's for {node.name} ({node.id}) took {done_input_vrs_time - start_input_vrs_time} seconds.")
@@ -490,7 +482,6 @@ class Process(PipelineObject):
                 params = (most_recent_action_id,)
                 result = cursor.execute(sqlquery, params).fetchall()
                 output_vrs_earliest_time = datetime.strptime(result[0][0], "%Y-%m-%d %H:%M:%S.%f%z")
-
 
             # Check if the values for all the input variables are up to date. If so, skip this node.
             check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_values_in.items()}            
@@ -560,16 +551,10 @@ class Process(PipelineObject):
             results_file_path = run_file_folder + "process_run_results.mat"
             while not os.path.exists(results_file_path):
                 time.sleep(0.1)
-            process_run_var_loaded = load_and_extract_dicts(results_file_path)
-            process_run_var_loaded = scipy.io.loadmat(results_file_path, mat_dtype = True, matlab_compatible = True) # Get the info about the output variables from the .mat file.
-            vr_values_out_scipy = process_run_var_loaded["process_run_var"]["output_vrs"][0][0]
-
-            vr_values_out = {}
-            for vr_name, vr in self.output_vrs.items():
-                vr_values_out[vr_name] = ResearchObjectHandler.clean_value_from_load_mat(vr_values_out_scipy[vr.name_in_code])
-            # vr_vals_in = list(vr_values_in.values())
-            # fcn = getattr(eng, self.mfunc_name)
-            # vr_values_out = fcn(*vr_vals_in, nargout=len(self.output_vrs))                               
+            tmp_results_file_path = run_file_folder + "tmp_process_run_results.mat"
+            assert not os.path.exists(tmp_results_file_path)
+            vr_values_out = load_and_extract_dicts(results_file_path)
+            os.remove(results_file_path)
         else:
             vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
         if not isinstance(vr_values_out, tuple):
@@ -591,14 +576,12 @@ class Process(PipelineObject):
                 idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out and the order in the output_vrs dict are probably different.
             else:
                 idx += 1
-            kwargs_dict[vr] = vr_values_out[idx]   
-        inspect_locals(locals(), do_run)             
+            kwargs_dict[vr] = vr_values_out[idx]       
 
         vr_values_out = []
         print(f"Size of action = ", sys.getsizeof(action.dobjs))
         node._setattrs({}, kwargs_dict, action = action)
-        kwargs_dict = {}    
-        inspect_locals(locals(), True)    
+        kwargs_dict = {}
 
         end_node_before_execute_time = time.time()
         run_node_before_execute_time = end_node_before_execute_time - start_node_time
@@ -614,8 +597,6 @@ class Process(PipelineObject):
         end_node_after_execute_time = time.time()
         action_execute_time = end_node_after_execute_time - end_node_before_execute_time
         logging.debug(f"Action.execute() for {node.name} took {action_execute_time} seconds.")
-        del node
-        inspect_locals(locals(), do_run)
     
     def save_process_run_mat(self, vr_values_in: dict, run_file_path_mat: str):
         """Save the file that triggers MATLAB to run."""
@@ -651,20 +632,14 @@ class Process(PipelineObject):
 
 def load_and_extract_dicts(mat_file_path):
     # Load the .mat file
+    time.sleep(0.1)
     mat_data = scipy.io.loadmat(mat_file_path)
-    input_vrs_data = mat_data['process_run_var']['output_vrs'][0, 0]
+    output_vrs_data = mat_data['process_run_var']['output_vrs'][0,0]
 
     # Extracting the dictionaries for keys 'a1', 'a2', and 'a3'
-    extracted_dicts = {}
-    for key in ['a1', 'a2', 'a3']:
-        if key in input_vrs_data.dtype.names:
-            sub_struct = input_vrs_data[key][0, 0]
-            if sub_struct.dtype.names:
-                sub_struct_dict = {sub_field: sub_struct[sub_field][0, 0] for sub_field in sub_struct.dtype.names}
-                extracted_dicts[key] = sub_struct_dict
-            else:
-                extracted_dicts[key] = sub_struct.item()
-        else:
-            extracted_dicts[key] = None
+    extracted_vrs = []
+    for count in range(1, len(output_vrs_data.dtype.names) + 1):
+        key = "a" + str(count)
+        extracted_vrs.append(json.loads(output_vrs_data[key][0, 0]["value"][0, 0][0]))
 
-    return extracted_dicts
+    return tuple(extracted_vrs)

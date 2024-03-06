@@ -26,7 +26,7 @@ while true
 
     process_run_folder = fileparts(process_run_file_path);
 
-    % Load the proecss_run file from the disk.
+    % Load the process_run file from the disk.
     load(process_run_file_path, "process_run_var");
 
     % Get the mfolder path.
@@ -39,6 +39,7 @@ while true
    
     % Get the input & output arguments. They are structs with fieldnames set to the variable order number. 
     % Within each number is a struct with fields "name_in_code", "vr_id", and "value".
+
     % This is a struct where the fieldnames are the variable ID's, and they have fields "name_in_code" and "value".
     input_vrs = process_run_var.input_vrs;
     % This is a struct where the fieldnames are the variable names in code, and they have fields "var_id" and "value".
@@ -53,7 +54,7 @@ while true
         vr_values_in{i} = input_vrs.(['a', fldName]).value;
     end
 
-    % proecss_run the command
+    % process_run the command
     outputs_char = '[';
     output_vr_names = cell(1,n_outputs);
     for i = 1:n_outputs
@@ -67,7 +68,7 @@ while true
     % Get the output arguments.    
     for i = 1:n_outputs
         fldName = num2str(i);
-        output_vrs.(['a', fldName]).value = eval(output_vr_names{i});
+        output_vrs.(['a', fldName]).value = jsonencode(eval(output_vr_names{i}));
     end
 
     process_run_var.output_vrs = output_vrs;
@@ -84,8 +85,5 @@ while true
     % Rename the output file to remove the tmp_ prefix.
     results_process_run_file_path = [process_run_folder filesep 'process_run_results.mat'];
     movefile(results_process_run_file_path_tmp, results_process_run_file_path);
-
-    
-    
 
 end
