@@ -158,7 +158,7 @@ class Dataset(DataObject):
         Raises:
             ValueError: invalid address provided"""
         if addresses == default:
-            return
+            return False # Used by the Process.run() method to ascertain whether the addresses have been properly instantiated or not.
         self.validate_schema(self.schema, action, None)   
 
         try:

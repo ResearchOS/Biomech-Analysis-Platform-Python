@@ -120,7 +120,7 @@ class Action():
             for query_name in self.dobjs[group_name]:
                 query = self.queries[query_name]
                 params_list = []
-                print("Executing SQL statement named ", query_name, " ", query)
+                # print("Executing SQL statement named ", query_name, " ", query)
                 for dobj_id in self.dobjs[group_name][query_name]:
                     if len(self.dobjs[group_name][query_name][dobj_id]) == 0:
                         continue

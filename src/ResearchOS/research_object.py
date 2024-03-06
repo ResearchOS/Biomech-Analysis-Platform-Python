@@ -17,7 +17,7 @@ computer_specific_attr_names = []
 
 root_data_path = "data"
 
-setattr_log = open("logfile_setattrs.log", "w")
+# setattr_log = open("logfile_setattrs.log", "w")
 
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""

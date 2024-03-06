@@ -27,7 +27,7 @@ from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.current_user import CurrentUser
 from ResearchOS.get_computer_id import COMPUTER_ID
 
-set_vr_values_log = open("logfile_set_vr_values.log", "w")
+# set_vr_values_log = open("logfile_set_vr_values.log", "w")
 
 do_run = False
 
