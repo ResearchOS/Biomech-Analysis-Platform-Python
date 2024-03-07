@@ -23,7 +23,9 @@ from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.process_runner import ProcessRunner
 
+
 from inspect_locals import inspect_locals
+import json
 
 all_default_attrs = {}
 all_default_attrs["is_matlab"] = False
@@ -385,17 +387,13 @@ class Process(PipelineObject):
             except:
                 print("Failed to import MATLB.")
                 matlab_loaded = False                
-            
+                
         # 4. Run the method.
         # Get the subset of the data.
         subset = Subset(id = self.subset_id, action = action)
         # subset_graph = subset.get_subset()
         subset_graph = nx.MultiDiGraph()
         subset_graph.add_edges_from(ds.addresses)
-
-        # Do the setup for MATLAB.
-        if self.is_matlab and matlab_loaded:
-            eng.addpath(self.mfolder, nargout=0)
 
         level_node_ids = [node for node in subset_graph if node.startswith(self.level.prefix)]
         name_attr_id = ResearchObjectHandler._get_attr_id("name")
@@ -409,6 +407,8 @@ class Process(PipelineObject):
         schema = ds.schema
         schema_graph = nx.MultiDiGraph(schema)
         schema_order = list(nx.topological_sort(schema_graph))
+
+        process_run_file_path = os.path.join(config.process_run_tmp_folder, config.process_run_file_name)
         
         pool = SQLiteConnectionPool()
         process_runner = ProcessRunner(self, action, schema_id, schema_order, ds, subset_graph, matlab_loaded, eng, force_redo)
@@ -417,8 +417,5 @@ class Process(PipelineObject):
             
         for vr_name, vr in self.output_vrs.items():
             print(f"Saved VR {vr_name} (VR: {vr.id}).")
-                
-        if self.is_matlab:
-            eng.rmpath(self.mfolder, nargout=0)   
 
         pool.return_connection(action.conn)
