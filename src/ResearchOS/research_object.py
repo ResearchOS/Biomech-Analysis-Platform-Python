@@ -56,18 +56,6 @@ class ResearchObject():
         instance.__dict__["_initialized"] = False
         return instance 
     
-    # def __getattribute__(self, name: str) -> Any:
-    #     """Get the value of an attribute. Only does any magic if the attribute exists already and is a VR."""
-    #     from ResearchOS.variable import Variable
-    #     try:
-    #         value = super().__getattribute__(name) # Throw the default error.
-    #     except AttributeError as e:
-    #         raise e        
-    #     if isinstance(value, Variable):
-    #         action = Action(name = "attribute_access")
-    #         value = ResearchObjectHandler.load_vr_value(self, action, value)
-    #     return value
-    
     def __setattr__(self, name: str = None, value: Any = None, action: Action = None, all_attrs: DefaultAttrs = None, kwargs_dict: dict = {}) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""        
         if not self._initialized:

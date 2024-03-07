@@ -4,6 +4,7 @@ import pickle
 
 if TYPE_CHECKING:
     from ResearchOS.variable import Variable
+    from ResearchOS.PipelineObjects.process import Process
 
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.research_object_handler import ResearchObjectHandler
@@ -36,11 +37,12 @@ class DataObject(ResearchObject):
         action.execute()
         del self.__dict__[name]
 
-    def load_vr_value(self, vr: "Variable", action: Action) -> Any:
+    def load_vr_value(self, vr: "Variable", action: Action, process: "Process" = None, vr_name_in_code: str = None) -> Any:
         """Load the value of a VR from the database for this data object.
 
         Args:
             vr (Variable): ResearchOS Variable object to load the value of.
+            process (Process): ResearchOS Process object that this data object is part of.
             action (Action): The Action that this is part of.
 
         Returns:
@@ -55,9 +57,14 @@ class DataObject(ResearchObject):
         if len(action_ids) == 0:
             raise ValueError(f"The VR {vr.name} is not currently associated with the data object {self.id}.")
         # 2. Load the data hash from the database.
-        sqlquery_raw = "SELECT data_blob_hash FROM data_values WHERE dataobject_id = ? AND vr_id = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False)
-        params = (self.id, vr.id)        
+        if not (process and process.vrs_source_pr):
+            sqlquery_raw = "SELECT data_blob_hash FROM data_values WHERE dataobject_id = ? AND vr_id = ?"
+            params = (self.id, vr.id)
+        else:
+            # Get the most recent VR value that was set by the process.
+            sqlquery_raw = "SELECT data_blob_hash FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND pr_id = ?"
+            params = (self.id, vr.id, process.vrs_source_pr[vr_name_in_code].id)
+        sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False)        
         data_hash = cursor.execute(sqlquery, params).fetchone()[0]
         # 3. Get the value from the data_values table.        
         conn_data = ResearchObjectHandler.pool_data.get_connection()

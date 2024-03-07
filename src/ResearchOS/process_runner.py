@@ -2,9 +2,7 @@ from typing import TYPE_CHECKING
 import logging, time
 import os
 from datetime import datetime, timezone
-import pickle, json
-from hashlib import sha256
-import sys
+import json
 
 import networkx as nx
 
@@ -137,14 +135,10 @@ class ProcessRunner():
                 vr_values_in[var_name_in_code] = vr.hard_coded_value
                 vr_found = True
                 continue
-            
-            # if var_name_in_code == "fpsUsed":
-            #     vr.level = ResearchObjectHandler._prefix_to_class("SJ")
-            # else:
-            #     vr.level = node.__class__
+
             # Not hard-coded input variable.
             curr_node = [tmp_node for tmp_node in node_lineage if isinstance(tmp_node, vr.level)][0]
-            value = curr_node.load_vr_value(vr, self.action)
+            value = curr_node.load_vr_value(vr, self.action, self.process, var_name_in_code)
             vr_values_in[var_name_in_code] = value
             vr_found = True
             if not vr_found:

@@ -16,8 +16,8 @@ import numpy as np
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
-    from ResearchOS.DataObjects.data_object import DataObject
-    from ResearchOS.variable import Variable
+    # from ResearchOS.DataObjects.data_object import DataObject
+    # from ResearchOS.variable import Variable
 
 # from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.action import Action
