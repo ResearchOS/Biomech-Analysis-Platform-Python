@@ -63,6 +63,8 @@ class Process(PipelineObject):
                  import_file_vr_name: str = all_default_attrs["import_file_vr_name"], 
                  vrs_source_pr: dict = all_default_attrs["vrs_source_pr"],
                  **kwargs) -> None:
+        if self._initialized:
+            return
         self.is_matlab = is_matlab
         self.mfolder = mfolder
         self.mfunc_name = mfunc_name
@@ -379,7 +381,7 @@ class Process(PipelineObject):
         ds_defaults = DefaultAttrs(ds).default_attrs
         # Validate the dataset's addresses.
         addresses_valid = ds.validate_addresses(ds.addresses, action, ds_defaults["addresses"])        
-        if not addresses_valid:
+        if addresses_valid is False:
             raise ValueError("The dataset's addresses are not valid.")
 
         defaults = DefaultAttrs(self).default_attrs
@@ -443,7 +445,7 @@ class Process(PipelineObject):
         schema_graph = nx.MultiDiGraph(schema)
         schema_order = list(nx.topological_sort(schema_graph))
 
-        process_run_file_path = os.path.join(config.process_run_tmp_folder, config.process_run_file_name)
+        # process_run_file_path = os.path.join(config.process_run_tmp_folder, config.process_run_file_name)
         
         pool = SQLiteConnectionPool()
         process_runner = ProcessRunner(self, action, schema_id, schema_order, ds, subset_graph, matlab_loaded, eng, force_redo)

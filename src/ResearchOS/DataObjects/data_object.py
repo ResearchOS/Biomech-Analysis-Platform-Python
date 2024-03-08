@@ -56,16 +56,26 @@ class DataObject(ResearchObject):
         action_ids = cursor.execute(sqlquery, params).fetchall()
         if len(action_ids) == 0:
             raise ValueError(f"The VR {vr.name} is not currently associated with the data object {self.id}.")
+        
         # 2. Load the data hash from the database.
         if not (process and process.vrs_source_pr):
             sqlquery_raw = "SELECT data_blob_hash FROM data_values WHERE dataobject_id = ? AND vr_id = ?"
             params = (self.id, vr.id)
         else:
             # Get the most recent VR value that was set by the process.
-            sqlquery_raw = "SELECT data_blob_hash FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND pr_id = ?"
-            params = (self.id, vr.id, process.vrs_source_pr[vr_name_in_code].id)
+            pr = process.vrs_source_pr[vr_name_in_code]
+            if not isinstance(process.vrs_source_pr[vr_name_in_code], list):
+                pr = [pr]
+            sqlquery_raw = "SELECT data_blob_hash FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND pr_id IN ({})".format(", ".join(["?" for _ in pr]))
+            params = (self.id, vr.id, pr)
         sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False)        
-        data_hash = cursor.execute(sqlquery, params).fetchone()[0]
+        result = cursor.execute(sqlquery, params).fetchall()
+        if len(result) == 0:
+            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {self.id} from Process {process.id}.")
+        if len(result) > 1:
+            raise ValueError(f"The VR {vr.name} has multiple values set for the data object {self.id} from Process {process.id}.")
+        data_hash = result[0][0]
+
         # 3. Get the value from the data_values table.        
         conn_data = ResearchObjectHandler.pool_data.get_connection()
         cursor_data = conn_data.cursor()

@@ -49,7 +49,7 @@ class ResearchObject():
         if id in ResearchObjectHandler.instances:
             ResearchObjectHandler.counts[id] += 1
             ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = True
-            ResearchObjectHandler.instances[id].__dict__["_initialized"] = False
+            ResearchObjectHandler.instances[id].__dict__["_initialized"] = True
             return ResearchObjectHandler.instances[id]
         
         ResearchObjectHandler.counts[id] = 1
@@ -121,7 +121,7 @@ class ResearchObject():
         else:
             kwargs = orig_kwargs # Because the defaults will have all been set, don't include them.
         
-        if prev_exists:
+        if prev_exists and not prev_loaded:
             # Load the existing object's attributes from the database.
             ResearchObjectHandler._load_ro(self, attrs, action)
         # if prev_exists and prev_loaded:
