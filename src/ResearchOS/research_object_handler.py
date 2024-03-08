@@ -118,8 +118,6 @@ class ResearchObjectHandler:
         default_attrs = all_attrs.default_attrs
         computer_specific_attr_names = all_attrs.computer_specific_attr_names
         # 1. Get the database cursor.
-        from ResearchOS.DataObjects.data_object import DataObject
-        # conn = ResearchObjectHandler.pool.get_connection()
         conn = action.conn
         cursor = conn.cursor()
 

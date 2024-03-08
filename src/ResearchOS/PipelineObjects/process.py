@@ -2,6 +2,7 @@ from typing import Any
 from typing import Callable
 import json, sys, os
 import importlib, logging
+from copy import deepcopy
 
 import networkx as nx
 
@@ -290,19 +291,32 @@ class Process(PipelineObject):
             return
         if not isinstance(vrs_source_pr, dict):
             raise ValueError("Source process must be a dictionary.")
-        pGraph = ResearchObjectDigraph()
+        pGraph = ResearchObjectDigraph(action = action)
         # Temporarily add the new connections to the graph.
-        all_edges = [(pr.id, self.id, vr.id) for vr in self.input_vrs.values() for pr in vrs_source_pr.values()]
+        # Make them all lists.
+        all_edges = []
+        tmp_vrs_source_pr = {}
+        for vr_name_in_code, pr in vrs_source_pr.items():
+            tmp_vrs_source_pr[vr_name_in_code] = pr
+            if not isinstance(pr, list):
+                tmp_vrs_source_pr[vr_name_in_code] = [pr]
+            curr_var_list = tmp_vrs_source_pr[vr_name_in_code]
+            for pr_elem in curr_var_list:
+                for vr_name, vr in self.input_vrs.items():
+                    if vr_name not in tmp_vrs_source_pr.keys():
+                        continue
+                    all_edges.append((pr_elem.id, self.id, vr.id))
+        # all_edges = [(pr.id, self.id, vr.id) for vr in self.input_vrs.values() for pr in vrs_source_pr.values()]
         for edge in all_edges:
             pGraph.add_edge(edge[0], edge[1], edge_id = edge[2])
-        for vr_name_in_code, pr in vrs_source_pr.items():
+        for vr_name_in_code, pr in tmp_vrs_source_pr.items():
             if not isinstance(vr_name_in_code, str):
                 raise ValueError("Variable names in code must be strings.")
             if not str(vr_name_in_code).isidentifier():
                 raise ValueError("Variable names in code must be valid variable names.")
-            if not isinstance(pr, (Process, Logsheet)):
+            if not all([isinstance(pr_elem, (Process, Logsheet)) for pr_elem in pr]):
                 raise ValueError("Source process must be a Process or Logsheet object.")
-            if not ResearchObjectHandler.object_exists(pr.id, action):
+            if not all([ResearchObjectHandler.object_exists(pr_elem.id, action) for pr_elem in pr]):
                 raise ValueError("Source process must reference existing Process.")
             if vr_name_in_code not in self.input_vrs.keys():
                 raise ValueError("Source process VR's must reference the input variables to this function. Ensure that the 'self.set_vrs_source_pr()' line is after the 'self.set_input_vrs()' line.")
@@ -320,14 +334,26 @@ class Process(PipelineObject):
         """Convert a JSON string to a dictionary of source processes for the input variables."""
         vrs_source_pr_ids_dict = json.loads(vrs_source_pr)
         vrs_source_pr_dict = {}
-        for name, pr_id in vrs_source_pr_ids_dict.items():
-            pr = Process(id = pr_id, action = action)
+        for name, pr_id in vrs_source_pr_ids_dict.items():            
+            if not isinstance(pr_id, list):
+                if pr_id.startswith(Process.prefix):
+                    pr = Process(id = pr_id, action = action)
+                else:
+                    pr = Logsheet(id = pr_id, action = action)                
+            else:
+                pr = [Process(id = pr_id, action = action) if pr_id.startswith(Process.prefix) else Logsheet(id = pr_id, action = action) for pr_id in pr_id]
             vrs_source_pr_dict[name] = pr
         return vrs_source_pr_dict
     
     def to_json_vrs_source_pr(self, vrs_source_pr: dict, action: Action) -> str:
-        """Convert a dictionary of source processes for the input variables to a JSON string."""     
-        return json.dumps({key: value.id for key, value in vrs_source_pr.items()})
+        """Convert a dictionary of source processes for the input variables to a JSON string."""
+        json_dict = {}
+        for vr_name, pr in vrs_source_pr.items():
+            if not isinstance(pr, list):
+                json_dict[vr_name] = pr.id
+            else:
+                json_dict[vr_name] = [value.id for value in pr]
+        return json.dumps(json_dict)
     
     def to_json_output_vrs(self, output_vrs: dict, action: Action) -> str:
         """Convert a dictionary of output variables to a JSON string."""
