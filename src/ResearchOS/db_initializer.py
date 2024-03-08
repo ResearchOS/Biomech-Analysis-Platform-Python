@@ -150,11 +150,13 @@ class DBInitializer():
                         dataobject_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
                         vr_id TEXT NOT NULL,
+                        pr_id TEXT NOT NULL,
                         data_blob_hash TEXT NOT NULL,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
-                        FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         PRIMARY KEY (action_id, dataobject_id, vr_id, data_blob_hash, schema_id)
                         )""")
         
@@ -195,15 +197,18 @@ class DBInitializer():
                         )""")
         
         # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
+        # The "edge_id" is typically a VR ID, but perhaps not always.
         cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
                         action_id TEXT NOT NULL,
                         source_object_id TEXT NOT NULL,
                         target_object_id TEXT NOT NULL,
+                        edge_id TEXT NOT NULL,
                         is_active INTEGER NOT NULL DEFAULT 1,
                         FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id, source_object_id, target_object_id)
+                        FOREIGN KEY (edge_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        PRIMARY KEY (source_object_id, target_object_id, edge_id)
                         )""")
         
         # Users_Computers table. Maps all users to their computers.

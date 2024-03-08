@@ -1,20 +1,16 @@
 from typing import Any
 from typing import Callable
 import json, sys, os
-import pickle
-import importlib
-from hashlib import sha256
-from datetime import datetime, timezone
-import logging, time
+import importlib, logging
 
 import networkx as nx
 
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.variable import Variable
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
-from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.DataObjects.dataset import Dataset
+from ResearchOS.PipelineObjects.logsheet import Logsheet
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.code_inspector import get_returned_variable_names, get_input_variable_names
 from ResearchOS.action import Action
@@ -22,10 +18,7 @@ from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.process_runner import ProcessRunner
-
-
-from inspect_locals import inspect_locals
-import json
+from ResearchOS.Digraph.rodigraph import ResearchObjectDigraph
 
 all_default_attrs = {}
 all_default_attrs["is_matlab"] = False
@@ -238,7 +231,7 @@ class Process(PipelineObject):
                 raise ValueError("Variable ID's must be Variable objects.")
             if not ResearchObjectHandler.object_exists(value.id, action):
                 raise ValueError("Variable ID's must reference existing Variables.")
-        if not self.is_matlab and not all([vr_name in vr_names_in_code for vr_name in vr.keys()]):
+        if not self.is_matlab and vr_names_in_code is not None and not all([vr_name in vr_names_in_code for vr_name in vr.keys()]):
             raise ValueError("Output variables must be returned by the method.")
         
     ## import_file_ext
@@ -297,15 +290,31 @@ class Process(PipelineObject):
             return
         if not isinstance(vrs_source_pr, dict):
             raise ValueError("Source process must be a dictionary.")
-        for key, value in vrs_source_pr.items():
-            if not isinstance(key, str):
+        pGraph = ResearchObjectDigraph()
+        # Temporarily add the new connections to the graph.
+        all_edges = [(pr.id, self.id, vr.id) for vr in self.input_vrs.values() for pr in vrs_source_pr.values()]
+        for edge in all_edges:
+            pGraph.add_edge(edge[0], edge[1], edge_id = edge[2])
+        for vr_name_in_code, pr in vrs_source_pr.items():
+            if not isinstance(vr_name_in_code, str):
                 raise ValueError("Variable names in code must be strings.")
-            if not str(key).isidentifier():
+            if not str(vr_name_in_code).isidentifier():
                 raise ValueError("Variable names in code must be valid variable names.")
-            if not isinstance(value, Process):
-                raise ValueError("Source process must be a Process object.")
-            if not ResearchObjectHandler.object_exists(value.id, action):
+            if not isinstance(pr, (Process, Logsheet)):
+                raise ValueError("Source process must be a Process or Logsheet object.")
+            if not ResearchObjectHandler.object_exists(pr.id, action):
                 raise ValueError("Source process must reference existing Process.")
+            if vr_name_in_code not in self.input_vrs.keys():
+                raise ValueError("Source process VR's must reference the input variables to this function. Ensure that the 'self.set_vrs_source_pr()' line is after the 'self.set_input_vrs()' line.")
+        # Check that the PipelineObject Graph does not contain a cycle.
+        if not nx.is_directed_acyclic_graph(pGraph):
+            cycles = nx.simple_cycles(pGraph)
+            for cycle in cycles:
+                print('Cycle:', cycle)
+                for node, next_node in zip(cycle, cycle[1:]):
+                    print('Edge:', node, '-', next_node)
+            raise ValueError("Source process VR's must not create a cycle in the PipelineObject Graph.")
+                        
             
     def from_json_vrs_source_pr(self, vrs_source_pr: str, action: Action) -> dict:
         """Convert a JSON string to a dictionary of source processes for the input variables."""

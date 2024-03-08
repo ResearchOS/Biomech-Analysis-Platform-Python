@@ -145,7 +145,7 @@ class Logsheet(PipelineObject):
                 vr = Variable(id = header[3], action = action)
             default_attrs = DefaultAttrs(vr).default_attrs
             kwarg_dict = {"name": header[0], "level": header[2]}
-            vr._setattrs(default_attrs, kwarg_dict, action = action)
+            vr._setattrs(default_attrs, kwarg_dict, action, None)
             str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, vr.id))
         return json.dumps(str_headers)
 
@@ -435,7 +435,7 @@ class Logsheet(PipelineObject):
                 attrs_cache_dict[row_dobjs[level_idx].id][name] = value
                 row_attrs[level_idx][vr_id] = attrs_cache_dict[row_dobjs[level_idx].id][name]
             for idx, attrs in enumerate(row_attrs):
-                row_dobjs[idx]._setattrs({}, attrs, action = action)                           
+                row_dobjs[idx]._setattrs({}, attrs, action = action, pr_id = self.id)                           
 
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.
@@ -448,7 +448,7 @@ class Logsheet(PipelineObject):
                 if ids not in addresses:
                     addresses.append(ids)
         all_default_attrs = DefaultAttrs(ds)
-        ds._setattrs(all_default_attrs.default_attrs, {"addresses": addresses}, action = action)
+        ds._setattrs(all_default_attrs.default_attrs, {"addresses": addresses}, action = action, pr_id = self.id)
         # ds.addresses = addresses # Store addresses, also creates address_graph.
 
         action.exec = True

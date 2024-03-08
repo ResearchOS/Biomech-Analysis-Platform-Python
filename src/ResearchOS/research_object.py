@@ -33,6 +33,10 @@ class ResearchObject():
         if isinstance(other, ResearchObject):
             return self.id == other.id and self is other
         return False
+    
+    def __getitem__(self, key: str) -> Any:
+        """Get the value of the attribute."""
+        return self.__dict__[key]
      
     def __new__(cls, **kwargs):
         """Create a new research object in memory. If the object already exists in memory with this ID, return the existing object."""
@@ -82,7 +86,7 @@ class ResearchObject():
 
         if not kwargs_dict:
             kwargs_dict = {name: value}
-        self._setattrs(all_attrs.default_attrs, kwargs_dict, action)
+        self._setattrs(all_attrs.default_attrs, kwargs_dict, action, None)
 
         action.commit = commit
         action.exec = True
@@ -134,7 +138,7 @@ class ResearchObject():
                     del kwargs[key]
 
         self._initialized = True
-        self._setattrs(default_attrs_dict, kwargs, action)
+        self._setattrs(default_attrs_dict, kwargs, action, None)
 
         # Set the attributes.
         if finish_action:
@@ -143,7 +147,7 @@ class ResearchObject():
             action.execute()
 
     # @profile(stream = setattr_log)
-    def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action) -> None:
+    def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action, pr_id: str) -> None:
         """Set the attributes of the object.
         default_attrs: The default attributes of the object.
         orig_kwargs: The original kwargs passed to the object.
@@ -162,9 +166,10 @@ class ResearchObject():
         # 1. Set simple & complex builtin attributes.
         ResearchObjectHandler._set_builtin_attributes(self, default_attrs, kwargs, action)
 
-        # 2. Set VR attributes.        
-        vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
-        ResearchObjectHandler._set_vr_values(self, vr_attrs, action)
+        # 2. Set VR attributes.
+        if pr_id is not None:
+            vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
+            ResearchObjectHandler._set_vr_values(self, vr_attrs, action, pr_id)
 
     def get_vr(self, name: str) -> Any:
         """Get the VR itself instead of its value."""
