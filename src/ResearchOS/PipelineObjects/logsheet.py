@@ -29,16 +29,16 @@ computer_specific_attr_names = ["path"]
 class Logsheet(PipelineObject):
 
     prefix = "LG"
-    _initialized = False
 
     def __init__(self, path: str = all_default_attrs["path"], headers: list = all_default_attrs["headers"],
                 num_header_rows: int = all_default_attrs["num_header_rows"], class_column_names: dict = all_default_attrs["class_column_names"], **kwargs):
+        if self._initialized:
+            return
         self.path = path
         self.headers = headers
         self.num_header_rows = num_header_rows
         self.class_column_names = class_column_names
         super().__init__(**kwargs)
-        self._initialized = True
 
     ### Logsheet path
         

@@ -14,10 +14,13 @@ class Variable(ResearchObject):
     """Variable class."""
 
     prefix: str = "VR"
+    _initialized: bool = False
 
     def __init__(self, level: ResearchObject = all_default_attrs["level"],
                 hard_coded_value: Any = all_default_attrs["hard_coded_value"], 
                 **kwargs):
+        if self._initialized:
+            return
         self.level = level
         self.hard_coded_value = hard_coded_value
         super().__init__(**kwargs)        

@@ -22,10 +22,12 @@ from ResearchOS.process_runner import ProcessRunner
 from ResearchOS.Digraph.rodigraph import ResearchObjectDigraph
 
 all_default_attrs = {}
+# For MATLAB
 all_default_attrs["is_matlab"] = False
 all_default_attrs["mfolder"] = None
 all_default_attrs["mfunc_name"] = None
 
+# Main attributes
 all_default_attrs["method"] = None
 all_default_attrs["level"] = None
 all_default_attrs["input_vrs"] = {}
@@ -33,8 +35,15 @@ all_default_attrs["output_vrs"] = {}
 all_default_attrs["vrs_source_pr"] = {}
 all_default_attrs["subset_id"] = None
 
+# For import
 all_default_attrs["import_file_ext"] = None
 all_default_attrs["import_file_vr_name"] = None
+
+# For including other Data Object attributes from the node lineage in the input variables.
+# For example, if a Process is run on a Trial, and one of the inputs needs to be the Subject's name.
+# Then, "data_object_level_attr" would be "{ros.Subject: 'name'}"
+# NOTE: This is always the last input variable(s), in the order of the dict.
+all_default_attrs["data_object_level_attr"] = {}
 
 computer_specific_attr_names = ["mfolder"]
 
@@ -49,7 +58,6 @@ do_run = False
 class Process(PipelineObject):
 
     prefix = "PR"
-    _initialized = False
 
     def __init__(self, is_matlab: bool = all_default_attrs["is_matlab"], 
                  mfolder: str = all_default_attrs["mfolder"], 
@@ -208,16 +216,16 @@ class Process(PipelineObject):
         input_vr_names_in_code = []
         if not self.is_matlab:
             input_vr_names_in_code = get_input_variable_names(self.method)
-        self._validate_vrs(inputs, input_vr_names_in_code, action, default)
+        self._validate_vrs(inputs, input_vr_names_in_code, action, default, is_input = True)
 
     def validate_output_vrs(self, outputs: dict, action: Action, default: Any) -> None:
         """Validate that the output variables are correct."""
         output_vr_names_in_code = []
         if not self.is_matlab:
             output_vr_names_in_code = get_returned_variable_names(self.method)
-        self._validate_vrs(outputs, output_vr_names_in_code, action, default)    
+        self._validate_vrs(outputs, output_vr_names_in_code, action, default, is_input = False)    
 
-    def _validate_vrs(self, vr: dict, vr_names_in_code: list, action: Action, default: Any) -> None:
+    def _validate_vrs(self, vr: dict, vr_names_in_code: list, action: Action, default: Any, is_input: bool = False) -> None:
         """Validate that the input and output variables are correct. They should follow the same format.
         The format is a dictionary with the variable name as the key and the variable ID as the value."""
         if vr == default:
@@ -225,17 +233,30 @@ class Process(PipelineObject):
         self.validate_method(self.method, action, None)
         if not isinstance(vr, dict):
             raise ValueError("Variables must be a dictionary.")
+        default_attr_names = DefaultAttrs(self).default_attrs.keys()
         for key, value in vr.items():
             if not isinstance(key, str):
                 raise ValueError("Variable names in code must be strings.")
             if not str(key).isidentifier():
                 raise ValueError("Variable names in code must be valid variable names.")
             if not isinstance(value, Variable):
-                raise ValueError("Variable ID's must be Variable objects.")
+                if not is_input:
+                    raise ValueError("Variable ID's must be Variable objects.")
+                _validate_dataobject_level_attr(value, action, default_attr_names)
             if not ResearchObjectHandler.object_exists(value.id, action):
                 raise ValueError("Variable ID's must reference existing Variables.")
         if not self.is_matlab and vr_names_in_code is not None and not all([vr_name in vr_names_in_code for vr_name in vr.keys()]):
             raise ValueError("Output variables must be returned by the method.")
+        
+        def _validate_dataobject_level_attr(level_attr: dict, action: Action, default_attr_names: list) -> None:
+            """Validate the data object level attribute. Correct format is a dictionary with the level as the key and the attribute name as the value."""
+            if not isinstance(level_attr, dict):
+                raise ValueError("Data object level & attribute must be a dict!")
+            for key, value in level_attr.items():
+                if not isinstance(key, type):
+                    raise ValueError("Data object level must be a type!")
+                if value not in default_attr_names:
+                    raise ValueError("Data object attribute must be a valid attribute name!")
         
     ## import_file_ext
         
@@ -274,19 +295,33 @@ class Process(PipelineObject):
         return input_vrs_dict
     
     def to_json_input_vrs(self, input_vrs: dict, action: Action) -> str:
-        """Convert a dictionary of input variables to a JSON string."""     
-        return json.dumps({key: value.id for key, value in input_vrs.items()})
+        """Convert a dictionary of input variables to a JSON string."""        
+        tmp_dict = {}
+        for key, value in input_vrs.items():
+            if isinstance(value, dict):
+                tmp_dict[key] = {key.prefix: value for key, value in value.items()} # DataObject level & attribute.
+            else:
+                tmp_dict[key] = value.id # Variables
+        return json.dumps(tmp_dict)
     
     def from_json_output_vrs(self, output_vrs: str, action: Action) -> dict:
         """Convert a JSON string to a dictionary of output variables."""
+        from ResearchOS.DataObjects.data_object import DataObject
+        data_subclasses = DataObject.__subclasses__()
         output_vr_ids_dict = json.loads(output_vrs)
         output_vrs_dict = {}
         for name, vr_id in output_vr_ids_dict.items():
-            vr = Variable(id = vr_id, action = action)
-            output_vrs_dict[name] = vr
+            if isinstance(vr_id, dict):
+                for key, value in vr_id.items():
+                    cls = [cls for cls in data_subclasses if cls.prefix == key]
+                    output_vrs_dict[name] = {cls: value}
+            else:
+                vr = Variable(id = vr_id, action = action)
+                output_vrs_dict[name] = vr
         return output_vrs_dict
     
     # vrs_source_pr methods
+
     def validate_vrs_source_pr(self, vrs_source_pr: dict, action: Action, default: Any) -> None:
         """Validate that the source process for the input variables is correct."""
         if vrs_source_pr == default:
@@ -329,8 +364,7 @@ class Process(PipelineObject):
                 print('Cycle:', cycle)
                 for node, next_node in zip(cycle, cycle[1:]):
                     print('Edge:', node, '-', next_node)
-            raise ValueError("Source process VR's must not create a cycle in the PipelineObject Graph.")
-                        
+            raise ValueError("Source process VR's must not create a cycle in the PipelineObject Graph.")                        
             
     def from_json_vrs_source_pr(self, vrs_source_pr: str, action: Action) -> dict:
         """Convert a JSON string to a dictionary of source processes for the input variables."""
@@ -359,7 +393,7 @@ class Process(PipelineObject):
     
     def to_json_output_vrs(self, output_vrs: dict, action: Action) -> str:
         """Convert a dictionary of output variables to a JSON string."""
-        return json.dumps({key: value.id for key, value in output_vrs.items()})
+        return json.dumps({key: value.id for key, value in output_vrs.items()})                  
     
     def set_input_vrs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict."""
@@ -419,7 +453,7 @@ class Process(PipelineObject):
             try:            
                 print("Importing MATLAB.")
                 import matlab.engine
-                eng = matlab.engine.start_matlab()
+                ProcessRunner.eng = matlab.engine.start_matlab()
                 matlab_loaded = True
             except:
                 print("Failed to import MATLB.")
@@ -445,12 +479,16 @@ class Process(PipelineObject):
         schema_graph = nx.MultiDiGraph(schema)
         schema_order = list(nx.topological_sort(schema_graph))
 
-        # process_run_file_path = os.path.join(config.process_run_tmp_folder, config.process_run_file_name)
+        if matlab_loaded and self.is_matlab:
+            ProcessRunner.eng.addpath(self.mfolder) # Add the path to the MATLAB function. This is necessary for the MATLAB function to be found.
         
         pool = SQLiteConnectionPool()
-        process_runner = ProcessRunner(self, action, schema_id, schema_order, ds, subset_graph, matlab_loaded, eng, force_redo)
+        process_runner = ProcessRunner(self, action, schema_id, schema_order, ds, subset_graph, matlab_loaded, ProcessRunner.eng, force_redo)
         for node_id in level_node_ids_sorted:            
             process_runner.run_node(node_id)
+
+        if matlab_loaded and self.is_matlab:
+            ProcessRunner.eng.rmpath(self.mfolder)
             
         for vr_name, vr in self.output_vrs.items():
             print(f"Saved VR {vr_name} (VR: {vr.id}).")

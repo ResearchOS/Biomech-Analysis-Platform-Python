@@ -9,12 +9,15 @@ import networkx as nx
 if TYPE_CHECKING:
     from .action import Action
     from ResearchOS.PipelineObjects.process import Process
-    from ResearchOS.DataObjects.dataset import Dataset
+    from ResearchOS.DataObjects.dataset import Dataset    
 
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.sql.sql_runner import sql_order_result
 
 class ProcessRunner():
+
+    eng = None
+
     def __init__(self, process: "Process", action: "Action", schema_id: str, schema_order: list, dataset: "Dataset", subset_graph, matlab_loaded: bool, eng, force_redo: bool):
         self.process = process
         self.action = action
@@ -33,17 +36,17 @@ class ProcessRunner():
         self.node_id = node_id
         pr = self.process
         node = pr.level(id = node_id, action = self.action)
-        self.node = node
+        self.node = node        
         
         run_process, vr_values_in = self.check_if_run_node(node_id) # Verify whether this node should be run or skipped.
         skip_msg = None
         if not vr_values_in:            
             skip_msg = f"File does not exist for {node.name} ({node.id}), skipping."
-        if not (self.force_redo or run_process):
+        if vr_values_in is not None and not (self.force_redo or run_process):
             skip_msg = f"Already done {node.name} ({node.id}), skipping."
         if skip_msg is not None:
             print(skip_msg)
-            return        
+            return
         
         run_msg = f"Running {node.name} ({node.id})."
         print(run_msg)
@@ -51,7 +54,7 @@ class ProcessRunner():
 
         self.action.commit = True
         self.action.exec = True
-        self.action.execute(return_conn = False)
+        self.action.execute(return_conn = False)        
 
         done_run_time = time.time()
         done_msg = f"Running {node.name} ({node.id}) took {done_run_time - start_run_time} seconds."
@@ -87,7 +90,7 @@ class ProcessRunner():
             kwargs_dict[vr] = vr_values_out[idx] 
 
         vr_values_out = []
-        self.node._setattrs({}, kwargs_dict, action = self.action)
+        self.node._setattrs({}, kwargs_dict, action = self.action, pr_id = self.process.id)
         kwargs_dict = {}
         
     def check_if_run_node(self, node_id: str) -> bool:
@@ -138,11 +141,14 @@ class ProcessRunner():
 
             # Not hard-coded input variable.
             curr_node = [tmp_node for tmp_node in node_lineage if isinstance(tmp_node, vr.level)][0]
-            value = curr_node.load_vr_value(vr, self.action, self.process, var_name_in_code)
+            value, vr_found = curr_node.load_vr_value(vr, self.action, self.process, var_name_in_code)
+            if value is None and not vr_found:
+                return (None, None)
             vr_values_in[var_name_in_code] = value
             vr_found = True
             if not vr_found:
                 raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
+                    
         done_input_vrs_time = time.time()
         logging.debug(f"Loading input VR's for {node.name} ({node.id}) took {done_input_vrs_time - start_input_vrs_time} seconds.")
 
@@ -153,7 +159,6 @@ class ProcessRunner():
         # TODO: Make the name of this variable not hard-coded.
         if pr.import_file_vr_name is not None:
             file_path = data_path + pr.import_file_ext
-            # rel_path = os.path.relpath(file_path, self.dataset.dataset_path)
             if not os.path.exists(file_path):                
                 return (None, None)
             vr_values_in[pr.import_file_vr_name] = file_path        

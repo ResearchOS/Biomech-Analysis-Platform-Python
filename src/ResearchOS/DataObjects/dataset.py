@@ -30,6 +30,8 @@ class Dataset(DataObject):
                  dataset_path: str = all_default_attrs["dataset_path"], 
                  addresses: list = all_default_attrs["addresses"], **kwargs):                 
         """Create a new dataset."""
+        if self._initialized:
+            return
         self.schema = schema
         self.dataset_path = dataset_path
         self.addresses = addresses

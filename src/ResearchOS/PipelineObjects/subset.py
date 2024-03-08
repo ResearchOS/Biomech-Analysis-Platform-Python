@@ -29,6 +29,12 @@ class Subset(PipelineObject):
     
     prefix = "SS"
 
+    def __init__(self, conditions: dict = all_default_attrs["conditions"], **kwargs):
+        if self._initialized:
+            return
+        self.conditions = conditions
+        super().__init__(**kwargs)
+
     ## conditions
     
     def validate_conditions(self, conditions: dict, action: Action, default: Any) -> None:
