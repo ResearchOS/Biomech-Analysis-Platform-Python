@@ -132,12 +132,17 @@ class ProcessRunner():
             input_vrs_names_dict[var_name_in_code] = vr
             if var_name_in_code == pr.import_file_vr_name:
                 continue # Skip the import file variable.
+
+            if isinstance(vr, dict):
+                node = [anc_node for anc_node in anc_nodes if isinstance(anc_node, vr.level)][0].id
+                vr_value = node.load_value(vr, self.action, self.process, var_name_in_code: str = None)
+                vr_values_in[var_name_in_code] = vr_value
             
             # Hard-coded input variable.
             if vr.hard_coded_value is not None: 
                 vr_values_in[var_name_in_code] = vr.hard_coded_value
                 vr_found = True
-                continue
+                continue            
 
             # Not hard-coded input variable.
             curr_node = [tmp_node for tmp_node in node_lineage if isinstance(tmp_node, vr.level)][0]
