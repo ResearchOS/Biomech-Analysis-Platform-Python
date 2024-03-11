@@ -9,6 +9,7 @@ import networkx as nx
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.variable import Variable
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.PipelineObjects.logsheet import Logsheet
@@ -228,6 +229,17 @@ class Process(PipelineObject):
     def _validate_vrs(self, vr: dict, vr_names_in_code: list, action: Action, default: Any, is_input: bool = False) -> None:
         """Validate that the input and output variables are correct. They should follow the same format.
         The format is a dictionary with the variable name as the key and the variable ID as the value."""
+
+        def _validate_dataobject_level_attr(level_attr: dict, action: Action, default_attr_names: list) -> None:
+            """Validate the data object level attribute. Correct format is a dictionary with the level as the key and the attribute name as the value."""
+            if not isinstance(level_attr, dict):
+                raise ValueError("Data object level & attribute must be a dict!")
+            for key, value in level_attr.items():
+                if not isinstance(key, type):
+                    raise ValueError("Data object level must be a type!")
+                if value not in default_attr_names:
+                    raise ValueError("Data object attribute must be a valid attribute name!")
+                
         if vr == default:
             return
         self.validate_method(self.method, action, None)
@@ -243,20 +255,11 @@ class Process(PipelineObject):
                 if not is_input:
                     raise ValueError("Variable ID's must be Variable objects.")
                 _validate_dataobject_level_attr(value, action, default_attr_names)
-            if not ResearchObjectHandler.object_exists(value.id, action):
-                raise ValueError("Variable ID's must reference existing Variables.")
+            else:
+                if not ResearchObjectHandler.object_exists(value.id, action):
+                    raise ValueError("Variable ID's must reference existing Variables.")
         if not self.is_matlab and vr_names_in_code is not None and not all([vr_name in vr_names_in_code for vr_name in vr.keys()]):
             raise ValueError("Output variables must be returned by the method.")
-        
-        def _validate_dataobject_level_attr(level_attr: dict, action: Action, default_attr_names: list) -> None:
-            """Validate the data object level attribute. Correct format is a dictionary with the level as the key and the attribute name as the value."""
-            if not isinstance(level_attr, dict):
-                raise ValueError("Data object level & attribute must be a dict!")
-            for key, value in level_attr.items():
-                if not isinstance(key, type):
-                    raise ValueError("Data object level must be a type!")
-                if value not in default_attr_names:
-                    raise ValueError("Data object attribute must be a valid attribute name!")
         
     ## import_file_ext
         
@@ -289,9 +292,16 @@ class Process(PipelineObject):
         """Convert a JSON string to a dictionary of input variables."""
         input_vr_ids_dict = json.loads(input_vrs)
         input_vrs_dict = {}
+        dataobject_subclasses = DataObject.__subclasses__()
         for name, vr_id in input_vr_ids_dict.items():
-            vr = Variable(id = vr_id, action = action)
-            input_vrs_dict[name] = vr
+            if isinstance(vr_id, dict):
+                cls_prefix = [key for key in vr_id.keys()][0]
+                attr_name = [value for value in vr_id.values()][0]
+                cls = [cls for cls in dataobject_subclasses if cls.prefix == cls_prefix][0]
+                input_vrs_dict[name] = {cls: attr_name}
+            else:
+                vr = Variable(id = vr_id, action = action)
+                input_vrs_dict[name] = vr
         return input_vrs_dict
     
     def to_json_input_vrs(self, input_vrs: dict, action: Action) -> str:
@@ -306,7 +316,7 @@ class Process(PipelineObject):
     
     def from_json_output_vrs(self, output_vrs: str, action: Action) -> dict:
         """Convert a JSON string to a dictionary of output variables."""
-        from ResearchOS.DataObjects.data_object import DataObject
+        # from ResearchOS.DataObjects.data_object import DataObject
         data_subclasses = DataObject.__subclasses__()
         output_vr_ids_dict = json.loads(output_vrs)
         output_vrs_dict = {}
@@ -448,12 +458,16 @@ class Process(PipelineObject):
         schema_id = self.get_current_schema_id(ds.id)
 
         matlab_loaded = True
-        if "matlab" not in sys.modules:
+        if "matlab" not in sys.modules and self.is_matlab:
             matlab_loaded = False
             try:            
                 print("Importing MATLAB.")
                 import matlab.engine
-                ProcessRunner.eng = matlab.engine.start_matlab()
+                # ProcessRunner.eng = matlab.engine.start_matlab()
+                try:
+                    ProcessRunner.eng = matlab.engine.connect_matlab(name = "ResearchOS")
+                except:
+                    ProcessRunner.eng = matlab.engine.start_matlab()
                 matlab_loaded = True
             except:
                 print("Failed to import MATLB.")
@@ -462,9 +476,9 @@ class Process(PipelineObject):
         # 4. Run the method.
         # Get the subset of the data.
         subset = Subset(id = self.subset_id, action = action)
-        # subset_graph = subset.get_subset()
-        subset_graph = nx.MultiDiGraph()
-        subset_graph.add_edges_from(ds.addresses)
+        subset_graph = subset.get_subset(action)
+        # subset_graph = nx.MultiDiGraph()
+        # subset_graph.add_edges_from(ds.addresses)
 
         level_node_ids = [node for node in subset_graph if node.startswith(self.level.prefix)]
         name_attr_id = ResearchObjectHandler._get_attr_id("name")

@@ -89,8 +89,9 @@ class Subset(PipelineObject):
                 raise ValueError("Value must be a list of lists or dicts.")
             a = [self.validate_conditions(cond, action, default = default) for cond in value] # Assigned to a just to make interpreter happy.
             
-    def get_subset(self) -> nx.MultiDiGraph:
+    def get_subset(self, action: Action) -> nx.MultiDiGraph:
         """Resolve the conditions to the actual subset of data."""
+        from ResearchOS.DataObjects.data_object import DataObject
         # 1. Get the dataset.
         dataset_id = self.get_dataset_id()
         ds = Dataset(id = dataset_id)
@@ -99,47 +100,53 @@ class Subset(PipelineObject):
         nodes_for_subgraph = []
         G = ds.get_addresses_graph()
         sorted_nodes = list(nx.topological_sort(G))
-        subclasses = ResearchObjectHandler.get_subclasses()
-        for idx, node_id in enumerate(sorted_nodes):
-            # cls = [cls for cls in subclasses if cls.prefix == node_id[0:2]][0]
-            if not self.meets_conditions(node_id, self.conditions, G, subclasses):
+        subclasses = DataObject.__subclasses__()
+        for node_id in sorted_nodes:
+            cls = [cls for cls in subclasses if cls.prefix == node_id[0:2]][0]
+            node = cls(id = node_id)
+            if not self.meets_conditions(node, self.conditions, G, subclasses, action):
                 continue
+            print(node.name)
             curr_nodes = [node_id]
             curr_nodes.extend(nx.ancestors(G, node_id))
             nodes_for_subgraph.extend([node_id for node_id in curr_nodes if node_id not in nodes_for_subgraph])
         return G.subgraph(nodes_for_subgraph) # Maintains the relationships between all of the nodes in the subgraph.
 
-    def meets_conditions(self, node_id: str, conditions: dict, G: nx.MultiDiGraph, subclasses: list) -> bool:
-        """Check if the node_id meets the conditions.""" 
+    def meets_conditions(self, node: "DataObject", conditions: dict, G: nx.MultiDiGraph, subclasses: list, action: Action) -> bool:
+        """Check if the node_id meets the conditions."""
         if isinstance(conditions, dict):
             if "and" in conditions:
                 for cond in conditions["and"]:
-                    cls = [cls for cls in subclasses if cls.prefix == cond[0][0:2]][0]
-                    if not self.meets_conditions(node_id, cond, G, subclasses):
+                    if not self.meets_conditions(node, cond, G, subclasses, action):
                         return False
                 return True
                 # return all([self.meets_conditions(node_id, cond, G) for cond in conditions["and"]])
             if "or" in conditions:
-                return any([self.meets_conditions(node_id, cond, G) for cond in conditions["or"]])
+                return any([self.meets_conditions(node, cond, G, subclasses, action) for cond in conditions["or"]])
                     
         # Check the condition.
+        # print(node.name)
         vr_id = conditions[0]
         logic = conditions[1]
         value = conditions[2]
         vr = Variable(id = vr_id)
-        vr_name = vr.name
-        if not hasattr(node, vr_name):
-            anc_nodes = nx.ancestors(G, node_id)
+        vr_value = node.load_vr_value(vr, action)
+        # not_found_value = (None, False)
+        if vr_value[1] == False:
+            anc_nodes = nx.ancestors(G, node.id)
             found_attr = False
-            for anc_node in anc_nodes:
-                if not hasattr(anc_node, vr_name):
+            for anc_node_id in anc_nodes:
+                anc_node = [cls for cls in subclasses if cls.prefix == anc_node_id[0:2]][0](id = anc_node_id)
+                vr_value = anc_node.load_vr_value(vr, action)
+                if vr_value[1] == False:
                     continue
                 found_attr = True
                 break
-            if found_attr and self.meets_conditions(anc_node, conditions, G, subclasses):
+            if found_attr and self.meets_conditions(anc_node, conditions, G, subclasses, action):
                 return True
             return False
-        vr_value = getattr(node_id, vr_name)
+        
+        vr_value = vr_value[0]
 
         # This is probably shoddy logic, but it'll serve as a first pass to handle None types.
         if logic in plural_logic:

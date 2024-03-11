@@ -57,7 +57,7 @@ class ProcessRunner():
         self.action.execute(return_conn = False)        
 
         done_run_time = time.time()
-        done_msg = f"Running {node.name} ({node.id}) took {done_run_time - start_run_time} seconds."
+        done_msg = f"Running {node.name} ({node.id}) took {round(done_run_time - start_run_time, 3)} seconds."
         logging.info(done_msg)
         print(done_msg)
 
@@ -69,6 +69,10 @@ class ProcessRunner():
             if not self.matlab_loaded:
                 raise ValueError("MATLAB is not loaded.")
             vr_vals_in = list(vr_values_in.values())
+            # folderName = vr_vals_in[0]
+            # segMarkerNames = vr_vals_in[1]
+            # mocapData = vr_vals_in[2]
+            # subName = vr_vals_in[3]
             fcn = getattr(self.eng, pr.mfunc_name)
             vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))                               
         else:
@@ -132,6 +136,14 @@ class ProcessRunner():
             input_vrs_names_dict[var_name_in_code] = vr
             if var_name_in_code == pr.import_file_vr_name:
                 continue # Skip the import file variable.
+
+            # Get the DataObject attribute if needed.
+            if isinstance(vr, dict):
+                dobj_level = [key for key in vr.keys()][0]
+                dobj_attr_name = [value for value in vr.values()][0]
+                data_object = [tmp_node for tmp_node in node_lineage if isinstance(tmp_node, dobj_level)][0]
+                vr_values_in[var_name_in_code] = getattr(data_object, dobj_attr_name)
+                continue
             
             # Hard-coded input variable.
             if vr.hard_coded_value is not None: 

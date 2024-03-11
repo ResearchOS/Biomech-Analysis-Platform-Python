@@ -463,6 +463,7 @@ class Logsheet(PipelineObject):
             value = raw_value
         if isinstance(value, str):
             value = value.replace("'", "''") # Handle single quotes.
+            value = value.strip()
         if value == '': # Empty
             value = None
         return value
