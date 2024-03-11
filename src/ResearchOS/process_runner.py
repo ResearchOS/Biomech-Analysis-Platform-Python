@@ -149,7 +149,7 @@ class ProcessRunner():
             if vr.hard_coded_value is not None: 
                 vr_values_in[var_name_in_code] = vr.hard_coded_value
                 vr_found = True
-                continue
+                continue            
 
             # Not hard-coded input variable.
             curr_node = [tmp_node for tmp_node in node_lineage if isinstance(tmp_node, vr.level)][0]

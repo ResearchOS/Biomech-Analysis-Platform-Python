@@ -49,11 +49,17 @@ class DataObject(ResearchObject):
             Any: The value of the VR for this data object.
         """
         # 1. Check that the data object & VR are currently associated. If not, throw an error.
-        sqlquery_raw = "SELECT action_id, is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False)
-        params = (self.id, vr.id)
         cursor = action.conn.cursor()
-        result = cursor.execute(sqlquery, params).fetchall()
+        if isinstance(vr, Variable):
+            sqlquery_raw = "SELECT action_id, is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id = ?"
+            sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False)
+            params = (self.id, vr.id)            
+            result = cursor.execute(sqlquery, params).fetchall()
+        else:
+            # TODO: Handle dict of {type: attr_name}
+            # If the value is a str, then it's a builtin attribute.
+            # Otherwise, if the value is a Variable, then it's a Variable and need to load its value. using self.load_vr_value()
+            pass
         if len(result) == 0:
             return (None, False) # If that variable does not exist for this dataobject, skip processing this dataobject.
         is_active = result[0][1]
