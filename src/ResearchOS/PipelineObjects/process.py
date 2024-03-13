@@ -458,8 +458,8 @@ class Process(PipelineObject):
         schema_id = self.get_current_schema_id(ds.id)
 
         matlab_loaded = True
-        matlab_double_type = None
-        if "matlab" not in sys.modules and self.is_matlab:
+        matlab_double_type = type(None)
+        if self.is_matlab:
             matlab_loaded = False
             try:            
                 print("Importing MATLAB.")
@@ -473,7 +473,7 @@ class Process(PipelineObject):
                 matlab_double_type = matlab.double
             except:
                 print("Failed to import MATLB.")
-                matlab_loaded = False                
+                matlab_loaded = False           
                 
         # 4. Run the method.
         # Get the subset of the data.
