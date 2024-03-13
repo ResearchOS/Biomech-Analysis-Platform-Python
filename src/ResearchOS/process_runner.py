@@ -16,11 +16,14 @@ from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.var_converter import convert_var
-from suppress_output import suppress_stdout_stderr
+from ResearchOS.utils.suppress_output import suppress_stdout_stderr
 
 class ProcessRunner():
 
     eng = None
+    matlab = None
+    matlab_numeric_types = []
+    dataset_object_graph: nx.MultiDiGraph = None
 
     def __init__(self, process: "Process", action: "Action", schema_id: str, schema_graph: nx.MultiDiGraph, dataset: "Dataset", subset_graph, matlab_loaded: bool, eng, force_redo: bool):
         self.process = process
@@ -54,7 +57,7 @@ class ProcessRunner():
         return info
         
 
-    def run_node(self, node_id: str) -> None:
+    def run_node(self, node_id: str, G: nx.MultiDiGraph) -> None:
         """Run the process on the given node ID.
         """
         start_run_time = time.time()
@@ -63,7 +66,7 @@ class ProcessRunner():
         node = pr.level(id = node_id, action = self.action)
         self.node = node        
         
-        run_process, vr_values_in = self.check_if_run_node(node_id) # Verify whether this node should be run or skipped.
+        run_process, vr_values_in = self.check_if_run_node(node_id, G) # Verify whether this node should be run or skipped.
         skip_msg = None
         if not vr_values_in:            
             skip_msg = f"File does not exist for {node.name} ({node.id}), skipping."
@@ -95,21 +98,16 @@ class ProcessRunner():
             if not self.matlab_loaded:
                 raise ValueError("MATLAB is not loaded.")
             vr_vals_in = list(vr_values_in.values())
-            vr_vals_in.append(info)
+            if self.num_inputs > len(vr_vals_in): # There's an extra input open.
+                vr_vals_in.append(info)
             fcn = getattr(self.eng, pr.mfunc_name)            
             try:
-                with suppress_stdout_stderr():
-                    print('test')
-                    vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))
-            except:
-                vr_vals_in.remove(info)
-                try:
-                    vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))
-                except self.matlab.engine.MatlabExecutionError as e:
-                    if "ResearchOS:" not in e.args[0]:
-                        print("'ResearchOS:' not found in error message, ending run.")
-                        raise e
-                    return # Do not assign anything, because nothing was computed!
+                vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))
+            except ProcessRunner.matlab.engine.MatlabExecutionError as e:
+                if "ResearchOS:" not in e.args[0]:
+                    print("'ResearchOS:' not found in error message, ending run.")
+                    raise e
+                return # Do not assign anything, because nothing was computed!
         else:
             vr_values_out = pr.method(**vr_values_in) # Ensure that the method returns a tuple.
         if not isinstance(vr_values_out, tuple):
@@ -127,28 +125,39 @@ class ProcessRunner():
             else:
                 idx += 1
             # Search through the variable to look for any matlab numeric types and convert them to numpy arrays.
-            kwargs_dict[vr] = convert_var(vr_values_out[idx], self.matlab_numeric_types) # Convert any matlab.double to numpy arrays. (This is a recursive function.)
+            kwargs_dict[vr] = convert_var(vr_values_out[idx], ProcessRunner.matlab_numeric_types) # Convert any matlab.double to numpy arrays. (This is a recursive function.)
 
         vr_values_out = []
         self.node._setattrs({}, kwargs_dict, action = self.action, pr_id = self.process.id)
         kwargs_dict = {}    
         
-    def check_if_run_node(self, node_id: str) -> bool:
+    def check_if_run_node(self, node_id: str, G: nx.MultiDiGraph) -> bool:
         """Check whether to run the Process on the given node ID. If False, skip. If True, run.
         """
         self.node_id = node_id                      
 
-        input_vrs, input_vrs_names_dict = self.get_input_vrs()
+        input_vrs, input_vrs_names_dict = self.get_input_vrs(G)
         if input_vrs is None:
             return (False, input_vrs) # The file does not exist. Skip this node.        
         earliest_output_vr_time = self.get_earliest_output_vr_time()
         latest_input_vr_time = self.get_latest_input_vr_time(input_vrs, input_vrs_names_dict)
         if latest_input_vr_time < earliest_output_vr_time:
-            return (False, input_vrs) # Run the process.
+            return (False, input_vrs) # Do NOT run the process.
         else:
-            return (True, input_vrs)
+            return (True, input_vrs) # Run the process
+        
+    def get_node_lineage(self, node: DataObject, G: nx.MultiDiGraph) -> list:
+        """Get the lineage of the DataObject node.
+        """
+        anc_nodes = nx.ancestors(G, node)
+        anc_nodes_list = [node for node in nx.topological_sort(G.subgraph(anc_nodes))][::-1]
+        anc_nodes = []
+        for idx, level in enumerate(self.schema_order[1:-1]):
+            anc_nodes.append(anc_nodes_list[idx])                         
+        node_lineage = [node] + anc_nodes + [self.dataset] # Smallest to largest.
+        return node_lineage
 
-    def get_input_vrs(self) -> dict:
+    def get_input_vrs(self, G: nx.MultiDiGraph) -> dict:
         """Load the input variables.
         """
         pr = self.process
@@ -157,38 +166,53 @@ class ProcessRunner():
         logging.info(f"Loading input VR's for {node.name} ({node.id}).")
         # Get the values for the input variables for this DataObject node. 
         # Get the lineage so I can get the file path for import functions and create the lineage.        
-        anc_node_ids = nx.ancestors(self.subset_graph, self.node_id)
-        anc_node_ids_list = [node for node in nx.topological_sort(self.subset_graph.subgraph(anc_node_ids))][::-1]
-        anc_node_ids_list.remove(self.dataset.id)
-        anc_nodes = []
-        # Skip the lowest level (the Process level) and the highest level (dataset)
-        for idx, level in enumerate(self.schema_order[1:-1]):
-            anc_nodes.append(level(id = anc_node_ids_list[idx], action = self.action))          
-        vr_values_in = {}        
-        node_lineage = [node] + anc_nodes + [self.dataset] # Smallest to largest.        
+        node_lineage = self.get_node_lineage(node, G)     
+        vr_values_in = {}     
         input_vrs_names_dict = {}
+        lookup_vrs = self.process.lookup_vrs
         for var_name_in_code, vr in pr.input_vrs.items():
             vr_found = False
             input_vrs_names_dict[var_name_in_code] = vr
+            node_lineage_use = node_lineage
+
             if var_name_in_code == pr.import_file_vr_name:
                 continue # Skip the import file variable.
+
+            # Hard-coded input variable.
+            if type(vr) is not dict and vr.hard_coded_value is not None: 
+                vr_values_in[var_name_in_code] = vr.hard_coded_value
+                vr_found = True
+                continue   
+
+            # Check if this variable should be pulled from another DataObject.
+            curr_node = [tmp_node for tmp_node in node_lineage_use if isinstance(tmp_node, vr.level)][0]
+            for lookup_var_name_in_code, lookup_vr_dict in lookup_vrs.items():
+                for lookup_vr, lookup_var_names_in_code in lookup_vr_dict.items():
+                    if var_name_in_code not in lookup_var_names_in_code:
+                        continue
+                    if lookup_var_name_in_code not in self.process.vrs_source_pr:
+                        raise ValueError(f"Lookup variable {lookup_var_name_in_code} not found in Process's vrs_source_pr.")
+                    lookup_process = self.process.vrs_source_pr[lookup_var_name_in_code]
+                    lookup_dataobject_name, vr_found = curr_node.load_vr_value(lookup_vr, self.action, lookup_process, lookup_var_name_in_code)
+                    if lookup_dataobject_name is None:
+                        return (None, None) # The file does not exist. Skip this node.
+                    # Currently assumes that all DataObjects have unique names across the entire dataset.
+                    lookup_dataobject = [node for node in G.nodes if node.name == lookup_dataobject_name][0]
+                    node_lineage_use = self.get_node_lineage(lookup_dataobject, G)
+                    curr_node = [tmp_node for tmp_node in node_lineage_use if isinstance(tmp_node, vr.level)][0] # Replace the current node if needed.
+                    break
+                    
 
             # Get the DataObject attribute if needed.
             if isinstance(vr, dict):
                 dobj_level = [key for key in vr.keys()][0]
                 dobj_attr_name = [value for value in vr.values()][0]
-                data_object = [tmp_node for tmp_node in node_lineage if isinstance(tmp_node, dobj_level)][0]
+                data_object = [tmp_node for tmp_node in node_lineage_use if isinstance(tmp_node, dobj_level)][0]
                 vr_values_in[var_name_in_code] = getattr(data_object, dobj_attr_name)
-                continue
-            
-            # Hard-coded input variable.
-            if vr.hard_coded_value is not None: 
-                vr_values_in[var_name_in_code] = vr.hard_coded_value
-                vr_found = True
-                continue            
+                continue                                 
 
             # Not hard-coded input variable.
-            curr_node = [tmp_node for tmp_node in node_lineage if isinstance(tmp_node, vr.level)][0]
+            
             value, vr_found = curr_node.load_vr_value(vr, self.action, self.process, var_name_in_code)
             if value is None and not vr_found:
                 return (None, None)

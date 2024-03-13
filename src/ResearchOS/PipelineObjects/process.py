@@ -43,8 +43,11 @@ all_default_attrs["import_file_vr_name"] = None
 # For including other Data Object attributes from the node lineage in the input variables.
 # For example, if a Process is run on a Trial, and one of the inputs needs to be the Subject's name.
 # Then, "data_object_level_attr" would be "{ros.Subject: 'name'}"
-# NOTE: This is always the last input variable(s), in the order of the dict.
-all_default_attrs["data_object_level_attr"] = {}
+# NOTE: This is always the last input variable(s), in the order of the input variables dict.
+# all_default_attrs["data_object_level_attr"] = {}
+
+# For static lookup trial
+all_default_attrs["lookup_vrs"] = {}
 
 computer_specific_attr_names = ["mfolder"]
 
@@ -59,6 +62,7 @@ do_run = False
 class Process(PipelineObject):
 
     prefix = "PR"
+    # __slots__ = tuple(all_default_attrs.keys())
 
     def __init__(self, is_matlab: bool = all_default_attrs["is_matlab"], 
                  mfolder: str = all_default_attrs["mfolder"], 
@@ -71,6 +75,7 @@ class Process(PipelineObject):
                  import_file_ext: str = all_default_attrs["import_file_ext"], 
                  import_file_vr_name: str = all_default_attrs["import_file_vr_name"], 
                  vrs_source_pr: dict = all_default_attrs["vrs_source_pr"],
+                 lookup_vrs: dict = all_default_attrs["lookup_vrs"],
                  **kwargs) -> None:
         if self._initialized:
             return
@@ -85,6 +90,7 @@ class Process(PipelineObject):
         self.import_file_ext = import_file_ext
         self.import_file_vr_name = import_file_vr_name
         self.vrs_source_pr = vrs_source_pr
+        self.lookup_vrs = lookup_vrs
         super().__init__(**kwargs)
 
     ## mfunc_name (MATLAB function name) methods
@@ -365,8 +371,8 @@ class Process(PipelineObject):
                 raise ValueError("Source process must be a Process or Logsheet object.")
             if not all([ResearchObjectHandler.object_exists(pr_elem.id, action) for pr_elem in pr]):
                 raise ValueError("Source process must reference existing Process.")
-            if vr_name_in_code not in self.input_vrs.keys():
-                raise ValueError("Source process VR's must reference the input variables to this function. Ensure that the 'self.set_vrs_source_pr()' line is after the 'self.set_input_vrs()' line.")
+            # if not (vr_name_in_code in self.input_vrs.keys() or vr_name_in_code in self.lookup_vrs.keys()):
+            #     raise ValueError("Source process VR's must reference the input variables to this function. Ensure that the 'self.set_vrs_source_pr()' line is after the 'self.set_input_vrs()' line.")
         # Check that the PipelineObject Graph does not contain a cycle.
         if not nx.is_directed_acyclic_graph(pGraph):
             cycles = nx.simple_cycles(pGraph)
@@ -403,7 +409,48 @@ class Process(PipelineObject):
     
     def to_json_output_vrs(self, output_vrs: dict, action: Action) -> str:
         """Convert a dictionary of output variables to a JSON string."""
-        return json.dumps({key: value.id for key, value in output_vrs.items()})                  
+        return json.dumps({key: value.id for key, value in output_vrs.items()})
+    
+    # lookup_vrs methods
+
+    def validate_lookup_vrs(self, lookup_vrs: dict, action: Action, default: Any) -> None:
+        """Validate that the lookup variables are correct.
+        Dict keys are var names in code, values are dicts with keys as Variable objects and values as lists of strings of var names in code."""
+        if lookup_vrs == default:
+            return
+        if not isinstance(lookup_vrs, dict):
+            raise ValueError("Lookup variables must be a dictionary.")
+        for key, value in lookup_vrs.items():
+            if not isinstance(key, str):
+                raise ValueError("Variable names in code must be strings.")
+            if not str(key).isidentifier():
+                raise ValueError("Variable names in code must be valid variable names.")
+            if not isinstance(value, dict):
+                raise ValueError("Lookup variable values must be a dictionary.")
+            for k, v in value.items():
+                if not isinstance(k, Variable):
+                    raise ValueError("Lookup variable keys must be Variable objects.")
+                if not all([isinstance(vr_name, str) for vr_name in v]):
+                    raise ValueError("Lookup variable values must be lists of strings.")
+                if not all([str(vr_name).isidentifier() for vr_name in v]):
+                    raise ValueError("Lookup variable values must be lists of valid variable names.")
+                # if not all([vr_name in get_input_variable_names(self.method) for vr_name in v]):
+                #     raise ValueError("Lookup variable values must be lists of valid variable names in the method.")
+            
+    def from_json_lookup_vrs(self, lookup_vrs: str, action: Action) -> dict:
+        """Convert a JSON string to a dictionary of lookup variables."""
+        lookup_vrs_ids_dict = json.loads(lookup_vrs)
+        lookup_vrs_dict = {}
+        for key, value in lookup_vrs_ids_dict.items():
+            lookup_vrs_dict[key] = {}
+            for vr_id, vr_names in value.items():             
+                vr = Variable(id = vr_id, action = action)
+                lookup_vrs_dict[key][vr] = vr_names 
+        return lookup_vrs_dict
+    
+    def to_json_lookup_vrs(self, lookup_vrs: dict, action: Action) -> str:
+        """Convert a dictionary of lookup variables to a JSON string."""
+        return json.dumps({key: {k.id: v for k, v in value.items()} for key, value in lookup_vrs.items()})
     
     def set_input_vrs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict."""
@@ -416,6 +463,10 @@ class Process(PipelineObject):
     def set_vrs_source_pr(self, **kwargs) -> None:
         """Convenience function to set the source process for the input variables with named variables rather than a dict."""
         self.__setattr__("vrs_source_pr", kwargs)
+
+    def set_lookup_vrs(self, **kwargs) -> None:
+        """Convenience function to set the lookup variables with named variables rather than a dict."""
+        self.__setattr__("lookup_vrs", kwargs)
 
     def run(self, force_redo: bool = False) -> None:
         """Execute the attached method.
@@ -464,23 +515,26 @@ class Process(PipelineObject):
         matlab_numeric_types = []
         if self.is_matlab:
             matlab_loaded = False
-            try:            
-                print("Importing MATLAB.")
-                import matlab.engine
-                try:
-                    print("Attempting to connect to an existing shared MATLAB session.")
-                    print("To share a session run <matlab.engine.shareEngine('ResearchOS')> in MATLAB's Command Window and leave MATLAB open.")
-                    ProcessRunner.eng = matlab.engine.connect_matlab(name = "ResearchOS")
-                    print("Successfully connected to the shared 'ResearchOS' MATLAB session.")
+            if ProcessRunner.eng is None:
+                try:            
+                    print("Importing MATLAB.")
+                    import matlab.engine
+                    try:
+                        print("Attempting to connect to an existing shared MATLAB session.")
+                        print("To share a session run <matlab.engine.shareEngine('ResearchOS')> in MATLAB's Command Window and leave MATLAB open.")
+                        ProcessRunner.eng = matlab.engine.connect_matlab(name = "ResearchOS")
+                        print("Successfully connected to the shared 'ResearchOS' MATLAB session.")
+                    except:
+                        print("Failed to connect. Starting MATLAB.")
+                        ProcessRunner.eng = matlab.engine.start_matlab()
+                    matlab_loaded = True
+                    matlab_double_type = matlab.double
+                    matlab_numeric_types = (matlab.double, matlab.single, matlab.int8, matlab.uint8, matlab.int16, matlab.uint16, matlab.int32, matlab.uint32, matlab.int64, matlab.uint64)
+                    ProcessRunner.matlab = matlab
+                    ProcessRunner.matlab_numeric_types = matlab_numeric_types
                 except:
-                    print("Failed to connect. Starting MATLAB.")
-                    ProcessRunner.eng = matlab.engine.start_matlab()
-                matlab_loaded = True
-                matlab_double_type = matlab.double
-                matlab_numeric_types = (matlab.double, matlab.single, matlab.int8, matlab.uint8, matlab.int16, matlab.uint16, matlab.int32, matlab.uint32, matlab.int64, matlab.uint64)
-            except:
-                print("Failed to import MATLAB.")
-                matlab_loaded = False           
+                    print("Failed to import MATLAB.")
+                    matlab_loaded = False           
                 
         # 4. Run the method.
         # Get the subset of the data.
@@ -497,24 +551,34 @@ class Process(PipelineObject):
         level_node_ids_sorted = [row[0] for row in level_nodes_ids_names if row[0] in level_node_ids]
         # Iterate over each data object at this level (e.g. all ros.Trial objects in the subset.)
         schema = ds.schema
-        schema_graph = nx.MultiDiGraph(schema)        
-
-        if matlab_loaded and self.is_matlab:
-            ProcessRunner.eng.addpath(self.mfolder) # Add the path to the MATLAB function. This is necessary for the MATLAB function to be found.
-            # f = ProcessRunner.eng.str2func(self.mfunc_name)
-            # func_handle = ProcessRunner.eng.functions(f)
-            # if len(func_handle) == 0:
-            #     raise ValueError(f"Function {self.mfunc_name} not found in {self.mfolder}.")
+        schema_graph = nx.MultiDiGraph(schema)                
         
         pool = SQLiteConnectionPool()
         process_runner = ProcessRunner(self, action, schema_id, schema_graph, ds, subset_graph, matlab_loaded, ProcessRunner.eng, force_redo)
         process_runner.matlab_double_type = matlab_double_type
-        process_runner.matlab_numeric_types = matlab_numeric_types
-        process_runner.matlab = matlab
-        for node_id in level_node_ids_sorted:            
-            process_runner.run_node(node_id)
+        # process_runner.matlab_numeric_types = matlab_numeric_types  
 
-        if matlab_loaded and self.is_matlab:
+        process_runner.matlab_loaded = True
+        if process_runner.matlab is None:
+            process_runner.matlab_loaded = False              
+
+        num_inputs = 0
+        if process_runner.matlab_loaded and self.is_matlab:
+            ProcessRunner.eng.addpath(self.mfolder) # Add the path to the MATLAB function. This is necessary for the MATLAB function to be found.
+            try:
+                num_inputs = ProcessRunner.eng.nargin(self.mfunc_name, nargout=1)
+            except:
+                raise ValueError(f"Function {self.mfunc_name} not found in {self.mfolder}.")
+            
+        process_runner.num_inputs = num_inputs        
+            
+        if ProcessRunner.dataset_object_graph is None:
+            ProcessRunner.dataset_object_graph = ds.get_addresses_graph(objs = True, action = action)
+        G = ProcessRunner.dataset_object_graph
+        for node_id in level_node_ids_sorted:            
+            process_runner.run_node(node_id, G)
+
+        if process_runner.matlab_loaded and self.is_matlab:
             ProcessRunner.eng.rmpath(self.mfolder)
             
         for vr_name, vr in self.output_vrs.items():

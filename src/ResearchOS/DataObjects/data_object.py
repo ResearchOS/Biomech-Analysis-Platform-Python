@@ -67,8 +67,8 @@ class DataObject(ResearchObject):
             raise ValueError(f"The VR {vr.name} is not currently associated with the data object {self.id}.")
         
         # 2. Load the data hash from the database.
-        if not (process and process.vrs_source_pr):
-            sqlquery_raw = "SELECT data_blob_hash FROM data_values WHERE dataobject_id = ? AND vr_id = ?"
+        if not process or ("vrs_source_pr" not in process.__dict__ or process.vrs_source_pr[vr_name_in_code] is None):
+            sqlquery_raw = "SELECT data_blob_hash, pr_id FROM data_values WHERE dataobject_id = ? AND vr_id = ?"
             params = (self.id, vr.id)
         else:
             # Get the most recent VR value that was set by the process.

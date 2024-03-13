@@ -34,9 +34,9 @@ class ResearchObject():
             return self.id == other.id and self is other
         return False
     
-    def __getitem__(self, key: str) -> Any:
-        """Get the value of the attribute."""
-        return self.__dict__[key]
+    # def __getitem__(self, key: str) -> Any:
+    #     """Get the value of the attribute."""
+    #     return self.__dict__[key]
      
     def __new__(cls, **kwargs):
         """Create a new research object in memory. If the object already exists in memory with this ID, return the existing object."""

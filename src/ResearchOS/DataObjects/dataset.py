@@ -225,7 +225,7 @@ class Dataset(DataObject):
 
         return addresses
 
-    def get_addresses_graph(self) -> nx.MultiDiGraph:
+    def get_addresses_graph(self, objs: bool = False, action: Action = None) -> nx.MultiDiGraph:
         """Convert the addresses edge list to a MultiDiGraph.
         Args:
             self
@@ -235,7 +235,15 @@ class Dataset(DataObject):
         # action = Action("get_addresses_graph")
         addresses = self.addresses
         G = nx.MultiDiGraph()
-        G.add_edges_from(addresses)
+        if not objs:
+            G.add_edges_from(addresses)            
+        else:
+            for address in addresses:
+                cls0 = ResearchObjectHandler._prefix_to_class(address[0])
+                cls1 = ResearchObjectHandler._prefix_to_class(address[1])
+                node0 = cls0(id = address[0], action = action)
+                node1 = cls1(id = address[1], action = action)
+                G.add_edge(node0, node1)  
         return G
     
 if __name__=="__main__":
