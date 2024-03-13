@@ -94,6 +94,7 @@ class Subset(PipelineObject):
     def get_subset(self, action: Action) -> nx.MultiDiGraph:
         """Resolve the conditions to the actual subset of data."""
         from ResearchOS.DataObjects.data_object import DataObject
+        print('Getting subset of DataObjects')
         # 1. Get the dataset.
         dataset_id = self.get_dataset_id()
         ds = Dataset(id = dataset_id)
@@ -141,11 +142,8 @@ class Subset(PipelineObject):
 
 
         for node_id in sorted_nodes:
-            # cls = [cls for cls in subclasses if cls.prefix == node_id[0:2]][0]
-            # node = cls(id = node_id)
             if not self.meets_conditions(node_id, self.conditions, G, vr_values, action):
                 continue
-            print(node_id)
             curr_nodes = [node_id]
             curr_nodes.extend(nx.ancestors(G, node_id))
             nodes_for_subgraph.extend([node_id for node_id in curr_nodes if node_id not in nodes_for_subgraph])

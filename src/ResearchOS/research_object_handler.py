@@ -242,7 +242,6 @@ class ResearchObjectHandler:
         logging.info(f"Setting VR values for {research_object.id}.")
         vr_hashes_dict = {}
         for vr, value in vr_values.items():
-            # time.sleep(0.01)
             start_pickle_time = time.time()
             data_blob = pickle.dumps(value, protocol = 4)
             pickle_dur = time.time() - start_pickle_time

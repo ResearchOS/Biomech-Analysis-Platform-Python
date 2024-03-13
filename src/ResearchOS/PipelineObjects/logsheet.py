@@ -2,9 +2,8 @@ from typing import Any
 import json, csv, platform, os
 
 import networkx as nx
-# from memory_profiler import profile
+import numpy as np
 
-# import pandas as pd
 from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.variable import Variable
 from ResearchOS.DataObjects.dataset import Dataset
@@ -14,6 +13,7 @@ from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
 from ResearchOS.default_attrs import DefaultAttrs
+from ResearchOS.var_converter import convert_var
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -405,6 +405,7 @@ class Logsheet(PipelineObject):
         # Validates that the logsheet is of valid format.
         # i.e. Doesn't have conflicting values for one level (empty/None is OK)
         attrs_cache_dict = {}
+        default_none_vals = {str: None, int: np.array(float('nan'))}
         for row_num, row in enumerate(logsheet):
             row_dobjs = all_dobjs_ordered[row_num][1:]
             row_attrs = [{} for _ in range(len(order))] # The list of dicts of attributes for each DataObject instance.
@@ -418,18 +419,18 @@ class Logsheet(PipelineObject):
                 level = header[2]
                 level_idx = order.index(level)
                 vr_id = header[3]                
-                value = self.clean_value(type_class, row[headers_in_logsheet.index(name)])
+                value = self.clean_value(type_class, row[headers_in_logsheet.index(name)])                
                 # Set up the cache dict for this data object.
                 if not row_dobjs[level_idx].id in attrs_cache_dict:
                     attrs_cache_dict[row_dobjs[level_idx].id] = {}
                 # Set up the cache dict for this data object for this attribute.
                 if name not in attrs_cache_dict[row_dobjs[level_idx].id]:
-                    attrs_cache_dict[row_dobjs[level_idx].id][name] = None
+                    attrs_cache_dict[row_dobjs[level_idx].id][name] = default_none_vals[type_class]
                 print("Row: ", row_num+self.num_header_rows+1, "Column: ", name, "Value: ", value)
                 prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
                 # prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.
-                if prev_value is not None:                    
-                    if prev_value == value or value is None:
+                if prev_value is not default_none_vals[type_class] and (type(prev_value) == np.ndarray and not np.isnan(prev_value)):                    
+                    if prev_value == value or value == default_none_vals[type_class] or np.isnan(value):
                         continue
                     raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
                 attrs_cache_dict[row_dobjs[level_idx].id][name] = value
@@ -466,6 +467,11 @@ class Logsheet(PipelineObject):
             value = value.strip()
         if value == '': # Empty
             value = None
+        if type_class is int:
+            if value is None:
+                value = np.array(float('nan'))
+            else:
+                value = np.array(value)
         return value
 
 

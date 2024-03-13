@@ -459,18 +459,21 @@ class Process(PipelineObject):
 
         matlab_loaded = True
         matlab_double_type = type(None)
+        matlab_numeric_types = []
         if self.is_matlab:
             matlab_loaded = False
             try:            
                 print("Importing MATLAB.")
                 import matlab.engine
-                # ProcessRunner.eng = matlab.engine.start_matlab()
                 try:
+                    print("Connecting to MATLAB.")
                     ProcessRunner.eng = matlab.engine.connect_matlab(name = "ResearchOS")
                 except:
+                    print("Failed to connect. Starting MATLAB.")
                     ProcessRunner.eng = matlab.engine.start_matlab()
                 matlab_loaded = True
                 matlab_double_type = matlab.double
+                matlab_numeric_types = (matlab.double, matlab.single, matlab.int8, matlab.uint8, matlab.int16, matlab.uint16, matlab.int32, matlab.uint32, matlab.int64, matlab.uint64)
             except:
                 print("Failed to import MATLB.")
                 matlab_loaded = False           
@@ -499,6 +502,7 @@ class Process(PipelineObject):
         pool = SQLiteConnectionPool()
         process_runner = ProcessRunner(self, action, schema_id, schema_order, ds, subset_graph, matlab_loaded, ProcessRunner.eng, force_redo)
         process_runner.matlab_double_type = matlab_double_type
+        process_runner.matlab_numeric_types = matlab_numeric_types
         for node_id in level_node_ids_sorted:            
             process_runner.run_node(node_id)
 

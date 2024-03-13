@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.var_converter import convert_var, convert_py_to_matlab
 
 class ProcessRunner():
 
@@ -70,6 +71,8 @@ class ProcessRunner():
             if not self.matlab_loaded:
                 raise ValueError("MATLAB is not loaded.")
             vr_vals_in = list(vr_values_in.values())
+            # for idx in range(len(vr_vals_in)):
+            #     vr_vals_in = convert_py_to_matlab(vr_vals_in[idx], self.matlab_numeric_types)
             fcn = getattr(self.eng, pr.mfunc_name)
             vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))                               
         else:
@@ -88,25 +91,12 @@ class ProcessRunner():
                 idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out and the order in the output_vrs dict are probably different.
             else:
                 idx += 1
-            # Search through the variable to look for any matlab.double and convert them to numpy arrays.
-            kwargs_dict[vr] = self.walk_var(vr_values_out[idx])
+            # Search through the variable to look for any matlab numeric types and convert them to numpy arrays.
+            kwargs_dict[vr] = convert_var(vr_values_out[idx], self.matlab_numeric_types) # Convert any matlab.double to numpy arrays. (This is a recursive function.)
 
         vr_values_out = []
         self.node._setattrs({}, kwargs_dict, action = self.action, pr_id = self.process.id)
-        kwargs_dict = {}
-
-    def walk_var(self, var: Any) -> Any:
-        """Walk through the variable and convert any matlab.double to numpy arrays.
-        """        
-        if isinstance(var, dict):
-            for key, value in var.items():
-                var[key] = self.walk_var(value)
-        elif isinstance(var, list):
-            for idx, value in enumerate(var):
-                var[idx] = self.walk_var(value)
-        elif isinstance(var, self.matlab_double_type):
-            var = np.array(var)
-        return var
+        kwargs_dict = {}    
         
     def check_if_run_node(self, node_id: str) -> bool:
         """Check whether to run the Process on the given node ID. If False, skip. If True, run.
