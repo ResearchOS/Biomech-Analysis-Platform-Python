@@ -261,7 +261,7 @@ class ResearchObjectHandler:
             vr_values[vr] = data_blob_hash # Replace the value with the hash to relieve memory pressure.            
         logging.debug(f"Time to pickle and hash VR output values: {time.time() - start_pickle_hash_time} seconds.")
 
-        # 2. Check which VR's hashes are already in the data database so as not to duplicate a primary key.
+        # 2. Check which VR's hashes are already in the data database so as not to duplicate a value/hash (primary key)
         pool_data = SQLiteConnectionPool(name = "data")
         conn_data = pool_data.get_connection()
         cursor_data = conn_data.cursor()

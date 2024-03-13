@@ -458,6 +458,7 @@ class Process(PipelineObject):
         schema_id = self.get_current_schema_id(ds.id)
 
         matlab_loaded = True
+        matlab_double_type = None
         if "matlab" not in sys.modules and self.is_matlab:
             matlab_loaded = False
             try:            
@@ -469,6 +470,7 @@ class Process(PipelineObject):
                 except:
                     ProcessRunner.eng = matlab.engine.start_matlab()
                 matlab_loaded = True
+                matlab_double_type = matlab.double
             except:
                 print("Failed to import MATLB.")
                 matlab_loaded = False                
@@ -477,8 +479,6 @@ class Process(PipelineObject):
         # Get the subset of the data.
         subset = Subset(id = self.subset_id, action = action)
         subset_graph = subset.get_subset(action)
-        # subset_graph = nx.MultiDiGraph()
-        # subset_graph.add_edges_from(ds.addresses)
 
         level_node_ids = [node for node in subset_graph if node.startswith(self.level.prefix)]
         name_attr_id = ResearchObjectHandler._get_attr_id("name")
@@ -498,6 +498,7 @@ class Process(PipelineObject):
         
         pool = SQLiteConnectionPool()
         process_runner = ProcessRunner(self, action, schema_id, schema_order, ds, subset_graph, matlab_loaded, ProcessRunner.eng, force_redo)
+        process_runner.matlab_double_type = matlab_double_type
         for node_id in level_node_ids_sorted:            
             process_runner.run_node(node_id)
 

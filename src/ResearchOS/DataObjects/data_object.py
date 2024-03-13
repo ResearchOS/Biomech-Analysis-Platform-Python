@@ -2,10 +2,10 @@
 from typing import Any, TYPE_CHECKING
 import pickle
 
-if TYPE_CHECKING:
-    from ResearchOS.variable import Variable
+if TYPE_CHECKING:    
     from ResearchOS.PipelineObjects.process import Process
 
+from ResearchOS.variable import Variable
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.default_attrs import DefaultAttrs

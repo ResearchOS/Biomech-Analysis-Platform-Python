@@ -1,10 +1,11 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 import logging, time
 import os
 from datetime import datetime, timezone
 import json
 
 import networkx as nx
+import numpy as np
 
 if TYPE_CHECKING:
     from .action import Action
@@ -69,10 +70,6 @@ class ProcessRunner():
             if not self.matlab_loaded:
                 raise ValueError("MATLAB is not loaded.")
             vr_vals_in = list(vr_values_in.values())
-            # folderName = vr_vals_in[0]
-            # segMarkerNames = vr_vals_in[1]
-            # mocapData = vr_vals_in[2]
-            # subName = vr_vals_in[3]
             fcn = getattr(self.eng, pr.mfunc_name)
             vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))                               
         else:
@@ -91,11 +88,25 @@ class ProcessRunner():
                 idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out and the order in the output_vrs dict are probably different.
             else:
                 idx += 1
-            kwargs_dict[vr] = vr_values_out[idx] 
+            # Search through the variable to look for any matlab.double and convert them to numpy arrays.
+            kwargs_dict[vr] = self.walk_var(vr_values_out[idx])
 
         vr_values_out = []
         self.node._setattrs({}, kwargs_dict, action = self.action, pr_id = self.process.id)
         kwargs_dict = {}
+
+    def walk_var(self, var: Any) -> Any:
+        """Walk through the variable and convert any matlab.double to numpy arrays.
+        """        
+        if isinstance(var, dict):
+            for key, value in var.items():
+                var[key] = self.walk_var(value)
+        elif isinstance(var, list):
+            for idx, value in enumerate(var):
+                var[idx] = self.walk_var(value)
+        elif isinstance(var, self.matlab_double_type):
+            var = np.array(var)
+        return var
         
     def check_if_run_node(self, node_id: str) -> bool:
         """Check whether to run the Process on the given node ID. If False, skip. If True, run.
