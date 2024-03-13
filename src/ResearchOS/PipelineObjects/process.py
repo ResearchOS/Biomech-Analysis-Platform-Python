@@ -419,8 +419,10 @@ class Process(PipelineObject):
 
     def run(self, force_redo: bool = False) -> None:
         """Execute the attached method.
-        kwargs are the input VR's."""      
-        action = Action(name = f"Running {self.mfunc_name} on {self.level.__name__}s.")  
+        kwargs are the input VR's."""
+        start_msg = f"Running {self.mfunc_name} on {self.level.__name__}s."
+        print(start_msg)
+        action = Action(name = start_msg)  
         ds = Dataset(id = self.get_dataset_id(), action = action)   
         ds_defaults = DefaultAttrs(ds).default_attrs
         # Validate the dataset's addresses.
@@ -466,8 +468,10 @@ class Process(PipelineObject):
                 print("Importing MATLAB.")
                 import matlab.engine
                 try:
-                    print("Connecting to MATLAB.")
+                    print("Attempting to connect to an existing shared MATLAB session.")
+                    print("To share a session run <matlab.engine.shareEngine('ResearchOS')> in MATLAB's Command Window and leave MATLAB open.")
                     ProcessRunner.eng = matlab.engine.connect_matlab(name = "ResearchOS")
+                    print("Successfully connected to the shared 'ResearchOS' MATLAB session.")
                 except:
                     print("Failed to connect. Starting MATLAB.")
                     ProcessRunner.eng = matlab.engine.start_matlab()
@@ -475,7 +479,7 @@ class Process(PipelineObject):
                 matlab_double_type = matlab.double
                 matlab_numeric_types = (matlab.double, matlab.single, matlab.int8, matlab.uint8, matlab.int16, matlab.uint16, matlab.int32, matlab.uint32, matlab.int64, matlab.uint64)
             except:
-                print("Failed to import MATLB.")
+                print("Failed to import MATLAB.")
                 matlab_loaded = False           
                 
         # 4. Run the method.
@@ -493,16 +497,20 @@ class Process(PipelineObject):
         level_node_ids_sorted = [row[0] for row in level_nodes_ids_names if row[0] in level_node_ids]
         # Iterate over each data object at this level (e.g. all ros.Trial objects in the subset.)
         schema = ds.schema
-        schema_graph = nx.MultiDiGraph(schema)
-        schema_order = list(nx.topological_sort(schema_graph))
+        schema_graph = nx.MultiDiGraph(schema)        
 
         if matlab_loaded and self.is_matlab:
             ProcessRunner.eng.addpath(self.mfolder) # Add the path to the MATLAB function. This is necessary for the MATLAB function to be found.
+            # f = ProcessRunner.eng.str2func(self.mfunc_name)
+            # func_handle = ProcessRunner.eng.functions(f)
+            # if len(func_handle) == 0:
+            #     raise ValueError(f"Function {self.mfunc_name} not found in {self.mfolder}.")
         
         pool = SQLiteConnectionPool()
-        process_runner = ProcessRunner(self, action, schema_id, schema_order, ds, subset_graph, matlab_loaded, ProcessRunner.eng, force_redo)
+        process_runner = ProcessRunner(self, action, schema_id, schema_graph, ds, subset_graph, matlab_loaded, ProcessRunner.eng, force_redo)
         process_runner.matlab_double_type = matlab_double_type
         process_runner.matlab_numeric_types = matlab_numeric_types
+        process_runner.matlab = matlab
         for node_id in level_node_ids_sorted:            
             process_runner.run_node(node_id)
 
@@ -512,4 +520,5 @@ class Process(PipelineObject):
         for vr_name, vr in self.output_vrs.items():
             print(f"Saved VR {vr_name} (VR: {vr.id}).")
 
-        pool.return_connection(action.conn)
+        if action.conn:
+            pool.return_connection(action.conn)

@@ -75,7 +75,7 @@ class DataObject(ResearchObject):
             pr = process.vrs_source_pr[vr_name_in_code]
             if not isinstance(process.vrs_source_pr[vr_name_in_code], list):
                 pr = [pr]
-            sqlquery_raw = "SELECT data_blob_hash FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND pr_id IN ({})".format(", ".join(["?" for _ in pr]))
+            sqlquery_raw = "SELECT data_blob_hash, pr_id FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND pr_id IN ({})".format(", ".join(["?" for _ in pr]))
             params = (self.id, vr.id) + tuple([pr_elem.id for pr_elem in pr])
         sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False)        
         result = cursor.execute(sqlquery, params).fetchall()
@@ -83,7 +83,19 @@ class DataObject(ResearchObject):
             raise ValueError(f"The VR {vr.name} does not have a value set for the data object {self.id} from Process {process.id}.")
         if len(result) > 1:
             raise ValueError(f"The VR {vr.name} has multiple values set for the data object {self.id} from Process {process.id}.")
-        data_hash = result[0][0]
+        pr_ids = [x[1] for x in result]
+        pr_idx = None
+        for pr_id in pr_ids:
+            pr_idx = None
+            try:
+                pr_idx = pr_ids.index(pr_id)
+            except:
+                pass
+            if pr_idx is not None:
+                break
+        if pr_idx is None:
+            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {self.id} from any process provided.")
+        data_hash = result[pr_idx][0]
 
         # 3. Get the value from the data_values table.        
         conn_data = ResearchObjectHandler.pool_data.get_connection()

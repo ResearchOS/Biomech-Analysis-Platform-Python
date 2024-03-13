@@ -12,24 +12,47 @@ if TYPE_CHECKING:
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.DataObjects.dataset import Dataset    
 
+from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.sql.sql_runner import sql_order_result
-from ResearchOS.var_converter import convert_var, convert_py_to_matlab
+from ResearchOS.var_converter import convert_var
+from suppress_output import suppress_stdout_stderr
 
 class ProcessRunner():
 
     eng = None
 
-    def __init__(self, process: "Process", action: "Action", schema_id: str, schema_order: list, dataset: "Dataset", subset_graph, matlab_loaded: bool, eng, force_redo: bool):
+    def __init__(self, process: "Process", action: "Action", schema_id: str, schema_graph: nx.MultiDiGraph, dataset: "Dataset", subset_graph, matlab_loaded: bool, eng, force_redo: bool):
         self.process = process
         self.action = action
         self.schema_id = schema_id
-        self.schema_order = schema_order
+        self.schema_graph = schema_graph
+        self.schema_order = list(nx.topological_sort(schema_graph))
         self.dataset = dataset
         self.subset_graph = subset_graph
         self.matlab_loaded = matlab_loaded
         self.eng = eng
         self.force_redo = force_redo
+
+    def get_node_info(self, node_id: str) -> dict:
+        """Provide the node lineage information for conditional debugging in the scientific code."""
+        anc_nodes = nx.ancestors(self.subset_graph, node_id)
+        anc_nodes_list = [node for node in nx.topological_sort(self.subset_graph.subgraph(anc_nodes))][::-1]
+        node_lineage = [node_id] + [node for node in anc_nodes_list]
+        info = {}        
+        info["lineage"] = {}
+        classes = DataObject.__subclasses__()
+        assert len(node_lineage) == len(self.schema_order)
+        for node_id in node_lineage:
+            cls = [cls for cls in classes if cls.prefix == node_id[0:2]][0]
+            node = cls(id = node_id, action = self.action)
+            prefix = cls.prefix
+            info["lineage"][prefix] = {}
+            info["lineage"][prefix]["name"] = node.name
+            info["lineage"][prefix]["id"] = node.id
+
+        return info
+        
 
     def run_node(self, node_id: str) -> None:
         """Run the process on the given node ID.
@@ -50,9 +73,10 @@ class ProcessRunner():
             print(skip_msg)
             return
         
+        node_info = self.get_node_info(node_id)
         run_msg = f"Running {node.name} ({node.id})."
         print(run_msg)
-        self.compute_and_assign_outputs(vr_values_in, pr)
+        self.compute_and_assign_outputs(vr_values_in, pr, node_info)
 
         self.action.commit = True
         self.action.exec = True
@@ -63,7 +87,7 @@ class ProcessRunner():
         logging.info(done_msg)
         print(done_msg)
 
-    def compute_and_assign_outputs(self, vr_values_in: dict, pr: "Process") -> None:
+    def compute_and_assign_outputs(self, vr_values_in: dict, pr: "Process", info: dict) -> None:
         """Assign the output variables to the DataObject node.
         """
         # NOTE: For now, assuming that there is only one return statement in the entire method.        
@@ -71,10 +95,21 @@ class ProcessRunner():
             if not self.matlab_loaded:
                 raise ValueError("MATLAB is not loaded.")
             vr_vals_in = list(vr_values_in.values())
-            # for idx in range(len(vr_vals_in)):
-            #     vr_vals_in = convert_py_to_matlab(vr_vals_in[idx], self.matlab_numeric_types)
-            fcn = getattr(self.eng, pr.mfunc_name)
-            vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))                               
+            vr_vals_in.append(info)
+            fcn = getattr(self.eng, pr.mfunc_name)            
+            try:
+                with suppress_stdout_stderr():
+                    print('test')
+                    vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))
+            except:
+                vr_vals_in.remove(info)
+                try:
+                    vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))
+                except self.matlab.engine.MatlabExecutionError as e:
+                    if "ResearchOS:" not in e.args[0]:
+                        print("'ResearchOS:' not found in error message, ending run.")
+                        raise e
+                    return # Do not assign anything, because nothing was computed!
         else:
             vr_values_out = pr.method(**vr_values_in) # Ensure that the method returns a tuple.
         if not isinstance(vr_values_out, tuple):

@@ -94,7 +94,7 @@ class Subset(PipelineObject):
     def get_subset(self, action: Action) -> nx.MultiDiGraph:
         """Resolve the conditions to the actual subset of data."""
         from ResearchOS.DataObjects.data_object import DataObject
-        print('Getting subset of DataObjects')
+        print(f'Getting subset of DataObjects: {self.name} ({self.id})')
         # 1. Get the dataset.
         dataset_id = self.get_dataset_id()
         ds = Dataset(id = dataset_id)
@@ -147,6 +147,9 @@ class Subset(PipelineObject):
             curr_nodes = [node_id]
             curr_nodes.extend(nx.ancestors(G, node_id))
             nodes_for_subgraph.extend([node_id for node_id in curr_nodes if node_id not in nodes_for_subgraph])
+
+        if len(nodes_for_subgraph) == 0:
+            print(f"No nodes meet the conditions of {self.name} ({self.id}).")
         return G.subgraph(nodes_for_subgraph) # Maintains the relationships between all of the nodes in the subgraph.
 
     def extract_and_replace_lists(self, data, extracted_lists: list, counter=[0]):
