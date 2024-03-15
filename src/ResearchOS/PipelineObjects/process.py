@@ -637,12 +637,12 @@ class Process(PipelineObject):
         self._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action = action, pr_id = self.id)        
 
         schema_ordered = [n for n in nx.topological_sort(schema_graph)]
-        batch_dict = {}    
-        self.get_batch_dict(self.batch, batch_dict, subset_graph, schema_ordered)
+        batch_graph = self.get_batch_graph(self.batch, subset_graph, schema_ordered)
 
-        batches_list_to_run = self.split_lowest_dicts(batch_dict)
+        # Parse the MultiDiGraph to get the batches to run.
+        batches_dict_to_run = self.get_dict_of_batches(batch_graph, ds.id)
 
-        for batch_dict in batches_list_to_run:
+        for batch_dict in batches_dict_to_run:
             process_runner.run_batch(batch_dict, G)
 
         for node_id in level_node_ids_sorted:            
@@ -657,30 +657,9 @@ class Process(PipelineObject):
         if action.conn:
             pool.return_connection(action.conn)
 
-    def split_lowest_dicts(self, batch_dict, result_list: list = []) -> list:
+    def get_dict_of_batches(self, graph: nx.MultiDiGraph, start_node: str) -> list:
         """Split the big dict of all the batches with node ID's into a list of dicts where each element will be passed into the "run_batch" function."""
-        if result_list is None:
-            result_list = []
-
-        # Check if all values in the current dictionary are None or not a dictionary
-        do_return = False
-        for k, v in batch_dict.items():
-            if not isinstance(v, dict):
-                return result_list
-            
-            if all(sub_v is None for sub_v in v.values()):
-                do_return = True
-                sub_dict = {k: v}
-                result_list.append(sub_dict)   
-
-        if do_return:
-            return result_list
-
-        for key, value in batch_dict.items():
-            # Go deeper into the dictionary
-            self.split_lowest_dicts(value, result_list)
-
-        return result_list
+        return {succ: self.get_dict_of_batches(graph, succ) for succ in graph.successors(start_node)}
 
     def _run_batch(self, batch: dict) -> None:
         """Run the Process on the specified batch of DataObjects."""
@@ -693,16 +672,42 @@ class Process(PipelineObject):
             # The dict of the lower levels to run.
             self._run_batch(batch_node_id, batch_node_ids)
 
-    def get_batch_dict(self, batch: list, batch_dict: dict, subgraph: nx.MultiDiGraph = nx.MultiDiGraph(), schema_ordered: list = []) -> dict:
+    def get_batch_graph(self, batch: list, subgraph: nx.MultiDiGraph = nx.MultiDiGraph(), schema_ordered: list = []) -> dict:
         """Get the batch dictionary of DataObject names. Needs to be recursive to account for the nested dicts.
-        At the lowest level, if there are multiple DataObjects, they will also be a dict, each being one key, with its value being None."""
-        if batch is None or len(batch) == 0:
-            lower_level_dict = {n: None for n in subgraph.nodes()}
-            remove_keys = [key for key in lower_level_dict.keys() if not key.startswith(schema_ordered[-1].prefix)]
-            for key in remove_keys:
-                del lower_level_dict[key]
-            batch_dict[Dataset] = lower_level_dict
-            return batch_dict
+        At the lowest level, if there are multiple DataObjects, they will also be a dict, each being one key, with its value being None.
+        Note that the Dataset node should always be in the subgraph."""    
+        if batch is None or len(batch) == 0:            
+            batch = schema_ordered[1:-1]
+        
+        # Use the fact that the subgraph is a NetworkX MultiDiGraph to generate the list of nodes that are in each batch.
+        # I think we can rely on the fact that the NetworkX MultiDiGraph is a tree where each branch is of equal length.
+        # This is because the schema is a tree, and the subgraph is a subgraph of the schema.
+        batch_graph = nx.MultiDiGraph()
+        start_node = [n for n in subgraph.nodes() if n.startswith(Dataset.prefix)][0]
+        first_last_types = [schema_ordered[0], schema_ordered[-1]]
+        # Get lowest Process depth from vrs_source_pr
+        lowest_level_idx = -1
+        for pr in self.vrs_source_pr.values():
+            if pr is not None:
+                level_idx = schema_ordered.index(pr.level)
+                if level_idx > lowest_level_idx:
+                    lowest_level_idx = level_idx
+                    # lowest_level = pr.level
+        schema_ordered = schema_ordered[0:lowest_level_idx+1] # +1 to include the lowest level idx.
+        all_ignore_types = first_last_types
+        removal_depths = [schema_ordered.index(b) for b in batch if b not in all_ignore_types] # Will never cause the Dataset node to be removed because of the +1
+        for node in subgraph:
+            depth = nx.shortest_path_length(subgraph, source = start_node, target = node) # Dataset node will never be able to remove itself from the graph.
+            if depth not in removal_depths:
+                continue
+            predecessors = subgraph.predecessors(node) # There will always be predecessors because Dataset never reaches here.
+            successors = subgraph.successors(node) # There will always be successors because the lowest level never reaches here.
+            for pred in predecessors:
+                for succ in successors:
+                    batch_graph.add_edge(pred, succ)
+        return batch_graph
+
+
         
         last_batch_elem_idx_in_schema_ordered = schema_ordered.index(batch[-1])
         if last_batch_elem_idx_in_schema_ordered < len(schema_ordered) - 1:
