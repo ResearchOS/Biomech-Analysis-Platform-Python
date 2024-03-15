@@ -49,6 +49,9 @@ all_default_attrs["import_file_vr_name"] = None
 # For static lookup trial
 all_default_attrs["lookup_vrs"] = {}
 
+# For batching
+all_default_attrs["batch"] = None
+
 computer_specific_attr_names = ["mfolder"]
 
 # log_stream = open("logfile_run_process.log", "w")
@@ -76,6 +79,7 @@ class Process(PipelineObject):
                  import_file_vr_name: str = all_default_attrs["import_file_vr_name"], 
                  vrs_source_pr: dict = all_default_attrs["vrs_source_pr"],
                  lookup_vrs: dict = all_default_attrs["lookup_vrs"],
+                 batch: list = all_default_attrs["batch"],
                  **kwargs) -> None:
         if self._initialized:
             return
@@ -91,6 +95,7 @@ class Process(PipelineObject):
         self.import_file_vr_name = import_file_vr_name
         self.vrs_source_pr = vrs_source_pr
         self.lookup_vrs = lookup_vrs
+        self.batch = batch
         super().__init__(**kwargs)
 
     ## mfunc_name (MATLAB function name) methods
@@ -448,6 +453,44 @@ class Process(PipelineObject):
                 lookup_vrs_dict[key][vr] = vr_names 
         return lookup_vrs_dict
     
+    # batch methods
+
+    def validate_batch(self, batch: list, action: Action, default: Any) -> None:
+        """Validate that the batch is correct."""
+        if batch == default:
+            return
+        if not isinstance(batch, list):
+            raise ValueError("Batch must be a list.")
+        data_subclasses = DataObject.__subclasses__()
+        if not all([batch_elem in data_subclasses for batch_elem in batch]):
+            raise ValueError("Batch elements must be DataObject types.")
+        if len(batch) <= 1:
+            return
+        ds = Dataset(id = self.get_dataset_id(), action = action)
+        schema_graph = nx.MultiDiGraph(ds.schema)
+        schema_ordered = nx.topological_sort(schema_graph)
+        max_idx = 0
+        for batch_elem in batch:
+            idx = schema_ordered.index(batch_elem)
+            if idx < max_idx:
+                raise ValueError("Batch elements must be in order of the schema, from highest to lowest.")
+            max_idx = idx
+            
+    def from_json_batch(self, batch: str, action: Action) -> list:
+        """Convert a JSON string to a list of batch elements."""
+        prefix_list = json.loads(batch)
+        if prefix_list is None:
+            return None
+        data_subclasses = DataObject.__subclasses__()
+        # data_prefixes = [cls.prefix for cls in data_subclasses]
+        return [cls for cls in data_subclasses if cls.prefix in prefix_list]    
+    
+    def to_json_batch(self, batch: list, action: Action) -> str:
+        """Convert a list of batch elements to a JSON string."""
+        if batch is None:
+            return json.dumps(None)
+        return json.dumps([cls.prefix for cls in batch])
+    
     def to_json_lookup_vrs(self, lookup_vrs: dict, action: Action) -> str:
         """Convert a dictionary of lookup variables to a JSON string."""
         return json.dumps({key: {k.id: v for k, v in value.items()} for key, value in lookup_vrs.items()})
@@ -575,6 +618,33 @@ class Process(PipelineObject):
         if ProcessRunner.dataset_object_graph is None:
             ProcessRunner.dataset_object_graph = ds.get_addresses_graph(objs = True, action = action)
         G = ProcessRunner.dataset_object_graph
+
+        # Set the vrs_source_prs for any var that it wasn't set for.
+        add_vr_names_source_prs = [key for key in self.input_vrs.keys() if key not in self.vrs_source_pr.keys()]        
+        add_vrs_source_prs = [vr.id for name_in_code, vr in self.input_vrs.items() if name_in_code in add_vr_names_source_prs]
+        sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({}) AND schema_id = ?".format(",".join(["?" for _ in add_vrs_source_prs]))
+        sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
+        params = tuple(add_vrs_source_prs + [schema_id])
+        vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        vrs_source_prs = {}
+        for vr_name_in_code, vr in self.input_vrs.items():
+            for vr_pr_id in vr_pr_ids_result:
+                if vr.id == vr_pr_id[0]:
+                    # Same order as input variables.
+                    vrs_source_prs[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+
+        default_attrs = DefaultAttrs(self).default_attrs
+        self._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action = action, pr_id = self.id)        
+
+        schema_ordered = [n for n in nx.topological_sort(schema_graph)]
+        batch_dict = {}    
+        self.get_batch_dict(self.batch, batch_dict, subset_graph, schema_ordered)
+
+        batches_list_to_run = self.split_lowest_dicts(batch_dict)
+
+        for batch_dict in batches_list_to_run:
+            process_runner.run_batch(batch_dict, G)
+
         for node_id in level_node_ids_sorted:            
             process_runner.run_node(node_id, G)
 
@@ -586,3 +656,81 @@ class Process(PipelineObject):
 
         if action.conn:
             pool.return_connection(action.conn)
+
+    def split_lowest_dicts(self, batch_dict, result_list: list = []) -> list:
+        """Split the big dict of all the batches with node ID's into a list of dicts where each element will be passed into the "run_batch" function."""
+        if result_list is None:
+            result_list = []
+
+        # Check if all values in the current dictionary are None or not a dictionary
+        do_return = False
+        for k, v in batch_dict.items():
+            if not isinstance(v, dict):
+                return result_list
+            
+            if all(sub_v is None for sub_v in v.values()):
+                do_return = True
+                sub_dict = {k: v}
+                result_list.append(sub_dict)   
+
+        if do_return:
+            return result_list
+
+        for key, value in batch_dict.items():
+            # Go deeper into the dictionary
+            self.split_lowest_dicts(value, result_list)
+
+        return result_list
+
+    def _run_batch(self, batch: dict) -> None:
+        """Run the Process on the specified batch of DataObjects."""
+        # Get the values for each node of the batch and append them into a dict of dicts.
+
+    def run_batch(self, batch_dict: dict) -> None:
+        """Run the Process on the specified batch of DataObjects."""
+        for batch_node_id, batch_node_ids in batch_dict:
+            # The name of the higher level running this batch.
+            # The dict of the lower levels to run.
+            self._run_batch(batch_node_id, batch_node_ids)
+
+    def get_batch_dict(self, batch: list, batch_dict: dict, subgraph: nx.MultiDiGraph = nx.MultiDiGraph(), schema_ordered: list = []) -> dict:
+        """Get the batch dictionary of DataObject names. Needs to be recursive to account for the nested dicts.
+        At the lowest level, if there are multiple DataObjects, they will also be a dict, each being one key, with its value being None."""
+        if batch is None or len(batch) == 0:
+            lower_level_dict = {n: None for n in subgraph.nodes()}
+            remove_keys = [key for key in lower_level_dict.keys() if not key.startswith(schema_ordered[-1].prefix)]
+            for key in remove_keys:
+                del lower_level_dict[key]
+            batch_dict[Dataset] = lower_level_dict
+            return batch_dict
+        
+        last_batch_elem_idx_in_schema_ordered = schema_ordered.index(batch[-1])
+        if last_batch_elem_idx_in_schema_ordered < len(schema_ordered) - 1:
+            append_elems = schema_ordered[last_batch_elem_idx_in_schema_ordered + 1:]
+            batch.extend(append_elems)
+
+        def add_to_dict(node, hierarchy, current_dict):
+            # If we are at the end of the hierarchy, set the value to None
+            if len(hierarchy) == 1:
+                current_dict[node] = None
+                return
+
+            # Otherwise, get or create a sub-dictionary for this node
+            if node not in current_dict:
+                current_dict[node] = {}
+            sub_dict = current_dict[node]
+
+            # Process children nodes
+            next_level = hierarchy[1]
+            descendants = [n for n in subgraph.nodes() if n.startswith(next_level.prefix)]
+            all_keys = list(set(key for d in descendants for key in d.keys())) + descendants
+            # next_level_subgraph = subgraph.subgraph([[n] + ])   
+            for child in next_level_subgraph.successors(node):
+                if child.startswith(next_level.prefix):
+                    add_to_dict(child, hierarchy[1:], sub_dict)
+
+        # Start processing from the top-level nodes
+        top_level = batch[0]
+        for node in subgraph.nodes:
+            if node.startswith(top_level.prefix):
+                add_to_dict(node, batch, batch_dict)

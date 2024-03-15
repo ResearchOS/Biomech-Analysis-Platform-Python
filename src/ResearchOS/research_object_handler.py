@@ -238,27 +238,11 @@ class ResearchObjectHandler:
         if not vr_values:
             return
         # 1. Get hash of each value.
-        start_pickle_hash_time = time.time()
-        logging.info(f"Setting VR values for {research_object.id}.")
         vr_hashes_dict = {}
         for vr, value in vr_values.items():
-            start_pickle_time = time.time()
             data_blob = pickle.dumps(value, protocol = 4)
-            pickle_dur = time.time() - start_pickle_time
-            start_hash_time = time.time()
             data_blob_hash = sha256(data_blob).hexdigest()
-            hash_dur = time.time() - start_hash_time
             vr_hashes_dict[vr] = {"hash": data_blob_hash, "blob": data_blob}
-
-            if pickle_dur > 2 or hash_dur > 2:
-                logging.warning(f"Time to pickle {vr.id} ({vr.name}): {pickle_dur} seconds.")
-                logging.warning(f"Time to hash {vr.id} ({vr.name}): {hash_dur} seconds.")
-            else:
-                logging.debug(f"Time to pickle {vr.id} ({vr.name}): {pickle_dur} seconds.")
-                logging.debug(f"Time to hash {vr.id} ({vr.name}): {hash_dur} seconds.")
-
-            vr_values[vr] = data_blob_hash # Replace the value with the hash to relieve memory pressure.            
-        logging.debug(f"Time to pickle and hash VR output values: {time.time() - start_pickle_hash_time} seconds.")
 
         # 2. Check which VR's hashes are already in the data database so as not to duplicate a value/hash (primary key)
         pool_data = SQLiteConnectionPool(name = "data")
@@ -289,7 +273,7 @@ class ResearchObjectHandler:
             if not vr in vr_hashes_prev_exist:
                 if not action.is_redundant_params(research_object.id, "data_value_in_blob_insert", blob_pk, group_name = "robj_vr_attr_insert"):
                     action.add_sql_query(research_object.id, "data_value_in_blob_insert", blob_params, group_name = "robj_vr_attr_insert")
-            # No danger of duplicating primary keys, so no need to check if they previously existed.
+            # No danger of duplicating primary keys, so no real need to check if they previously existed. But why not?
             if not action.is_redundant_params(research_object.id, "vr_to_dobj_insert", vr_dobj_pk, group_name = "robj_vr_attr_insert"):
                 action.add_sql_query(research_object.id, "vr_to_dobj_insert", vr_dobj_params, group_name = "robj_vr_attr_insert")
             if not action.is_redundant_params(research_object.id, "vr_value_for_dobj_insert", vr_value_pk, group_name = "robj_vr_attr_insert"):

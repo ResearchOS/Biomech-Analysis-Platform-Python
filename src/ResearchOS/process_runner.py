@@ -55,6 +55,31 @@ class ProcessRunner():
             info["lineage"][prefix]["id"] = node.id
 
         return info
+    
+    def run_batch(self, batch_dict: dict = {}, G: nx.MultiDiGraph = nx.MultiDiGraph()) -> None:
+        """Get all of the input values for the batch of nodes and run the process on the whole batch.
+        """
+        # If there's only one key, then it's the batch ID.
+        if len(batch_dict) == 1 and all(isinstance(value, dict) for value in batch_dict.values()):
+            batch_id = list(batch_dict.keys())[0]
+            batch_dict = batch_dict[batch_id]
+
+        data_subclasses = DataObject.__subclasses__()
+        for key in batch_dict.keys():
+            cls = [cls for cls in data_subclasses if cls.prefix == key[0:2]][0]
+            self.node = cls(id = key)
+            run_process, vr_values_in = self.check_if_run_node(key, G) # Verify whether this node should be run or skipped, and get input variables. 
+            if run_process is False:
+                break
+            batch_dict[key] = vr_values_in
+
+        input_dict = {k: {} for k in self.process.input_vrs.keys()}
+        for k in input_dict.keys():
+            for node_id in batch_dict.keys():
+                input_dict[k][node_id] = batch_dict[node_id][k]
+
+        # Run the process on the batch of nodes.
+        self.compute_and_assign_outputs(input_dict, self.process, {})
         
 
     def run_node(self, node_id: str, G: nx.MultiDiGraph) -> None:
@@ -64,7 +89,7 @@ class ProcessRunner():
         self.node_id = node_id
         pr = self.process
         node = pr.level(id = node_id, action = self.action)
-        self.node = node        
+        self.node = node
         
         run_process, vr_values_in = self.check_if_run_node(node_id, G) # Verify whether this node should be run or skipped.
         skip_msg = None
@@ -93,27 +118,31 @@ class ProcessRunner():
     def compute_and_assign_outputs(self, vr_values_in: dict, pr: "Process", info: dict) -> None:
         """Assign the output variables to the DataObject node.
         """
-        # NOTE: For now, assuming that there is only one return statement in the entire method.        
+        # NOTE: For now, assuming that there is only one return statement in the entire method.  
+        vr_vals_in = list(vr_values_in.values())
+        if self.num_inputs > len(vr_vals_in): # There's an extra input open.
+            vr_vals_in.append(info)      
         if pr.is_matlab:
             if not self.matlab_loaded:
-                raise ValueError("MATLAB is not loaded.")
-            vr_vals_in = list(vr_values_in.values())
-            if self.num_inputs > len(vr_vals_in): # There's an extra input open.
-                vr_vals_in.append(info)
-            fcn = getattr(self.eng, pr.mfunc_name)            
-            try:
-                vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))
-            except ProcessRunner.matlab.engine.MatlabExecutionError as e:
-                if "ResearchOS:" not in e.args[0]:
-                    print("'ResearchOS:' not found in error message, ending run.")
-                    raise e
-                return # Do not assign anything, because nothing was computed!
+                raise ValueError("MATLAB is not loaded.")            
+            fcn = getattr(self.eng, pr.mfunc_name)                        
         else:
-            vr_values_out = pr.method(**vr_values_in) # Ensure that the method returns a tuple.
-        if not isinstance(vr_values_out, tuple):
-            vr_values_out = (vr_values_out,)
-        if len(vr_values_out) != len(pr.output_vrs):
-            raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
+            fcn = getattr(pr, pr.method_name)
+
+        try:
+            if self.process.batch is not None:
+                vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))
+
+            if not isinstance(vr_values_out, tuple):
+                vr_values_out = (vr_values_out,)
+            if len(vr_values_out) != len(pr.output_vrs):
+                raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
+        except ProcessRunner.matlab.engine.MatlabExecutionError as e:
+            if "ResearchOS:" not in e.args[0]:
+                print("'ResearchOS:' not found in error message, ending run.")
+                raise e
+            return # Do not assign anything, because nothing was computed!
+    
         
         # Set the output variables for this DataObject node.
         idx = -1 # For MATLAB. Requires that the args are in the proper order.
@@ -150,6 +179,8 @@ class ProcessRunner():
         """Get the lineage of the DataObject node.
         """
         anc_nodes = nx.ancestors(G, node)
+        if len(anc_nodes) == 0:
+            return [node]
         anc_nodes_list = [node for node in nx.topological_sort(G.subgraph(anc_nodes))][::-1]
         anc_nodes = []
         for idx, level in enumerate(self.schema_order[1:-1]):
@@ -174,6 +205,7 @@ class ProcessRunner():
             vr_found = False
             input_vrs_names_dict[var_name_in_code] = vr
             node_lineage_use = node_lineage
+            curr_node = node_lineage_use[0] # Always the lowest level to start.
 
             if var_name_in_code == pr.import_file_vr_name:
                 continue # Skip the import file variable.
@@ -185,21 +217,21 @@ class ProcessRunner():
                 continue   
 
             # Check if this variable should be pulled from another DataObject.
-            curr_node = [tmp_node for tmp_node in node_lineage_use if isinstance(tmp_node, vr.level)][0]
             for lookup_var_name_in_code, lookup_vr_dict in lookup_vrs.items():
                 for lookup_vr, lookup_var_names_in_code in lookup_vr_dict.items():
                     if var_name_in_code not in lookup_var_names_in_code:
                         continue
                     if lookup_var_name_in_code not in self.process.vrs_source_pr:
                         raise ValueError(f"Lookup variable {lookup_var_name_in_code} not found in Process's vrs_source_pr.")
-                    lookup_process = self.process.vrs_source_pr[lookup_var_name_in_code]
+                    lookup_process = self.process.vrs_source_pr[lookup_var_name_in_code]                    
                     lookup_dataobject_name, vr_found = curr_node.load_vr_value(lookup_vr, self.action, lookup_process, lookup_var_name_in_code)
-                    if lookup_dataobject_name is None:
+                    if lookup_dataobject_name is None:   
                         return (None, None) # The file does not exist. Skip this node.
+                    
                     # Currently assumes that all DataObjects have unique names across the entire dataset.
-                    lookup_dataobject = [node for node in G.nodes if node.name == lookup_dataobject_name][0]
+                    lookup_dataobject = [n for n in G.nodes if n.name == lookup_dataobject_name][0]
                     node_lineage_use = self.get_node_lineage(lookup_dataobject, G)
-                    curr_node = [tmp_node for tmp_node in node_lineage_use if isinstance(tmp_node, vr.level)][0] # Replace the current node if needed.
+                    curr_node = node_lineage_use[0] # Replace the current node if needed.
                     break
                     
 

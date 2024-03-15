@@ -151,7 +151,8 @@ class ResearchObject():
         """Set the attributes of the object.
         default_attrs: The default attributes of the object.
         orig_kwargs: The original kwargs passed to the object.
-        kwargs: The kwargs to be used to set the attributes. A combination of the default attributes and the original kwargs."""
+        kwargs: The kwargs to be used to set the attributes. A combination of the default attributes and the original kwargs.
+        pr_id: Indicates that I am setting VR attributes."""
         del_keys = []
         if self._initialized:
             for key in kwargs:
