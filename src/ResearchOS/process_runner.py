@@ -56,9 +56,12 @@ class ProcessRunner():
 
         return info
     
-    def run_batch(self, batch_dict: dict = {}, G: nx.MultiDiGraph = nx.MultiDiGraph()) -> None:
+    def run_batch(self, batch_id: str, batch_value: dict = {}, G: nx.MultiDiGraph = nx.MultiDiGraph()) -> None:
         """Get all of the input values for the batch of nodes and run the process on the whole batch.
         """
+        if batch_value is None and self.process.batch is None:
+            self.run_node(batch_id, G)
+            return
         # If there's only one key, then it's the batch ID.
         if len(batch_dict) == 1 and all(isinstance(value, dict) for value in batch_dict.values()):
             batch_id = list(batch_dict.keys())[0]
@@ -104,7 +107,9 @@ class ProcessRunner():
         node_info = self.get_node_info(node_id)
         run_msg = f"Running {node.name} ({node.id})."
         print(run_msg)
-        self.compute_and_assign_outputs(vr_values_in, pr, node_info)
+        is_batch = pr.batch is not None
+        assert is_batch == False
+        self.compute_and_assign_outputs(vr_values_in, pr, node_info, is_batch)
 
         self.action.commit = True
         self.action.exec = True
@@ -115,35 +120,38 @@ class ProcessRunner():
         logging.info(done_msg)
         print(done_msg)
 
-    def compute_and_assign_outputs(self, vr_values_in: dict, pr: "Process", info: dict) -> None:
+    def compute_and_assign_outputs(self, vr_values_in: dict, pr: "Process", info: dict, is_batch: bool = False, ) -> None:
         """Assign the output variables to the DataObject node.
         """
         # NOTE: For now, assuming that there is only one return statement in the entire method.  
-        vr_vals_in = list(vr_values_in.values())
-        if self.num_inputs > len(vr_vals_in): # There's an extra input open.
-            vr_vals_in.append(info)      
         if pr.is_matlab:
             if not self.matlab_loaded:
                 raise ValueError("MATLAB is not loaded.")            
             fcn = getattr(self.eng, pr.mfunc_name)                        
         else:
-            fcn = getattr(pr, pr.method_name)
+            fcn = getattr(pr, pr.method)
+
+        if not is_batch:
+            vr_vals_in = list(vr_values_in.values())
+            if self.num_inputs > len(vr_vals_in): # There's an extra input open.
+                vr_vals_in.append(info)
+        else:
+            # Convert the vr_values_in to the right format.
+            pass
 
         try:
-            if self.process.batch is not None:
-                vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))
-
-            if not isinstance(vr_values_out, tuple):
-                vr_values_out = (vr_values_out,)
-            if len(vr_values_out) != len(pr.output_vrs):
-                raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
+            vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))
         except ProcessRunner.matlab.engine.MatlabExecutionError as e:
             if "ResearchOS:" not in e.args[0]:
                 print("'ResearchOS:' not found in error message, ending run.")
                 raise e
             return # Do not assign anything, because nothing was computed!
-    
-        
+                
+        if not isinstance(vr_values_out, tuple):
+            vr_values_out = (vr_values_out,)
+        if len(vr_values_out) != len(pr.output_vrs):
+            raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
+            
         # Set the output variables for this DataObject node.
         idx = -1 # For MATLAB. Requires that the args are in the proper order.
         kwargs_dict = {}
@@ -156,9 +164,7 @@ class ProcessRunner():
             # Search through the variable to look for any matlab numeric types and convert them to numpy arrays.
             kwargs_dict[vr] = convert_var(vr_values_out[idx], ProcessRunner.matlab_numeric_types) # Convert any matlab.double to numpy arrays. (This is a recursive function.)
 
-        vr_values_out = []
         self.node._setattrs({}, kwargs_dict, action = self.action, pr_id = self.process.id)
-        kwargs_dict = {}    
         
     def check_if_run_node(self, node_id: str, G: nx.MultiDiGraph) -> bool:
         """Check whether to run the Process on the given node ID. If False, skip. If True, run.

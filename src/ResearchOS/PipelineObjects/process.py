@@ -517,18 +517,12 @@ class Process(PipelineObject):
         start_msg = f"Running {self.mfunc_name} on {self.level.__name__}s."
         print(start_msg)
         action = Action(name = start_msg)  
-        ds = Dataset(id = self.get_dataset_id(), action = action)   
-        ds_defaults = DefaultAttrs(ds).default_attrs
+        ds = Dataset(id = self.get_dataset_id(), action = action)
         # Validate the dataset's addresses.
-        addresses_valid = ds.validate_addresses(ds.addresses, action, ds_defaults["addresses"])        
-        if addresses_valid is False:
-            raise ValueError("The dataset's addresses are not valid.")
 
-        defaults = DefaultAttrs(self).default_attrs
-        default_attrs = defaults
+        default_attrs = DefaultAttrs(self).default_attrs        
         
-        # 1. Validate that the level & method have been properly set.
-        self.validate_method(self.method, action, default = default_attrs["method"])
+        # 1. Validate that the level has been properly set.        
         self.validate_level(self.level, action, default = default_attrs["level"])
 
         # TODO: Fix this to work with MATLAB.
@@ -550,6 +544,8 @@ class Process(PipelineObject):
             self.validate_mfolder(self.mfolder, action, default = default_attrs["mfolder"])
             self.validate_import_file_ext(self.import_file_ext, action, default = default_attrs["import_file_ext"])
             self.validate_import_file_vr_name(self.import_file_vr_name, action, default = default_attrs["import_file_vr_name"])
+        else:
+            self.validate_method(self.method, action, default = default_attrs["method"])
 
         schema_id = self.get_current_schema_id(ds.id)
 
@@ -591,7 +587,7 @@ class Process(PipelineObject):
         params = (name_attr_id, f"{self.level.prefix}%")
         level_nodes_ids_names = action.conn.cursor().execute(sqlquery, params).fetchall()
         level_nodes_ids_names.sort(key = lambda x: x[1])
-        level_node_ids_sorted = [row[0] for row in level_nodes_ids_names if row[0] in level_node_ids]
+        # level_node_ids_sorted = [row[0] for row in level_nodes_ids_names if row[0] in level_node_ids]
         # Iterate over each data object at this level (e.g. all ros.Trial objects in the subset.)
         schema = ds.schema
         schema_graph = nx.MultiDiGraph(schema)                
@@ -620,21 +616,21 @@ class Process(PipelineObject):
         G = ProcessRunner.dataset_object_graph
 
         # Set the vrs_source_prs for any var that it wasn't set for.
-        add_vr_names_source_prs = [key for key in self.input_vrs.keys() if key not in self.vrs_source_pr.keys()]        
-        add_vrs_source_prs = [vr.id for name_in_code, vr in self.input_vrs.items() if name_in_code in add_vr_names_source_prs]
-        sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({}) AND schema_id = ?".format(",".join(["?" for _ in add_vrs_source_prs]))
-        sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
-        params = tuple(add_vrs_source_prs + [schema_id])
-        vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        vrs_source_prs = {}
-        for vr_name_in_code, vr in self.input_vrs.items():
-            for vr_pr_id in vr_pr_ids_result:
-                if vr.id == vr_pr_id[0]:
-                    # Same order as input variables.
-                    vrs_source_prs[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
-
-        default_attrs = DefaultAttrs(self).default_attrs
-        self._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action = action, pr_id = self.id)        
+        add_vr_names_source_prs = [key for key in self.input_vrs.keys() if key not in self.vrs_source_pr.keys()]
+        if len(add_vr_names_source_prs) > 0:
+            add_vrs_source_prs = [vr.id for name_in_code, vr in self.input_vrs.items() if name_in_code in add_vr_names_source_prs]
+            sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({}) AND schema_id = ?".format(",".join(["?" for _ in add_vrs_source_prs]))
+            sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
+            params = tuple(add_vrs_source_prs + [schema_id])
+            vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+            vrs_source_prs = {}
+            for vr_name_in_code, vr in self.input_vrs.items():
+                for vr_pr_id in vr_pr_ids_result:
+                    if vr.id == vr_pr_id[0]:
+                        # Same order as input variables.
+                        vrs_source_prs[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+                        
+            self._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action = action, pr_id = self.id)        
 
         schema_ordered = [n for n in nx.topological_sort(schema_graph)]
         batch_graph = self.get_batch_graph(self.batch, subset_graph, schema_ordered)
@@ -642,11 +638,11 @@ class Process(PipelineObject):
         # Parse the MultiDiGraph to get the batches to run.
         batches_dict_to_run = self.get_dict_of_batches(batch_graph, ds.id)
 
-        for batch_dict in batches_dict_to_run:
-            process_runner.run_batch(batch_dict, G)
-
-        for node_id in level_node_ids_sorted:            
-            process_runner.run_node(node_id, G)
+        # Dict of dicts, where each top-level dict is a batch to run.
+        leaf_nodes = [n for n in batch_graph.nodes() if batch_graph.out_degree(n) == 0]
+        process_runner.depth = nx.shortest_path_length(batch_graph, source = ds.id, target = leaf_nodes[0])
+        for batch_id, batch_value in batches_dict_to_run.items():
+            process_runner.run_batch(batch_id, batch_value, G)
 
         if process_runner.matlab_loaded and self.is_matlab:
             ProcessRunner.eng.rmpath(self.mfolder)
@@ -658,8 +654,9 @@ class Process(PipelineObject):
             pool.return_connection(action.conn)
 
     def get_dict_of_batches(self, graph: nx.MultiDiGraph, start_node: str) -> list:
-        """Split the big dict of all the batches with node ID's into a list of dicts where each element will be passed into the "run_batch" function."""
-        return {succ: self.get_dict_of_batches(graph, succ) for succ in graph.successors(start_node)}
+        """Split the big dict of all the batches with node ID's into a list of dicts where each element will be passed into the "run_batch" function.
+        Value is None if the node has no successors."""
+        return {succ: None if not list(graph.successors(succ)) else self.get_dict_of_batches(graph, succ) for succ in graph.successors(start_node)}
 
     def _run_batch(self, batch: dict) -> None:
         """Run the Process on the specified batch of DataObjects."""
@@ -676,15 +673,18 @@ class Process(PipelineObject):
         """Get the batch dictionary of DataObject names. Needs to be recursive to account for the nested dicts.
         At the lowest level, if there are multiple DataObjects, they will also be a dict, each being one key, with its value being None.
         Note that the Dataset node should always be in the subgraph."""    
-        if batch is None or len(batch) == 0:            
-            batch = schema_ordered[1:-1]
+                
+        if batch is not None and len(batch) == 0:
+            batch = [Dataset, schema_ordered[-1]]
+        if batch is None:
+            batch = [Dataset]
         
         # Use the fact that the subgraph is a NetworkX MultiDiGraph to generate the list of nodes that are in each batch.
         # I think we can rely on the fact that the NetworkX MultiDiGraph is a tree where each branch is of equal length.
         # This is because the schema is a tree, and the subgraph is a subgraph of the schema.
         batch_graph = nx.MultiDiGraph()
         start_node = [n for n in subgraph.nodes() if n.startswith(Dataset.prefix)][0]
-        first_last_types = [schema_ordered[0], schema_ordered[-1]]
+        # first_last_types = [schema_ordered[0], schema_ordered[-1]]
         # Get lowest Process depth from vrs_source_pr
         lowest_level_idx = -1
         for pr in self.vrs_source_pr.values():
@@ -692,13 +692,13 @@ class Process(PipelineObject):
                 level_idx = schema_ordered.index(pr.level)
                 if level_idx > lowest_level_idx:
                     lowest_level_idx = level_idx
-                    # lowest_level = pr.level
-        schema_ordered = schema_ordered[0:lowest_level_idx+1] # +1 to include the lowest level idx.
-        all_ignore_types = first_last_types
-        removal_depths = [schema_ordered.index(b) for b in batch if b not in all_ignore_types] # Will never cause the Dataset node to be removed because of the +1
+                    lowest_level = pr.level
+        if lowest_level not in batch:
+            batch = batch + schema_ordered[lowest_level_idx:]
+        keep_depths = [schema_ordered.index(b) for b in batch] 
         for node in subgraph:
             depth = nx.shortest_path_length(subgraph, source = start_node, target = node) # Dataset node will never be able to remove itself from the graph.
-            if depth not in removal_depths:
+            if depth in keep_depths:
                 continue
             predecessors = subgraph.predecessors(node) # There will always be predecessors because Dataset never reaches here.
             successors = subgraph.successors(node) # There will always be successors because the lowest level never reaches here.
@@ -706,36 +706,3 @@ class Process(PipelineObject):
                 for succ in successors:
                     batch_graph.add_edge(pred, succ)
         return batch_graph
-
-
-        
-        last_batch_elem_idx_in_schema_ordered = schema_ordered.index(batch[-1])
-        if last_batch_elem_idx_in_schema_ordered < len(schema_ordered) - 1:
-            append_elems = schema_ordered[last_batch_elem_idx_in_schema_ordered + 1:]
-            batch.extend(append_elems)
-
-        def add_to_dict(node, hierarchy, current_dict):
-            # If we are at the end of the hierarchy, set the value to None
-            if len(hierarchy) == 1:
-                current_dict[node] = None
-                return
-
-            # Otherwise, get or create a sub-dictionary for this node
-            if node not in current_dict:
-                current_dict[node] = {}
-            sub_dict = current_dict[node]
-
-            # Process children nodes
-            next_level = hierarchy[1]
-            descendants = [n for n in subgraph.nodes() if n.startswith(next_level.prefix)]
-            all_keys = list(set(key for d in descendants for key in d.keys())) + descendants
-            # next_level_subgraph = subgraph.subgraph([[n] + ])   
-            for child in next_level_subgraph.successors(node):
-                if child.startswith(next_level.prefix):
-                    add_to_dict(child, hierarchy[1:], sub_dict)
-
-        # Start processing from the top-level nodes
-        top_level = batch[0]
-        for node in subgraph.nodes:
-            if node.startswith(top_level.prefix):
-                add_to_dict(node, batch, batch_dict)

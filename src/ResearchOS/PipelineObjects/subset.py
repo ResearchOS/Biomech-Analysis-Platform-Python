@@ -101,14 +101,14 @@ class Subset(PipelineObject):
         schema_id = self.get_current_schema_id(ds.id)
 
         # 2. For each node_id in the address_graph, check if it meets the conditions.
-        nodes_for_subgraph = []
+        nodes_for_subgraph = [ds.id]
         G = ds.get_addresses_graph()
         sorted_nodes = list(nx.topological_sort(G))
         subclasses = DataObject.__subclasses__()
 
         # Loop through all conditions in the conditions dict. Handle when the condition is a list or a dict.
         conditions_list = []
-        numbered_dict = self.extract_and_replace_lists(self.conditions, conditions_list)
+        self.extract_and_replace_lists(self.conditions, conditions_list)
         vr_ids = [cond[0] for cond in conditions_list]
 
         # Get the hashes
@@ -139,7 +139,6 @@ class Subset(PipelineObject):
                 vr_values[row[2]][row[1]] = None
             blob_hash_idx = [x[1] for x in values].index(row[0])
             vr_values[row[2]][row[1]] = values[blob_hash_idx][0]
-
 
         for node_id in sorted_nodes:
             if not self.meets_conditions(node_id, self.conditions, G, vr_values, action):
