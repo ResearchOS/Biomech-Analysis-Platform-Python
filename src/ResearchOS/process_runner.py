@@ -252,7 +252,7 @@ class ProcessRunner():
                     if lookup_var_name_in_code not in self.process.vrs_source_pr:
                         raise ValueError(f"Lookup variable {lookup_var_name_in_code} not found in Process's vrs_source_pr.")
                     lookup_process = self.process.vrs_source_pr[lookup_var_name_in_code]                    
-                    lookup_dataobject_name, vr_found = curr_node.load_vr_value(lookup_vr, self.action, lookup_process, lookup_var_name_in_code)
+                    lookup_dataobject_name, vr_found = curr_node.load_vr_value(lookup_vr, self.action, lookup_process, lookup_var_name_in_code, node_lineage_use)
                     if lookup_dataobject_name is None:   
                         return (None, None) # The file does not exist. Skip this node.
                     

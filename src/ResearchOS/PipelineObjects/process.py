@@ -613,7 +613,7 @@ class Process(PipelineObject):
             sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
             params = tuple(add_vrs_source_prs + [schema_id])
             vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-            vrs_source_prs = {}
+            vrs_source_prs = self.vrs_source_pr
             for vr_name_in_code, vr in self.input_vrs.items():
                 for vr_pr_id in vr_pr_ids_result:
                     if vr.id == vr_pr_id[0]:
@@ -671,6 +671,7 @@ class Process(PipelineObject):
         else:
             batches_dict_to_run = {node: None for node in level_node_ids_sorted}
             process_runner.depth = 0
+            lowest_level = self.level
         process_runner.lowest_level = lowest_level
         if self.batch == []:
             highest_level = Dataset

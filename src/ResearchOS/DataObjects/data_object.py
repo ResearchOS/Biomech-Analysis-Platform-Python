@@ -48,6 +48,7 @@ class DataObject(ResearchObject):
         Returns:
             Any: The value of the VR for this data object.
         """
+        from ResearchOS.PipelineObjects.process import Process
         # 1. Check that the data object & VR are currently associated. If not, throw an error.
         cursor = action.conn.cursor()
         self_idx = node_lineage.index(self)
@@ -71,8 +72,11 @@ class DataObject(ResearchObject):
             raise ValueError(f"The VR {vr.name} is not currently associated with the data object {node.id}.")
         
         # 2. Load the data hash from the database.
-        pr = process.vrs_source_pr[vr_name_in_code]
-        if not isinstance(process.vrs_source_pr[vr_name_in_code], list):
+        if isinstance(process, Process):
+            pr = process.vrs_source_pr[vr_name_in_code]
+        else:
+            pr = process
+        if not isinstance(pr, list):
             pr = [pr]
         sqlquery_raw = "SELECT data_blob_hash, pr_id FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND pr_id IN ({})".format(", ".join(["?" for _ in pr]))
         params = (node.id, vr.id) + tuple([pr_elem.id for pr_elem in pr])
