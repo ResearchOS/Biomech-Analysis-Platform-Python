@@ -3,6 +3,7 @@ import logging, time
 import os
 from datetime import datetime, timezone
 import json
+import copy
 
 import networkx as nx
 import numpy as np
@@ -56,33 +57,52 @@ class ProcessRunner():
 
         return info
     
-    def run_batch(self, batch_id: str, batch_value: dict = {}, G: nx.MultiDiGraph = nx.MultiDiGraph()) -> None:
+    def run_batch(self, batch_id: str, batch_dict: dict = {}, G: nx.MultiDiGraph = nx.MultiDiGraph(), batch_graph: nx.MultiDiGraph = nx.MultiDiGraph) -> None:
         """Get all of the input values for the batch of nodes and run the process on the whole batch.
         """
-        if batch_value is None and self.process.batch is None:
+        if self.process.batch is None:
             self.run_node(batch_id, G)
             return
-        # If there's only one key, then it's the batch ID.
-        if len(batch_dict) == 1 and all(isinstance(value, dict) for value in batch_dict.values()):
-            batch_id = list(batch_dict.keys())[0]
-            batch_dict = batch_dict[batch_id]
+        
+        lowest_nodes = [node for node in batch_graph.nodes if node.startswith(self.lowest_level.prefix)]
 
-        data_subclasses = DataObject.__subclasses__()
-        for key in batch_dict.keys():
-            cls = [cls for cls in data_subclasses if cls.prefix == key[0:2]][0]
-            self.node = cls(id = key)
-            run_process, vr_values_in = self.check_if_run_node(key, G) # Verify whether this node should be run or skipped, and get input variables. 
-            if run_process is False:
-                break
-            batch_dict[key] = vr_values_in
+        for node in lowest_nodes:
+            self.node_id = node
+            self.node = self.lowest_level(id = node)
+            run_process, vr_values_in = self.check_if_run_node(node, G)
+            if not run_process:
+                return False
+            for vr_name_in_code, vr_val in vr_values_in.items():
+                batch_graph.nodes[node][vr_name_in_code] = vr_val
 
-        input_dict = {k: {} for k in self.process.input_vrs.keys()}
-        for k in input_dict.keys():
-            for node_id in batch_dict.keys():
-                input_dict[k][node_id] = batch_dict[node_id][k]
+        # Now that all the input VR's have been gotten, change the node to the one to save the output VR's to.
+        self.node = self.highest_level(id = batch_id)
+                
+        def process_dict(self: ProcessRunner, batch_graph, input_dict, G, vr_name_in_code: str = None):
+            all_keys = list(input_dict.keys())
+            is_var_name_in_code = all_keys == list(self.process.input_vrs.keys())
+            do_recurse = is_var_name_in_code or not any([all_keys[i].startswith(self.lowest_level.prefix) for i in range(len(all_keys))])
+            if do_recurse and isinstance(input_dict, dict):
+                for key, value in input_dict.items():
+                    if not is_var_name_in_code:
+                        key = None
+                    process_dict(self, batch_graph, value, G, key)
+                return
+                        
+            for dataobj_id in all_keys:
+                input_dict[dataobj_id] = batch_graph.nodes[dataobj_id][vr_name_in_code]
+
+
+        input_dict = {node: copy.deepcopy(batch_dict) for node in self.process.input_vrs.keys()}
+        process_dict(self, batch_graph, input_dict, G)
 
         # Run the process on the batch of nodes.
-        self.compute_and_assign_outputs(input_dict, self.process, {})
+        is_batch = self.process.batch is not None
+        self.compute_and_assign_outputs(input_dict, self.process, {}, is_batch)
+
+        self.action.commit = True
+        self.action.exec = True
+        self.action.execute(return_conn = False) 
         
 
     def run_node(self, node_id: str, G: nx.MultiDiGraph) -> None:
@@ -120,7 +140,7 @@ class ProcessRunner():
         logging.info(done_msg)
         print(done_msg)
 
-    def compute_and_assign_outputs(self, vr_values_in: dict, pr: "Process", info: dict, is_batch: bool = False, ) -> None:
+    def compute_and_assign_outputs(self, vr_values_in: dict, pr: "Process", info: dict = {}, is_batch: bool = False) -> None:
         """Assign the output variables to the DataObject node.
         """
         # NOTE: For now, assuming that there is only one return statement in the entire method.  
@@ -137,7 +157,9 @@ class ProcessRunner():
                 vr_vals_in.append(info)
         else:
             # Convert the vr_values_in to the right format.
-            pass
+            vr_vals_in = []
+            for vr_name in vr_values_in:
+                vr_vals_in.append(vr_values_in[vr_name])
 
         try:
             vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))
@@ -249,9 +271,8 @@ class ProcessRunner():
                 vr_values_in[var_name_in_code] = getattr(data_object, dobj_attr_name)
                 continue                                 
 
-            # Not hard-coded input variable.
-            
-            value, vr_found = curr_node.load_vr_value(vr, self.action, self.process, var_name_in_code)
+            # Not hard-coded input variable.            
+            value, vr_found = curr_node.load_vr_value(vr, self.action, self.process, var_name_in_code, node_lineage_use)
             if value is None and not vr_found:
                 return (None, None)
             vr_values_in[var_name_in_code] = value

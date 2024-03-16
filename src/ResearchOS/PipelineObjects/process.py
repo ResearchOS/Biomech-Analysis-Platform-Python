@@ -579,23 +579,13 @@ class Process(PipelineObject):
         # Get the subset of the data.
         subset = Subset(id = self.subset_id, action = action)
         subset_graph = subset.get_subset(action)
-
-        level_node_ids = [node for node in subset_graph if node.startswith(self.level.prefix)]
-        name_attr_id = ResearchObjectHandler._get_attr_id("name")
-        sqlquery_raw = "SELECT object_id, attr_value FROM simple_attributes WHERE attr_id = ? AND object_id LIKE ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["object_id"], single = True, user = True, computer = False)
-        params = (name_attr_id, f"{self.level.prefix}%")
-        level_nodes_ids_names = action.conn.cursor().execute(sqlquery, params).fetchall()
-        level_nodes_ids_names.sort(key = lambda x: x[1])
-        # level_node_ids_sorted = [row[0] for row in level_nodes_ids_names if row[0] in level_node_ids]
-        # Iterate over each data object at this level (e.g. all ros.Trial objects in the subset.)
+                
         schema = ds.schema
         schema_graph = nx.MultiDiGraph(schema)                
         
         pool = SQLiteConnectionPool()
         process_runner = ProcessRunner(self, action, schema_id, schema_graph, ds, subset_graph, matlab_loaded, ProcessRunner.eng, force_redo)
         process_runner.matlab_double_type = matlab_double_type
-        # process_runner.matlab_numeric_types = matlab_numeric_types  
 
         process_runner.matlab_loaded = True
         if process_runner.matlab is None:
@@ -629,20 +619,71 @@ class Process(PipelineObject):
                     if vr.id == vr_pr_id[0]:
                         # Same order as input variables.
                         vrs_source_prs[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
-                        
-            self._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action = action, pr_id = self.id)        
 
+            self._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action = action, pr_id = self.id)     
+
+        # Get the lowest level for this batch.
         schema_ordered = [n for n in nx.topological_sort(schema_graph)]
-        batch_graph = self.get_batch_graph(self.batch, subset_graph, schema_ordered)
+        lowest_level_idx = -1
+        for pr in self.vrs_source_pr.values():
+            try:
+                level = pr.level                
+            except: # For Logsheet, defer to current PR level.
+                level = self.level
+            level_idx = schema_ordered.index(level)
+            if level_idx <= lowest_level_idx:
+                continue
+            lowest_level_idx = level_idx
+            lowest_level = level
+            if lowest_level_idx == len(schema_ordered) - 1:
+                break
 
-        # Parse the MultiDiGraph to get the batches to run.
-        batches_dict_to_run = self.get_dict_of_batches(batch_graph, ds.id)
+        level_node_ids = [node for node in subset_graph if node.startswith(self.level.prefix)]
+        name_attr_id = ResearchObjectHandler._get_attr_id("name")
+        sqlquery_raw = "SELECT object_id, attr_value FROM simple_attributes WHERE attr_id = ? AND object_id LIKE ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["object_id"], single = True, user = True, computer = False)
+        params = (name_attr_id, f"{self.level.prefix}%")
+        level_nodes_ids_names = action.conn.cursor().execute(sqlquery, params).fetchall()
+        level_nodes_ids_names.sort(key = lambda x: x[1])
+        level_node_ids_sorted = [row[0] for row in level_nodes_ids_names if row[0] in level_node_ids]
+            
+        if self.batch is not None:
+            all_batches_graph = self.get_batch_graph(self.batch, subset_graph, schema_ordered, lowest_level)
 
-        # Dict of dicts, where each top-level dict is a batch to run.
-        leaf_nodes = [n for n in batch_graph.nodes() if batch_graph.out_degree(n) == 0]
-        process_runner.depth = nx.shortest_path_length(batch_graph, source = ds.id, target = leaf_nodes[0])
+            # Parse the MultiDiGraph to get the batches to run.
+            if self.batch is None or len(self.batch) == 0:
+                level = Dataset
+            else:
+                level = self.batch[0]
+            batches_dict_to_run = nx.to_dict_of_dicts(all_batches_graph)
+            del_keys = []        
+            for key in batches_dict_to_run.keys():
+                if not key.startswith(level.prefix):
+                    del_keys.append(key)
+            for key in del_keys:
+                del batches_dict_to_run[key]
+
+            # Dict of dicts, where each top-level dict is a batch to run.
+            # Get a top level node.
+            top_level_node = [n for n in all_batches_graph.nodes() if all_batches_graph.in_degree(n) == 0][0]
+            descendant = list(nx.descendants(all_batches_graph, top_level_node))[0]
+            process_runner.depth = nx.shortest_path_length(all_batches_graph, top_level_node, descendant)
+        else:
+            batches_dict_to_run = {node: None for node in level_node_ids_sorted}
+            process_runner.depth = 0
+        process_runner.lowest_level = lowest_level
+        if self.batch == []:
+            highest_level = Dataset
+        elif self.batch is not None:
+            highest_level = self.batch[0]
+        else:
+            highest_level = None
+        process_runner.highest_level = highest_level
+        curr_batch_graph = nx.MultiDiGraph()
         for batch_id, batch_value in batches_dict_to_run.items():
-            process_runner.run_batch(batch_id, batch_value, G)
+            if self.batch is not None:
+                curr_batch_graph = nx.MultiDiGraph(all_batches_graph.subgraph([batch_id] + list(nx.descendants(all_batches_graph, batch_id))))
+            process_runner.run_batch(batch_id, batch_value, G, curr_batch_graph)
 
         if process_runner.matlab_loaded and self.is_matlab:
             ProcessRunner.eng.rmpath(self.mfolder)
@@ -658,51 +699,32 @@ class Process(PipelineObject):
         Value is None if the node has no successors."""
         return {succ: None if not list(graph.successors(succ)) else self.get_dict_of_batches(graph, succ) for succ in graph.successors(start_node)}
 
-    def _run_batch(self, batch: dict) -> None:
-        """Run the Process on the specified batch of DataObjects."""
-        # Get the values for each node of the batch and append them into a dict of dicts.
-
-    def run_batch(self, batch_dict: dict) -> None:
-        """Run the Process on the specified batch of DataObjects."""
-        for batch_node_id, batch_node_ids in batch_dict:
-            # The name of the higher level running this batch.
-            # The dict of the lower levels to run.
-            self._run_batch(batch_node_id, batch_node_ids)
-
-    def get_batch_graph(self, batch: list, subgraph: nx.MultiDiGraph = nx.MultiDiGraph(), schema_ordered: list = []) -> dict:
+    def get_batch_graph(self, batch: list, subgraph: nx.MultiDiGraph = nx.MultiDiGraph(), schema_ordered: list = [], lowest_level: type = None) -> dict:
         """Get the batch dictionary of DataObject names. Needs to be recursive to account for the nested dicts.
         At the lowest level, if there are multiple DataObjects, they will also be a dict, each being one key, with its value being None.
-        Note that the Dataset node should always be in the subgraph."""    
-                
-        if batch is not None and len(batch) == 0:
-            batch = [Dataset, schema_ordered[-1]]
-        if batch is None:
-            batch = [Dataset]
-        
-        # Use the fact that the subgraph is a NetworkX MultiDiGraph to generate the list of nodes that are in each batch.
-        # I think we can rely on the fact that the NetworkX MultiDiGraph is a tree where each branch is of equal length.
-        # This is because the schema is a tree, and the subgraph is a subgraph of the schema.
+        Note that the Dataset node should always be in the subgraph."""
         batch_graph = nx.MultiDiGraph()
-        start_node = [n for n in subgraph.nodes() if n.startswith(Dataset.prefix)][0]
-        # first_last_types = [schema_ordered[0], schema_ordered[-1]]
         # Get lowest Process depth from vrs_source_pr
-        lowest_level_idx = -1
-        for pr in self.vrs_source_pr.values():
-            if pr is not None:
-                level_idx = schema_ordered.index(pr.level)
-                if level_idx > lowest_level_idx:
-                    lowest_level_idx = level_idx
-                    lowest_level = pr.level
+        lowest_level_idx = schema_ordered.index(lowest_level)
+
+        if batch is None or len(batch) == 0:
+            batch = [Dataset]
         if lowest_level not in batch:
             batch = batch + schema_ordered[lowest_level_idx:]
-        keep_depths = [schema_ordered.index(b) for b in batch] 
-        for node in subgraph:
-            depth = nx.shortest_path_length(subgraph, source = start_node, target = node) # Dataset node will never be able to remove itself from the graph.
-            if depth in keep_depths:
-                continue
-            predecessors = subgraph.predecessors(node) # There will always be predecessors because Dataset never reaches here.
-            successors = subgraph.successors(node) # There will always be successors because the lowest level never reaches here.
-            for pred in predecessors:
-                for succ in successors:
-                    batch_graph.add_edge(pred, succ)
+
+        nodes = [n for b in batch for n in subgraph.nodes() if n.startswith(b.prefix)]
+        batch_graph = nx.MultiDiGraph()
+        batch_graph.add_nodes_from(nodes)
+
+        # Add the missing edges to the batch graph.
+        all_nodes_dict = {cls: [n for n in subgraph.nodes() if n.startswith(cls.prefix)] for cls in batch}
+        for idx in range(len(batch) - 1):
+            top_level = batch[idx]
+            bottom_level = batch[idx + 1]
+            top_level_nodes = all_nodes_dict[top_level]
+            bottom_level_nodes = all_nodes_dict[bottom_level]
+            for n in top_level_nodes:
+                for m in bottom_level_nodes:
+                    if nx.has_path(subgraph, n, m):
+                        batch_graph.add_edge(n, m)
         return batch_graph

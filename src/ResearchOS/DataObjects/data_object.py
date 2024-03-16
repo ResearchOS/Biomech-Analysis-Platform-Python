@@ -37,7 +37,7 @@ class DataObject(ResearchObject):
         action.execute()
         del self.__dict__[name]
 
-    def load_vr_value(self, vr: "Variable", action: Action, process: "Process" = None, vr_name_in_code: str = None) -> Any:
+    def load_vr_value(self, vr: "Variable", action: Action, process: "Process" = None, vr_name_in_code: str = None, node_lineage: list = []) -> Any:
         """Load the value of a VR from the database for this data object.
 
         Args:
@@ -50,39 +50,38 @@ class DataObject(ResearchObject):
         """
         # 1. Check that the data object & VR are currently associated. If not, throw an error.
         cursor = action.conn.cursor()
-        if isinstance(vr, Variable):
-            sqlquery_raw = "SELECT action_id, is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id = ?"
-            sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False)
-            params = (self.id, vr.id)            
-            result = cursor.execute(sqlquery, params).fetchall()
-        else:
-            # TODO: Handle dict of {type: attr_name}
-            # If the value is a str, then it's a builtin attribute.
-            # Otherwise, if the value is a Variable, then it's a Variable and need to load its value. using self.load_vr_value()
-            pass
+        self_idx = node_lineage.index(self)
+        for node in node_lineage[self_idx:]:
+            if isinstance(vr, Variable):
+                sqlquery_raw = "SELECT action_id, is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id = ?"
+                sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False)
+                params = (node.id, vr.id)            
+                result = cursor.execute(sqlquery, params).fetchall()
+                if len(result) > 0:
+                    break
+            else:
+                # TODO: Handle dict of {type: attr_name}
+                # If the value is a str, then it's a builtin attribute.
+                # Otherwise, if the value is a Variable, then it's a Variable and need to load its value. using self.load_vr_value()
+                pass
         if len(result) == 0:
             return (None, False) # If that variable does not exist for this dataobject, skip processing this dataobject.
         is_active = result[0][1]
         if is_active == 0:
-            raise ValueError(f"The VR {vr.name} is not currently associated with the data object {self.id}.")
+            raise ValueError(f"The VR {vr.name} is not currently associated with the data object {node.id}.")
         
         # 2. Load the data hash from the database.
-        if not process or ("vrs_source_pr" not in process.__dict__ or process.vrs_source_pr[vr_name_in_code] is None):
-            sqlquery_raw = "SELECT data_blob_hash, pr_id FROM data_values WHERE dataobject_id = ? AND vr_id = ?"
-            params = (self.id, vr.id)
-        else:
-            # Get the most recent VR value that was set by the process.
-            pr = process.vrs_source_pr[vr_name_in_code]
-            if not isinstance(process.vrs_source_pr[vr_name_in_code], list):
-                pr = [pr]
-            sqlquery_raw = "SELECT data_blob_hash, pr_id FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND pr_id IN ({})".format(", ".join(["?" for _ in pr]))
-            params = (self.id, vr.id) + tuple([pr_elem.id for pr_elem in pr])
+        pr = process.vrs_source_pr[vr_name_in_code]
+        if not isinstance(process.vrs_source_pr[vr_name_in_code], list):
+            pr = [pr]
+        sqlquery_raw = "SELECT data_blob_hash, pr_id FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND pr_id IN ({})".format(", ".join(["?" for _ in pr]))
+        params = (node.id, vr.id) + tuple([pr_elem.id for pr_elem in pr])
         sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False)        
         result = cursor.execute(sqlquery, params).fetchall()
         if len(result) == 0:
-            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {self.id} from Process {process.id}.")
+            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {node.id} from Process {process.id}.")
         if len(result) > 1:
-            raise ValueError(f"The VR {vr.name} has multiple values set for the data object {self.id} from Process {process.id}.")
+            raise ValueError(f"The VR {vr.name} has multiple values set for the data object {node.id} from Process {process.id}.")
         pr_ids = [x[1] for x in result]
         pr_idx = None
         for pr_id in pr_ids:
@@ -94,7 +93,7 @@ class DataObject(ResearchObject):
             if pr_idx is not None:
                 break
         if pr_idx is None:
-            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {self.id} from any process provided.")
+            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {node.id} from any process provided.")
         data_hash = result[pr_idx][0]
 
         # 3. Get the value from the data_values table.        
