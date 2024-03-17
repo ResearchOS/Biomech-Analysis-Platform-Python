@@ -10,17 +10,16 @@ from ResearchOS.research_object import ResearchObject
 from ResearchOS.variable import Variable
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.DataObjects.data_object import DataObject
-from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.PipelineObjects.logsheet import Logsheet
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.code_inspector import get_returned_variable_names, get_input_variable_names
 from ResearchOS.action import Action
-from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.process_runner import ProcessRunner
 from ResearchOS.Digraph.rodigraph import ResearchObjectDigraph
+# from ResearchOS.code_runner import CodeRunner
 
 all_default_attrs = {}
 # For MATLAB
@@ -513,173 +512,12 @@ class Process(PipelineObject):
 
     def run(self, force_redo: bool = False) -> None:
         """Execute the attached method.
-        kwargs are the input VR's."""
+        kwargs are the input VR's."""        
         start_msg = f"Running {self.mfunc_name} on {self.level.__name__}s."
         print(start_msg)
-        action = Action(name = start_msg)  
-        ds = Dataset(id = self.get_dataset_id(), action = action)
-        # Validate the dataset's addresses.
-
-        default_attrs = DefaultAttrs(self).default_attrs        
-        
-        # 1. Validate that the level has been properly set.        
-        self.validate_level(self.level, action, default = default_attrs["level"])
-
-        # TODO: Fix this to work with MATLAB.
-        if not self.is_matlab:
-            output_var_names_in_code = get_returned_variable_names(self.method)
-
-        # 2. Validate that the input & output variables have been properly set.
-        self.validate_input_vrs(self.input_vrs, action, default = default_attrs["input_vrs"])
-        self.validate_output_vrs(self.output_vrs, action, default = default_attrs["output_vrs"])
-
-        # 3. Validate that the subsets have been properly set.
-        self.validate_subset_id(self.subset_id, action, default = default_attrs["subset_id"])
-
-        # 4. Validate vrs_source_pr
-        self.validate_vrs_source_pr(self.vrs_source_pr, action, default = default_attrs["vrs_source_pr"])
-
-        if self.is_matlab:
-            self.validate_mfunc_name(self.mfunc_name, action, default = default_attrs["mfunc_name"])
-            self.validate_mfolder(self.mfolder, action, default = default_attrs["mfolder"])
-            self.validate_import_file_ext(self.import_file_ext, action, default = default_attrs["import_file_ext"])
-            self.validate_import_file_vr_name(self.import_file_vr_name, action, default = default_attrs["import_file_vr_name"])
-        else:
-            self.validate_method(self.method, action, default = default_attrs["method"])
-
-        schema_id = self.get_current_schema_id(ds.id)
-
-        matlab_loaded = True
-        matlab_double_type = type(None)
-        matlab_numeric_types = []
-        if self.is_matlab:
-            matlab_loaded = False
-            if ProcessRunner.eng is None:
-                try:            
-                    print("Importing MATLAB.")
-                    import matlab.engine
-                    try:
-                        print("Attempting to connect to an existing shared MATLAB session.")
-                        print("To share a session run <matlab.engine.shareEngine('ResearchOS')> in MATLAB's Command Window and leave MATLAB open.")
-                        ProcessRunner.eng = matlab.engine.connect_matlab(name = "ResearchOS")
-                        print("Successfully connected to the shared 'ResearchOS' MATLAB session.")
-                    except:
-                        print("Failed to connect. Starting MATLAB.")
-                        ProcessRunner.eng = matlab.engine.start_matlab()
-                    matlab_loaded = True
-                    matlab_double_type = matlab.double
-                    matlab_numeric_types = (matlab.double, matlab.single, matlab.int8, matlab.uint8, matlab.int16, matlab.uint16, matlab.int32, matlab.uint32, matlab.int64, matlab.uint64)
-                    ProcessRunner.matlab = matlab
-                    ProcessRunner.matlab_numeric_types = matlab_numeric_types
-                except:
-                    print("Failed to import MATLAB.")
-                    matlab_loaded = False           
-                
-        # 4. Run the method.
-        # Get the subset of the data.
-        subset = Subset(id = self.subset_id, action = action)
-        subset_graph = subset.get_subset(action)
-                
-        schema = ds.schema
-        schema_graph = nx.MultiDiGraph(schema)                
-        
-        pool = SQLiteConnectionPool()
-        process_runner = ProcessRunner(self, action, schema_id, schema_graph, ds, subset_graph, matlab_loaded, ProcessRunner.eng, force_redo)
-        process_runner.matlab_double_type = matlab_double_type
-
-        process_runner.matlab_loaded = True
-        if process_runner.matlab is None:
-            process_runner.matlab_loaded = False              
-
-        num_inputs = 0
-        if process_runner.matlab_loaded and self.is_matlab:
-            ProcessRunner.eng.addpath(self.mfolder) # Add the path to the MATLAB function. This is necessary for the MATLAB function to be found.
-            try:
-                num_inputs = ProcessRunner.eng.nargin(self.mfunc_name, nargout=1)
-            except:
-                raise ValueError(f"Function {self.mfunc_name} not found in {self.mfolder}.")
-            
-        process_runner.num_inputs = num_inputs        
-            
-        if ProcessRunner.dataset_object_graph is None:
-            ProcessRunner.dataset_object_graph = ds.get_addresses_graph(objs = True, action = action)
-        G = ProcessRunner.dataset_object_graph
-
-        # Set the vrs_source_prs for any var that it wasn't set for.
-        add_vr_names_source_prs = [key for key in self.input_vrs.keys() if key not in self.vrs_source_pr.keys()]
-        if len(add_vr_names_source_prs) > 0:
-            add_vrs_source_prs = [vr.id for name_in_code, vr in self.input_vrs.items() if name_in_code in add_vr_names_source_prs]
-            sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({}) AND schema_id = ?".format(",".join(["?" for _ in add_vrs_source_prs]))
-            sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
-            params = tuple(add_vrs_source_prs + [schema_id])
-            vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-            vrs_source_prs = self.vrs_source_pr
-            for vr_name_in_code, vr in self.input_vrs.items():
-                for vr_pr_id in vr_pr_ids_result:
-                    if vr.id == vr_pr_id[0]:
-                        # Same order as input variables.
-                        vrs_source_prs[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
-
-            self._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action = action, pr_id = self.id)     
-
-        # Get the lowest level for this batch.
-        schema_ordered = [n for n in nx.topological_sort(schema_graph)]
-        lowest_level_idx = -1
-        for pr in self.vrs_source_pr.values():
-            try:
-                level = pr.level                
-            except: # For Logsheet, defer to current PR level.
-                level = self.level
-            level_idx = schema_ordered.index(level)
-            if level_idx <= lowest_level_idx:
-                continue
-            lowest_level_idx = level_idx
-            lowest_level = level
-            if lowest_level_idx == len(schema_ordered) - 1:
-                break
-
-        level_node_ids = [node for node in subset_graph if node.startswith(self.level.prefix)]
-        name_attr_id = ResearchObjectHandler._get_attr_id("name")
-        sqlquery_raw = "SELECT object_id, attr_value FROM simple_attributes WHERE attr_id = ? AND object_id LIKE ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["object_id"], single = True, user = True, computer = False)
-        params = (name_attr_id, f"{self.level.prefix}%")
-        level_nodes_ids_names = action.conn.cursor().execute(sqlquery, params).fetchall()
-        level_nodes_ids_names.sort(key = lambda x: x[1])
-        level_node_ids_sorted = [row[0] for row in level_nodes_ids_names if row[0] in level_node_ids]
-            
-        if self.batch is not None:
-            all_batches_graph = self.get_batch_graph(self.batch, subset_graph, schema_ordered, lowest_level)
-
-            # Parse the MultiDiGraph to get the batches to run.
-            if self.batch is None or len(self.batch) == 0:
-                level = Dataset
-            else:
-                level = self.batch[0]
-            batches_dict_to_run = nx.to_dict_of_dicts(all_batches_graph)
-            del_keys = []        
-            for key in batches_dict_to_run.keys():
-                if not key.startswith(level.prefix):
-                    del_keys.append(key)
-            for key in del_keys:
-                del batches_dict_to_run[key]
-
-            # Dict of dicts, where each top-level dict is a batch to run.
-            # Get a top level node.
-            top_level_node = [n for n in all_batches_graph.nodes() if all_batches_graph.in_degree(n) == 0][0]
-            descendant = list(nx.descendants(all_batches_graph, top_level_node))[0]
-            process_runner.depth = nx.shortest_path_length(all_batches_graph, top_level_node, descendant)
-        else:
-            batches_dict_to_run = {node: None for node in level_node_ids_sorted}
-            process_runner.depth = 0
-            lowest_level = self.level
-        process_runner.lowest_level = lowest_level
-        if self.batch == []:
-            highest_level = Dataset
-        elif self.batch is not None:
-            highest_level = self.batch[0]
-        else:
-            highest_level = None
-        process_runner.highest_level = highest_level
+        action = Action(name = start_msg)
+        process_runner = ProcessRunner()        
+        batches_dict_to_run, all_batches_graph, G, pool = process_runner.prep_for_run(self, action, force_redo)
         curr_batch_graph = nx.MultiDiGraph()
         for batch_id, batch_value in batches_dict_to_run.items():
             if self.batch is not None:
@@ -687,45 +525,10 @@ class Process(PipelineObject):
             process_runner.run_batch(batch_id, batch_value, G, curr_batch_graph)
 
         if process_runner.matlab_loaded and self.is_matlab:
-            ProcessRunner.eng.rmpath(self.mfolder)
+            ProcessRunner.matlab_eng.rmpath(self.mfolder)
             
         for vr_name, vr in self.output_vrs.items():
             print(f"Saved VR {vr_name} (VR: {vr.id}).")
 
         if action.conn:
             pool.return_connection(action.conn)
-
-    def get_dict_of_batches(self, graph: nx.MultiDiGraph, start_node: str) -> list:
-        """Split the big dict of all the batches with node ID's into a list of dicts where each element will be passed into the "run_batch" function.
-        Value is None if the node has no successors."""
-        return {succ: None if not list(graph.successors(succ)) else self.get_dict_of_batches(graph, succ) for succ in graph.successors(start_node)}
-
-    def get_batch_graph(self, batch: list, subgraph: nx.MultiDiGraph = nx.MultiDiGraph(), schema_ordered: list = [], lowest_level: type = None) -> dict:
-        """Get the batch dictionary of DataObject names. Needs to be recursive to account for the nested dicts.
-        At the lowest level, if there are multiple DataObjects, they will also be a dict, each being one key, with its value being None.
-        Note that the Dataset node should always be in the subgraph."""
-        batch_graph = nx.MultiDiGraph()
-        # Get lowest Process depth from vrs_source_pr
-        lowest_level_idx = schema_ordered.index(lowest_level)
-
-        if batch is None or len(batch) == 0:
-            batch = [Dataset]
-        if lowest_level not in batch:
-            batch = batch + schema_ordered[lowest_level_idx:]
-
-        nodes = [n for b in batch for n in subgraph.nodes() if n.startswith(b.prefix)]
-        batch_graph = nx.MultiDiGraph()
-        batch_graph.add_nodes_from(nodes)
-
-        # Add the missing edges to the batch graph.
-        all_nodes_dict = {cls: [n for n in subgraph.nodes() if n.startswith(cls.prefix)] for cls in batch}
-        for idx in range(len(batch) - 1):
-            top_level = batch[idx]
-            bottom_level = batch[idx + 1]
-            top_level_nodes = all_nodes_dict[top_level]
-            bottom_level_nodes = all_nodes_dict[bottom_level]
-            for n in top_level_nodes:
-                for m in bottom_level_nodes:
-                    if nx.has_path(subgraph, n, m):
-                        batch_graph.add_edge(n, m)
-        return batch_graph

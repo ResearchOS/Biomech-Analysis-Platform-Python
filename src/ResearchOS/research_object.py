@@ -1,8 +1,6 @@
 from typing import Any
 import json
 
-# from memory_profiler import profile
-
 from .research_object_handler import ResearchObjectHandler
 from .action import Action
 from .sqlite_pool import SQLiteConnectionPool
@@ -16,8 +14,6 @@ all_default_attrs["notes"] = None
 computer_specific_attr_names = []
 
 root_data_path = "data"
-
-# setattr_log = open("logfile_setattrs.log", "w")
 
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
@@ -33,10 +29,6 @@ class ResearchObject():
         if isinstance(other, ResearchObject):
             return self.id == other.id and self is other
         return False
-    
-    # def __getitem__(self, key: str) -> Any:
-    #     """Get the value of the attribute."""
-    #     return self.__dict__[key]
      
     def __new__(cls, **kwargs):
         """Create a new research object in memory. If the object already exists in memory with this ID, return the existing object."""
@@ -123,9 +115,7 @@ class ResearchObject():
         
         if prev_exists and not prev_loaded:
             # Load the existing object's attributes from the database.
-            ResearchObjectHandler._load_ro(self, attrs, action)
-        # if prev_exists and prev_loaded:
-        #     finish_action = False
+            ResearchObjectHandler._load_ro(self, attrs, action)        
 
         if prev_exists:            
             # Remove default kwargs values, and kwargs with values already in the object.
@@ -146,7 +136,6 @@ class ResearchObject():
             action.commit = True
             action.execute()
 
-    # @profile(stream = setattr_log)
     def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action, pr_id: str) -> None:
         """Set the attributes of the object.
         default_attrs: The default attributes of the object.
@@ -172,21 +161,14 @@ class ResearchObject():
             vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
             ResearchObjectHandler._set_vr_values(self, vr_attrs, action, pr_id)
 
-    def get_vr(self, name: str) -> Any:
-        """Get the VR itself instead of its value."""
-        return self.__dict__[name]
-
     def get_dataset_id(self) -> str:
         """Get the most recent dataset ID."""        
         sqlquery = f"SELECT dataset_id FROM data_address_schemas"
-        # action = Action(name = "get_dataset_id")
-        # sqlquery = sql_order_result(action, sqlquery_raw, ["dataset_id"], single = True, user = True, computer = False)
         pool = SQLiteConnectionPool()
         conn = pool.get_connection()
         cursor = conn.cursor()
         result = cursor.execute(sqlquery).fetchall()
         pool.return_connection(conn)
-        # ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num=0)
         if not result:
             raise ValueError("Need to create a dataset and set up its schema first.")
         dataset_id = result[-1][0]        

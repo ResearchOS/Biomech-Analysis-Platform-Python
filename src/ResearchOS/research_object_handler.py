@@ -6,28 +6,19 @@ import sqlite3
 from hashlib import sha256
 import pickle
 from datetime import datetime, timezone
-import logging, time, sys
-import copy
-
-# from inspect_locals import inspect_locals
 
 import numpy as np
-# from memory_profiler import profile
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
-    # from ResearchOS.DataObjects.data_object import DataObject
-    # from ResearchOS.variable import Variable
 
-# from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.sql.sql_joiner_most_recent import sql_joiner_most_recent
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.current_user import CurrentUser
 from ResearchOS.get_computer_id import COMPUTER_ID
-
-# set_vr_values_log = open("logfile_set_vr_values.log", "w")
+from ResearchOS.validator import Validator
 
 do_run = False
 
@@ -35,37 +26,10 @@ class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
 
     instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
-    # instances = {} # Keep track of all instances of all research objects.
     counts = {} # Keep track of the number of instances of each ID.    
     pool = SQLiteConnectionPool(name = "main")
     pool_data = SQLiteConnectionPool(name = "data")
-    default_attrs = {} # Keep track of the default attributes for each class.    
-
-    # @staticmethod
-    # def load_vr_value(research_object: "DataObject", action: Action, vr: "Variable") -> Any:
-    #     """Load the value of the variable for this DataObject."""
-    #     # 1. Get the latest data_blob_id.
-    #     dataset_id = research_object.get_dataset_id()        
-    #     schema_id = research_object.get_current_schema_id(dataset_id)
-    #     conn = action.conn
-    #     cursor = conn.cursor()
-    #     sqlquery_raw = f"SELECT action_id, data_blob_hash FROM data_values WHERE vr_id = '{vr.id}' AND dataobject_id = '{research_object.id}' AND schema_id = '{schema_id}'"
-    #     sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "dataobject_id", "schema_id"], single = True, user = True, computer = False)
-    #     time_ordered_result = cursor.execute(sqlquery).fetchall()
-    #     ResearchObjectHandler.pool.return_connection(conn)
-    #     if len(time_ordered_result) == 0:
-    #         raise ValueError("No value exists for that VR for this DataObject.")
-    #         # return "Missing"              
-    #     data_blob_id = time_ordered_result[0][1]
-
-    #     # 2. Get the data_blob from the data_blobs table.
-    #     conn_data = ResearchObjectHandler.pool_data.get_connection()
-    #     cursor_data = conn_data.cursor()
-    #     sqlquery = "SELECT data_blob FROM data_values_blob WHERE data_blob_hash = ?"        
-    #     params = (data_blob_id,)
-    #     rows = cursor_data.execute(sqlquery, params).fetchall()
-    #     ResearchObjectHandler.pool_data.return_connection(conn_data)
-    #     return pickle.loads(rows[0][0])     
+    default_attrs = {} # Keep track of the default attributes for each class.     
 
     @staticmethod
     def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any, action: Action = None) -> Any:
@@ -161,30 +125,14 @@ class ResearchObjectHandler:
                 value = load_method(action)
                 research_object.__dict__[attr_name] = value
 
-        # 5. Validate the simple & complex builtin attributes.
-        for default_attr_name, default_attr_value in default_attrs.items():
-            curr_value = research_object.__dict__[default_attr_name]
-            ResearchObjectHandler.validate(research_object, default_attr_name, curr_value, action, default_attr_value)
-
-        # 6. Load the VR attributes. No validation is necessary here.
-        # dobj_subclasses = DataObject.__subclasses__()
-        # if research_object.__class__ in dobj_subclasses:
-        #     research_object.load_dataobject_vrs(action = action)
-
-    @staticmethod
-    def validate(research_object: "ResearchObject", name: str, value: Any, action: Action, default: Any) -> None:
-        """Validate the value of the attribute."""        
-        if not hasattr(research_object, "validate_" + name):
-            return
-                
-        validate_method = getattr(research_object, "validate_" + name)
-        validate_method(value, action, default)
-
     @staticmethod
     def _set_builtin_attributes(research_object: "ResearchObject", default_attrs: dict, kwargs: dict, action: Action):
         """Responsible for setting the value of all builtin attributes, simple or not."""  
 
-        # !. Set simple builtin attributes.
+        validator = Validator(research_object, action)
+        validator.validate(kwargs, default_attrs)
+
+        # 1. Set simple builtin attributes.
         complex_attrs = {}
         for key in kwargs:
 
@@ -199,9 +147,6 @@ class ResearchObjectHandler:
             # 2. If previously initialized, skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
             if research_object._initialized and key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
                 continue
-
-            # 3. Validate the attribute.
-            ResearchObjectHandler.validate(research_object, key, kwargs[key], action, default_attrs[key])
 
             if hasattr(research_object, "to_json_" + key):
                 to_json_method = getattr(research_object, "to_json_" + key)
@@ -222,9 +167,6 @@ class ResearchObjectHandler:
             if key in research_object.__dict__ and getattr(research_object, key) == complex_attrs[key]:
                 continue
 
-            # 2. Validate the attribute.
-            ResearchObjectHandler.validate(research_object, key, complex_attrs[key], action, default_attrs[key])
-
             # 3.  Save the "complex" builtin attribute to the database.
             save_method = getattr(research_object, "save_" + key)
             save_method(complex_attrs[key], action = action)
@@ -232,7 +174,6 @@ class ResearchObjectHandler:
             research_object.__dict__[key] = complex_attrs[key]
 
     @staticmethod
-    # @profile(stream = set_vr_values_log)
     def _set_vr_values(research_object: "ResearchObject", vr_values: dict, action: Action, pr_id: str) -> None:
         """Set the values of the VR attributes."""
         if not vr_values:

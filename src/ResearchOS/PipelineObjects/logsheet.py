@@ -342,7 +342,6 @@ class Logsheet(PipelineObject):
                 vr = vr_id
             else:
                 vr = Variable(id = vr_id, action = action)
-            assert vr.level == header_levels[idx]
             vr_obj_list.append(vr)
             vr_list.append(vr.id)
             
