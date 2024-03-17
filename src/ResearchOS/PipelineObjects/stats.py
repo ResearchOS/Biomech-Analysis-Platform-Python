@@ -18,7 +18,7 @@ from ResearchOS.code_inspector import get_returned_variable_names, get_input_var
 from ResearchOS.action import Action
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.sql.sql_runner import sql_order_result
-from ResearchOS.plot_runner import PlotRunner
+from ResearchOS.stats_runner import StatsRunner
 from ResearchOS.Digraph.rodigraph import ResearchObjectDigraph
 
 all_default_attrs = {}
@@ -42,9 +42,9 @@ all_default_attrs["batch"] = None
 
 computer_specific_attr_names = ["mfolder"]
 
-class Plot(PipelineObject):
+class Stats(PipelineObject):
     
-    prefix = "PL"
+    prefix = "ST"
 
     def __init__(self, is_matlab: bool = all_default_attrs["is_matlab"],
                  mfolder: str = all_default_attrs["mfolder"],
@@ -435,7 +435,7 @@ class Plot(PipelineObject):
         start_msg = f"Running {self.mfunc_name} on {self.level.__name__}s."
         print(start_msg)
         action = Action(name = start_msg)
-        plot_runner = PlotRunner()        
+        plot_runner = StatsRunner()        
         batches_dict_to_run, all_batches_graph, G, pool = plot_runner.prep_for_run(self, action, force_redo)
         curr_batch_graph = nx.MultiDiGraph()
         for batch_id, batch_value in batches_dict_to_run.items():
@@ -444,7 +444,7 @@ class Plot(PipelineObject):
             plot_runner.run_batch(batch_id, batch_value, G, curr_batch_graph)
 
         if plot_runner.matlab_loaded and self.is_matlab:
-            PlotRunner.matlab_eng.rmpath(self.mfolder)
+            StatsRunner.matlab_eng.rmpath(self.mfolder)
             
         for vr_name, vr in self.output_vrs.items():
             print(f"Saved VR {vr_name} (VR: {vr.id}).")
