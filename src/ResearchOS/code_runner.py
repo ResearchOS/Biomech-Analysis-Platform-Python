@@ -29,18 +29,6 @@ class CodeRunner():
     matlab_numeric_types = []
     dataset_object_graph: nx.MultiDiGraph = None
 
-    # def __init__(self, process: "Process", action: "Action", schema_id: str, schema_graph: nx.MultiDiGraph, dataset: "Dataset", subset_graph, matlab_loaded: bool, eng, force_redo: bool):
-    #     self.process = process
-    #     self.action = action
-    #     self.schema_id = schema_id
-    #     self.schema_graph = schema_graph
-    #     self.schema_order = list(nx.topological_sort(schema_graph))
-    #     self.dataset = dataset
-    #     self.subset_graph = subset_graph
-    #     self.matlab_loaded = matlab_loaded
-    #     self.eng = eng
-    #     self.force_redo = force_redo
-
     @staticmethod
     def import_matlab(is_matlab: bool) -> None:
         matlab_loaded = True
@@ -74,21 +62,22 @@ class CodeRunner():
     @staticmethod
     def set_vrs_source_pr(robj: "ResearchObject", action: Action, schema_id: str, default_attrs: dict) -> None:
         from ResearchOS.PipelineObjects.process import Process
-        add_vr_names_source_prs = [key for key in robj.input_vrs.keys() if key not in robj.vrs_source_pr.keys()]
+        add_vr_names_source_prs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and not isinstance(value["VR"], dict))]
         if len(add_vr_names_source_prs) > 0:
-            add_vrs_source_prs = [vr.id for name_in_code, vr in robj.input_vrs.items() if name_in_code in add_vr_names_source_prs]
+            add_vrs_source_prs = [vr["VR"].id for name_in_code, vr in robj.input_vrs.items() if name_in_code in add_vr_names_source_prs]
             sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({}) AND schema_id = ?".format(",".join(["?" for _ in add_vrs_source_prs]))
             sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
             params = tuple(add_vrs_source_prs + [schema_id])
             vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-            vrs_source_prs = robj.vrs_source_pr
+            vrs_source_prs_tmp = {}
             for vr_name_in_code, vr in robj.input_vrs.items():
                 for vr_pr_id in vr_pr_ids_result:
-                    if vr.id == vr_pr_id[0]:
+                    if vr["VR"].id == vr_pr_id[0]:
                         # Same order as input variables.
-                        vrs_source_prs[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+                        vrs_source_prs_tmp[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+            vrs_source_prs = {**robj.vrs_source_pr, **vrs_source_prs_tmp}
 
-            robj._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action = action, pr_id = robj.id) 
+            robj._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action, None) 
 
     @staticmethod
     def get_lowest_level(robj: "ResearchObject", schema_ordered: list) -> Optional[str]:
@@ -124,7 +113,7 @@ class CodeRunner():
     @staticmethod
     def get_batches_dict_to_run(robj: "ResearchObject", subset_graph: nx.MultiDiGraph, schema_ordered: list, lowest_level: str, level_node_ids_sorted: list) -> dict:
         if robj.batch is not None:
-            all_batches_graph = CodeRunner.get_batch_graph(robj.batch, subset_graph, schema_ordered, lowest_level)
+            all_batches_graph = CodeRunner.get_batch_graph(robj, robj.batch, subset_graph, schema_ordered, lowest_level)
 
             # Parse the MultiDiGraph to get the batches to run.
             if robj.batch is None or len(robj.batch) == 0:
@@ -152,7 +141,7 @@ class CodeRunner():
         if robj.batch == []:
             highest_level = Dataset
         elif robj.batch is not None:
-            highest_level = CodeRunner.batch[0]
+            highest_level = robj.batch[0]
         else:
             highest_level = None
         CodeRunner.highest_level = highest_level
@@ -387,13 +376,15 @@ class CodeRunner():
         vr_values_in = {}     
         input_vrs_names_dict = {}
         lookup_vrs = self.pl_obj.lookup_vrs
-        for var_name_in_code, vr in pr.input_vrs.items():
+        for var_name_in_code, vr_dict in pr.input_vrs.items():
+            vr = vr_dict["VR"]
+            slice = vr_dict["slice"]
             vr_found = False
             input_vrs_names_dict[var_name_in_code] = vr
             node_lineage_use = node_lineage
             curr_node = node_lineage_use[0] # Always the lowest level to start.
 
-            if var_name_in_code == pr.import_file_vr_name:
+            if hasattr(pr, "import_file_vr_name") and var_name_in_code == pr.import_file_vr_name:
                 continue # Skip the import file variable.
 
             # Hard-coded input variable.
@@ -432,6 +423,8 @@ class CodeRunner():
             value, vr_found = curr_node.load_vr_value(vr, self.action, self.pl_obj, var_name_in_code, node_lineage_use)
             if value is None and not vr_found:
                 return (None, None)
+            if slice is not None:
+                value = value.__getitem__(slice)
             vr_values_in[var_name_in_code] = value
             vr_found = True
             if not vr_found:
@@ -479,13 +472,16 @@ class CodeRunner():
         # Get the latest action_id
         cursor = self.action.conn.cursor()
         pr = self.pl_obj
+        output_vrs_earliest_time = datetime.min.replace(tzinfo=timezone.utc)
+        if not hasattr(pr, "output_vrs"):
+            return output_vrs_earliest_time
         output_vr_ids = [vr.id for vr in pr.output_vrs.values()]
         sqlquery_raw = "SELECT action_id FROM data_values WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
         sqlquery = sql_order_result(self.action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False) # The data is ordered. The most recent action_id is the first one.
         params = tuple([self.node.id] + output_vr_ids)
         result = cursor.execute(sqlquery, params).fetchall() # The latest action ID
         if len(result) == 0:
-            output_vrs_earliest_time = datetime.min.replace(tzinfo=timezone.utc)
+            return output_vrs_earliest_time
         else:                
             most_recent_action_id = result[0][0] # Get the latest action_id.
             sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
@@ -502,12 +498,11 @@ class CodeRunner():
             datetime: _description_
         """
         cursor = self.action.conn.cursor()
-        # pr = self.process
         # Check if the values for all the input variables are up to date. If so, skip this node.
         # check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_vals_in.items()}            
         input_vrs_latest_time = datetime.min.replace(tzinfo=timezone.utc)
         for vr_name in vr_vals_in:
-            if vr_name == self.pl_obj.import_file_vr_name:
+            if hasattr(self.pl_obj, "import_file_vr_name") and vr_name == self.pl_obj.import_file_vr_name:
                 continue # Special case. Skip the import file variable.
 
             vr = input_vrs_names_dict[vr_name]

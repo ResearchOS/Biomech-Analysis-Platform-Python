@@ -144,7 +144,7 @@ class Logsheet(PipelineObject):
             else:
                 vr = Variable(id = header[3], action = action)
             default_attrs = DefaultAttrs(vr).default_attrs
-            kwarg_dict = {"name": header[0], "level": header[2]}
+            kwarg_dict = {"name": header[0]}
             vr._setattrs(default_attrs, kwarg_dict, action, None)
             str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, vr.id))
         return json.dumps(str_headers)

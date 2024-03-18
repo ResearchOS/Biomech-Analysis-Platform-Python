@@ -19,6 +19,7 @@ from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.current_user import CurrentUser
 from ResearchOS.get_computer_id import COMPUTER_ID
 from ResearchOS.validator import Validator
+from ResearchOS.json_converter import JSONConverter
 
 do_run = False
 
@@ -108,11 +109,7 @@ class ResearchObjectHandler:
         attrs = {}
         for attr_id, value in ordered_attr_result_dict.items():            
             attr_name = ResearchObjectHandler._get_attr_name(attr_id)
-            if hasattr(research_object, "load_" + attr_name):
-                load_method = getattr(research_object, "load_" + attr_name)
-                attr_value = load_method(action)
-            else:
-                attr_value = ResearchObjectHandler.from_json(research_object, attr_name, value, action)
+            attr_value = JSONConverter.from_json(research_object, attr_name, value, action)
             attrs[attr_name] = attr_value
 
         # 3. Set the attributes of the object.
@@ -148,11 +145,7 @@ class ResearchObjectHandler:
             if research_object._initialized and key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
                 continue
 
-            if hasattr(research_object, "to_json_" + key):
-                to_json_method = getattr(research_object, "to_json_" + key)
-                json_value = to_json_method(kwargs[key], action)
-            else:
-                json_value = json.dumps(kwargs[key])  
+            json_value = JSONConverter.to_json(research_object, key, kwargs[key], action) 
 
             simple_params = (action.id, research_object.id, ResearchObjectHandler._get_attr_id(key), json_value)
             action.add_sql_query(research_object.id, "robj_simple_attr_insert", simple_params, group_name = "robj_simple_attr_insert")
@@ -162,6 +155,9 @@ class ResearchObjectHandler:
 
         # 2. Set complex builtin attributes.
         for key in complex_attrs:
+
+            if key not in default_attrs:
+                continue # Skip the attribute if it is not a default attribute.
 
             # 1. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
             if key in research_object.__dict__ and getattr(research_object, key) == complex_attrs[key]:

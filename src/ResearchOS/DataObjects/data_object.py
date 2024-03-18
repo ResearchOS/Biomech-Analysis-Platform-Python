@@ -5,7 +5,6 @@ import pickle
 if TYPE_CHECKING:    
     from ResearchOS.PipelineObjects.process import Process
 
-from ResearchOS.variable import Variable
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.default_attrs import DefaultAttrs
@@ -49,6 +48,7 @@ class DataObject(ResearchObject):
             Any: The value of the VR for this data object.
         """
         from ResearchOS.PipelineObjects.process import Process
+        from ResearchOS.variable import Variable
         # 1. Check that the data object & VR are currently associated. If not, throw an error.
         cursor = action.conn.cursor()
         self_idx = node_lineage.index(self)
@@ -72,7 +72,7 @@ class DataObject(ResearchObject):
             raise ValueError(f"The VR {vr.name} is not currently associated with the data object {node.id}.")
         
         # 2. Load the data hash from the database.
-        if isinstance(process, Process):
+        if hasattr(process, "vrs_source_pr"):
             pr = process.vrs_source_pr[vr_name_in_code]
         else:
             pr = process

@@ -7,9 +7,6 @@ if TYPE_CHECKING:
 
 from ResearchOS.Digraph.pipeline_digraph import PipelineDiGraph
 from ResearchOS.Digraph.data_digraph import DataDiGraph 
-from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
-from ResearchOS.research_object_handler import ResearchObjectHandler
-from ResearchOS.variable import Variable
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
 
@@ -54,6 +51,8 @@ class ResearchObjectDigraph(MultiDiGraph):
 
     def load(self, ro_id: str) -> "ResearchObject":        
         """Loads that object from the database."""
+        from ResearchOS.research_object_handler import ResearchObjectHandler
+        from ResearchOS.variable import Variable
         # 1. Check that the key is one of the nodes in the digraph.
         is_vr = ro_id.startswith(Variable.prefix)
         if not is_vr and ro_id not in self.nodes:
@@ -72,6 +71,7 @@ class ResearchObjectDigraph(MultiDiGraph):
     def add_bridge_edges(self, action: Action) -> None:
         """Query the database for the bridging edges, and add them to the DiGraph from an edge list.
         """
+        from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
         pipeline_classes = PipelineObject.__subclasses__()
         pipeline_prefixes = [cls.prefix for cls in pipeline_classes]
 

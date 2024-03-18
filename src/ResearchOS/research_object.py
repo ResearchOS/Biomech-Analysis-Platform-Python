@@ -1,12 +1,10 @@
 from typing import Any
-import json
 
 from .research_object_handler import ResearchObjectHandler
 from .action import Action
 from .sqlite_pool import SQLiteConnectionPool
 from .default_attrs import DefaultAttrs
 from .idcreator import IDCreator
-from ResearchOS.sql.sql_runner import sql_order_result
 
 all_default_attrs = {}
 all_default_attrs["notes"] = None
@@ -66,7 +64,10 @@ class ResearchObject():
             raise ValueError("Cannot change the prefix of a research object.")
         if name == "name":
             if not str(value).isidentifier():
-                raise ValueError(f"name attribute, value: {value} is not a valid attribute name.") 
+                raise ValueError(f"name attribute, value: {value} is not a valid attribute name.")
+        if name == "slice" and self.id.startswith("VR"):
+            self.__dict__[name] = value
+            return # Store but don't save the changes to Variable slices. That is handled when saving the input VR's.
             
         # Set the attribute. Create Action when __setattr__ is called as the top level.
         if all_attrs is None:
@@ -79,7 +80,7 @@ class ResearchObject():
         if not kwargs_dict:
             kwargs_dict = {name: value}
         self._setattrs(all_attrs.default_attrs, kwargs_dict, action, None)
-
+        
         action.commit = commit
         action.exec = True
         action.execute()     
