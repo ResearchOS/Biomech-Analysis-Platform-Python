@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ResearchOS.variable import Variable
-    from ResearchOS.research_object import ResearchObject
+    pass
+    # from ResearchOS.variable import Variable
+    # from ResearchOS.research_object import ResearchObject
 
 class VRHandler():
 
@@ -19,9 +20,3 @@ class VRHandler():
             except:
                 pass
         return new_dict
-
-    def set_output_vrs(self, robj: "ResearchObject", output_vrs):
-        self.output_vrs = output_vrs
-
-    def set_vrs_source_pr(self, robj: "ResearchObject", vrs_source_pr):
-        self.vrs_source_pr = vrs_source_pr

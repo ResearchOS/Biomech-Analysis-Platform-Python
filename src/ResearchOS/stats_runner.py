@@ -1,5 +1,9 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ResearchOS.PipelineObjects.stats import Stats
+
 from ResearchOS.code_runner import CodeRunner
-from ResearchOS.PipelineObjects.stats import Stats
 from ResearchOS.var_converter import convert_var
 
 class StatsRunner(CodeRunner):

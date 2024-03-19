@@ -133,12 +133,15 @@ class Subset(PipelineObject):
         # Put the values into a dict.
         vr_values = {}
         for row in result:
-            if row[2] not in vr_values:
-                vr_values[row[2]] = {}
-            if row[1] not in vr_values[row[2]]:
-                vr_values[row[2]][row[1]] = None
-            blob_hash_idx = [x[1] for x in values].index(row[0])
-            vr_values[row[2]][row[1]] = values[blob_hash_idx][0]
+            data_blob_hash = row[0]
+            dataobject_id = row[1]
+            vr_id = row[2]
+            if vr_id not in vr_values:
+                vr_values[vr_id] = {}
+            if dataobject_id not in vr_values[vr_id]:
+                vr_values[vr_id][dataobject_id] = None
+            blob_hash_idx = [x[1] for x in values].index(data_blob_hash)
+            vr_values[vr_id][dataobject_id] = values[blob_hash_idx][0]
 
         for node_id in sorted_nodes:
             if not self.meets_conditions(node_id, self.conditions, G, vr_values, action):
@@ -176,7 +179,6 @@ class Subset(PipelineObject):
                     if not self.meets_conditions(node_id, cond, G, vr_values, action):
                         return False
                 return True
-                # return all([self.meets_conditions(node_id, cond, G) for cond in conditions["and"]])
             if "or" in conditions:
                 return any([self.meets_conditions(node_id, cond, G, vr_values, action) for cond in conditions["or"]])
                     
@@ -184,6 +186,7 @@ class Subset(PipelineObject):
         vr_id = conditions[0]
         logic = conditions[1]
         value = conditions[2]
+        print(node_id)
         try:
             vr_value = vr_values[vr_id][node_id]
             found_attr = True

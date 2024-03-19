@@ -231,6 +231,7 @@ class Validator():
     def validate_lookup_vrs(self, lookup_vrs: dict, action: Action, default: Any) -> None:
         """Validate that the lookup variables are correct.
         Dict keys are var names in code, values are dicts with keys as Variable objects and values as lists of strings of var names in code."""
+        from ResearchOS.variable import Variable
         if lookup_vrs == default:
             return
         if not isinstance(lookup_vrs, dict):

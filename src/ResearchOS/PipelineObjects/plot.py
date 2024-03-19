@@ -3,7 +3,6 @@ import os
 import networkx as nx
 
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
-from ResearchOS.code_inspector import get_returned_variable_names, get_input_variable_names
 from ResearchOS.action import Action
 from ResearchOS.plot_runner import PlotRunner
 from ResearchOS.vr_handler import VRHandler
@@ -81,10 +80,7 @@ class Plot(PipelineObject):
         action = Action(name = start_msg)
         plot_runner = PlotRunner()        
         batches_dict_to_run, all_batches_graph, G, pool = plot_runner.prep_for_run(self, action, force_redo)
-        current_script_dir = os.path.dirname(os.path.abspath(__file__))
-        research_os_dir = os.path.abspath(os.path.join(current_script_dir, '..',))
-        matlab_folder = os.path.join(research_os_dir, "matlab")
-        plot_runner.matlab_eng.addpath(matlab_folder)
+        plot_runner.add_matlab_to_path(__file__)
         curr_batch_graph = nx.MultiDiGraph()
         for batch_id, batch_value in batches_dict_to_run.items():
             if self.batch is not None:

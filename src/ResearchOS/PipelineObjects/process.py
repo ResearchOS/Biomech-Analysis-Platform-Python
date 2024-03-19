@@ -103,7 +103,6 @@ class Process(PipelineObject):
     def validate_import_file_vr_name(self, vr_name: str, action: Action, default: Any) -> None:
         if vr_name == default:
             return
-        self.validate_input_vrs(self.input_vrs, action, None)
         if not isinstance(vr_name, str):
             raise ValueError("Variable name must be a string.")
         if not str(vr_name).isidentifier():
@@ -136,6 +135,7 @@ class Process(PipelineObject):
         process_runner = ProcessRunner()        
         batches_dict_to_run, all_batches_graph, G, pool = process_runner.prep_for_run(self, action, force_redo)
         curr_batch_graph = nx.MultiDiGraph()
+        process_runner.add_matlab_to_path(__file__)
         for batch_id, batch_value in batches_dict_to_run.items():
             if self.batch is not None:
                 curr_batch_graph = nx.MultiDiGraph(all_batches_graph.subgraph([batch_id] + list(nx.descendants(all_batches_graph, batch_id))))

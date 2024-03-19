@@ -303,7 +303,7 @@ class Logsheet(PipelineObject):
             ValueError: more header rows than logsheet rows or incorrect schema format
             QUESTION except ValueError?"""
         action = Action(name = "read logsheet")
-        ds = Dataset(id = self.get_dataset_id(), action = action)        
+        ds = Dataset(id = self.get_dataset_id(), action = action)
         self.validate_class_column_names(self.class_column_names, action, None)
         self.validate_headers(self.headers, action, None)
         self.validate_num_header_rows(self.num_header_rows, action, None)
@@ -372,7 +372,7 @@ class Logsheet(PipelineObject):
                 dobj_names[-1].append(value)
         for row_num, row in enumerate(dobj_names):
             if not all([str(cell).isidentifier() for cell in row]):
-                raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} all data object names must be non-empty and valid variable names!")
+                raise ValueError(f"Row #{row_num+self.num_header_rows+1} (1-based): All data object names must be non-empty and valid variable names!")
         [row.insert(0, ds.id) for row in dobj_names] # Prepend the Dataset to the first column of each row.
         name_ids_dict = {} # The dict that maps the values (names) to the IDs. Separate dict for each class, each class is a top-level key of the dict.
         name_ids_dict[Dataset] = {ds.name: ds.id}
@@ -383,7 +383,7 @@ class Logsheet(PipelineObject):
             name_dobjs_dict[cls] = {}
 
         # Create the DataObject instances in the dict.        
-        all_dobjs_ordered = [] # The list of lists of DataObject instances, ordered by the order of the schema.
+        all_dobjs_ordered = [] # The list of lists of DataObject instances, ordered by the order of the schema.        
         id_creator = IDCreator(action.conn)
         for row_num, row in enumerate(dobj_names):
             row = row[1:]
@@ -392,8 +392,10 @@ class Logsheet(PipelineObject):
                 cls = order[idx] # The class to create.
                 col_idx = cols_idx[idx] # The index of the column in the logsheet.
                 value = self.clean_value(header_types[col_idx], row[idx])
+                # NEED TO CHECK NOT ONLY IF THE VALUE MATCHES, BUT WHETHER THE ENTIRE LINEAGE MATCHES.
+                # For example, condition names can be reused between subjects (though not within the same subject) but a new ID should be created for each lineage.
                 if value not in name_ids_dict[cls]:
-                    name_ids_dict[cls][value] = id_creator.create_ro_id(cls)
+                    name_ids_dict[cls][value] = id_creator.create_ro_id(cls) + "_" + value
                     dobj = cls(id = name_ids_dict[cls][value], name = value, action = action) # Create the research object.
                     name_dobjs_dict[cls][value] = dobj
                     print("Creating DataObject, Row: ", row_num, "Column: ", cls.prefix, "Value: ", value, "ID: ", dobj.id)
@@ -472,13 +474,3 @@ class Logsheet(PipelineObject):
             else:
                 value = np.array(value)
         return value
-
-
-
-if __name__=="__main__":
-    lg = Logsheet(id = "LG000000")
-    lg = Logsheet(id = "LG000000_001")
-    print(lg.num_header_rows)
-    lg2 = lg.copy_to_new_instance()
-    lg.num_header_rows = -1
-    print(lg.num_header_rows)

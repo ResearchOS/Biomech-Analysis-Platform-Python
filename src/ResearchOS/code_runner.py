@@ -431,8 +431,10 @@ class CodeRunner():
                 raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
 
         # Handle if this node has an import file variable.
-        data_path = self.dataset.dataset_path        
-        for node in node_lineage[1::-1]:
+        data_path = self.dataset.dataset_path
+        # Isolate the parts of the ordered schema that are present in the file schema.
+        file_node_lineage = [node for node in node_lineage if isinstance(node, tuple(self.file_schema))]
+        for node in file_node_lineage[1::-1]:
             data_path = os.path.join(data_path, node.name)
         if hasattr(pr, "import_file_vr_name") and pr.import_file_vr_name is not None:
             file_path = data_path + pr.import_file_ext
@@ -539,3 +541,10 @@ class CodeRunner():
             if new_time > input_vrs_latest_time:
                 input_vrs_latest_time = new_time
         return input_vrs_latest_time
+    
+    def add_matlab_to_path(self, file: str) -> None:
+        """Add the MATLAB folder inside the ResearchOS package to the MATLAB path."""
+        current_script_dir = os.path.dirname(os.path.abspath(file))
+        research_os_dir = os.path.abspath(os.path.join(current_script_dir, '..',))
+        matlab_folder = os.path.join(research_os_dir, "matlab")
+        self.matlab_eng.addpath(matlab_folder)
