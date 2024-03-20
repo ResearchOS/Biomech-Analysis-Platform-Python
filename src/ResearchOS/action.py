@@ -95,9 +95,12 @@ class Action():
             any_queries = True
 
         if not any_queries and not self.force_create:
-            pool.return_connection(self.conn)
-            self.conn = None
-            return
+            if return_conn:
+                pool.return_connection(self.conn)            
+                self.conn = None
+                return
+            else:
+                return
         
         cursor = self.conn.cursor()
         if not self.is_created or self.force_create:

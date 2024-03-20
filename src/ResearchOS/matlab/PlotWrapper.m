@@ -16,4 +16,6 @@ saveas(fig, save_path, 'fig');
 saveas(fig, save_path, 'png');
 saveas(fig, save_path, 'svg');
 
+close(fig);
+
 end

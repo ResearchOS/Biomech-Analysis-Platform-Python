@@ -89,9 +89,6 @@ class Plot(PipelineObject):
 
         if plot_runner.matlab_loaded and self.is_matlab:
             PlotRunner.matlab_eng.rmpath(self.mfolder)
-            
-        for vr_name, vr in self.output_vrs.items():
-            print(f"Saved VR {vr_name} (VR: {vr.id}).")
 
         if action.conn:
             pool.return_connection(action.conn)

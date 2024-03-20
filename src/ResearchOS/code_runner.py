@@ -115,6 +115,26 @@ class CodeRunner():
         if robj.batch is not None:
             all_batches_graph = CodeRunner.get_batch_graph(robj, robj.batch, subset_graph, schema_ordered, lowest_level)
 
+            if robj.batch is None or len(robj.batch) == 0:
+                batch = [Dataset, lowest_level]
+            else:
+                batch = robj.batch
+
+            batch_dict = {}            
+
+            def get_sub_batch_dict(sub_batch_dict: dict, remaining_batch_levels: list, all_batches_graph: nx.MultiDiGraph) -> None:
+                for b in remaining_batch_levels:
+                    b_nodes = [n for n in all_batches_graph.nodes() if n.startswith(b.prefix)]
+                    for node in b_nodes:
+                        # if len(remaining_batch_levels) == 1:
+                        #     sub_batch_dict[node] = None
+                        #     return
+                        sub_batch_dict[node] = {}
+                        get_sub_batch_dict(sub_batch_dict[node], remaining_batch_levels[1:], all_batches_graph)
+
+            get_sub_batch_dict(batch_dict, batch, all_batches_graph)
+
+
             # Parse the MultiDiGraph to get the batches to run.
             if robj.batch is None or len(robj.batch) == 0:
                 level = Dataset
@@ -127,6 +147,8 @@ class CodeRunner():
                     del_keys.append(key)
             for key in del_keys:
                 del batches_dict_to_run[key]
+
+            batches_dict_to_run = CodeRunner.clean_batches_dict(batches_dict_to_run, robj.batch[-1].prefix)
 
             # Dict of dicts, where each top-level dict is a batch to run.
             # Get a top level node.
@@ -146,6 +168,17 @@ class CodeRunner():
             highest_level = None
         CodeRunner.highest_level = highest_level
         return batches_dict_to_run, all_batches_graph
+    
+    @staticmethod
+    def clean_batches_dict(batches_dict: dict, prefix: str) -> dict:
+        """Replace the {0: {}} with None."""
+        result = {}
+        for k, v in batches_dict.items():
+            if k.startswith(prefix):
+                result[k] = None
+            else:
+                result[k] = CodeRunner.clean_batches_dict(v, prefix)
+        return result
     
     def get_batch_graph(robj: "ResearchObject", batch: list, subgraph: nx.MultiDiGraph = nx.MultiDiGraph(), schema_ordered: list = [], lowest_level: type = None) -> dict:
         """Get the batch dictionary of DataObject names. Needs to be recursive to account for the nested dicts.
@@ -271,32 +304,26 @@ class CodeRunner():
         for node in lowest_nodes:
             self.node_id = node
             self.node = self.lowest_level(id = node)
-            run_process, vr_values_in = self.check_if_run_node(node, G)
-            if not run_process:
-                return False
-            for vr_name_in_code, vr_val in vr_values_in.items():
+            result = self.check_if_run_node(node, G)
+            if not result["do_run"]:
+                return
+            for vr_name_in_code, vr_val in result["vr_values_in"].items():
                 batch_graph.nodes[node][vr_name_in_code] = vr_val
 
         # Now that all the input VR's have been gotten, change the node to the one to save the output VR's to.
         self.node = self.highest_level(id = batch_id)
                 
-        def process_dict(self, batch_graph, input_dict, G, vr_name_in_code: str = None):
-            all_keys = list(input_dict.keys())
-            is_var_name_in_code = all_keys == list(self.pl_obj.input_vrs.keys())
-            do_recurse = is_var_name_in_code or not any([all_keys[i].startswith(self.lowest_level.prefix) for i in range(len(all_keys))])
-            if do_recurse and isinstance(input_dict, dict):
-                for key, value in input_dict.items():
-                    if not is_var_name_in_code:
-                        key = None
-                    process_dict(self, batch_graph, value, G, key)
-                return
-                        
-            for dataobj_id in all_keys:
-                input_dict[dataobj_id] = batch_graph.nodes[dataobj_id][vr_name_in_code]
+        def process_dict(self, batch_graph, input_dict, G, vr_name_in_code: str):
+            for key, value in input_dict.items():
+                if isinstance(value, dict):
+                    process_dict(self, batch_graph, value, G, vr_name_in_code)
+                else:   
+                    input_dict[key] = batch_graph.nodes[key][vr_name_in_code]
 
 
         input_dict = {node: copy.deepcopy(batch_dict) for node in self.pl_obj.input_vrs.keys()}
-        process_dict(self, batch_graph, input_dict, G)
+        for var_name_in_code in input_dict:
+            process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
 
         # Run the process on the batch of nodes.
         is_batch = self.pl_obj.batch is not None
@@ -321,24 +348,16 @@ class CodeRunner():
         # result.exit_code = int
         result = self.check_if_run_node(node_id, G) # Verify whether this node should be run or skipped.
         
-        if result.exit_code != 0:
-            print(result.message)
+        if result["exit_code"] != 0:
+            print(result["message"])
             return
-        
-        # if not vr_values_in:
-        #     skip_msg = f"File does not exist for {node.name} ({node.id}), skipping."
-        # if vr_values_in is not None and not (self.force_redo or run_process):
-        #     skip_msg = f"Already done {node.name} ({node.id}), skipping."
-        # if skip_msg is not None:
-        #     print(skip_msg)
-        #     return
         
         node_info = self.get_node_info(node_id)
         run_msg = f"Running {node.name} ({node.id})."
         print(run_msg)
         is_batch = pl_obj.batch is not None
         assert is_batch == False
-        self.compute_and_assign_outputs(result.vr_values, pl_obj, node_info, is_batch)
+        self.compute_and_assign_outputs(result["vr_values_in"], pl_obj, node_info, is_batch)
 
         self.action.commit = True
         self.action.exec = True
@@ -358,19 +377,19 @@ class CodeRunner():
         input_vrs, input_vrs_names_dict = result["vr_values_in"], result["input_vrs_names_dict"]
         if input_vrs is None:
             result["do_run"] = False
-            result["vr_values"] = input_vrs
+            result["vr_values_in"] = input_vrs
             result["exit_code"] = 2
             result["message"] = f"Skipping {self.node.name} ({self.node.id}). Missing some variable?"     
         earliest_output_vr_time = self.get_earliest_output_vr_time()
         latest_input_vr_time = self.get_latest_input_vr_time(input_vrs, input_vrs_names_dict)
         if latest_input_vr_time < earliest_output_vr_time:
             result["do_run"] = False
-            result["vr_values"] = input_vrs
+            result["vr_values_in"] = input_vrs
             result["exit_code"] = 1
             result["message"] = f"Skipping {self.node.name} ({self.node.id}). The output VR's are newer than the input VR's."            
         else:
             result["do_run"] = True
-            result["vr_values"] = input_vrs
+            result["vr_values_in"] = input_vrs
             result["exit_code"] = 0
             result["message"] = f"Running {self.node.name} ({self.node.id})."
         return result # Do NOT run the process.
@@ -430,7 +449,7 @@ class CodeRunner():
                         return result # The file does not exist. Skip this node.
                     
                     # Currently assumes that all DataObjects have unique names across the entire dataset.
-                    lookup_dataobject = [n for n in G.nodes if n.name == lookup_dataobject_name][0]
+                    lookup_dataobject = [n for n in G.nodes if n.name == result["vr_values_in"]][0]
                     node_lineage_use = self.get_node_lineage(lookup_dataobject, G)
                     curr_node = node_lineage_use[0] # Replace the current node if needed.
                     break                    
@@ -447,13 +466,10 @@ class CodeRunner():
             result = curr_node.load_vr_value(vr, self.action, self.pl_obj, var_name_in_code, node_lineage_use)
             if result["exit_code"] != 0:   
                 return result # The file does not exist. Skip this node.
-            value = result["vr_value"]
+            value = result["vr_values_in"]
             if slice is not None:
                 value = value.__getitem__(slice)
             vr_values_in[var_name_in_code] = value
-            vr_found = True
-            if not vr_found:
-                raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
 
         # Handle if this node has an import file variable.
         data_path = self.dataset.dataset_path
@@ -539,6 +555,10 @@ class CodeRunner():
                 continue # Special case. Skip the import file variable.
 
             vr = input_vrs_names_dict[vr_name]
+
+            if isinstance(vr, dict):
+                continue
+            
             # Hard coded. Return when the hard coded value was last set.
             if vr.hard_coded_value is not None:
                 sqlquery_raw = "SELECT action_id FROM simple_attributes WHERE object_id = ? AND attr_id = ? AND attr_value = ?"

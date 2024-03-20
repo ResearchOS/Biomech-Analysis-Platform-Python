@@ -69,8 +69,8 @@ class DataObject(ResearchObject):
         if len(result) == 0:
             func_result["do_run"] = False
             func_result["exit_code"] = 1
-            func_result["message"] = f"Failed to run {self.node.name} ({self.node.id}). VR not found: {vr_name_in_code} ({vr.id})"  
-            func_result["vr_value"] = None
+            func_result["message"] = f"Failed to run {self.name} ({self.id}). VR not found: {vr_name_in_code} ({vr.id})"  
+            func_result["vr_values_in"] = None
             return func_result # If that variable does not exist for this dataobject, skip processing this dataobject.
         is_active = result[0][1]
         if is_active == 0:
@@ -116,7 +116,7 @@ class DataObject(ResearchObject):
         func_result["do_run"] = True
         func_result["exit_code"] = 0
         func_result["message"] = f"Success in {self.name} ({self.id}). VR found: {vr_name_in_code} ({vr.id})"
-        func_result["vr_value"] = pickle.loads(value)
+        func_result["vr_values_in"] = pickle.loads(value)
         return func_result
 
     # def load_dataobject_vrs(self, action: Action) -> None:

@@ -150,7 +150,7 @@ class Validator():
             return
         ds = Dataset(id = self.get_dataset_id(), action = action)
         schema_graph = nx.MultiDiGraph(ds.schema)
-        schema_ordered = nx.topological_sort(schema_graph)
+        schema_ordered = list(nx.topological_sort(schema_graph))        
         max_idx = 0
         for batch_elem in batch:
             idx = schema_ordered.index(batch_elem)
