@@ -102,7 +102,7 @@ class DataObject(ResearchObject):
         data_hash = result[pr_idx][0]
 
         # 3. Get the value from the data_values table. 
-        pool_data = SQLiteConnectionPool(name = "data").pool
+        pool_data = SQLiteConnectionPool(name = "data")
         conn_data = pool_data.get_connection()
         cursor_data = conn_data.cursor()
         sqlquery = "SELECT data_blob FROM data_values_blob WHERE data_blob_hash = ?"        

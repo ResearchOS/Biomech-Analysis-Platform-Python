@@ -54,7 +54,7 @@ class CodeRunner():
                     CodeRunner.matlab = matlab
                     CodeRunner.matlab_numeric_types = matlab_numeric_types
                 except:
-                    print("Failed to import MATLAB.")
+                    print("Failed to import MATLAB. Is it installed in this virtual environment?")
                     matlab_loaded = False 
         CodeRunner.matlab_loaded = matlab_loaded
         CodeRunner.matlab_double_type = matlab_double_type

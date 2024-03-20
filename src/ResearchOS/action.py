@@ -155,9 +155,9 @@ class Action():
             if return_conn:
                 pool.return_connection(self.conn)                
                 self.conn = None   
-                if uses_data:
-                    pool_data.return_connection(conn_data)
-                    del self.conn_data
+            if uses_data:
+                pool_data.return_connection(conn_data)
+                del self.conn_data
 
 if __name__=="__main__":    
     action = Action(name = "Test Action")    
