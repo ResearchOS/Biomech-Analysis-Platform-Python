@@ -185,8 +185,9 @@ class Dataset(DataObject):
     
     def from_json_file_schema(self, json_file_schema: str, action: Action) -> list:
         """Convert the file schema from a json string to a list of DataObjects."""
+        prefix_file_schema = json.loads(json_file_schema)
         subclasses = DataObject.__subclasses__()
-        return [cls for cls in subclasses for prefix in json_file_schema if cls.prefix == prefix]
+        return [cls for cls in subclasses for prefix in prefix_file_schema if cls.prefix == prefix]
         
     ### Address Methods
 

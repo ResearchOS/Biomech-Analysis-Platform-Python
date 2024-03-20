@@ -186,7 +186,6 @@ class Subset(PipelineObject):
         vr_id = conditions[0]
         logic = conditions[1]
         value = conditions[2]
-        print(node_id)
         try:
             vr_value = vr_values[vr_id][node_id]
             found_attr = True

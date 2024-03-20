@@ -394,7 +394,14 @@ class Logsheet(PipelineObject):
                 value = self.clean_value(header_types[col_idx], row[idx])
                 # NEED TO CHECK NOT ONLY IF THE VALUE MATCHES, BUT WHETHER THE ENTIRE LINEAGE MATCHES.
                 # For example, condition names can be reused between subjects (though not within the same subject) but a new ID should be created for each lineage.
-                if value not in name_ids_dict[cls]:
+                row_to_now = [ds.id] + row[0:idx+1]
+                is_new = True
+                if row_num > 0:
+                    for lst in dobj_names[0:row_num]:
+                        if set(row_to_now).issubset(set(lst)):
+                            is_new = False
+                            break
+                if is_new:
                     name_ids_dict[cls][value] = id_creator.create_ro_id(cls) + "_" + value
                     dobj = cls(id = name_ids_dict[cls][value], name = value, action = action) # Create the research object.
                     name_dobjs_dict[cls][value] = dobj

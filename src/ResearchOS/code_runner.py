@@ -433,7 +433,7 @@ class CodeRunner():
         # Handle if this node has an import file variable.
         data_path = self.dataset.dataset_path
         # Isolate the parts of the ordered schema that are present in the file schema.
-        file_node_lineage = [node for node in node_lineage if isinstance(node, tuple(self.file_schema))]
+        file_node_lineage = [node for node in node_lineage if isinstance(node, tuple(self.dataset.file_schema))]
         for node in file_node_lineage[1::-1]:
             data_path = os.path.join(data_path, node.name)
         if hasattr(pr, "import_file_vr_name") and pr.import_file_vr_name is not None:
