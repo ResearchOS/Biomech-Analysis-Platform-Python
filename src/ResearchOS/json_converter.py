@@ -218,6 +218,8 @@ class JSONConverter():
             Callable: IDK note add fancy linking thing once you know what a callable
             Returns None if the method name is not found (e.g. if code changed locations or something)"""
         method_name = json.loads(json_method)
+        if method_name is None:
+            return None
         module_name, *attribute_path = method_name.split(".")
         if module_name not in sys.modules:
             module = importlib.import_module(module_name)

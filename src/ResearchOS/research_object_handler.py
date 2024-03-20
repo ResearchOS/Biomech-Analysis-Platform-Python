@@ -110,17 +110,16 @@ class ResearchObjectHandler:
         for attr_id, value in ordered_attr_result_dict.items():            
             attr_name = ResearchObjectHandler._get_attr_name(attr_id)
             attr_value = JSONConverter.from_json(research_object, attr_name, value, action)
-            attrs[attr_name] = attr_value
+            attrs[attr_name] = attr_value        
 
-        # 3. Set the attributes of the object.
-        research_object.__dict__.update(attrs)
-
-        # 4. Load the class-specific/"complex" builtin attributes.
+        # 3. Load the class-specific/"complex" builtin attributes.
         for attr_name in default_attrs.keys():
             if hasattr(research_object, "load_" + attr_name):
                 load_method = getattr(research_object, "load_" + attr_name)
                 value = load_method(action)
-                research_object.__dict__[attr_name] = value
+                attrs[attr_name] = value
+
+        return attrs
 
     @staticmethod
     def _set_builtin_attributes(research_object: "ResearchObject", default_attrs: dict, kwargs: dict, action: Action):

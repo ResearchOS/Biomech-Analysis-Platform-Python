@@ -429,7 +429,7 @@ class Logsheet(PipelineObject):
                 level = header[2]
                 level_idx = order.index(level)
                 vr_id = header[3]                
-                value = self.clean_value(type_class, row[headers_in_logsheet.index(name)])                
+                value = self.clean_value(type_class, row[headers_in_logsheet.index(name)])                                    
                 # Set up the cache dict for this data object.
                 if not row_dobjs[level_idx].id in attrs_cache_dict:
                     attrs_cache_dict[row_dobjs[level_idx].id] = {}
@@ -438,7 +438,6 @@ class Logsheet(PipelineObject):
                     attrs_cache_dict[row_dobjs[level_idx].id][name] = default_none_vals[type_class]
                 print("Row: ", row_num+self.num_header_rows+1, "Column: ", name, "Value: ", value)
                 prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
-                # prev_value = getattr(row_dobjs[level_idx], name, None) # May not exist yet.
                 if prev_value is not default_none_vals[type_class] and (type(prev_value) == np.ndarray and not np.isnan(prev_value)):                    
                     if prev_value == value or value == default_none_vals[type_class] or np.isnan(value):
                         continue

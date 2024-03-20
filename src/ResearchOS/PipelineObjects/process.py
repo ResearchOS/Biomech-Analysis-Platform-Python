@@ -53,7 +53,7 @@ class Process(PipelineObject):
     prefix = "PR"
     # __slots__ = tuple(all_default_attrs.keys())
 
-    def __init__(self, is_matlab: bool = all_default_attrs["is_matlab"], 
+    def __init__(self, is_matlab: bool = all_default_attrs["is_matlab"],
                  mfolder: str = all_default_attrs["mfolder"], 
                  mfunc_name: str = all_default_attrs["mfunc_name"], 
                  method: Callable = all_default_attrs["method"], 

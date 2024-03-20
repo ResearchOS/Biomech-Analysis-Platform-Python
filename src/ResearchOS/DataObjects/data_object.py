@@ -48,7 +48,7 @@ class DataObject(ResearchObject):
         Returns:
             Any: The value of the VR for this data object.
         """
-        from ResearchOS.PipelineObjects.process import Process
+        func_result = {}
         from ResearchOS.variable import Variable
         # 1. Check that the data object & VR are currently associated. If not, throw an error.
         cursor = action.conn.cursor()
@@ -67,7 +67,11 @@ class DataObject(ResearchObject):
                 # Otherwise, if the value is a Variable, then it's a Variable and need to load its value. using self.load_vr_value()
                 pass
         if len(result) == 0:
-            return (None, False) # If that variable does not exist for this dataobject, skip processing this dataobject.
+            func_result["do_run"] = False
+            func_result["exit_code"] = 1
+            func_result["message"] = f"Failed to run {self.node.name} ({self.node.id}). VR not found: {vr_name_in_code} ({vr.id})"  
+            func_result["vr_value"] = None
+            return func_result # If that variable does not exist for this dataobject, skip processing this dataobject.
         is_active = result[0][1]
         if is_active == 0:
             raise ValueError(f"The VR {vr.name} is not currently associated with the data object {node.id}.")
@@ -109,7 +113,11 @@ class DataObject(ResearchObject):
         params = (data_hash,)
         value = cursor_data.execute(sqlquery, params).fetchone()[0]
         pool_data.return_connection(conn_data)
-        return (pickle.loads(value), True)
+        func_result["do_run"] = True
+        func_result["exit_code"] = 0
+        func_result["message"] = f"Success in {self.name} ({self.id}). VR found: {vr_name_in_code} ({vr.id})"
+        func_result["vr_value"] = pickle.loads(value)
+        return func_result
 
     # def load_dataobject_vrs(self, action: Action) -> None:
     #     """Load all current data values for this data object from the database."""

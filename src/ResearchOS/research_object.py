@@ -1,4 +1,5 @@
 from typing import Any
+import copy
 
 from .research_object_handler import ResearchObjectHandler
 from .action import Action
@@ -85,21 +86,32 @@ class ResearchObject():
         action.exec = True
         action.execute()     
     
-    def __init__(self, action: Action = None, **orig_kwargs):
-        """Initialize the research object."""
-        orig_kwargs = self.__dict__ | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
-        prev_loaded = orig_kwargs["prev_loaded"]
-        del orig_kwargs["id"] # Remove the ID from the kwargs so that it is not set as an attribute.        
-        del orig_kwargs["prev_loaded"] # Remove the _initialized attribute from the kwargs so that it is not set as an attribute.
-        del orig_kwargs["_initialized"]
+    def __init__(self, action: Action = None, **other_kwargs):
+        """Initialize the research object.
+        On initialization, all attributes should be saved! 
+        Unless the object is being loaded, in which case only *changed* attributes should be saved."""
+        attrs = DefaultAttrs(self) # Get the default attributes for the class.
+        default_attrs_dict = attrs.default_attrs
+        if "name" in other_kwargs:
+            self.name = other_kwargs["name"] # Set the name to the default name.
+        elif "name" not in self.__dict__:
+            self.name = default_attrs_dict["name"] # Set the name to the default name.
+        if "notes" in other_kwargs:
+            self.notes = other_kwargs["notes"]
+        elif "notes" not in self.__dict__:
+            self.notes = all_default_attrs["notes"] # Set the notes to the default notes.
+
+        prev_loaded = self.__dict__["prev_loaded"]
+        del self.__dict__["prev_loaded"] # Remove prev_loaded attribute.      
+
+        self_dict = copy.copy(self.__dict__) # Get the current values of the object's attributes. These are mostly default but could have been overriden in the constructor.
+        del self_dict["_initialized"] # Remove the _initialized attribute from the kwargs so that it is not set as an attribute.        
+        del self_dict["id"] # Remove the ID from the kwargs so that it is not set as an attribute.                    
         
         finish_action = False
         if action is None:
             action = Action(name = "__init__", exec = False) # One data object.
-            finish_action = True
-        
-        attrs = DefaultAttrs(self) # Get the default attributes for the class.
-        default_attrs_dict = attrs.default_attrs
+            finish_action = True                
 
         if prev_loaded:
             prev_exists = True
@@ -109,27 +121,26 @@ class ResearchObject():
             # Create a new object.
             query_name = "robj_exists_insert"
             params = (self.id, action.id)
-            action.add_sql_query(id, query_name, params, group_name = "robj_insert")
-            kwargs = default_attrs_dict | orig_kwargs # Set defaults, but allow them to be overwritten by the kwargs.
-        else:
-            kwargs = orig_kwargs # Because the defaults will have all been set, don't include them.
+            action.add_sql_query(id, query_name, params, group_name = "robj_insert")                                
         
+        loaded_attrs = {}
         if prev_exists and not prev_loaded:
             # Load the existing object's attributes from the database.
-            ResearchObjectHandler._load_ro(self, attrs, action)        
-
-        if prev_exists:            
-            # Remove default kwargs values, and kwargs with values already in the object.
-            # Kind of hacky but works for now.
-            tmp_kwargs = kwargs.copy()
-            for key in tmp_kwargs:
-                if key in self.__dict__ and key in kwargs and self.__dict__[key] == kwargs[key]:
-                    del kwargs[key]
-                if key in default_attrs_dict and key in kwargs and default_attrs_dict[key] == kwargs[key]:
-                    del kwargs[key]
-
+            loaded_attrs = ResearchObjectHandler._load_ro(self, attrs, action)
+            self.__dict__.update(loaded_attrs) # Set the loaded attributes.            
+        
+        # If creating a new object, save all attributes.
+        # If loaded an existing object: save only the changed attributes.        
+        save_dict = {}
+        for attr in self_dict:
+            try:
+                if not prev_exists or (self_dict[attr] != default_attrs_dict[attr] and self_dict[attr] != loaded_attrs[attr]):
+                    save_dict[attr] = self_dict[attr]
+            except:
+                pass
+                
+        self._setattrs(default_attrs_dict, save_dict, action, None)
         self._initialized = True
-        self._setattrs(default_attrs_dict, kwargs, action, None)
 
         # Set the attributes.
         if finish_action:

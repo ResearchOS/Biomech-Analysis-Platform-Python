@@ -236,6 +236,9 @@ class CodeRunner():
         level_node_ids_sorted = CodeRunner.get_level_nodes_sorted(robj, action, subset_graph)
             
         batches_dict_to_run, all_batches_graph = CodeRunner.get_batches_dict_to_run(robj, subset_graph, schema_ordered, lowest_level, level_node_ids_sorted)
+        if len(batches_dict_to_run) == 0:
+            print("<<< WARNING: NO NODES TO RUN. >>>")
+            time.sleep(2)
         return batches_dict_to_run, all_batches_graph, G, pool
     
     def get_node_info(self, node_id: str) -> dict:
@@ -312,22 +315,30 @@ class CodeRunner():
         node = pl_obj.level(id = node_id, action = self.action)
         self.node = node
         
-        run_process, vr_values_in = self.check_if_run_node(node_id, G) # Verify whether this node should be run or skipped.
-        skip_msg = None
-        if not vr_values_in:            
-            skip_msg = f"File does not exist for {node.name} ({node.id}), skipping."
-        if vr_values_in is not None and not (self.force_redo or run_process):
-            skip_msg = f"Already done {node.name} ({node.id}), skipping."
-        if skip_msg is not None:
-            print(skip_msg)
+        # result.do_run = bool
+        # result.vr_values = Any
+        # result.message = str
+        # result.exit_code = int
+        result = self.check_if_run_node(node_id, G) # Verify whether this node should be run or skipped.
+        
+        if result.exit_code != 0:
+            print(result.message)
             return
+        
+        # if not vr_values_in:
+        #     skip_msg = f"File does not exist for {node.name} ({node.id}), skipping."
+        # if vr_values_in is not None and not (self.force_redo or run_process):
+        #     skip_msg = f"Already done {node.name} ({node.id}), skipping."
+        # if skip_msg is not None:
+        #     print(skip_msg)
+        #     return
         
         node_info = self.get_node_info(node_id)
         run_msg = f"Running {node.name} ({node.id})."
         print(run_msg)
         is_batch = pl_obj.batch is not None
         assert is_batch == False
-        self.compute_and_assign_outputs(vr_values_in, pl_obj, node_info, is_batch)
+        self.compute_and_assign_outputs(result.vr_values, pl_obj, node_info, is_batch)
 
         self.action.commit = True
         self.action.exec = True
@@ -341,16 +352,28 @@ class CodeRunner():
         """Check whether to run the Process on the given node ID. If False, skip. If True, run.
         """
         self.node_id = node_id                      
+        result = {}
 
-        input_vrs, input_vrs_names_dict = self.get_input_vrs(G)
+        result = self.get_input_vrs(G)
+        input_vrs, input_vrs_names_dict = result["vr_values_in"], result["input_vrs_names_dict"]
         if input_vrs is None:
-            return (False, input_vrs) # The file does not exist. Skip this node.        
+            result["do_run"] = False
+            result["vr_values"] = input_vrs
+            result["exit_code"] = 2
+            result["message"] = f"Skipping {self.node.name} ({self.node.id}). Missing some variable?"     
         earliest_output_vr_time = self.get_earliest_output_vr_time()
         latest_input_vr_time = self.get_latest_input_vr_time(input_vrs, input_vrs_names_dict)
         if latest_input_vr_time < earliest_output_vr_time:
-            return (False, input_vrs) # Do NOT run the process.
+            result["do_run"] = False
+            result["vr_values"] = input_vrs
+            result["exit_code"] = 1
+            result["message"] = f"Skipping {self.node.name} ({self.node.id}). The output VR's are newer than the input VR's."            
         else:
-            return (True, input_vrs) # Run the process
+            result["do_run"] = True
+            result["vr_values"] = input_vrs
+            result["exit_code"] = 0
+            result["message"] = f"Running {self.node.name} ({self.node.id})."
+        return result # Do NOT run the process.
         
     def get_node_lineage(self, node: DataObject, G: nx.MultiDiGraph) -> list:
         """Get the lineage of the DataObject node.
@@ -376,6 +399,7 @@ class CodeRunner():
         vr_values_in = {}     
         input_vrs_names_dict = {}
         lookup_vrs = self.pl_obj.lookup_vrs
+        result = {}
         for var_name_in_code, vr_dict in pr.input_vrs.items():
             vr = vr_dict["VR"]
             slice = vr_dict["slice"]
@@ -401,9 +425,9 @@ class CodeRunner():
                     if lookup_var_name_in_code not in self.pl_obj.vrs_source_pr:
                         raise ValueError(f"Lookup variable {lookup_var_name_in_code} not found in Pipeline Object's vrs_source_pr.")
                     lookup_process = self.pl_obj.vrs_source_pr[lookup_var_name_in_code]                    
-                    lookup_dataobject_name, vr_found = curr_node.load_vr_value(lookup_vr, self.action, lookup_process, lookup_var_name_in_code, node_lineage_use)
-                    if lookup_dataobject_name is None:   
-                        return (None, None) # The file does not exist. Skip this node.
+                    result = curr_node.load_vr_value(lookup_vr, self.action, lookup_process, lookup_var_name_in_code, node_lineage_use)
+                    if result["exit_code"] != 0:   
+                        return result # The file does not exist. Skip this node.
                     
                     # Currently assumes that all DataObjects have unique names across the entire dataset.
                     lookup_dataobject = [n for n in G.nodes if n.name == lookup_dataobject_name][0]
@@ -420,9 +444,10 @@ class CodeRunner():
                 continue                                 
 
             # Not hard-coded input variable.            
-            value, vr_found = curr_node.load_vr_value(vr, self.action, self.pl_obj, var_name_in_code, node_lineage_use)
-            if value is None and not vr_found:
-                return (None, None)
+            result = curr_node.load_vr_value(vr, self.action, self.pl_obj, var_name_in_code, node_lineage_use)
+            if result["exit_code"] != 0:   
+                return result # The file does not exist. Skip this node.
+            value = result["vr_value"]
             if slice is not None:
                 value = value.__getitem__(slice)
             vr_values_in[var_name_in_code] = value
@@ -438,11 +463,17 @@ class CodeRunner():
             data_path = os.path.join(data_path, node.name)
         if hasattr(pr, "import_file_vr_name") and pr.import_file_vr_name is not None:
             file_path = data_path + pr.import_file_ext
-            if not os.path.exists(file_path):                
-                return (None, None)
+            if not os.path.exists(file_path):
+                result["exit_code"] = -1
+                result["message"] = f"{pr.import_file_ext} file does not exist for {node.name} ({node.id})."
+                result["vr_values_in"] = None
+                return result
             vr_values_in[pr.import_file_vr_name] = file_path        
 
-        return (vr_values_in, input_vrs_names_dict)
+        result["exit_code"] = 0
+        result["vr_values_in"] = vr_values_in
+        result["input_vrs_names_dict"] = input_vrs_names_dict
+        return result
     
     def check_output_vrs_active(self) -> bool:
         """Check if the output variables are active.
