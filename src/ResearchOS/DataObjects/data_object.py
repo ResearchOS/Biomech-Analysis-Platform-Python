@@ -10,6 +10,7 @@ from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 all_default_attrs = {}
 
@@ -100,13 +101,14 @@ class DataObject(ResearchObject):
             raise ValueError(f"The VR {vr.name} does not have a value set for the data object {node.id} from any process provided.")
         data_hash = result[pr_idx][0]
 
-        # 3. Get the value from the data_values table.        
-        conn_data = ResearchObjectHandler.pool_data.get_connection()
+        # 3. Get the value from the data_values table. 
+        pool_data = SQLiteConnectionPool(name = "data").pool
+        conn_data = pool_data.get_connection()
         cursor_data = conn_data.cursor()
         sqlquery = "SELECT data_blob FROM data_values_blob WHERE data_blob_hash = ?"        
         params = (data_hash,)
         value = cursor_data.execute(sqlquery, params).fetchone()[0]
-        ResearchObjectHandler.pool_data.return_connection(conn_data)
+        pool_data.return_connection(conn_data)
         return (pickle.loads(value), True)
 
     # def load_dataobject_vrs(self, action: Action) -> None:

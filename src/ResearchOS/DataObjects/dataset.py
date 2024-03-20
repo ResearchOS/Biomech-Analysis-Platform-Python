@@ -118,7 +118,6 @@ class Dataset(DataObject):
         # 2. Get the most recent action ID for the dataset in the data_address_schemas table.
         schema_id = self.get_current_schema_id(id)
         sqlquery = f"SELECT levels_edge_list FROM data_address_schemas WHERE schema_id = '{schema_id}'"
-        # conn = ResearchObjectHandler.pool.get_connection()
         conn = action.conn
         result = conn.execute(sqlquery).fetchone()
 

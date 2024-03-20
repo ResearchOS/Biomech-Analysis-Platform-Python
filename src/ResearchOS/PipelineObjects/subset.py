@@ -4,17 +4,16 @@ import pickle
 
 if TYPE_CHECKING:
     from ResearchOS.action import Action
-    from ResearchOS.DataObjects.data_object import DataObject
 
 import networkx as nx
 
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.DataObjects.dataset import Dataset
-from ResearchOS.variable import Variable
 from ResearchOS.idcreator import IDCreator
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 all_default_attrs = {}
 all_default_attrs["conditions"] = {}
@@ -119,12 +118,13 @@ class Subset(PipelineObject):
         result = cursor.execute(sqlquery, params).fetchall()
 
         # Get the values
-        conn_data = ResearchObjectHandler.pool_data.get_connection()
+        pool_data = SQLiteConnectionPool(name = "data")
+        conn_data = pool_data.get_connection()
         cursor_data = conn_data.cursor()
         sqlquery = "SELECT data_blob, data_blob_hash FROM data_values_blob WHERE data_blob_hash IN ({})".format(", ".join(["?" for _ in result]))
         params = tuple([x[0] for x in result])
         values = cursor_data.execute(sqlquery, params).fetchall()
-        ResearchObjectHandler.pool_data.return_connection(conn_data)
+        pool_data.return_connection(conn_data)
         values = [list(item) for item in values]
 
         for value in values:

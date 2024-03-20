@@ -176,17 +176,18 @@ class ResearchObject():
         return dataset_id
 
     def get_current_schema_id(self, dataset_id: str) -> str:
-        conn = ResearchObjectHandler.pool.get_connection()
+        pool = SQLiteConnectionPool()
+        conn = pool.get_connection()
         sqlquery = f"SELECT action_id FROM data_address_schemas WHERE dataset_id = '{dataset_id}'"
         action_ids = conn.cursor().execute(sqlquery).fetchall()
         action_ids = ResearchObjectHandler._get_time_ordered_result(action_ids, action_col_num=0)
         action_id_schema = action_ids[0][0] if action_ids else None
         if action_id_schema is None:
-            ResearchObjectHandler.pool.return_connection(conn)
+            pool.return_connection(conn)
             return # If the schema is empty and the addresses are empty, this is likely initialization so just return.
 
         sqlquery = f"SELECT schema_id FROM data_address_schemas WHERE dataset_id = '{dataset_id}' AND action_id = '{action_id_schema}'"
         schema_id = conn.execute(sqlquery).fetchone()
         schema_id = schema_id[0] if schema_id else None
-        ResearchObjectHandler.pool.return_connection(conn)
+        pool.return_connection(conn)
         return schema_id

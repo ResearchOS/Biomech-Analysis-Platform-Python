@@ -28,8 +28,8 @@ class ResearchObjectHandler:
 
     instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
     counts = {} # Keep track of the number of instances of each ID.    
-    pool = SQLiteConnectionPool(name = "main")
-    pool_data = SQLiteConnectionPool(name = "data")
+    # pool = SQLiteConnectionPool(name = "main")
+    # pool_data = SQLiteConnectionPool(name = "data")
     default_attrs = {} # Keep track of the default attributes for each class.     
 
     @staticmethod
@@ -262,14 +262,15 @@ class ResearchObjectHandler:
     def _get_attr_name(attr_id: int) -> str:
         """Get the name of an attribute given the attribute's ID. If it does not exist, return an error."""
         # cursor = DBConnectionFactory.create_db_connection().conn.cursor()
-        conn = ResearchObjectHandler.pool.get_connection()
+        pool = SQLiteConnectionPool()
+        conn = pool.get_connection()
         cursor = conn.cursor()
         sqlquery = f"SELECT attr_name FROM attributes_list WHERE attr_id = '{attr_id}'"
         cursor.execute(sqlquery)
         rows = cursor.fetchall()
         if len(rows) == 0:
             raise Exception("No attribute with that ID exists.")
-        ResearchObjectHandler.pool.return_connection(conn)
+        pool.return_connection(conn)
         return rows[0][0]  
     
     @staticmethod
@@ -301,10 +302,11 @@ class ResearchObjectHandler:
         unordered_action_ids = [row[action_col_num] for row in result] # A list of action ID's in no particular order.
         action_ids_str = ', '.join([f"'{action_id}'" for action_id in unordered_action_ids])
         sqlquery = f"SELECT action_id FROM actions WHERE action_id IN ({action_ids_str}) ORDER BY datetime DESC"
-        conn = ResearchObjectHandler.pool.get_connection()
+        pool = SQLiteConnectionPool()
+        conn = pool.get_connection()
         cursor = conn.cursor()
         ordered_action_ids = cursor.execute(sqlquery).fetchall()
-        ResearchObjectHandler.pool.return_connection(conn)
+        pool.return_connection(conn)
         if ordered_action_ids is None or len(ordered_action_ids) == 0:
             return ordered_action_ids # Sometimes it's ok that there's no "simple" attributes?
         ordered_action_ids = [action_id[0] for action_id in ordered_action_ids]

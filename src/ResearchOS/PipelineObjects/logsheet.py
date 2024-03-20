@@ -266,6 +266,8 @@ class Logsheet(PipelineObject):
             first_elem_prefix = "ï»¿"
         else:
             first_elem_prefix = '\ufeff'
+        if self.path.endswith(("xlsx", "xls")):
+            raise ValueError("CSV files only!")
         with open(self.path, "r") as f:
             reader = csv.reader(f, delimiter=',', quotechar='"')            
 

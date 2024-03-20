@@ -25,8 +25,8 @@ class DBInitializer():
         ResearchObjectHandler.counts = {} # Keep track of the number of instances of each ID.
         
         # Reset the connection pools for each database.
-        ResearchObjectHandler.pool = None
-        ResearchObjectHandler.pool_data = None
+        # ResearchObjectHandler.pool = None
+        # ResearchObjectHandler.pool_data = None
         SQLiteConnectionPool._instances = {"main": None, "data": None}
 
         # Remove database files.
@@ -50,7 +50,7 @@ class DBInitializer():
 
         self.db_file = main_db_file
         self.pool = SQLiteConnectionPool(name = "main")
-        ResearchObjectHandler.pool = self.pool
+        # ResearchObjectHandler.pool = self.pool
 
         self.action = Action(name = "initialize database", commit = True, exec = True, force_create = True)
                         
@@ -63,7 +63,7 @@ class DBInitializer():
 
         self.data_db_file = data_db_file
         self.pool_data = SQLiteConnectionPool(name = "data")
-        ResearchObjectHandler.pool_data = self.pool_data
+        # ResearchObjectHandler.pool_data = self.pool_data
         self.conn_data = self.pool_data.get_connection()
         self.create_tables_data_db()
         self.check_tables_exist(self.conn_data, intended_tables_data)
