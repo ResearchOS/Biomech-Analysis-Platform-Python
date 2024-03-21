@@ -103,11 +103,11 @@
           class Logsheet {
             num_header_rows : int
             prefix : str
-            clean_value(type_class: type, raw_value: Any) Any
+            _clean_value(type_class: type, raw_value: Any) Any
             from_json_class_column_names(json_var: dict) dict
             from_json_headers(json_var: str) list
             load_xlsx() list
-            read_and_clean_logsheet(nrows: int) list
+            _read_and_clean_logsheet(nrows: int) list
             read_logsheet() None
             to_json_class_column_names(var: dict) dict
             to_json_headers(headers: list) str
@@ -161,7 +161,7 @@
           }
           class ResearchObject {
             get_current_schema_id(dataset_id: str) str
-            get_dataset_id() str
+            _get_dataset_id() str
             get_vr(name: str) Any
           }
           class ResearchObjectHandler {
@@ -194,7 +194,7 @@
           class Subset {
             prefix : str
             get_subset() nx.MultiDiGraph
-            meets_conditions(node: Any, conditions: dict, G: nx.MultiDiGraph) bool
+            _meets_conditions(node: Any, conditions: dict, G: nx.MultiDiGraph) bool
             validate_conditions(conditions: dict) None
           }
           class Trial {

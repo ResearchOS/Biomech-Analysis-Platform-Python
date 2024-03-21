@@ -6,8 +6,31 @@ theme:
   name: material
   features:
     - navigation.path
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.expand
+    - toc.follow
+    - navigation.top
 
 plugins:
   - search
+  - awesome-pages
   - mkdocstrings:
       default_handler: python
+      handlers:
+        python:
+          options:
+            filters:
+              - "!^__.*__$"
+              - "!^_"
+              - "!^validate"
+              - "!^to_json"
+              - "!^from_json"
+              - "!^load_"
+              - "!^save_"
+
+nav:
+  - Home:
+    - Home: Home/index.md
+    - Home/roadmap.md
+  - ...

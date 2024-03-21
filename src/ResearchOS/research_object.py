@@ -173,7 +173,7 @@ class ResearchObject():
             vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
             ResearchObjectHandler._set_vr_values(self, vr_attrs, action, pr_id)
 
-    def get_dataset_id(self) -> str:
+    def _get_dataset_id(self) -> str:
         """Get the most recent dataset ID."""        
         sqlquery = f"SELECT dataset_id FROM data_address_schemas"
         pool = SQLiteConnectionPool()

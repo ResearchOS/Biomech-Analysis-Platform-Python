@@ -95,7 +95,7 @@ class Subset(PipelineObject):
         from ResearchOS.DataObjects.data_object import DataObject
         print(f'Getting subset of DataObjects: {self.name} ({self.id})')
         # 1. Get the dataset.
-        dataset_id = self.get_dataset_id()
+        dataset_id = self._get_dataset_id()
         ds = Dataset(id = dataset_id)
         schema_id = self.get_current_schema_id(ds.id)
 
@@ -107,7 +107,7 @@ class Subset(PipelineObject):
 
         # Loop through all conditions in the conditions dict. Handle when the condition is a list or a dict.
         conditions_list = []
-        self.extract_and_replace_lists(self.conditions, conditions_list)
+        self._extract_and_replace_lists(self.conditions, conditions_list)
         vr_ids = [cond[0] for cond in conditions_list]
 
         # Get the hashes
@@ -144,7 +144,7 @@ class Subset(PipelineObject):
             vr_values[vr_id][dataobject_id] = values[blob_hash_idx][0]
 
         for node_id in sorted_nodes:
-            if not self.meets_conditions(node_id, self.conditions, G, vr_values, action):
+            if not self._meets_conditions(node_id, self.conditions, G, vr_values, action):
                 continue
             curr_nodes = [node_id]
             curr_nodes.extend(nx.ancestors(G, node_id))
@@ -154,7 +154,7 @@ class Subset(PipelineObject):
             print(f"No nodes meet the conditions of {self.name} ({self.id}).")
         return G.subgraph(nodes_for_subgraph) # Maintains the relationships between all of the nodes in the subgraph.
 
-    def extract_and_replace_lists(self, data, extracted_lists: list, counter=[0]):
+    def _extract_and_replace_lists(self, data, extracted_lists: list, counter=[0]):
         """ Recursively traverses the data structure, replaces each list with a unique number, and extracts the lists. """
         if isinstance(data, list):
             # Append the current list to the extracted lists
@@ -165,22 +165,22 @@ class Subset(PipelineObject):
             return number
         elif isinstance(data, dict):
             # Traverse dictionary and process each value
-            return {key: [self.extract_and_replace_lists(item, extracted_lists, counter) if isinstance(item, list) else item for item in value] if isinstance(value, list) else self.extract_and_replace_lists(value, extracted_lists, counter) for key, value in data.items()}
+            return {key: [self._extract_and_replace_lists(item, extracted_lists, counter) if isinstance(item, list) else item for item in value] if isinstance(value, list) else self._extract_and_replace_lists(value, extracted_lists, counter) for key, value in data.items()}
         else:
             # For other data types, return as is
             return data
 
 
-    def meets_conditions(self, node_id: str, conditions: dict, G: nx.MultiDiGraph, vr_values: dict, action: Action) -> bool:
+    def _meets_conditions(self, node_id: str, conditions: dict, G: nx.MultiDiGraph, vr_values: dict, action: Action) -> bool:
         """Check if the node_id meets the conditions."""
         if isinstance(conditions, dict):
             if "and" in conditions:
                 for cond in conditions["and"]:
-                    if not self.meets_conditions(node_id, cond, G, vr_values, action):
+                    if not self._meets_conditions(node_id, cond, G, vr_values, action):
                         return False
                 return True
             if "or" in conditions:
-                return any([self.meets_conditions(node_id, cond, G, vr_values, action) for cond in conditions["or"]])
+                return any([self._meets_conditions(node_id, cond, G, vr_values, action) for cond in conditions["or"]])
                     
         # Check the condition.
         vr_id = conditions[0]

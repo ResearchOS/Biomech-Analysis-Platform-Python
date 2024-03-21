@@ -118,7 +118,7 @@ class Logsheet(PipelineObject):
             if isinstance(header[3], str) and not (header[3].startswith(Variable.prefix) and ResearchObjectHandler.object_exists(header[3], action)):
                 raise ValueError("Fourth element of each header tuple (if provided as a str) must be a valid pre-existing variable ID!")
             
-        logsheet = self.read_and_clean_logsheet(nrows = 1)
+        logsheet = self._read_and_clean_logsheet(nrows = 1)
         headers_in_logsheet = logsheet[0]
         header_names = [header[0] for header in headers]
         missing = [header for header in headers_in_logsheet if header not in header_names]
@@ -224,7 +224,7 @@ class Logsheet(PipelineObject):
             if not issubclass(value, DataObject):
                 raise ValueError("Values of class column names must be Python types that subclass DataObject!")
             
-        headers = self.read_and_clean_logsheet(nrows = 1)[0]
+        headers = self._read_and_clean_logsheet(nrows = 1)[0]
         if not all([header in headers for header in class_column_names.keys()]):
             raise ValueError("The class column names must be in the logsheet headers!")
 
@@ -259,7 +259,7 @@ class Logsheet(PipelineObject):
         return json.dumps(prefix_var)
 
     #################### Start class-specific methods ####################
-    def read_and_clean_logsheet(self, nrows: int = None) -> list:
+    def _read_and_clean_logsheet(self, nrows: int = None) -> list:
         """Read the logsheet (CSV only) and clean it."""
         logsheet = []
         if platform.system() == "Windows":
@@ -305,7 +305,7 @@ class Logsheet(PipelineObject):
             ValueError: more header rows than logsheet rows or incorrect schema format
             QUESTION except ValueError?"""
         action = Action(name = "read logsheet")
-        ds = Dataset(id = self.get_dataset_id(), action = action)
+        ds = Dataset(id = self._get_dataset_id(), action = action)
         self.validate_class_column_names(self.class_column_names, action, None)
         self.validate_headers(self.headers, action, None)
         self.validate_num_header_rows(self.num_header_rows, action, None)
@@ -315,7 +315,7 @@ class Logsheet(PipelineObject):
         if self.path.endswith(("xlsx", "xls")):
             full_logsheet = self.load_xlsx()
         else:
-            full_logsheet = self.read_and_clean_logsheet()
+            full_logsheet = self._read_and_clean_logsheet()
 
         if len(full_logsheet) < self.num_header_rows:
             raise ValueError("The number of header rows is greater than the number of rows in the logsheet!")
@@ -370,7 +370,7 @@ class Logsheet(PipelineObject):
             for idx in cols_idx:
                 raw_value = row[idx]
                 type_class = header_types[idx]
-                value = self.clean_value(type_class, raw_value)
+                value = self._clean_value(type_class, raw_value)
                 dobj_names[-1].append(value)
         for row_num, row in enumerate(dobj_names):
             if not all([str(cell).isidentifier() for cell in row]):
@@ -393,7 +393,7 @@ class Logsheet(PipelineObject):
             for idx in range(len(row)):
                 cls = order[idx] # The class to create.
                 col_idx = cols_idx[idx] # The index of the column in the logsheet.
-                value = self.clean_value(header_types[col_idx], row[idx])
+                value = self._clean_value(header_types[col_idx], row[idx])
                 # NEED TO CHECK NOT ONLY IF THE VALUE MATCHES, BUT WHETHER THE ENTIRE LINEAGE MATCHES.
                 # For example, condition names can be reused between subjects (though not within the same subject) but a new ID should be created for each lineage.
                 row_to_now = [ds.id] + row[0:idx+1]
@@ -429,7 +429,7 @@ class Logsheet(PipelineObject):
                 level = header[2]
                 level_idx = order.index(level)
                 vr_id = header[3]                
-                value = self.clean_value(type_class, row[headers_in_logsheet.index(name)])                                    
+                value = self._clean_value(type_class, row[headers_in_logsheet.index(name)])                                    
                 # Set up the cache dict for this data object.
                 if not row_dobjs[level_idx].id in attrs_cache_dict:
                     attrs_cache_dict[row_dobjs[level_idx].id] = {}
@@ -465,7 +465,7 @@ class Logsheet(PipelineObject):
         action.commit = True
         action.execute() # Commit the action.
 
-    def clean_value(self, type_class: type, raw_value: Any) -> Any:
+    def _clean_value(self, type_class: type, raw_value: Any) -> Any:
         """Convert to proper type and clean the value of the logsheet cell."""
         try:
             value = type_class(raw_value)

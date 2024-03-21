@@ -37,7 +37,7 @@ class DataObject(ResearchObject):
         action.execute()
         del self.__dict__[name]
 
-    def load_vr_value(self, vr: "Variable", action: Action, process: "Process" = None, vr_name_in_code: str = None, node_lineage: list = []) -> Any:
+    def _load_vr_value(self, vr: "Variable", action: Action, process: "Process" = None, vr_name_in_code: str = None, node_lineage: list = []) -> Any:
         """Load the value of a VR from the database for this data object.
 
         Args:

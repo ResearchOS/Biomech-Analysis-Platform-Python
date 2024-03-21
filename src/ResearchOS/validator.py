@@ -148,7 +148,7 @@ class Validator():
             raise ValueError("Batch elements must be DataObject types.")
         if len(batch) <= 1:
             return
-        ds = Dataset(id = self.get_dataset_id(), action = action)
+        ds = Dataset(id = self._get_dataset_id(), action = action)
         schema_graph = nx.MultiDiGraph(ds.schema)
         schema_ordered = list(nx.topological_sort(schema_graph))        
         max_idx = 0

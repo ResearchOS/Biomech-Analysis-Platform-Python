@@ -197,7 +197,7 @@ class ResearchObjectHandler:
                     break    
 
         # 2. Insert the values into the proper tables.
-        schema_id = research_object.get_current_schema_id(research_object.get_dataset_id())
+        schema_id = research_object.get_current_schema_id(research_object._get_dataset_id())
         for vr in vr_hashes_dict:
             blob_params = (vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["blob"])
             blob_pk = blob_params

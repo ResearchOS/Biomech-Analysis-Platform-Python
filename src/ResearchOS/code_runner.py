@@ -202,7 +202,7 @@ class CodeRunner():
         self.pl_obj = robj 
         self.force_redo = force_redo
 
-        ds = Dataset(id = robj.get_dataset_id(), action = action)
+        ds = Dataset(id = robj._get_dataset_id(), action = action)
         schema_id = robj.get_current_schema_id(ds.id)
 
         self.dataset = ds
@@ -432,7 +432,7 @@ class CodeRunner():
                     if lookup_var_name_in_code not in self.pl_obj.vrs_source_pr:
                         raise ValueError(f"Lookup variable {lookup_var_name_in_code} not found in Pipeline Object's vrs_source_pr.")
                     lookup_process = self.pl_obj.vrs_source_pr[lookup_var_name_in_code]                    
-                    result = curr_node.load_vr_value(lookup_vr, self.action, lookup_process, lookup_var_name_in_code, node_lineage_use)                    
+                    result = curr_node._load_vr_value(lookup_vr, self.action, lookup_process, lookup_var_name_in_code, node_lineage_use)                    
                     if result["exit_code"] != 0:   
                         result["message"] = f"Missing lookup VR {lookup_var_name_in_code}"
                         return result # The file does not exist. Skip this node.
@@ -452,7 +452,7 @@ class CodeRunner():
                 continue                                 
 
             # Not hard-coded input variable.            
-            result = curr_node.load_vr_value(vr, self.action, self.pl_obj, var_name_in_code, node_lineage_use)
+            result = curr_node._load_vr_value(vr, self.action, self.pl_obj, var_name_in_code, node_lineage_use)
             if result["exit_code"] != 0:
                 return result # The file does not exist. Skip this node.
             value = result["vr_values_in"]
