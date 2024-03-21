@@ -201,6 +201,13 @@ class Subset(PipelineObject):
                 break
         if not found_attr:
             return False
+        
+        if isinstance(vr_value, str):
+            vr_value = vr_value.lower()
+        if isinstance(value, str):
+            value = value.lower()
+        if isinstance(value, list):
+            value = [x.lower() if isinstance(x, str) else x for x in value]
 
         # This is probably shoddy logic, but it'll serve as a first pass to handle None types.
         if logic in plural_logic:

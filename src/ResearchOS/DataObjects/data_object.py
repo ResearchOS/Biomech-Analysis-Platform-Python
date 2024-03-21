@@ -4,9 +4,9 @@ import pickle
 
 if TYPE_CHECKING:    
     from ResearchOS.PipelineObjects.process import Process
+    from ResearchOS.variable import Variable
 
 from ResearchOS.research_object import ResearchObject
-from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
@@ -49,6 +49,7 @@ class DataObject(ResearchObject):
             Any: The value of the VR for this data object.
         """
         func_result = {}
+        func_result["input_vrs_names_dict"] = None
         from ResearchOS.variable import Variable
         # 1. Check that the data object & VR are currently associated. If not, throw an error.
         cursor = action.conn.cursor()
@@ -69,7 +70,7 @@ class DataObject(ResearchObject):
         if len(result) == 0:
             func_result["do_run"] = False
             func_result["exit_code"] = 1
-            func_result["message"] = f"Failed to run {self.name} ({self.id}). VR not found: {vr_name_in_code} ({vr.id})"  
+            func_result["message"] = f"Failed to run {self.name} ({self.id}). {vr_name_in_code} ({vr.id}) not actively connected to {node.id}."
             func_result["vr_values_in"] = None
             return func_result # If that variable does not exist for this dataobject, skip processing this dataobject.
         is_active = result[0][1]
@@ -115,7 +116,7 @@ class DataObject(ResearchObject):
         pool_data.return_connection(conn_data)
         func_result["do_run"] = True
         func_result["exit_code"] = 0
-        func_result["message"] = f"Success in {self.name} ({self.id}). VR found: {vr_name_in_code} ({vr.id})"
+        func_result["message"] = f"Success in {self.name} ({self.id}). Lookup VR found: {vr_name_in_code} ({vr.id})"
         func_result["vr_values_in"] = pickle.loads(value)
         return func_result
 

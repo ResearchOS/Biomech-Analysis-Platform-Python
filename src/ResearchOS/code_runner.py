@@ -115,46 +115,39 @@ class CodeRunner():
         if robj.batch is not None:
             all_batches_graph = CodeRunner.get_batch_graph(robj, robj.batch, subset_graph, schema_ordered, lowest_level)
 
-            if robj.batch is None or len(robj.batch) == 0:
-                batch = [Dataset, lowest_level]
-            else:
-                batch = robj.batch
-
-            batch_dict = {}            
-
-            def get_sub_batch_dict(sub_batch_dict: dict, remaining_batch_levels: list, all_batches_graph: nx.MultiDiGraph) -> None:
-                for b in remaining_batch_levels:
-                    b_nodes = [n for n in all_batches_graph.nodes() if n.startswith(b.prefix)]
-                    for node in b_nodes:
-                        # if len(remaining_batch_levels) == 1:
-                        #     sub_batch_dict[node] = None
-                        #     return
-                        sub_batch_dict[node] = {}
-                        get_sub_batch_dict(sub_batch_dict[node], remaining_batch_levels[1:], all_batches_graph)
-
-            get_sub_batch_dict(batch_dict, batch, all_batches_graph)
-
-
             # Parse the MultiDiGraph to get the batches to run.
             if robj.batch is None or len(robj.batch) == 0:
                 level = Dataset
+                batch_list = [Dataset, schema_ordered[-1]]
+            elif len(robj.batch) == 1:
+                level = robj.batch[0]
+                batch_list = [robj.batch[0], schema_ordered[-1]]
             else:
                 level = robj.batch[0]
-            batches_dict_to_run = nx.to_dict_of_dicts(all_batches_graph)
-            del_keys = []        
-            for key in batches_dict_to_run.keys():
-                if not key.startswith(level.prefix):
-                    del_keys.append(key)
-            for key in del_keys:
-                del batches_dict_to_run[key]
+                batch_list = robj.batch
 
-            batches_dict_to_run = CodeRunner.clean_batches_dict(batches_dict_to_run, robj.batch[-1].prefix)
+            def graph_to_dict(graph: nx.MultiDiGraph, batches_dict: dict, batch_list: list, node: str = None) -> dict:
+                if len(batch_list) == 0:
+                    return None
+                level = batch_list[0]
+                successors = list(graph.successors(node))
+                level_nodes = [n for n in successors if n.startswith(level.prefix)]
+                for n in level_nodes:
+                    batches_dict[n] = {}
+                    batches_dict[n] = graph_to_dict(graph, batches_dict[n], batch_list[1:], n)
+                return batches_dict
+            
+            batches_dict_to_run = {}
+            top_level_nodes = [node for node in all_batches_graph.nodes() if node.startswith(level.prefix)]
+            for node in top_level_nodes:
+                batches_dict_to_run[node] = {}
+                batches_dict_to_run[node] = graph_to_dict(all_batches_graph, batches_dict_to_run[node], batch_list[1:], node)
 
             # Dict of dicts, where each top-level dict is a batch to run.
             # Get a top level node.
-            top_level_node = [n for n in all_batches_graph.nodes() if all_batches_graph.in_degree(n) == 0][0]
-            descendant = list(nx.descendants(all_batches_graph, top_level_node))[0]
-            CodeRunner.depth = nx.shortest_path_length(all_batches_graph, top_level_node, descendant)
+            any_top_level_node = [n for n in batches_dict_to_run][0]
+            descendant = list(nx.descendants(all_batches_graph, any_top_level_node))[0]
+            CodeRunner.depth = nx.shortest_path_length(all_batches_graph, any_top_level_node, descendant)
         else:
             batches_dict_to_run = {node: None for node in level_node_ids_sorted}
             CodeRunner.depth = 0
@@ -168,17 +161,6 @@ class CodeRunner():
             highest_level = None
         CodeRunner.highest_level = highest_level
         return batches_dict_to_run, all_batches_graph
-    
-    @staticmethod
-    def clean_batches_dict(batches_dict: dict, prefix: str) -> dict:
-        """Replace the {0: {}} with None."""
-        result = {}
-        for k, v in batches_dict.items():
-            if k.startswith(prefix):
-                result[k] = None
-            else:
-                result[k] = CodeRunner.clean_batches_dict(v, prefix)
-        return result
     
     def get_batch_graph(robj: "ResearchObject", batch: list, subgraph: nx.MultiDiGraph = nx.MultiDiGraph(), schema_ordered: list = [], lowest_level: type = None) -> dict:
         """Get the batch dictionary of DataObject names. Needs to be recursive to account for the nested dicts.
@@ -313,13 +295,19 @@ class CodeRunner():
         # Now that all the input VR's have been gotten, change the node to the one to save the output VR's to.
         self.node = self.highest_level(id = batch_id)
                 
-        def process_dict(self, batch_graph, input_dict, G, vr_name_in_code: str):
-            for key, value in input_dict.items():
-                if isinstance(value, dict):
+        def process_dict(self, batch_graph, input_dict, G, vr_name_in_code: str = None):
+            all_keys = list(input_dict.keys())
+            if any(isinstance(key, int) for key in all_keys):
+                raise ValueError("Check your batch list, no Variables at this level.")
+            is_var_name_in_code = all_keys == list(self.pl_obj.input_vrs.keys())
+            do_recurse = is_var_name_in_code or not any([all_keys[i].startswith(self.lowest_level.prefix) for i in range(len(all_keys))])
+            if do_recurse and isinstance(input_dict, dict):
+                for value in input_dict.values():
                     process_dict(self, batch_graph, value, G, vr_name_in_code)
-                else:   
-                    input_dict[key] = batch_graph.nodes[key][vr_name_in_code]
-
+                return
+                        
+            for dataobj_id in all_keys:
+                input_dict[dataobj_id] = batch_graph.nodes[dataobj_id][vr_name_in_code]
 
         input_dict = {node: copy.deepcopy(batch_dict) for node in self.pl_obj.input_vrs.keys()}
         for var_name_in_code in input_dict:
@@ -380,9 +368,10 @@ class CodeRunner():
             result["vr_values_in"] = input_vrs
             result["exit_code"] = 2
             result["message"] = f"Skipping {self.node.name} ({self.node.id}). Missing some variable?"     
+            return result
         earliest_output_vr_time = self.get_earliest_output_vr_time()
         latest_input_vr_time = self.get_latest_input_vr_time(input_vrs, input_vrs_names_dict)
-        if latest_input_vr_time < earliest_output_vr_time:
+        if latest_input_vr_time < earliest_output_vr_time and not self.force_redo:
             result["do_run"] = False
             result["vr_values_in"] = input_vrs
             result["exit_code"] = 1
@@ -400,11 +389,13 @@ class CodeRunner():
         anc_nodes = nx.ancestors(G, node)
         if len(anc_nodes) == 0:
             return [node]
-        anc_nodes_list = [node for node in nx.topological_sort(G.subgraph(anc_nodes))][::-1]
-        anc_nodes = []
-        for idx, level in enumerate(self.schema_order[1:-1]):
-            anc_nodes.append(anc_nodes_list[idx])                         
-        node_lineage = [node] + anc_nodes + [self.dataset] # Smallest to largest.
+        anc_nodes = [node for node in nx.topological_sort(G.subgraph(anc_nodes))][::-1]
+        # anc_nodes = []
+        # idx = self.schema_order.index(node.__class__)
+        # sublist = self.schema_order[idx:]
+        # for idx, level in enumerate(sublist.reverse()):
+        #     anc_nodes.append(anc_nodes_list[idx])                         
+        node_lineage = [node] + anc_nodes # Smallest to largest.
         return node_lineage
 
     def get_input_vrs(self, G: nx.MultiDiGraph) -> dict:
@@ -418,11 +409,9 @@ class CodeRunner():
         vr_values_in = {}     
         input_vrs_names_dict = {}
         lookup_vrs = self.pl_obj.lookup_vrs
-        result = {}
         for var_name_in_code, vr_dict in pr.input_vrs.items():
             vr = vr_dict["VR"]
             slice = vr_dict["slice"]
-            vr_found = False
             input_vrs_names_dict[var_name_in_code] = vr
             node_lineage_use = node_lineage
             curr_node = node_lineage_use[0] # Always the lowest level to start.
@@ -433,7 +422,6 @@ class CodeRunner():
             # Hard-coded input variable.
             if type(vr) is not dict and vr.hard_coded_value is not None: 
                 vr_values_in[var_name_in_code] = vr.hard_coded_value
-                vr_found = True
                 continue   
 
             # Check if this variable should be pulled from another DataObject.
@@ -444,8 +432,9 @@ class CodeRunner():
                     if lookup_var_name_in_code not in self.pl_obj.vrs_source_pr:
                         raise ValueError(f"Lookup variable {lookup_var_name_in_code} not found in Pipeline Object's vrs_source_pr.")
                     lookup_process = self.pl_obj.vrs_source_pr[lookup_var_name_in_code]                    
-                    result = curr_node.load_vr_value(lookup_vr, self.action, lookup_process, lookup_var_name_in_code, node_lineage_use)
+                    result = curr_node.load_vr_value(lookup_vr, self.action, lookup_process, lookup_var_name_in_code, node_lineage_use)                    
                     if result["exit_code"] != 0:   
+                        result["message"] = f"Missing lookup VR {lookup_var_name_in_code}"
                         return result # The file does not exist. Skip this node.
                     
                     # Currently assumes that all DataObjects have unique names across the entire dataset.
@@ -464,7 +453,7 @@ class CodeRunner():
 
             # Not hard-coded input variable.            
             result = curr_node.load_vr_value(vr, self.action, self.pl_obj, var_name_in_code, node_lineage_use)
-            if result["exit_code"] != 0:   
+            if result["exit_code"] != 0:
                 return result # The file does not exist. Skip this node.
             value = result["vr_values_in"]
             if slice is not None:
