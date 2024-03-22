@@ -19,6 +19,8 @@ plugins:
       default_handler: python
       handlers:
         python:
+          rendering:
+            show_source: true
           options:
             filters:
               - "!^__.*__$"
@@ -29,8 +31,7 @@ plugins:
               - "!^load_"
               - "!^save_"
 
-nav:
-  - Home:
-    - Home: Home/index.md
-    - Home/roadmap.md
-  - ...
+markdown_extensions:
+  - pymdownx.highlight:
+      use_pygments: true
+  - pymdownx.superfences

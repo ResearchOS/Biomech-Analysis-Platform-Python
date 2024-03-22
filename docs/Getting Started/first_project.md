@@ -24,12 +24,12 @@ We'll need to create some dummy data so that our project has something to work w
 The first row is our headers, and the second row contains the value for the one trial we've recorded of our one subject, Larry. We'll use this data later.
 
 ## Step 3: Create Research Objects.
-Next, we need to define some [Research Objects](../Research Objects/research_object.md) that our pipeline will be built from. In your project folder, create a new folder called `research_objects`. We'll need a few types of research objects, so in this folder we will create a new file for each type. To define our [Dataset](../Research%20Objects//Data%20Objects/dataset.md), create a file called `dataset.py`. To define the [Logsheet](../Research%20Objects/Pipeline%20Objects/logsheet.md) that we created in step 2, create a file called `logsheet.py`. To define the [Variables](../Research%20Objects/variable.md) that we'll be using, create a file called `variable.py`. Finally, to define the [Processes](../Research%20Objects/Pipeline%20Objects/process.md) that we'll be applying to our data, create a file called `process.py`.
+  To define the [Variables](../Research%20Objects/variable.md) that we'll be using, create a file called `variable.py`. Finally, to define the [Processes](../Research%20Objects/Pipeline%20Objects/process.md) that we'll be applying to our data, create a file called `process.py`.
 
-### Step 3a: Define the Dataset.
-We need to define the attributes of this dataset. The minimum attributes that we need to define are its `schema` and `dataset_path`. 
-#### Schema:
-We need to define a schema to tell ResearchOS how our data is structured. In this case, we have a [Dataset](../Research%20Objects//Data%20Objects/dataset.md) that contains Subjects, and each Subject contains Trials. These are two examples of [Data Objects](../Research%20Objects/Data%20Objects/data_object.md). In order for ResearchOS to cover any branch of science, Data Objects are custom to each project. To define a Subject and Trial class, let's create a new folder for our data objects `research_objects/data_objects`. In the `research_objects/data_objects` folder, create a file called `subject.py` with the following contents:
+## Step 3: Define the Dataset.
+Next, we need to define some [Research Objects](../Research Objects/research_object.md) that our pipeline will be built from. In your project folder, create a new folder called `research_objects`. We'll need a few types of research objects, so in this folder we will create a new file for each type. To define our [Dataset](../Research%20Objects//Data%20Objects/dataset.md), create a file called `dataset.py`.
+
+We need to define the attributes of this dataset. The minimum attributes that we need to define are its `schema` and `dataset_path`. We need to define a schema to tell ResearchOS how our data is structured. In this case, we have a [Dataset](../Research%20Objects//Data%20Objects/dataset.md) that contains Subjects, and each Subject contains Trials. These are two examples of [Data Objects](../Research%20Objects/Data%20Objects/data_object.md). In order for ResearchOS to cover any branch of science, Data Objects are custom to each project. To define a Subject and Trial class, let's create a new folder for our data objects `research_objects/data_objects`. In the `research_objects/data_objects` folder, create a file called `subject.py` with the following contents:
 ```python
 import ResearchOS as ros
 
@@ -75,7 +75,7 @@ dataset.schema = [
 dataset.dataset_path = "your_project_folder/data"
 ```
 
-### Step 3b: Define the Variables.
+## Step 4: Define the Variables.
 Next, we need to define the [Variables](../Research%20Objects/variable.md) that we'll be using. In `research_objects/variable.py`, type the following:
 ```python
 import ResearchOS as ros
@@ -85,8 +85,8 @@ trial_name = ros.Variable(id = "VR2")
 value = ros.Variable(id = "VR3")
 ```
 
-### Step 3c: Define the Logsheet
-Next, we need to define the [Logsheet](../Research%20Objects/Pipeline%20Objects/logsheet.md) attributes for the csv file that we created in step 2. The minimum attributes that we need to define are its `path`, `headers`, `num_header_rows`, and `class_column_names`.
+## Step 5: Define the Logsheet
+To define the [Logsheet](../Research%20Objects/Pipeline%20Objects/logsheet.md) that we created in step 2, create a file called `research_objects/logsheet.py`. We need to define the [Logsheet](../Research%20Objects/Pipeline%20Objects/logsheet.md) attributes for the csv file that we created in step 2. The minimum attributes that we need to define are its `path`, `headers`, `num_header_rows`, and `class_column_names`.
 
 In `research_objects/logsheet.py`, type the following:
 ```python
@@ -114,3 +114,5 @@ from research_objects import dataset as ds
 
 lg.logsheet.read_logsheet()
 ```
+
+## Step 5: 
