@@ -3,7 +3,7 @@
 This page will guide you through the installation of Python, an Integrated Development Environment (IDE), and the ResearchOS package. If you want to use MATLAB with ResearchOS, you will also need to install the MATLAB Engine API for Python.
 
 ## Installing Python and an Integrated Development Environment (IDE)
-1. Install Python 3.6 or later on your computer. Check [this Mathworks page](https://www.mathworks.com/support/requirements/python-compatibility.html) for a list of compatible Python & MATLAB versions.
+1. Install Python 3.6 or later on your computer. If using MATLAB, check [this Mathworks page](https://www.mathworks.com/support/requirements/python-compatibility.html) for a list of compatible Python & MATLAB versions and the table below for the MATLAB Engine API version.
     - Windows: While I recommend [downloading Python from the official website](https://www.python.org/downloads/), on Windows machines I have found [downloading Python from the Windows store](https://apps.microsoft.com/search?query=python&hl=en-us&gl=US) to be the most user-friendly for some reason. If downloading from the official website, select the "x86 executable installer" and **be sure to add Python to your PATH** during installation.
     - Mac: You can download Python from the Python website or use [Homebrew](https://brew.sh/). If you want to use MATLAB with ResearchOS, be aware of Python version requirements for your version of MATLAB. 
 2. Make sure you have a program to run Python code installed, called an Integrated Development Environment (IDE). There are many options for Python, such as [Spyder](https://www.spyder-ide.org/), [PyCharm](https://www.jetbrains.com/pycharm/), [Visual Studio Code](https://code.visualstudio.com/), or [Jupyter Notebook](https://jupyter.org/). I will be providing instructions for Visual Studio Code (VS Code), but the process is similar for other programs.
@@ -30,7 +30,7 @@ import researchos as ros
 ## Optional: Installing the MATLAB Engine API for Python
 If you want to use MATLAB with ResearchOS, you will need to install the MATLAB Engine API for Python. This installation is separate from the MATLAB software itself. Refer to the table below for the proper Matlab Engine API version for a subset of MATLAB releases. 
 
-To install type `pip install matlabengine==##.##.##`. You can find more instructions for installing the MATLAB Engine API for Python [here](https://www.mathworks.com/help/matlab/matlab-engine-for-python.html).
+To install type `pip install matlabengine==##.##.##` in the terminal. You can find more instructions for installing the MATLAB Engine API for Python [here](https://www.mathworks.com/help/matlab/matlab-engine-for-python.html).
 
 | MATLAB Version | MATLAB Engine API Version |
 |----------------|---------------------------|
@@ -39,3 +39,8 @@ To install type `pip install matlabengine==##.##.##`. You can find more instruct
 | R2021b         | 9.11.19                   |
 
 If you have a MATLAB version that is not listed here and would like to contribute its corresponding MATLAB Engine API version to these docs, please open an issue or pull request on the [ResearchOS GitHub page](https://github.com/ResearchOS/ResearchOS).
+
+## Optional: Share the MATLAB Engine for Interactivity and Faster ResearchOS Startup
+By default ResearchOS starts a new MATLAB Engine process each time a [Process](../Research%20Objects/Pipeline%20Objects/process.md) runs. This is slow, and does not allow the user to interact with the MATLAB session. To speed up ResearchOS startup and allow the user to interact with the MATLAB session, you can share the MATLAB Engine process from MATLAB. To do this, in MATLAB's Command Window type `matlab.engine.shareEngine('ResearchOS')`. This will share the MATLAB interactive window's session with ResearchOS. Then, breakpoints can be set in MATLAB and the MATLAB session can be interacted with while ResearchOS is running.
+
+To automatically share MATLAB's session with ResearchOS, add the `matlab.engine.shareEngine('ResearchOS')` to your `startup.m` file. This file is located in MATLAB's `userpath` directory, which can be found by typing `userpath` in MATLAB's Command Window. If the `startup.m` file does not exist, you can create it in the `userpath` directory. This will automatically share the MATLAB session with ResearchOS each time MATLAB is started.

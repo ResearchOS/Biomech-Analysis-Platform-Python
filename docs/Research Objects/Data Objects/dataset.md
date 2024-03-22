@@ -12,6 +12,7 @@ This is the path to where the dataset is stored in the file system. For example,
 This defines how the `Dataset` is structured: which Data Objects are in this Dataset, and the hierarchical relationships between them. The `schema` is defined as an "edge list", which is a list of lists. Each sublist contains two elements: the parent Data Object and the child Data Object, always starting with the `Dataset` class. For example, if the `Dataset` contains `Subject` and `Trial` Data Objects, and each `Subject` has multiple `Trials`, the `schema` would be defined as 
 ```python
 import ResearchOS as ros
+from research_objects.data_objects import Subject, Trial
 schema = [
     [ros.Dataset, Subject],
     [Subject, Trial]
@@ -32,14 +33,18 @@ dataset_folder
 
 However, for various reasons, sometimes the file system structure is different from the `schema`. In this case, the `file_schema` attribute can be used to specify the file system structure differently than the `Dataset` `schema`. For example, if my file structure were the same as above, but my `schema` consisted of a `Subject` Data Object which had multiple `Task` Data Objects, and each `Task` contained multiple `Trial` Data Objects, the schema would be defined as
 ```python
+import ResearchOS as ros
+from research_objects.data_objects import Subject, Task, Trial
 schema = [
     [ros.Dataset, Subject],
     [Subject, Task],
     [Task, Trial]
 ]
 ```
-But the file system structure may still look like the above folder structure. In this case, the `file_schema` would be defined as
+Because file system structure may still look like the above folder structure, the `file_schema` in this case would be defined as
 ```python
+import ResearchOS as ros
+from research_objects.data_objects import Subject, Trial
 file_schema = [
     [ros.Dataset, Subject],
     [Subject, Trial]

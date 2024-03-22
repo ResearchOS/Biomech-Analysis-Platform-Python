@@ -283,9 +283,6 @@ class Logsheet(PipelineObject):
     def load_xlsx(self) -> list:
         """Load the logsheet as a list of lists using Pandas.
         
-        Args:
-            self
-            
         Returns:
             list of logsheet values from excel"""        
         df = pd.read_excel(self.path, header = None)
@@ -295,15 +292,11 @@ class Logsheet(PipelineObject):
     def read_logsheet(self) -> None:
         """Run the logsheet import process.
         
-        Args:
-            self
-        
         Returns:
             None
         
         Raises:
-            ValueError: more header rows than logsheet rows or incorrect schema format
-            QUESTION except ValueError?"""
+            ValueError: more header rows than logsheet rows or incorrect schema format?"""
         action = Action(name = "read logsheet")
         ds = Dataset(id = self._get_dataset_id(), action = action)
         self.validate_class_column_names(self.class_column_names, action, None)

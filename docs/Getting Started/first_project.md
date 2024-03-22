@@ -12,13 +12,13 @@ import researchos as ros
 
 ros.DBInitializer()
 ```
-If you run that file, it will create two new files in the project folder: `researchos.db` and `researchos_data.db`. The first file stores all of the information about the structure and history of our project, while the second file stores the actual data that we compute.
+Run that file and it will create two new files in the project folder: `researchos.db` and `researchos_data.db`. The `researchos.db` file stores all of the information about the structure and history of our project, while the `researchos_data.db` file stores the actual data that we compute.
 
 ## Step 2: Create some dummy data.
 We'll need to create some dummy data so that our project has something to work with. We need to create a .csv file, which ResearchOS calls a [Logsheet](../Research%20Objects/Pipeline%20Objects/logsheet.md). In a typical project, this file would contain the records of an experiment, but for this example we'll just create a file called `dummy_logsheet.csv` with the following contents:
 ```csv
-"Subject","Trial","Value"
-"Larry",1,3
+"Subject",  "Trial",  "Value"
+"Larry",    1,        3
 ```
 
 The first row is our headers, and the second row contains the value for the one trial we've recorded of our one subject, Larry. We'll use this data later.
@@ -26,38 +26,22 @@ The first row is our headers, and the second row contains the value for the one 
 ## Step 3: Define the Dataset.
 Next, we need to define some [Research Objects](../Research Objects/research_object.md) that our pipeline will be built from. In your project folder, create a new folder called `research_objects`. We'll need a few types of research objects, so in this folder we will create a new file for each type. To define our [Dataset](../Research%20Objects//Data%20Objects/dataset.md), create a file called `dataset.py`.
 
-We need to define the attributes of this dataset. The minimum attributes that we need to define are its `schema` and `dataset_path`. We need to define a schema to tell ResearchOS how our data is structured. In this case, we have a [Dataset](../Research%20Objects//Data%20Objects/dataset.md) that contains Subjects, and each Subject contains Trials. These are two examples of [Data Objects](../Research%20Objects/Data%20Objects/data_object.md). In order for ResearchOS to cover any branch of science, Data Objects are custom to each project. To define a Subject and Trial class, let's create a new folder for our data objects `research_objects/data_objects`. In the `research_objects/data_objects` folder, create a file called `subject.py` with the following contents:
+We need to define the attributes of this dataset. The minimum attributes that we need to define are its `schema` and `dataset_path`. We need to define a schema to tell ResearchOS how our data is structured. In this case, we have a [Dataset](../Research%20Objects//Data%20Objects/dataset.md) that contains `Subject` Data Objects, and each `Subject` contains `Trial` Data Objects. These are two examples of custom [Data Objects](../Research%20Objects/Data%20Objects/data_object.md). In order for ResearchOS to cover any branch of science, Data Objects are custom defined each project. To define a `Subject` and `Trial` class, let's create a new folder for our data objects `research_objects/data_objects`. In the `research_objects/data_objects` folder, create a file called `subject.py` with the following contents:
 ```python
 import ResearchOS as ros
-
-all_default_attrs = {}
-computer_specific_attr_names = []
 
 class Subject(ros.DataObject):
 
     prefix: str = "SJ" # Needs to start with "SJ" for "Subject", and be unique within the project.
-
-    def __init__(self, **kwargs):
-        if self._initialized:
-            return
-        super().__init__(**kwargs)
 ```
 
 Similarly, create a file called `trial.py` in the `research_objects/data_objects` folder with the following contents:
 ```python
 import ResearchOS as ros
 
-all_default_attrs = {}
-computer_specific_attr_names = []
-
 class Trial(ros.DataObject):
 
     prefix: str = "TR" # Needs to start with "TR" for "Trial", and be unique within the project.
-
-    def __init__(self, **kwargs):
-        if self._initialized:
-            return
-        super().__init__(**kwargs)
 ```
 Now that the [Data Objects](../Research%20Objects/Data%20Objects/data_object.md) are defined we can define the schema for the Dataset. We'll also define the `dataset_path` now too, which requires that we specify a folder in your project to put the data. Let's call it `data`. Type the following into `research_objects/dataset.py`:
 ```python

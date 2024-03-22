@@ -18,7 +18,7 @@ This will perform the following actions:
 
 2. Create a .db file in the 'researchos_db' directory with the proper schema.
 
-3. Create a new [Project](Research Object Types/Pipeline Object Types/project.md) object in the .db file, and sets it to be the current [Project](Research Object Types/Pipeline Object Types/project.md).
+3. Create a new [Project](../Research%20Objects/Pipeline%20Objects/project.md) object in the .db file, and sets it to be the current [Project](../Research%20Objects/Pipeline%20Objects/project.md). 
 
 Then, create a file called `example1.py` with the following contents:
 ```python

@@ -1,5 +1,10 @@
 # Process
 
+## Import Attributes
+### import_file_ext
+
+### import_file_vr_name
+
 ::: src.ResearchOS.PipelineObjects.process.Process
 
 To run a Process with process.run():
