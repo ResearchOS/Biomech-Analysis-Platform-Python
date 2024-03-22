@@ -106,7 +106,7 @@ logsheet.headers = [
 ]
 ```
 
-## Step 4: Run the Logsheet.
+## Step 6: Run the Logsheet.
 Now that we have defined our [Research Objects](../Research%20Objects/research_object.md), we can run the Logsheet to initialize the dataset in our database. In `run_project.py`, type the following:
 ```python
 from research_objects import logsheet as lg
@@ -114,5 +114,38 @@ from research_objects import dataset as ds
 
 lg.logsheet.read_logsheet()
 ```
+After running this file, you should see a new dataset in your database with the data from the Logsheet.
+## Step 7: Define the Process.
+We need to define the [Process](../Research%20Objects/Pipeline%20Objects/process.md) that will square the value in our dataset. In `research_objects/processes.py`, type the following:
+```python
+import ResearchOS as ros
+from research_objects import variables as vr
+from square_value import square_value
 
-## Step 5: 
+square_value = ros.Process(id = "PR1") # Needs to start with "PR" for "Process", and be unique within the project.
+square_value.set_input_vr(number = vr.value)
+square_value.set_output_vr(squared = vr.squared_value)
+square_value.subset_id = "SS1"
+square_value.method = square_value
+```
+In another file called `square_value.py`, type the following:
+```python
+def square_value(number: int):
+    return number ** 2
+```
+
+## Step 8: Create the Subset.
+We need to define the [Subset](../Research%20Objects/Pipeline%20Objects/subset.md) to know which subset of our data the Process will operate on. In `research_objects/subset.py`, type the following to define a subset that includes all of the data in our dataset:
+```python
+import ResearchOS as ros
+
+subset = ros.Subset(id = "SS1") # Needs to start with "SS" for "Subset", and be unique within the project.
+subset.conditions = {}
+```
+## Step 9: Run the Process.
+Finally, we will run the Process to square the value in our dataset. In `run_project.py`, type the following:
+```python
+from research_objects import processes as pr
+
+pr.square_value.run()
+```
