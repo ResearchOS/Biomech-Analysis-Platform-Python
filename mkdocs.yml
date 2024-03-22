@@ -15,7 +15,6 @@ theme:
 plugins:
   - search
   - awesome-pages
-  - autorefs
   - mkdocstrings:
       default_handler: python
       handlers:
