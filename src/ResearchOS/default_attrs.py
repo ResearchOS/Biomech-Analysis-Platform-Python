@@ -25,14 +25,21 @@ class DefaultAttrs():
         from ResearchOS.DataObjects.data_object import computer_specific_attr_names as d_computer_specific_attr_names
 
         from ResearchOS.DataObjects.data_object import DataObject
-        from ResearchOS.PipelineObjects.pipeline_object import PipelineObject        
+        from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
+
+        from ResearchOS.DataObjects.dataset import Dataset
 
         try:
             module = importlib.import_module(cls.__module__)
         except ImportError:
-            raise ImportError(f"The class {cls} could not be imported.")        
-        class_default_attrs = getattr(module, "all_default_attrs")
-        class_computer_specific_attr_names = getattr(module, "computer_specific_attr_names")
+            raise ImportError(f"The class {cls} could not be imported.")
+
+        # Custom Data Object subclasses don't have default attrs, so for consistency give them dummy empty default attrs
+        class_default_attrs = {}
+        class_computer_specific_attr_names = []
+        if cls not in DataObject.__subclasses__() or cls == Dataset:        
+            class_default_attrs = getattr(module, "all_default_attrs")
+            class_computer_specific_attr_names = getattr(module, "computer_specific_attr_names")
 
         if cls in DataObject.__subclasses__():
             parent_default_attrs = d_default_attrs
