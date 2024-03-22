@@ -1,9 +1,9 @@
 # First Project
 To familiarize you with the basics of how ResearchOS works, let's create a simple one step pipeline that reads a single number from a [Logsheet](../Research%20Objects/Pipeline%20Objects/logsheet.md), squares it, and stores that value. 
 
-These instructions will begin with the assumption that you have already created a new project directory, activated a virtual environment within that folder, and installed ResearchOS. If you have not done so, please refer to the [Installation](../installation.md) section.
+These instructions will begin with the assumption that you have already created a new project directory, activated a virtual environment within that folder, and installed ResearchOS. If you have not done so, please refer to the [Installation](../Getting%20Started/installation.md) section.
 
-Similar to the [Installation](../installation.md) section, I will be providing instructions for Visual Studio Code (VS Code), but the process is similar for other programs.
+Similar to the [Installation](../Getting%20Started/installation.md) section, I will be providing instructions for Visual Studio Code (VS Code), but the process is similar for other programs.
 
 ## Step 1: Initialize the database.
 1. In VS Code, create a new file called `run_project.py` in your project directory. In that file, type the following:
@@ -22,9 +22,6 @@ We'll need to create some dummy data so that our project has something to work w
 ```
 
 The first row is our headers, and the second row contains the value for the one trial we've recorded of our one subject, Larry. We'll use this data later.
-
-## Step 3: Create Research Objects.
-  To define the [Variables](../Research%20Objects/variable.md) that we'll be using, create a file called `variable.py`. Finally, to define the [Processes](../Research%20Objects/Pipeline%20Objects/process.md) that we'll be applying to our data, create a file called `process.py`.
 
 ## Step 3: Define the Dataset.
 Next, we need to define some [Research Objects](../Research Objects/research_object.md) that our pipeline will be built from. In your project folder, create a new folder called `research_objects`. We'll need a few types of research objects, so in this folder we will create a new file for each type. To define our [Dataset](../Research%20Objects//Data%20Objects/dataset.md), create a file called `dataset.py`.
@@ -76,7 +73,7 @@ dataset.dataset_path = "your_project_folder/data"
 ```
 
 ## Step 4: Define the Variables.
-Next, we need to define the [Variables](../Research%20Objects/variable.md) that we'll be using. In `research_objects/variable.py`, type the following:
+Next, we need to define the [Variables](../Research%20Objects/variable.md) that we'll be using. Create a file called `research_objects/variables.py`. In `research_objects/variable.py`, type the following:
 ```python
 import ResearchOS as ros
 
@@ -115,6 +112,7 @@ from research_objects import dataset as ds
 lg.logsheet.read_logsheet()
 ```
 After running this file, you should see a new dataset in your database with the data from the Logsheet.
+
 ## Step 7: Define the Process.
 We need to define the [Process](../Research%20Objects/Pipeline%20Objects/process.md) that will square the value in our dataset. In `research_objects/processes.py`, type the following:
 ```python

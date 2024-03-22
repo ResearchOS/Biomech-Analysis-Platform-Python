@@ -1,5 +1,7 @@
 # Installation
 
+This page will guide you through the installation of Python, an Integrated Development Environment (IDE), and the ResearchOS package. If you want to use MATLAB with ResearchOS, you will also need to install the MATLAB Engine API for Python.
+
 ## Installing Python and an Integrated Development Environment (IDE)
 1. Install Python 3.6 or later on your computer. Check [this Mathworks page](https://www.mathworks.com/support/requirements/python-compatibility.html) for a list of compatible Python & MATLAB versions.
     - Windows: While I recommend [downloading Python from the official website](https://www.python.org/downloads/), on Windows machines I have found [downloading Python from the Windows store](https://apps.microsoft.com/search?query=python&hl=en-us&gl=US) to be the most user-friendly for some reason. If downloading from the official website, select the "x86 executable installer" and **be sure to add Python to your PATH** during installation.
