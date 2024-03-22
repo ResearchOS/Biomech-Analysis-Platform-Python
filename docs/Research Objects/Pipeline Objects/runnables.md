@@ -1,6 +1,6 @@
 ## Introduction
 
-[Process](process.md), [Plot](plot.md), and [Stats](stats.md) are all runnable Pipeline Objects. This means that they all share very similar attributes and behaviors. They all have a `run()` method which executes the code associated with that object, using the specified input and output [Variables](../variable.md).
+[Process](process.md), [Plot](plot.md), and [Stats](stats.md) are all runnable Pipeline Objects. This means that they all share very similar attributes and behaviors. After the attributes specified below are all properly specified, these runnable Pipeline Objects all have a `run()` method which executes the code associated with that object, using the specified input and output [Variables](../variable.md).
 
 This page will list the behaviors and attributes that are common to all runnable Pipeline Objects. Check their individual pages for more information on their specific attributes and behaviors.
 
