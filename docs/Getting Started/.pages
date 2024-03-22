@@ -1,1 +1,3 @@
-title: Getting Started
+nav:
+    - Installation: installation.md
+    - ...
