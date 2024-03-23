@@ -2,6 +2,7 @@ site_name: ResearchOS
 site_author: Mitchell Tillman
 repo_name: ResearchOS
 repo_url: https://github.com/ResearchOS/ResearchOS
+site_url: https://researchos.github.io/ResearchOS/
 theme:
   name: material
   features:
