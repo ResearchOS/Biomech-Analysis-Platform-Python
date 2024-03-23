@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.10">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
     
     
       
@@ -350,7 +350,7 @@
         
   
   <span class="md-ellipsis">
-    Welcome to ResearchOS (pre-alpha version)
+    Home
   </span>
   
 
@@ -1312,7 +1312,7 @@
 
 
             <details class="quote">
-              <summary>Source code in <code>src\ResearchOS\PipelineObjects\process.py</code></summary>
+              <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 51</span>
 <span class="normal"> 52</span>
 <span class="normal"> 53</span>
@@ -1546,7 +1546,7 @@
 kwargs are the input VR's.</p>
 
           <details class="quote">
-            <summary>Source code in <code>src\ResearchOS\PipelineObjects\process.py</code></summary>
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
             <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">129</span>
 <span class="normal">130</span>
 <span class="normal">131</span>
@@ -1614,7 +1614,7 @@ kwargs are the input VR's.</p>
       <p>Convenience function to set the input variables with named variables rather than a dict.</p>
 
           <details class="quote">
-            <summary>Source code in <code>src\ResearchOS\PipelineObjects\process.py</code></summary>
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
             <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">113</span>
 <span class="normal">114</span>
 <span class="normal">115</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">set_input_vrs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1642,7 +1642,7 @@ kwargs are the input VR's.</p>
       <p>Convenience function to set the lookup variables with named variables rather than a dict.</p>
 
           <details class="quote">
-            <summary>Source code in <code>src\ResearchOS\PipelineObjects\process.py</code></summary>
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
             <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">125</span>
 <span class="normal">126</span>
 <span class="normal">127</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">set_lookup_vrs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1670,7 +1670,7 @@ kwargs are the input VR's.</p>
       <p>Convenience function to set the output variables with named variables rather than a dict.</p>
 
           <details class="quote">
-            <summary>Source code in <code>src\ResearchOS\PipelineObjects\process.py</code></summary>
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
             <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">117</span>
 <span class="normal">118</span>
 <span class="normal">119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">set_output_vrs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1698,7 +1698,7 @@ kwargs are the input VR's.</p>
       <p>Convenience function to set the source process for the input variables with named variables rather than a dict.</p>
 
           <details class="quote">
-            <summary>Source code in <code>src\ResearchOS\PipelineObjects\process.py</code></summary>
+            <summary>Source code in <code>src/ResearchOS/PipelineObjects/process.py</code></summary>
             <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">121</span>
 <span class="normal">122</span>
 <span class="normal">123</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">set_vrs_source_pr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1717,14 +1717,7 @@ kwargs are the input VR's.</p>
   </div>
 
 
-</div><p>To run a Process with process.run():
-1. Create a new Process object, with id specified as a kwarg.
-2. Set the level of the Process object as a DataObject subclass.
-3. If a MATLAB function is to be run, set self.is_matlab to True.
-4. Set the input and output variables.
-    a. Use self.set_input_var() and self.set_output_var() to set the input and output variables using kwargs.
-    b. Alternatively, assign self.input_vrs and self.output_vrs directly as dicts with keys for the variable names in code, and the Variable objects are the values.
-    NOTE: Ensure that all of the variables are pre-existing, and that their vr.name are unique from all other variables in the pipeline.</p>
+</div>
 
 
 
@@ -1780,7 +1773,7 @@ kwargs are the input VR's.</p>
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.expand", "toc.follow", "navigation.top"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.8fd75fb4.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.bd41221c.min.js"></script>
       
     
   </body>
