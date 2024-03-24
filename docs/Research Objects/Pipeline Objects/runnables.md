@@ -1,14 +1,24 @@
 ## Introduction
 
-[Process](process.md), [Plot](plot.md), and [Stats](stats.md) are all runnable Pipeline Objects. This means that they all share very similar attributes and behaviors. After the attributes specified below are all properly specified, these runnable Pipeline Objects all have a `run()` method which executes the code associated with that object, using the specified input and output [Variables](../variable.md).
+[Process](process.md), [Plot](plot.md), and [Stats](stats.md) are all runnable Pipeline Objects. This means that they all share very similar attributes and behaviors. After the attributes listed below are all properly specified, these runnable Pipeline Objects all have a `run()` method which executes the code associated with that object, using the specified input and output [Variables](../variable.md).
 
 This page will list the behaviors and attributes that are common to all runnable Pipeline Objects. Check their individual pages for more information on their specific attributes and behaviors.
 
 ## General Attributes
-### level
-Specify which set of Data Objects this object operates on. For example, a Process that operates on Trials would have `level = Trial`. This is a required attribute.
+### level (Required)
+Specify which set of Data Objects this object operates on. For example, a Process that operates on Trials would have `level = Trial`. This is a required attribute. Often, the `level` is the lowest level of Data Object in the `Dataset`'s `schema` attribute. For example, if the `schema` is
+```python
+# research_objects/dataset.py
+import ResearchOS as ros
 
-### input_vrs
+schema = [
+    [ros.Dataset, Subject],
+    [Subject, Trial]
+]
+```
+Generally, most of my analysis will probably focus on the `Trial` level.
+
+### input_vrs (Required)
 The runnable Pipeline Objects expect `input_vrs` to be a dictionary, where the keys are strings representing the variable's name in the runnable Pipeline object's code to be run, and the value is the variable's value. Most commonly, that looks something like this:
 ```python
 # research_objects/processes.py
@@ -51,7 +61,7 @@ test_pr.set_input_vr(subject_name = {Subject: "name"})
 ```
 This syntax tells ResearchOS that for each `Trial` object, the `Subject` object associated with that `Trial` should have its `name` attribute passed to the code being run for the `subject_name` input variable.
 
-### vrs_source_pr
+### vrs_source_pr (Recommended)
 This attribute tells the runnable Pipeline Object where to look for the input [Variables](../variable.md) that are specified in the `input_vrs` attribute. The source of the input [Variables](../variable.md) can be either a [Process](../Pipeline%20Objects/process.md) or [Logsheet](../Pipeline%20Objects/logsheet.md) object. This helps to manage the flow of data through the pipeline, especially when a [Variable](../variable.md) is overwritten by one or more runnable Pipeline Objects. If no source_pr is specified for a [Variable](../variable.md), then it is assumed that the [Process](../Pipeline%20Objects/process.md) that most recently outputted that [Variable](../variable.md) is the source of that [Variable](../variable.md). Hard-coded [Variables](../variable.md) will not be included here, because they don't have a "source" in the same way that Variables that are passed from another object do.
 
 Similar to the `input_vrs` this attribute is specified as a dictionary, where the keys are the names of the input [Variables](../variable.md) in the code and the values are the [Process](../Pipeline%20Objects/process.md) or [Logsheet](../Pipeline%20Objects/logsheet.md) object that is the source of that [Variable](../variable.md). For example:
@@ -105,7 +115,7 @@ uses_subject_mass.set_input_vrs(subject_mass = vr.mass)
 uses_subject_mass.set_vrs_source_pr(subject_mass = [compute_subject_mass, logsheet])
 ```
 
-### output_vrs
+### output_vrs (PR, ST Required)
 Similar to input_vrs, the _output_vrs are specified as a dictionary. The keys are the names of the output [Variables](../variable.md) in the code and the values are the [Variable](../variable.md) objects that represent the data value for that variable. For example:
 ```python
 # research_objects/processes.py
@@ -131,7 +141,7 @@ test_pr = ros.Process(id = "PR0")
 test_pr.set_output_vrs(output_variable_name_in_code1 = vr.output_variable_object1, output_variable_name_in_code2 = vr.output_variable_object2, ...)
 ```
 
-### lookup_vrs
+### lookup_vrs (Optional)
 For some workflows, it is necessary to look up the value of a [Variable](../variable.md) from a different Data Object. For example, if a `Trial` object needs to retrieve some calibrated value from a calibration `Trial`, then the `lookup_vrs` attribute can be used. This attribute is specified as a dictionary, where the keys are the names of the [Variables](../variable.md) in the code and the values are dictionaries themselves. The inner dictionaries have the [Variable](../variable.md) object as the key, and a list of strings as the value. The strings are the variable names in code that are being looked up in another Data Object. In the below example, the `lookup_input_variable_name_in_code` is the name of the [Variable](../variable.md) that specifies which Data Object to reference, and `other_input_vr` is the name of the [Variable](../variable.md) to retrieve from that Data Object.
 ```python
 # research_objects/processes.py
@@ -145,7 +155,7 @@ lookup_vrs = {
 }
 ```
 
-### batch
+### batch (Optional)
 Specify whether this object should be run in batch mode. The default is `None`, indicating that only one Data Object's values are provided at a time to the runnable Pipeline Object, as would be expected. If `batch = []`, then all Data Objects at the specified level are provided to the runnable Pipeline Object at once. If `batch` is a list of Data Object classes, then all Data Objects that are of the specified classes are provided to the runnable Pipeline Object at once.
 
 For example, if the [Dataset](../Data%20Objects/dataset.md) `schema` is
@@ -170,16 +180,16 @@ Then all `Trials` for one `Subject` are provided to the runnable Pipeline Object
 
 ## Python-specific Attributes
 Be sure that `is_matlab` is set to `False` for this object to run Python code.
-### method
+### method (Required)
 A `Callable` attribute that is `None` by default. This is the handle to the function that will be called when the `run()` method is executed. This method's code should take the input [Variables](../variable.md) as arguments and return the output [Variables](../variable.md).
 
 Note that when loading this object from the database, the method needs to be in the global namespace. This is because the method is stored as a string in the database and is then loaded from sys.modules when the object is loaded.
 
 ## MATLAB-specific Attributes
-### is_matlab
+### is_matlab (Required)
 A boolean attribute that is `False` by default. Set this to `True` if the code associated with this object is written in MATLAB. Note that this requires that MATLAB is installed on your system and that the MATLAB Engine API is installed in your Python environment.
 
-### mfolder
+### mfolder (Required)
 A string attribute that is `None` by default. Set this to the path to the folder containing the MATLAB code associated with this object. This is used to set the MATLAB working directory to the correct location before running the MATLAB code. **It is computer-specific**.
 
 For maximum portability between computers and users, I recommend defining a `paths.py` file in the project folder that contains the path to the folder containing the MATLAB code. You can import this path into the .py file that defines your runnable Pipeline Objects.
@@ -196,6 +206,6 @@ test_pr = ros.Process(id = "PR0")
 test_pr.mfolder = mfolder
 ```
 
-### mfunc_name
+### mfunc_name (Required)
 Specifies the name of the MATLAB function to be run. This is a string attribute that is `None` by default. This is the name of the MATLAB function that will be called when the `run()` method is executed.
 

@@ -67,7 +67,7 @@ value = ros.Variable(id = "VR3")
 ```
 
 ## Step 5: Define the Logsheet
-To define the [Logsheet](../Research%20Objects/Pipeline%20Objects/logsheet.md) that we created in step 2, create a file called `research_objects/logsheet.py`. We need to define the [Logsheet](../Research%20Objects/Pipeline%20Objects/logsheet.md) attributes for the csv file that we created in step 2. The minimum attributes that we need to define are its `path`, `headers`, `num_header_rows`, and `class_column_names`.
+To define the [Logsheet](../Research%20Objects/Pipeline%20Objects/logsheet.md) that we created in [Step 2](#step-2-create-some-dummy-data), create a file called `research_objects/logsheet.py`. We need to define the [Logsheet](../Research%20Objects/Pipeline%20Objects/logsheet.md) attributes for the csv file that we created in step 2. The minimum attributes that we need to define are its `path`, `headers`, `num_header_rows`, and `class_column_names`.
 
 In `research_objects/logsheet.py`, type the following:
 ```python

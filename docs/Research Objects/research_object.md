@@ -13,4 +13,11 @@ All Research Objects are one of the following:
 
 ![Research Object Class Hierarchy](research_objects_class_hierarchy.png)
 
+## Implementation Details
+Every Research Object needs to be created using a unique `id` as a keyword argument. If the `id` is not provided as a keyword argument, an error will be raised. This `id` must start with the two letter prefix that corresponds to the type of Research Object. Besides that, the `id` can consist of anything you want, as long as it is unique within the project.
+
+All Research Objects have two attributes that are inherited from the Research Object class: `name` and `notes`. The `name` attribute is a string that is used to more easily recognize the object in the database, and unlike the `id` it can be changed at any time. The `notes` attribute is a string that can be used to store any additional information about the object.
+
+No attributes besides the defaults can be added to a Research Object, and attempting to do so will raise an error. The attributes that are available for each Research Object are documented in the API documentation for that object.
+
 ::: src.ResearchOS.research_object.ResearchObject
