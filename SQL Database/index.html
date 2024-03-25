@@ -10,25 +10,23 @@
         <meta name="author" content="Mitchell Tillman">
       
       
-        <link rel="canonical" href="https://researchos.github.io/ResearchOS/Research%20Objects/Data%20Objects/defining_data_objects/">
+        <link rel="canonical" href="https://researchos.github.io/ResearchOS/SQL%20Database/">
       
       
-        <link rel="prev" href="../dataset/">
+        <link rel="prev" href="../DiGraph/digraph/">
       
       
-        <link rel="next" href="../../Pipeline%20Objects/pipeline_object/">
       
-      
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
     
     
       
-        <title>Defining Data Objects - ResearchOS</title>
+        <title>SQLite Database - ResearchOS</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.7e359304.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.7e359304.min.css">
       
       
 
@@ -47,9 +45,9 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -68,7 +66,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#recommended-folder-structure" class="md-skip">
+        <a href="#sqlite-database" class="md-skip">
           Skip to content
         </a>
       
@@ -84,7 +82,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="ResearchOS" class="md-header__button md-logo" aria-label="ResearchOS" data-md-component="logo">
+    <a href=".." title="ResearchOS" class="md-header__button md-logo" aria-label="ResearchOS" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -104,7 +102,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Defining Data Objects
+              SQLite Database
             
           </span>
         </div>
@@ -181,7 +179,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../Home/" class="md-tabs__link">
+        <a href="../Home/" class="md-tabs__link">
           
   
   Home
@@ -199,7 +197,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../Getting%20Started/installation/" class="md-tabs__link">
+        <a href="../Getting%20Started/installation/" class="md-tabs__link">
           
   
   Getting Started
@@ -213,13 +211,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../research_object/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../Research%20Objects/research_object/" class="md-tabs__link">
           
   
   Research Objects
@@ -237,7 +233,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../DiGraph/digraph/" class="md-tabs__link">
+        <a href="../DiGraph/digraph/" class="md-tabs__link">
           
   
   DiGraph
@@ -251,11 +247,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../../SQL%20Database/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
           
   
   Backend
@@ -294,7 +292,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="ResearchOS" class="md-nav__button md-logo" aria-label="ResearchOS" data-md-component="logo">
+    <a href=".." title="ResearchOS" class="md-nav__button md-logo" aria-label="ResearchOS" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -364,7 +362,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Home/" class="md-nav__link">
+      <a href="../Home/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -385,7 +383,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Home/roadmap/" class="md-nav__link">
+      <a href="../Home/roadmap/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -453,7 +451,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Getting%20Started/installation/" class="md-nav__link">
+      <a href="../Getting%20Started/installation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -474,7 +472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Getting%20Started/first_project/" class="md-nav__link">
+      <a href="../Getting%20Started/first_project/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -499,28 +497,25 @@
       
   
   
-    
   
   
-  
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -531,7 +526,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Research Objects
@@ -545,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research_object/" class="md-nav__link">
+      <a href="../Research%20Objects/research_object/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -566,7 +561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../variable/" class="md-nav__link">
+      <a href="../Research%20Objects/variable/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -584,8 +579,6 @@
                 
   
   
-    
-  
   
   
     
@@ -595,11 +588,13 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_3" >
         
           
           <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
@@ -613,7 +608,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_3">
             <span class="md-nav__icon md-icon"></span>
             Data Objects
@@ -627,7 +622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../data_object/" class="md-nav__link">
+      <a href="../Research%20Objects/Data%20Objects/data_object/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -648,7 +643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dataset/" class="md-nav__link">
+      <a href="../Research%20Objects/Data%20Objects/dataset/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -666,28 +661,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Defining Data Objects
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../Research%20Objects/Data%20Objects/defining_data_objects/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -696,33 +673,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#recommended-folder-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      Recommended Folder Structure
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -783,7 +733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Pipeline%20Objects/pipeline_object/" class="md-nav__link">
+      <a href="../Research%20Objects/Pipeline%20Objects/pipeline_object/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -844,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Pipeline%20Objects/runnables/" class="md-nav__link">
+      <a href="../Research%20Objects/Pipeline%20Objects/runnables/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -865,7 +815,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Pipeline%20Objects/process/" class="md-nav__link">
+      <a href="../Research%20Objects/Pipeline%20Objects/process/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -886,7 +836,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Pipeline%20Objects/plot/" class="md-nav__link">
+      <a href="../Research%20Objects/Pipeline%20Objects/plot/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -907,7 +857,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Pipeline%20Objects/stats/" class="md-nav__link">
+      <a href="../Research%20Objects/Pipeline%20Objects/stats/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -936,7 +886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Pipeline%20Objects/project/" class="md-nav__link">
+      <a href="../Research%20Objects/Pipeline%20Objects/project/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -957,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Pipeline%20Objects/analysis/" class="md-nav__link">
+      <a href="../Research%20Objects/Pipeline%20Objects/analysis/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -978,7 +928,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Pipeline%20Objects/logsheet/" class="md-nav__link">
+      <a href="../Research%20Objects/Pipeline%20Objects/logsheet/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -999,7 +949,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Pipeline%20Objects/subset/" class="md-nav__link">
+      <a href="../Research%20Objects/Pipeline%20Objects/subset/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1075,7 +1025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../DiGraph/digraph/" class="md-nav__link">
+      <a href="../DiGraph/digraph/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1100,25 +1050,28 @@
       
   
   
+    
   
   
+  
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -1129,7 +1082,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Backend
@@ -1140,10 +1093,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../SQL%20Database/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    SQLite Database
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1152,6 +1125,44 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Structure
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1181,6 +1192,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1189,9 +1202,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#recommended-folder-structure" class="md-nav__link">
+  <a href="#introduction" class="md-nav__link">
     <span class="md-ellipsis">
-      Recommended Folder Structure
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Structure
     </span>
   </a>
   
@@ -1215,25 +1237,19 @@
   
 
 
-  <h1>Defining Data Objects</h1>
-
-<h2 id="recommended-folder-structure">Recommended Folder Structure</h2>
-<p><div class="highlight"><pre><span></span><code>project_folder/
-│-- research_objects/
-│   │-- my_data_objects.py
-</code></pre></div>
-Data Objects can be defined by the user in the project folder. While the exact method is flexible as long as the user subclasses ResearchOS.data_objects.DataObject, I recommend to create a <code>research_objects</code> folder in the project folder and then create a <code>my_data_objects.py</code> file within that to define each Data Object. For each Data Object subclass, define a class that inherits from <code>DataObject</code>. For example, the following code defines a <code>Subject</code> and <code>Trial</code> Data Object:</p>
-<p><div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">ResearchOS.DataObjects.data_object</span> <span class="kn">import</span> <span class="n">DataObject</span>
-
-<span class="k">class</span> <span class="nc">Subject</span><span class="p">(</span><span class="n">DataObject</span><span class="p">):</span>
-
-    <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;SJ&quot;</span> <span class="c1"># Must be unique within the project.</span>
-
-<span class="k">class</span> <span class="nc">Trial</span><span class="p">(</span><span class="n">DataObject</span><span class="p">):</span>
-
-    <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;TR&quot;</span> <span class="c1"># Must be unique within the project.</span>
-</code></pre></div>
-All of the above code must be present to define a custom Data Object. The class name and the two letter prefix should be changed to suit your needs. The <code>prefix</code> attribute is a two letter prefix that is used to generate the Data Object's ID.</p>
+<h1 id="sqlite-database">SQLite Database</h1>
+<h2 id="introduction">Introduction</h2>
+<p>ResearchOS uses two SQLite databases to store data. The first database is used to store the <a href="../Research%20Objects/research_object/">Research Objects</a> that define the structure and maintain the history of your project. The second database is used to store the data itself. These databases are stored in the root of the project folder and are named <code>researchos.db</code> and <code>researchos_data.db</code>, respectively. Because <code>researchos_data.db</code> contains the project's data, and can therefore become quite large, I recommend that it be added to the <code>.gitignore</code> file to prevent it from being uploaded to a repository.</p>
+<h2 id="database-structure">Database Structure</h2>
+<p>The <code>researchos.db</code> database contains the following tables:</p>
+<ul>
+<li>
+<p><strong>research_objects</strong>: The reference list of Research Objects. If the Research Object doesn't exist in this table, then it doesn't exist for the project.</p>
+</li>
+<li>
+<p><strong>actions</strong>: The reference list of Actions that have been performed on this project.</p>
+</li>
+</ul>
 
 
 
@@ -1286,10 +1302,10 @@ All of the above code must be present to define a custom Data Object. The class 
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.expand", "toc.follow", "navigation.top"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.expand", "toc.follow", "navigation.top"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.bd41221c.min.js"></script>
+      <script src="../assets/javascripts/bundle.bd41221c.min.js"></script>
       
     
   </body>

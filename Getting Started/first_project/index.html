@@ -248,6 +248,24 @@
   
 
       
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../SQL%20Database/" class="md-tabs__link">
+          
+  
+  Backend
+
+        </a>
+      </li>
+    
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -505,6 +523,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-0-structuring-your-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 0: Structuring your Project.
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#step-1-initialize-the-database" class="md-nav__link">
     <span class="md-ellipsis">
       Step 1: Initialize the database.
@@ -580,6 +616,24 @@
   <a href="#step-9-run-the-process" class="md-nav__link">
     <span class="md-ellipsis">
       Step 9: Run the Process.
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-10-plot-the-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 10: Plot the results.
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-11-run-the-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 11: Run the statistics
     </span>
   </a>
   
@@ -1154,6 +1208,74 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Backend
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Backend
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SQL%20Database/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQLite Database
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1179,6 +1301,24 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-0-structuring-your-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 0: Structuring your Project.
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#step-1-initialize-the-database" class="md-nav__link">
@@ -1261,6 +1401,24 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#step-10-plot-the-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 10: Plot the results.
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-11-run-the-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 11: Run the statistics
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1280,9 +1438,46 @@
 
 
 <h1 id="first-project">First Project</h1>
+<h2 id="introduction">Introduction</h2>
 <p>To familiarize you with the basics of how ResearchOS works, let's create a simple one step pipeline that reads a single number from a <a href="../../Research%20Objects/Pipeline%20Objects/logsheet/">Logsheet</a>, squares it, and stores that value. </p>
 <p>These instructions will begin with the assumption that you have already created a new project directory, activated a virtual environment within that folder, and installed ResearchOS. If you have not done so, please refer to the <a href="../installation/">Installation</a> section.</p>
 <p>Similar to the <a href="../installation/">Installation</a> section, I will be providing instructions for Visual Studio Code (VS Code), but the process is similar for other programs.</p>
+<h2 id="step-0-structuring-your-project">Step 0: Structuring your Project.</h2>
+<p>I recommend that each project have a similar structure to the following:
+<div class="highlight"><pre><span></span><code>your_project_folder/
+| data/
+│ research_objects/
+│ │ data_objects.py
+│ │ datasets.py
+│ │ logsheets.py
+│ │ processes.py
+│ │ subsets.py
+│ │ variables.py
+| | plots.py
+| | stats.py
+| paths.py
+| run_project.py
+</code></pre></div></p>
+<p>For larger projects, you may want to create additional folders for the runnable research objects. There should really only ever be one source (file) of <a href="../../Research%20Objects/Data%20Objects/dataset/">Dataset</a>, <a href="../../Research%20Objects/Pipeline%20Objects/logsheet/">Logsheet</a>, and <a href="../../Research%20Objects/variable/">Variable</a> objects. However, for the <a href="../../Research%20Objects/Pipeline%20Objects/runnables/">runnable objects</a>, given their more complex setup you may want to organize them into folders as follows:
+<div class="highlight"><pre><span></span><code>your_project_folder/
+| data/
+│ research_objects/
+│ │ data_objects.py
+│ │ datasets.py
+│ │ logsheets.py
+| | subsets.py
+│ │ variables.py
+| step1.py/
+| | step1_processes.py
+| | step1_plots.py
+| | step1_stats.py
+| step2.py/
+| | step2_processes.py
+| | step2_plots.py
+| | step2_stats.py
+| paths.py
+| run_project.py
+</code></pre></div></p>
 <h2 id="step-1-initialize-the-database">Step 1: Initialize the database.</h2>
 <ol>
 <li>In VS Code, create a new file called <code>run_project.py</code> in your project directory. In that file, type the following:
@@ -1300,21 +1495,16 @@ Run that file and it will create two new files in the project folder: <code>rese
 <p>The first row is our headers, and the second row contains the value for the one trial we've recorded of our one subject, Larry. We'll use this data later.</p>
 <h2 id="step-3-define-the-dataset">Step 3: Define the Dataset.</h2>
 <p>Next, we need to define some <a href="../../Research%20Objects/research_object/">Research Objects</a> that our pipeline will be built from. In your project folder, create a new folder called <code>research_objects</code>. We'll need a few types of research objects, so in this folder we will create a new file for each type. To define our <a href="../../Research%20Objects/Data%20Objects/dataset/">Dataset</a>, create a file called <code>dataset.py</code>.</p>
-<p>We need to define the attributes of this dataset. The minimum attributes that we need to define are its <code>schema</code> and <code>dataset_path</code>. We need to define a schema to tell ResearchOS how our data is structured. In this case, we have a <a href="../../Research%20Objects/Data%20Objects/dataset/">Dataset</a> that contains <code>Subject</code> Data Objects, and each <code>Subject</code> contains <code>Trial</code> Data Objects. These are two examples of custom <a href="../../Research%20Objects/Data%20Objects/data_object/">Data Objects</a>. In order for ResearchOS to cover any branch of science, Data Objects are custom defined each project. To define a <code>Subject</code> and <code>Trial</code> class, let's create a new folder for our data objects <code>research_objects/data_objects</code>. In the <code>research_objects/data_objects</code> folder, create a file called <code>subject.py</code> with the following contents:
+<p>We need to define the attributes of this dataset. The minimum attributes that we need to define are its <code>schema</code> and <code>dataset_path</code>. We need to define a schema to tell ResearchOS how our data is structured. In this case, we have a <a href="../../Research%20Objects/Data%20Objects/dataset/">Dataset</a> that contains <code>Subject</code> Data Objects, and each <code>Subject</code> contains <code>Trial</code> Data Objects. These are two examples of custom <a href="../../Research%20Objects/Data%20Objects/data_object/">Data Objects</a>. In order for ResearchOS to cover any branch of science, Data Objects are custom defined each project. To define a <code>Subject</code> and <code>Trial</code> class, let's create a new .py file for our data objects <code>research_objects/data_objects.py</code>. Type the following contents:
 <div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">ResearchOS</span> <span class="k">as</span> <span class="nn">ros</span>
 
 <span class="k">class</span> <span class="nc">Subject</span><span class="p">(</span><span class="n">ros</span><span class="o">.</span><span class="n">DataObject</span><span class="p">):</span>
-
     <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;SJ&quot;</span> <span class="c1"># Needs to start with &quot;SJ&quot; for &quot;Subject&quot;, and be unique within the project.</span>
-</code></pre></div></p>
-<p>Similarly, create a file called <code>trial.py</code> in the <code>research_objects/data_objects</code> folder with the following contents:
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">ResearchOS</span> <span class="k">as</span> <span class="nn">ros</span>
 
 <span class="k">class</span> <span class="nc">Trial</span><span class="p">(</span><span class="n">ros</span><span class="o">.</span><span class="n">DataObject</span><span class="p">):</span>
-
     <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;TR&quot;</span> <span class="c1"># Needs to start with &quot;TR&quot; for &quot;Trial&quot;, and be unique within the project.</span>
 </code></pre></div>
-Now that the <a href="../../Research%20Objects/Data%20Objects/data_object/">Data Objects</a> are defined we can define the schema for the Dataset. We'll also define the <code>dataset_path</code> now too, which requires that we specify a folder in your project to put the data. Let's call it <code>data</code>. Type the following into <code>research_objects/dataset.py</code>:
+Now that the <a href="../../Research%20Objects/Data%20Objects/data_object/">Data Objects</a> are defined we can define the schema for the Dataset. We'll also define the <code>dataset_path</code> now too, which requires that we specify a folder in your project to put the data. Let's call it <code>data</code>. Type the following into <code>research_objects/datasets.py</code>:
 <div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">ResearchOS</span> <span class="k">as</span> <span class="nn">ros</span>
 <span class="kn">from</span> <span class="nn">research_objects.data_objects</span> <span class="kn">import</span> <span class="n">Subject</span><span class="p">,</span> <span class="n">Trial</span>
 
@@ -1334,8 +1524,8 @@ Now that the <a href="../../Research%20Objects/Data%20Objects/data_object/">Data
 <span class="n">value</span> <span class="o">=</span> <span class="n">ros</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="s2">&quot;VR3&quot;</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="step-5-define-the-logsheet">Step 5: Define the Logsheet</h2>
-<p>To define the <a href="../../Research%20Objects/Pipeline%20Objects/logsheet/">Logsheet</a> that we created in <a href="#step-2-create-some-dummy-data">Step 2</a>, create a file called <code>research_objects/logsheet.py</code>. We need to define the <a href="../../Research%20Objects/Pipeline%20Objects/logsheet/">Logsheet</a> attributes for the csv file that we created in step 2. The minimum attributes that we need to define are its <code>path</code>, <code>headers</code>, <code>num_header_rows</code>, and <code>class_column_names</code>.</p>
-<p>In <code>research_objects/logsheet.py</code>, type the following:
+<p>To define the <a href="../../Research%20Objects/Pipeline%20Objects/logsheet/">Logsheet</a> that we created in <a href="#step-2-create-some-dummy-data">Step 2</a>, create a file called <code>research_objects/logsheets.py</code>. We need to define the <a href="../../Research%20Objects/Pipeline%20Objects/logsheet/">Logsheet</a> attributes for the csv file that we created in step 2. The minimum attributes that we need to define are its <code>path</code>, <code>headers</code>, <code>num_header_rows</code>, and <code>class_column_names</code>.</p>
+<p>In <code>research_objects/logsheets.py</code>, type the following:
 <div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">ResearchOS</span> <span class="k">as</span> <span class="nn">ros</span>
 
 <span class="n">logsheet</span> <span class="o">=</span> <span class="n">ros</span><span class="o">.</span><span class="n">Logsheet</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="s2">&quot;LG1&quot;</span><span class="p">)</span> <span class="c1"># Needs to start with &quot;LG&quot; for &quot;Logsheet&quot;, and be unique within the project.</span>
@@ -1376,18 +1566,43 @@ In another file called <code>square_value.py</code>, type the following:
     <span class="k">return</span> <span class="n">number</span> <span class="o">**</span> <span class="mi">2</span>
 </code></pre></div></p>
 <h2 id="step-8-create-the-subset">Step 8: Create the Subset.</h2>
-<p>We need to define the <a href="../../Research%20Objects/Pipeline%20Objects/subset/">Subset</a> to know which subset of our data the Process will operate on. In <code>research_objects/subset.py</code>, type the following to define a subset that includes all of the data in our dataset:
+<p>We need to define the <a href="../../Research%20Objects/Pipeline%20Objects/subset/">Subset</a> to know which subset of our data the Process will operate on. In <code>research_objects/subsets.py</code>, type the following to define a subset that includes all of the data in our dataset:
 <div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">ResearchOS</span> <span class="k">as</span> <span class="nn">ros</span>
 
 <span class="n">subset</span> <span class="o">=</span> <span class="n">ros</span><span class="o">.</span><span class="n">Subset</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="s2">&quot;SS1&quot;</span><span class="p">)</span> <span class="c1"># Needs to start with &quot;SS&quot; for &quot;Subset&quot;, and be unique within the project.</span>
 <span class="n">subset</span><span class="o">.</span><span class="n">conditions</span> <span class="o">=</span> <span class="p">{}</span>
 </code></pre></div></p>
 <h2 id="step-9-run-the-process">Step 9: Run the Process.</h2>
-<p>Finally, we will run the Process to square the value in our dataset. In <code>run_project.py</code>, type the following:
+<p>Finally, we will run the <a href="../../Research%20Objects/Pipeline%20Objects/process/">Process</a> to square the value in our dataset. In <code>run_project.py</code>, type the following:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">research_objects</span> <span class="kn">import</span> <span class="n">processes</span> <span class="k">as</span> <span class="n">pr</span>
 
 <span class="n">pr</span><span class="o">.</span><span class="n">square_value</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div></p>
+<h2 id="step-10-plot-the-results">Step 10: Plot the results.</h2>
+<p>Create a <code>Plot</code> object and provide it with the <a href="../../Research%20Objects/variable/">Variables</a> that you want to plot, the subset of data to plot, and the code to use. In <code>research_objects/plots.py</code>, type the following:
+<div class="highlight"><pre><span></span><code><span class="c1"># research_objects/plots.py</span>
+<span class="kn">import</span> <span class="nn">ResearchOS</span> <span class="k">as</span> <span class="nn">ros</span>
+<span class="kn">from</span> <span class="nn">research_objects</span> <span class="kn">import</span> <span class="n">variables</span> <span class="k">as</span> <span class="n">vr</span>
+<span class="kn">from</span> <span class="nn">research_objects</span> <span class="kn">import</span> <span class="n">subsets</span> <span class="k">as</span> <span class="n">ss</span>
+<span class="kn">from</span> <span class="nn">paths</span> <span class="kn">import</span> <span class="n">PLOT_CODE_PATH</span>
+<span class="kn">from</span> <span class="nn">research_objects.data_objects</span> <span class="kn">import</span> <span class="n">Trial</span>
+
+<span class="n">plot</span> <span class="o">=</span> <span class="n">ros</span><span class="o">.</span><span class="n">Plot</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="s2">&quot;PL1&quot;</span><span class="p">)</span> <span class="c1"># Needs to start with &quot;PL&quot; for &quot;Plot&quot;, and be unique within the project.</span>
+<span class="n">plot</span><span class="o">.</span><span class="n">set_input_vrs</span><span class="p">(</span><span class="n">data</span> <span class="o">=</span> <span class="n">vr</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">squared</span> <span class="o">=</span> <span class="n">vr</span><span class="o">.</span><span class="n">squared_value</span><span class="p">)</span>
+<span class="n">plot</span><span class="o">.</span><span class="n">subset_id</span> <span class="o">=</span> <span class="n">ss</span><span class="o">.</span><span class="n">subset1</span><span class="o">.</span><span class="n">id</span>
+<span class="n">plot</span><span class="o">.</span><span class="n">mfunc_name</span> <span class="o">=</span> <span class="s2">&quot;plot_data&quot;</span>
+<span class="n">plot</span><span class="o">.</span><span class="n">is_matlab</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">plot</span><span class="o">.</span><span class="n">mfolder</span> <span class="o">=</span> <span class="n">PLOT_CODE_PATH</span>
+<span class="n">plot</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="n">Trial</span>
+</code></pre></div></p>
+<p>Then, in the <code>run_project.py</code> file:
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">research_objects</span> <span class="kn">import</span> <span class="n">plots</span> <span class="k">as</span> <span class="n">pl</span>
+
+<span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div></p>
+<p>This will save a .fig, .svg, and .png <code>Trial</code> in the project in the <code>your_project_folder/plots</code> folder, within the appropriate <code>Subject</code>'s folder, because that's how the <a href="../../Research%20Objects/Data%20Objects/dataset/">Dataset</a> <code>schema</code> is structured.</p>
+<p>Also, we can use a &lt;<not yet written function>&gt; to print the value of the data for all <code>Data Object</code> instances in the <a href="../../Research%20Objects/Data%20Objects/dataset/">Dataset</a>.</p>
+<h2 id="step-11-run-the-statistics">Step 11: Run the statistics</h2>
 
 
 
