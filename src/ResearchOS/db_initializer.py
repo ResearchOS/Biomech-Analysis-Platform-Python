@@ -218,6 +218,18 @@ class DBInitializer():
                         computer_id TEXT NOT NULL,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
+        
+        # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
+                        action_id TEXT NOT NULL,
+                        source_object_id TEXT NOT NULL,
+                        target_object_id TEXT NOT NULL,
+                        is_active INTEGER NOT NULL DEFAULT 1,
+                        FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id, source_object_id, target_object_id)
+                        )""")        
 
 
         
