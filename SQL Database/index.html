@@ -1241,7 +1241,8 @@
 <h2 id="introduction">Introduction</h2>
 <p>ResearchOS uses two SQLite databases to store data. The first database is used to store the <a href="../Research%20Objects/research_object/">Research Objects</a> that define the structure and maintain the history of your project. The second database is used to store the data itself. These databases are stored in the root of the project folder and are named <code>researchos.db</code> and <code>researchos_data.db</code>, respectively. Because <code>researchos_data.db</code> contains the project's data, and can therefore become quite large, I recommend that it be added to the <code>.gitignore</code> file to prevent it from being uploaded to a repository.</p>
 <h2 id="database-structure">Database Structure</h2>
-<p>The <code>researchos.db</code> database contains the following tables:</p>
+<p><img alt="Database Structure" src="../Database/Screenshot%202024-03-25%20at%2012.18.25%E2%80%AFAM.png" />
+The <code>researchos.db</code> database contains the following tables:</p>
 <ul>
 <li>
 <p><strong>research_objects</strong>: The reference list of Research Objects. If the Research Object doesn't exist in this table, then it doesn't exist for the project.</p>
@@ -1249,6 +1250,34 @@
 <li>
 <p><strong>actions</strong>: The reference list of Actions that have been performed on this project.</p>
 </li>
+<li>
+<p><strong>users_computers</strong>: The reference list of Users and Computers that have been used in this project. Helps to track attributes such as paths that are specific to each computer.</p>
+</li>
+<li>
+<p><strong>simple_attributes</strong>: The history of attributes with values that are JSON-serializable and did not require a custom <code>load</code>/<code>save</code> method. </p>
+</li>
+<li>
+<p><strong>attributes_list</strong>: Maps the ID of an attribute in the <code>simple_attributes</code> table to the attribute's name in the Research Object.</p>
+</li>
+<li>
+<p><strong>data_address_schemas</strong>: The schema for the data addresses that are used to store the data in the <code>researchos_data.db</code> database.</p>
+</li>
+<li>
+<p><strong>data_addresses</strong>: The edge list of data addresses containing the relationships between all <code>Data Object</code> instances.</p>
+</li>
+<li>
+<p><strong>data_values</strong>: Tracks the data hash of each <a href="../Research%20Objects/variable/">Variable</a> for each <code>Data Object</code> instance, and which <a href="../Research%20Objects/Pipeline%20Objects/process/">Process</a> (or <a href="../Research%20Objects/research_object/">Logsheet</a>) computed the value.</p>
+</li>
+<li>
+<p><strong>vr_dataobjects</strong>: Tracks which <code>Data Object</code> instances are associated with each <a href="../Research%20Objects/variable/">Variable</a>. Does <em>not</em> store the data itself.</p>
+</li>
+<li>
+<p><strong>pipelineobjects_graph</strong>: The graph of all <a href="../Research%20Objects/Pipeline%20Objects/pipeline_object/">Pipeline Objects</a> in the project. The graph is stored as an edge list, and the <a href="../Research%20Objects/variable/">Variables</a> are stored as the "edge_id" property of each edge in the graph.</p>
+</li>
+</ul>
+<p><code>researchos_data.db</code> contains the following tables:</p>
+<ul>
+<li><strong>data_blob</strong>: The data table that stores the data for the project. The data is stored in a binary format to allow for the storage of pickled data, and the table is indexed by the <code>data_hash</code> column.</li>
 </ul>
 
 
