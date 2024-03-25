@@ -23,7 +23,7 @@ The `researchos.db` database contains the following tables:
 
 - **data_values**: Tracks the data hash of each [Variable](../Research%20Objects/variable.md) for each `Data Object` instance, and which [Process](../Research%20Objects/Pipeline%20Objects/process.md) (or [Logsheet](../Research%20Objects/research_object.md)) computed the value.
 
-- **vr_dataobjects**: Tracks which `Data Object` instances are associated with each [Variable](../Research%20Objects/variable.md). Does *not* store the data itself.
+- **vr_dataobjects**: Tracks which [Data Object](../Research%20Objects/Data%20Objects/data_object.md) instances are associated with each [Variable](../Research%20Objects/variable.md). Does *not* store the data itself.
 
 - **pipelineobjects_graph**: The graph of all [Pipeline Objects](../Research%20Objects/Pipeline%20Objects/pipeline_object.md) in the project. The graph is stored as an edge list, and the [Variables](../Research%20Objects/variable.md) are stored as the "edge_id" property of each edge in the graph.
 
