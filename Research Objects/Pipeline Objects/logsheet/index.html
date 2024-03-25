@@ -1276,12 +1276,27 @@
 <h1 id="logsheet">Logsheet</h1>
 <h2 id="introduction">Introduction</h2>
 <p>Most researchers take notes during their experiments. These notes come in many forms, from informal handwritten to very formalized forms or spreadsheets. The <code>Logsheet</code> object is designed to capture these notes in a structured way. The <code>Logsheet</code> object is a Pipeline Object, and must be the first object in the pipeline because it constructs the Data Objects in the <code>Dataset</code>. </p>
-<p>The format of the <code>Logsheet</code> spreadsheets will vary widely between labs and disciplines. However, broad</p>
+<p>The format of the <code>Logsheet</code> spreadsheets will vary widely between labs and disciplines. However, there are broadly two types of columns in a <code>Logsheet</code>: <code>Data Object</code> columns and <code>Variable</code> columns. <code>Data Object</code> columns are used to define the <code>Dataset</code> <code>schema</code>, and <code>Variable</code> columns define attributes for each <code>Data Object</code>. </p>
 <h2 id="setting-attributes">Setting Attributes</h2>
 <h3 id="logsheet-path">Logsheet Path</h3>
+<p>The path to the logsheet file is computer-specific. I recommend that you put the logsheet path in a <code>paths.py</code> file and import it into the research_objects/logsheets.py file. By putting the <code>paths.py</code> file into the <code>.gitignore</code> file (keeping it out of the project's GitHub repository) you can maintain different paths for different computers.</p>
 <h3 id="headers">Headers</h3>
+<p>The headers attribute is a list of tuples. Each tuple contains, in order: the name of the column (which must match the first row of the column exactly), the data type of the column, the custom <code>Data Object</code> class that the column belongs to, and the <code>Variable</code> object that the column is associated with. For example:
+<div class="highlight"><pre><span></span><code><span class="n">headers</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">&quot;Subject&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Subject</span><span class="p">,</span> <span class="n">vr</span><span class="o">.</span><span class="n">subject_name</span><span class="p">),</span> <span class="c1"># This is a `Data Object` column</span>
+    <span class="p">(</span><span class="s2">&quot;Trial&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Trial</span><span class="p">,</span> <span class="n">vr</span><span class="o">.</span><span class="n">trial_name</span><span class="p">),</span> <span class="c1"># This is a `Data Object` column</span>
+    <span class="p">(</span><span class="s2">&quot;Value&quot;</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Trial</span><span class="p">,</span> <span class="n">vr</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="c1"># This is a `Variable` column</span>
+<span class="p">]</span>
+</code></pre></div></p>
 <h3 id="number-of-header-rows">Number of Header Rows</h3>
+<p>This attribute is an integer that specifies the number of rows at the top of the logsheet that are not part of the data. This is useful for logsheet files that have one or more header rows that describe the contents of the columns.</p>
 <h3 id="class-column-names">Class Column Names</h3>
+<p>This attribute is a dictionary that maps the names of the <code>Data Object</code> columns to the custom <code>Data Object</code> classes that they belong to. Note that the keys must match the first row of the column exactly. For example:
+<div class="highlight"><pre><span></span><code><span class="n">class_column_names</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;Subject&quot;</span><span class="p">:</span> <span class="n">Subject</span><span class="p">,</span>
+    <span class="s2">&quot;Trial&quot;</span><span class="p">:</span> <span class="n">Trial</span>
+<span class="p">}</span>
+</code></pre></div></p>
 
 
 <div class="doc doc-object doc-class">

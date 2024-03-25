@@ -982,6 +982,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conditions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#src.ResearchOS.PipelineObjects.subset.Subset" class="md-nav__link">
     <span class="md-ellipsis">
       Subset
@@ -1118,6 +1136,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conditions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#src.ResearchOS.PipelineObjects.subset.Subset" class="md-nav__link">
     <span class="md-ellipsis">
       Subset
@@ -1154,7 +1190,26 @@
 
 
 <h1 id="subset">Subset</h1>
-<p>Inherits from <a href="../pipeline_object/">PipelineObject</a></p>
+<h2 id="introduction">Introduction</h2>
+<p>This <a href="../pipeline_object/">Pipeline Object</a> is used to specify a subset of data to operate on for any <a href="../runnables/">runnable</a> <a href="../pipeline_object/">Pipeline Object</a>.</p>
+<h2 id="conditions">Conditions</h2>
+<p><code>Subset</code> objects have a <code>conditions</code> attribute that is used to specify the criteria to select a subset of data.The <code>conditions</code> attribute is a list of dictionaries, where each dictionary can also contain sub-dictionaries. The keys of the dictionaries are either <code>"and"</code> or <code>"or"</code>. <code>"and"</code> is used to specify that all conditions in the sub-dictionary must be met, while <code>"or"</code> is used to specify that at least one condition in the sub-dictionary must be met. The values of the dictionaries are lists. Each element of the list is either a sub-dictionary, or a tuple of three elements: the <a href="../../variable/">Variable</a> object, the logical operator, and the value to compare the variable to. The operators that can be used are <code>"=="</code>, <code>"!="</code>, <code>"&lt;"</code>, <code>"&lt;="</code>, <code>"&gt;"</code>, <code>"&gt;="</code>, <code>"in"</code>, and <code>"not in"</code>. The value can be any hard-coded value that can be JSON-serialized using <code>json.dumps()</code>.</p>
+<p>Here is an example <code>Subset</code> object <code>condition</code> attribute. This example selects <code>"Subject1"</code> and <code>"Trial1"</code> where the <code>vr.value</code> is greater than 5 or less than 0:
+<div class="highlight"><pre><span></span><code><span class="n">conditions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;and&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">vr</span><span class="o">.</span><span class="n">subject_name</span><span class="p">,</span> <span class="s2">&quot;==&quot;</span><span class="p">,</span> <span class="s2">&quot;Subject1&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">vr</span><span class="o">.</span><span class="n">trial_name</span><span class="p">,</span> <span class="s2">&quot;==&quot;</span><span class="p">,</span> <span class="s2">&quot;Trial1&quot;</span><span class="p">),</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;or&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">(</span><span class="n">vr</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;&gt;&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+                    <span class="p">(</span><span class="n">vr</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;&lt;&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div></p>
 
 
 <div class="doc doc-object doc-class">

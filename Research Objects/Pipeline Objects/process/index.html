@@ -848,6 +848,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#import-attributes" class="md-nav__link">
     <span class="md-ellipsis">
       Import Attributes
@@ -1187,6 +1196,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#import-attributes" class="md-nav__link">
     <span class="md-ellipsis">
       Import Attributes
@@ -1292,6 +1310,8 @@
 
 
 <h1 id="process">Process</h1>
+<h2 id="introduction">Introduction</h2>
+<p>This is a <a href="../runnables/">runnable</a> <a href="../pipeline_object/">Pipeline Object</a> that is used to process data. This object is used to perform any data processing that is needed before the data can be plotted or summarized.</p>
 <h2 id="import-attributes">Import Attributes</h2>
 <p>One special case for <code>Process</code> objects is when first importing data from their native file formats into ResearchOS. To do that, a couple of custom attributes need to be defined for the <code>Process</code> object that performs this task.</p>
 <p>The code to be run to import the data from the native file format should be defined in the <code>method</code> (Python) or <code>mfunc_name</code> (MATLAB) of the <code>Process</code> object. The code should handle loading only one file format at a time. If multiple file formats need to be imported, multiple <code>Process</code> objects should be created with separate functions for each.</p>
