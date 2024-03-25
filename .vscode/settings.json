@@ -1,0 +1,22 @@
+{
+    "sqltools.useNodeRuntime": true,
+    "sqltools.connections": [
+        {
+            "previewLimit": 100,
+            "driver": "SQLite",
+            "name": "researchos_test",
+            "database": "${workspaceFolder:Biomech-Analysis-Platform-Python}/researchos.db"
+        },
+        {
+            "previewLimit": 100,
+            "driver": "SQLite",
+            "name": "researchos_example_proj",
+            "database": "/Users/mitchelltillman/Desktop/Not_Work/Code/Python_Projects/ResearchOS-Example-Project-1/researchos.db"
+        }
+    ],
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}

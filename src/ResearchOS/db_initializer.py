@@ -6,6 +6,8 @@ from ResearchOS.current_user import CurrentUser
 from ResearchOS.config import Config
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.research_object_handler import ResearchObjectHandler
+from ResearchOS.action import Action
+from ResearchOS.current_user import default_current_user
 
 sql_settings_path = os.sep.join([os.path.dirname(__file__), "config", "sql.json"])
 
@@ -14,14 +16,18 @@ class DBInitializer():
 
     def __init__(self, main_db_file: str = None, data_db_file: str = None) -> None:
         """Initialize the database."""
+        # Reset default attributes.
+        ResearchObjectHandler.default_attrs = {} # Reset default attributes dictionary.
+
         # Reset research object dictionary.
         ResearchObjectHandler.instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
+        # ResearchObjectHandler.instances = {} # Keep track of all instances of all research objects.
         ResearchObjectHandler.counts = {} # Keep track of the number of instances of each ID.
         
         # Reset the connection pools for each database.
-        ResearchObjectHandler.pool = None
-        ResearchObjectHandler.pool_data = None
-        SQLiteConnectionPool._instances = {"main": None, "data": None}                      
+        # ResearchObjectHandler.pool = None
+        # ResearchObjectHandler.pool_data = None
+        SQLiteConnectionPool._instances = {"main": None, "data": None}
 
         # Remove database files.
         config = Config()
@@ -44,24 +50,28 @@ class DBInitializer():
 
         self.db_file = main_db_file
         self.pool = SQLiteConnectionPool(name = "main")
-        ResearchObjectHandler.pool = self.pool        
-        self.conn = self.pool.get_connection()
+        # ResearchObjectHandler.pool = self.pool
+
+        self.action = Action(name = "initialize database", commit = True, exec = True, force_create = True)
+                        
+        self.conn = self.action.conn
         self.create_tables()
         self.check_tables_exist(self.conn, intended_tables)
-        self.pool.return_connection(self.conn)
-        self.init_current_user_id()
+        self.init_current_user_computer_id()
+        self.action.add_sql_query("init", "current_user_computer_id_insert", self.action.db_init_params)
+        self.action.execute()
 
         self.data_db_file = data_db_file
         self.pool_data = SQLiteConnectionPool(name = "data")
-        ResearchObjectHandler.pool_data = self.pool_data
+        # ResearchObjectHandler.pool_data = self.pool_data
         self.conn_data = self.pool_data.get_connection()
         self.create_tables_data_db()
         self.check_tables_exist(self.conn_data, intended_tables_data)
         self.pool_data.return_connection(self.conn_data)
 
-    def init_current_user_id(self, user_id: str = "US000000_000"):
+    def init_current_user_computer_id(self, user_id: str = default_current_user):
         """Initialize the current user ID in the settings table."""
-        CurrentUser().set_current_user_id(user_id)
+        CurrentUser(self.action).set_current_user_computer_id(user_id)
 
     def check_tables_exist(self, conn: sqlite3.Connection, intended_tables: list):
         """Check that all of the tables were created."""        
@@ -80,9 +90,8 @@ class DBInitializer():
 
         # Data objects data values. Lists all data values for all data objects.
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values_blob (
-                        data_blob_id INTEGER PRIMARY KEY,
-                        data_blob BLOB NOT NULL,
-                        data_hash TEXT NOT NULL UNIQUE
+                       data_blob_hash TEXT PRIMARY KEY, 
+                       data_blob BLOB NOT NULL                        
                         )""")        
 
     def create_tables(self):
@@ -107,11 +116,9 @@ class DBInitializer():
         # Actions table. Lists all actions that have been performed, and their timestamps.
         cursor.execute("""CREATE TABLE IF NOT EXISTS actions (
                         action_id TEXT PRIMARY KEY,
-                        user TEXT NOT NULL,
                         name TEXT NOT NULL,
                         datetime TEXT NOT NULL,
                         redo_of TEXT,
-                        FOREIGN KEY (user) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         FOREIGN KEY (redo_of) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
 
@@ -143,12 +150,14 @@ class DBInitializer():
                         dataobject_id TEXT NOT NULL,
                         schema_id TEXT NOT NULL,
                         vr_id TEXT NOT NULL,
-                        data_blob_id INTEGER NOT NULL,
+                        pr_id TEXT NOT NULL,
+                        data_blob_hash TEXT NOT NULL,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (schema_id) REFERENCES data_address_schemas(schema_id) ON DELETE CASCADE,
-                        FOREIGN KEY (VR_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (dataobject_id, schema_id, vr_id, data_blob_id)
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id, dataobject_id, vr_id, data_blob_hash, schema_id)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.
@@ -171,7 +180,8 @@ class DBInitializer():
                         dataset_id TEXT NOT NULL,
                         levels_edge_list TEXT NOT NULL,
                         FOREIGN KEY (dataset_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
+                        PRIMARY KEY (dataset_id, schema_id)
                         )""")
         
         # Variable -> DataObjects table. Lists all variables and which data objects they are associated with.
@@ -182,6 +192,30 @@ class DBInitializer():
                         is_active INTEGER NOT NULL DEFAULT 1,
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
+                        PRIMARY KEY (dataobject_id, vr_id, action_id)
+                        )""")
+        
+        # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
+        # The "edge_id" is typically a VR ID, but perhaps not always.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
+                        action_id TEXT NOT NULL,
+                        source_object_id TEXT NOT NULL,
+                        target_object_id TEXT NOT NULL,
+                        edge_id TEXT NOT NULL,
+                        is_active INTEGER NOT NULL DEFAULT 1,
+                        FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
+                        FOREIGN KEY (edge_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        PRIMARY KEY (source_object_id, target_object_id, edge_id)
+                        )""")
+        
+        # Users_Computers table. Maps all users to their computers.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS users_computers (
+                        action_id TEXT PRIMARY KEY,
+                        user_id TEXT NOT NULL,
+                        computer_id TEXT NOT NULL,
                         FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
         

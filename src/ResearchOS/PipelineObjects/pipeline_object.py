@@ -3,7 +3,7 @@ from ResearchOS.action import Action
 
 all_default_attrs = {}
 
-complex_attrs_list = []
+computer_specific_attr_names = []
 
 class PipelineObject(ResearchObject):
     """Parent class of all pipeline objects: Projects, Analyses, Logsheets, Process Groups, Processes, Variables, SpecifyTrials, Views"""

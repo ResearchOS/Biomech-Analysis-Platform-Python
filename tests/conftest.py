@@ -27,8 +27,8 @@ def db_init(temp_db_file):
 def db_connection(temp_db_file, db_init):
     ResearchObjectHandler.instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
     ResearchObjectHandler.counts = {} # Keep track of the number of instances of each ID.
-    ResearchObjectHandler.pool = SQLiteConnectionPool()
-    return ResearchObjectHandler.pool
+    pool = SQLiteConnectionPool()
+    return pool
 
 @pytest.fixture(scope="session")
 def temp_logsheet_file(tmp_path_factory):
@@ -88,5 +88,5 @@ def logsheet_headers(db_connection):
     return headers
 
 if __name__ == "__main__":
-    pytest.main(["-v", "-s", "tests/"])
-    # pytest.main(["-v", "tests/"])
+    # pytest.main(["-v", "-s", "tests/"])
+    pytest.main(["-v", "tests/"])

@@ -1,306 +1,151 @@
 from typing import Any
 from typing import Callable
-import json, sys, os, pickle
-import importlib
-from hashlib import sha256
+import logging
 
 import networkx as nx
 
-from ResearchOS.research_object import ResearchObject
-from ResearchOS.variable import Variable
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
-from ResearchOS.PipelineObjects.subset import Subset
-from ResearchOS.DataObjects.dataset import Dataset
-from ResearchOS.research_object_handler import ResearchObjectHandler
-from ResearchOS.code_inspector import get_returned_variable_names, get_input_variable_names
 from ResearchOS.action import Action
-from ResearchOS.sqlite_pool import SQLiteConnectionPool
+from ResearchOS.process_runner import ProcessRunner
+from ResearchOS.vr_handler import VRHandler
 
 all_default_attrs = {}
-all_default_attrs["method"] = None
-all_default_attrs["level"] = None
-all_default_attrs["input_vrs"] = {}
-all_default_attrs["output_vrs"] = {}
-all_default_attrs["subset_id"] = None
+# For MATLAB
 all_default_attrs["is_matlab"] = False
 all_default_attrs["mfolder"] = None
 all_default_attrs["mfunc_name"] = None
 
-complex_attrs_list = []
+# Main attributes
+all_default_attrs["method"] = None
+all_default_attrs["level"] = None
+all_default_attrs["input_vrs"] = {}
+all_default_attrs["output_vrs"] = {}
+all_default_attrs["vrs_source_pr"] = {}
+all_default_attrs["subset_id"] = None
 
-try:
-    import matlab.engine
-    eng = matlab.engine.start_matlab()
-except:
-    pass
+# For import
+all_default_attrs["import_file_ext"] = None
+all_default_attrs["import_file_vr_name"] = None
 
+# For including other Data Object attributes from the node lineage in the input variables.
+# For example, if a Process is run on a Trial, and one of the inputs needs to be the Subject's name.
+# Then, "data_object_level_attr" would be "{ros.Subject: 'name'}"
+# NOTE: This is always the last input variable(s), in the order of the input variables dict.
+# all_default_attrs["data_object_level_attr"] = {}
+
+# For static lookup trial
+all_default_attrs["lookup_vrs"] = {}
+
+# For batching
+all_default_attrs["batch"] = None
+
+computer_specific_attr_names = ["mfolder"]
+
+# log_stream = open("logfile_run_process.log", "w")
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, filename = "logfile.log", filemode = "w", format = "%(asctime)s - %(levelname)s - %(message)s")
+
+do_run = False
 
 class Process(PipelineObject):
 
     prefix = "PR"
+    # __slots__ = tuple(all_default_attrs.keys())
 
-    ## mfunc_name (MATLAB function name) methods
-
-    def validate_mfunc_name(self, mfunc_name: str) -> None:
-        self.validate_mfolder(self.mfolder)
-        if not self.is_matlab and mfunc_name is None: 
+    def __init__(self, is_matlab: bool = all_default_attrs["is_matlab"],
+                 mfolder: str = all_default_attrs["mfolder"], 
+                 mfunc_name: str = all_default_attrs["mfunc_name"], 
+                 method: Callable = all_default_attrs["method"], 
+                 level: type = all_default_attrs["level"], 
+                 input_vrs: dict = all_default_attrs["input_vrs"], 
+                 output_vrs: dict = all_default_attrs["output_vrs"], 
+                 subset_id: str = all_default_attrs["subset_id"], 
+                 import_file_ext: str = all_default_attrs["import_file_ext"], 
+                 import_file_vr_name: str = all_default_attrs["import_file_vr_name"], 
+                 vrs_source_pr: dict = all_default_attrs["vrs_source_pr"],
+                 lookup_vrs: dict = all_default_attrs["lookup_vrs"],
+                 batch: list = all_default_attrs["batch"],
+                 **kwargs) -> None:
+        if self._initialized:
             return
-        if not isinstance(mfunc_name, str):
-            raise ValueError("Function name must be a string!")
-        if not str(mfunc_name).isidentifier():
-            raise ValueError("Function name must be a valid variable name!")
-        if not os.path.exists(os.path.join(self.mfolder, mfunc_name + ".m")):
-            raise ValueError("Function name must reference an existing MATLAB function in the specified folder.")
+        self.is_matlab = is_matlab
+        self.mfolder = mfolder
+        self.mfunc_name = mfunc_name
+        self.method = method
+        self.level = level
+        self.input_vrs = input_vrs
+        self.output_vrs = output_vrs
+        self.subset_id = subset_id
+        self.import_file_ext = import_file_ext
+        self.import_file_vr_name = import_file_vr_name
+        self.vrs_source_pr = vrs_source_pr
+        self.lookup_vrs = lookup_vrs
+        self.batch = batch
+        super().__init__(**kwargs)                                                                        
         
-    ## mfolder (MATLAB folder) methods
+    ## import_file_ext
         
-    def validate_mfolder(self, mfolder: str) -> None:
-        if not self.is_matlab and mfolder is None:
+    def validate_import_file_ext(self, file_ext: str, action: Action, default: Any) -> None:
+        if file_ext == default:
             return
-        if not self.is_matlab:
-            raise ValueError("mfolder must be None if is_matlab is False.")
-        if not isinstance(mfolder, str):
-            raise ValueError("Path must be a string!")
-        if not os.path.exists(mfolder):
-            raise ValueError("Path must be a valid existing folder path!")
-        
-    ## method (Python method) methods
-        
-    def validate_method(self, method: Callable) -> None:
-        if method is None and self.is_matlab:
+        if not self.import_file_vr_name and file_ext is None:
             return
-        if not self.is_matlab:
-            raise ValueError("Method must be None if is_matlab is False.")
-        if not isinstance(method, Callable):
-            raise ValueError("Method must be a callable function!")
-        if method.__module__ not in sys.modules:
-            raise ValueError("Method must be in an imported module!")
-
-    def from_json_method(self, json_method: str) -> Callable:
-        """Convert a JSON string to a method.
-        Returns None if the method name is not found (e.g. if code changed locations or something)"""
-        method_name = json.loads(json_method)
-        module_name, *attribute_path = method_name.split(".")        
-        module = importlib.import_module(module_name)
-        attribute = module
-        for attr in attribute_path:
-            attribute = getattr(attribute, attr)
-        return attribute
-
-    def to_json_method(self, method: Callable) -> str:
-        """Convert a method to a JSON string."""
-        if method is None:
-            return json.dumps(None)
-        return json.dumps(method.__module__ + "." + method.__qualname__)
-    
-    ## level (Process level) methods
-
-    def validate_level(self, level: type) -> None:
-        if not isinstance(level, type):
-            raise ValueError("Level must be a type!")
+        if self.import_file_vr_name and file_ext is None:
+            raise ValueError("File extension must be specified if import_file_vr_name is specified.")
+        if not isinstance(file_ext, str):
+            raise ValueError("File extension must be a string.")
+        if not file_ext.startswith("."):
+            raise ValueError("File extension must start with a period.")
         
-    def from_json_level(self, level: str) -> type:
-        """Convert a JSON string to a Process level."""
-        classes = ResearchObjectHandler._get_subclasses(ResearchObject)
-        for cls in classes:
-            if hasattr(cls, "prefix") and cls.prefix == level:
-                return cls
-
-    def to_json_level(self, level: type) -> str:
-        """Convert a Process level to a JSON string."""
-        return json.dumps(level.prefix)
-    
-    ## subset_id (Subset ID) methods
-    
-    def validate_subset_id(self, subset_id: str) -> None:
-        """Validate that the subset ID is correct."""
-        if not ResearchObjectHandler.object_exists(subset_id):
-            raise ValueError("Subset ID must reference an existing Subset.")
+    ## import_file_vr_name
         
-    ## input & output VRs methods
-        
-    def validate_input_vrs(self, inputs: dict) -> None:
-        """Validate that the input variables are correct."""        
-        if not self.is_matlab:
-            input_vr_names_in_code = get_input_variable_names(self.method)
-        self._validate_vrs(inputs, input_vr_names_in_code)
-
-    def validate_output_vrs(self, outputs: dict) -> None:
-        """Validate that the output variables are correct."""        
-        if not self.is_matlab:
-            output_vr_names_in_code = get_returned_variable_names(self.method)
-        self._validate_vrs(outputs, output_vr_names_in_code)    
-
-    def _validate_vrs(self, vr: dict, vr_names_in_code: list) -> None:
-        """Validate that the input and output variables are correct. They should follow the same format.
-        The format is a dictionary with the variable name as the key and the variable ID as the value."""       
-        self.validate_method(self.method) 
-        if not isinstance(vr, dict):
-            raise ValueError("Variables must be a dictionary.")
-        for key, value in vr.items():
-            if not isinstance(key, str):
-                raise ValueError("Variable names in code must be strings.")
-            if not str(key).isidentifier():
-                raise ValueError("Variable names in code must be valid variable names.")
-            if not isinstance(value, Variable):
-                raise ValueError("Variable ID's must be Variable objects.")
-            if not ResearchObjectHandler.object_exists(value.id):
-                raise ValueError("Variable ID's must reference existing Variables.")
-        if not self.is_matlab and not all([vr_name in vr_names_in_code for vr_name in vr.keys()]):
-            raise ValueError("Output variables must be returned by the method.")
-        
-    def from_json_input_vrs(self, input_vrs: str) -> dict:
-        """Convert a JSON string to a dictionary of input variables."""
-        input_vrs_dict = json.loads(input_vrs)
-        return {key: Variable(id = value) for key, value in input_vrs_dict.items()}
-    
-    def to_json_input_vrs(self, input_vrs: dict) -> str:
-        """Convert a dictionary of input variables to a JSON string."""     
-        return json.dumps({key: value.id for key, value in input_vrs.items()})
-    
-    def from_json_output_vrs(self, output_vrs: str) -> dict:
-        """Convert a JSON string to a dictionary of output variables."""
-        output_vrs_dict = json.loads(output_vrs)
-        return {key: Variable(id = value) for key, value in output_vrs_dict.items()}
-    
-    def to_json_output_vrs(self, output_vrs: dict) -> str:
-        """Convert a dictionary of output variables to a JSON string."""
-        return json.dumps({key: value.id for key, value in output_vrs.items()})
+    def validate_import_file_vr_name(self, vr_name: str, action: Action, default: Any) -> None:
+        if vr_name == default:
+            return
+        if not isinstance(vr_name, str):
+            raise ValueError("Variable name must be a string.")
+        if not str(vr_name).isidentifier():
+            raise ValueError("Variable name must be a valid variable name.")
+        if vr_name not in self.input_vrs:
+            raise ValueError("Variable name must be a valid input variable name.")                                                        
     
     def set_input_vrs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict."""
-        action = Action(name = "set_input_vrs")
-        self.__setattr__("input_vrs", kwargs, action = action)
+        self.__setattr__("input_vrs", VRHandler.add_slice_to_input_vrs(kwargs))
 
     def set_output_vrs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict."""
-        action = Action(name = "set_output_vrs")
-        self.__setattr__("output_vrs", kwargs, action = action)
+        self.__setattr__("output_vrs", kwargs)
 
-    def run(self) -> None:
+    def set_vrs_source_pr(self, **kwargs) -> None:
+        """Convenience function to set the source process for the input variables with named variables rather than a dict."""
+        self.__setattr__("vrs_source_pr", kwargs)
+
+    def set_lookup_vrs(self, **kwargs) -> None:
+        """Convenience function to set the lookup variables with named variables rather than a dict."""
+        self.__setattr__("lookup_vrs", kwargs)
+
+    def run(self, force_redo: bool = False) -> None:
         """Execute the attached method.
-        kwargs are the input VR's."""
-        ds = Dataset(id = self.get_dataset_id())
-        # 1. Validate that the level & method have been properly set.
-        self.validate_method(self.method)
-        self.validate_level(self.level)
+        kwargs are the input VR's."""        
+        start_msg = f"Running {self.mfunc_name} on {self.level.__name__}s."
+        print(start_msg)
+        action = Action(name = start_msg)
+        process_runner = ProcessRunner()        
+        batches_dict_to_run, all_batches_graph, G, pool = process_runner.prep_for_run(self, action, force_redo)
+        curr_batch_graph = nx.MultiDiGraph()
+        process_runner.add_matlab_to_path(__file__)
+        for batch_id, batch_value in batches_dict_to_run.items():
+            if self.batch is not None:
+                curr_batch_graph = nx.MultiDiGraph(all_batches_graph.subgraph([batch_id] + list(nx.descendants(all_batches_graph, batch_id))))
+            process_runner.run_batch(batch_id, batch_value, G, curr_batch_graph)
 
-        # TODO: Fix this to work with MATLAB.
-        if not self.is_matlab:
-            output_var_names_in_code = get_returned_variable_names(self.method)
+        if process_runner.matlab_loaded and self.is_matlab:
+            ProcessRunner.matlab_eng.rmpath(self.mfolder)
+            
+        for vr_name, vr in self.output_vrs.items():
+            print(f"Saved VR {vr_name} (VR: {vr.id}).")
 
-        # 2. Validate that the input & output variables have been properly set.
-        self.validate_input_vrs(self.input_vrs)
-        self.validate_output_vrs(self.output_vrs)
-
-        # 3. Validate that the subsets have been properly set.
-        self.validate_subset_id(self.subset_id)
-
-        schema_id = self.get_current_schema_id(ds.id)
-
-        # 4. Run the method.
-        # Get the subset of the data.
-        subset_graph = Subset(id = self.subset_id).get_subset()
-
-        action = Action(name = f"Running {self.mfunc_name} on {self.level.__name__}s.")
-
-        # Do the setup for MATLAB.
-        if self.is_matlab:
-            eng.addpath(self.mfolder, nargout=0)
-
-        level_nodes = sorted([node for node in subset_graph if isinstance(node, self.level)], key = lambda x: x.name)
-        # Iterate over each data object at this level (e.g. all ros.Trial objects in the subset.)
-        schema = ds.schema
-        schema_graph = nx.MultiDiGraph(schema)
-        schema_order = list(nx.topological_sort(schema_graph))
-        pool_data = SQLiteConnectionPool(name = "data")
-        conn_data = pool_data.get_connection()
-        cursor_data = conn_data.cursor()
-        for node in level_nodes:
-            # Get the values for the input variables for this DataObject node.
-            print(f"Running {self.mfunc_name} on {node.name}.")
-            vr_values_in = {}
-            anc_nodes = nx.ancestors(subset_graph, node)
-            node_lineage = [node] + [anc_node for anc_node in anc_nodes]
-            for var_name_in_code, vr in self.input_vrs.items():
-                vr_found = False
-                if vr.hard_coded_value is not None:
-                    vr_values_in[var_name_in_code] = vr.hard_coded_value
-                    vr_found = True                
-                for curr_node in node_lineage:
-                    if hasattr(curr_node, vr.name):
-                        vr_values_in[var_name_in_code] = getattr(curr_node, vr.name)
-                        vr_found = True
-                        break
-                if not vr_found:
-                    raise ValueError(f"Variable {vr.name} ({vr.id}) not found in __dict__ of {node}.")
-                
-            # Get the lineage so I can get the file path.
-            ordered_levels = []
-            for level in schema_order:
-                ordered_levels.append([n for n in node_lineage if isinstance(n, level)])
-            data_path = ds.dataset_path
-            for level in ordered_levels[1:]:
-                data_path = os.path.join(data_path, level[0].name)
-            # TODO: Make the name of this variable not hard-coded.
-            if "c3dFilePath" in vr_values_in:
-                vr_values_in["c3dFilePath"] = data_path + ".c3d"
-
-            # Check if the values for the input variables are up to date. If so, skip this node.
-            check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_values_in.items()}
-            run_process = False
-            for vr_name, vr_val in check_vr_values_in.items():
-                blob = pickle.dumps(vr_val)
-                hash_val = sha256(blob).hexdigest()
-
-                # Get the ID for this hash.
-                sqlquery = "SELECT data_blob_id FROM data_values_blob WHERE data_hash = ?"
-                result = cursor_data.execute(sqlquery, (hash_val,)).fetchall() 
-                # If None, then do processing.
-                if len(result) == 0:
-                    run_process = True
-                    break               
-
-                 # If not None, check if it's the most recent.
-                data_blob_id = result[0][0]
-                sqlquery = "SELECT action_id, data_blob_id FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND schema_id = ? AND data_blob_id = ?"
-                params = (node.id, self.input_vrs[vr_name].id, schema_id, data_blob_id)
-                result = cursor_data.execute(sqlquery, params).fetchall()
-                time_ordered_result = ResearchObjectHandler._get_time_ordered_result(result, action_col_num = 0)
-                latest_data_blob_id = time_ordered_result[0][1]
-                if latest_data_blob_id != data_blob_id:
-                    run_process = True
-                    break
-
-            if not run_process:
-                print(f"Skipping {node.name} ({node.id}).")
-                continue
-
-            # NOTE: For now, assuming that there is only one return statement in the entire method.
-            if self.is_matlab:
-                vr_vals_in = list(vr_values_in.values())
-                fcn = getattr(eng, self.mfunc_name)                
-                vr_values_out = fcn(*vr_vals_in, nargout=len(self.output_vrs))
-            else:
-                vr_values_out = self.method(**vr_values_in) # Ensure that the method returns a tuple.
-            if not isinstance(vr_values_out, tuple):
-                vr_values_out = (vr_values_out,)
-            if len(vr_values_out) != len(self.output_vrs):
-                raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
-            if not all(vr in self.output_vrs for vr in output_var_names_in_code):
-                raise ValueError("All of the variable names returned by this method must have been previously registered with this Process instance.")            
-
-            # Set the output variables for this DataObject node.
-            idx = -1 # For MATLAB. Requires that the args are in the proper order.
-            for vr_name, vr in self.output_vrs.items():
-                if not self.is_matlab:
-                    idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out, and the order in the output_vrs dict are probably different.
-                else:
-                    idx += 1                
-                self.__setattr__(node, vr_name, vr_values_out[idx], action = action)
-                print(f"In {node.name} ({node.id}): Saved VR {vr_name} (VR: {vr.id}).")
-
-        if self.is_matlab:
-            eng.rmpath(self.mfolder, nargout=0)   
-
-        pool.return_connection(conn)
+        if action.conn:
+            pool.return_connection(action.conn)
