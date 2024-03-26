@@ -153,22 +153,23 @@ class CodeRunner():
                 level = robj.batch[0]
                 batch_list = robj.batch
 
-            def graph_to_dict(graph: nx.MultiDiGraph, batches_dict: dict, batch_list: list, node: str = None) -> dict:
+            def graph_to_dict(graph: nx.MultiDiGraph, batches_dict: dict, batch_list: list, node: str, subset_graph: nx.MultiDiGraph) -> dict:
                 if len(batch_list) == 0:
                     return None
                 level = batch_list[0]
-                successors = list(graph.successors(node))
-                level_nodes = [n for n in successors if n.startswith(level.prefix)]
+                # Get the list of nodes that are connected to this node.
+                all_reachable_nodes = list(graph.successors(node))
+                level_nodes = [n for n in all_reachable_nodes if n.startswith(level.prefix)]
                 for n in level_nodes:
                     batches_dict[n] = {}
-                    batches_dict[n] = graph_to_dict(graph, batches_dict[n], batch_list[1:], n)
+                    batches_dict[n] = graph_to_dict(graph, batches_dict[n], batch_list[1:], n, subset_graph)
                 return batches_dict
             
             batches_dict_to_run = {}
             top_level_nodes = [node for node in all_batches_graph.nodes() if node.startswith(level.prefix)]
             for node in top_level_nodes:
                 batches_dict_to_run[node] = {}
-                batches_dict_to_run[node] = graph_to_dict(all_batches_graph, batches_dict_to_run[node], batch_list[1:], node)
+                batches_dict_to_run[node] = graph_to_dict(all_batches_graph, batches_dict_to_run[node], batch_list[1:], node, subset_graph)
 
             # Dict of dicts, where each top-level dict is a batch to run.
             # Get a top level node.
@@ -213,10 +214,10 @@ class CodeRunner():
             bottom_level = batch[idx + 1]
             top_level_nodes = all_nodes_dict[top_level]
             bottom_level_nodes = all_nodes_dict[bottom_level]
-            for n in top_level_nodes:
-                for m in bottom_level_nodes:
-                    if nx.has_path(subgraph, n, m):
-                        batch_graph.add_edge(n, m)
+            for top_level_node in top_level_nodes:
+                for bottom_level_node in bottom_level_nodes:
+                    if nx.has_path(subgraph, top_level_node, bottom_level_node) or nx.has_path(subgraph, bottom_level_node, top_level_node):
+                        batch_graph.add_edge(top_level_node, bottom_level_node)
         return batch_graph
     
     def prep_for_run(self, robj: "ResearchObject", action: Action, force_redo: bool = False) -> None:

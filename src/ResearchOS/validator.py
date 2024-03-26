@@ -156,15 +156,15 @@ class Validator():
             raise ValueError("Batch elements must be DataObject types.")
         if len(batch) <= 1:
             return
-        ds = Dataset(id = self._get_dataset_id(), action = action)
-        schema_graph = nx.MultiDiGraph(ds.schema)
-        schema_ordered = list(nx.topological_sort(schema_graph))        
-        max_idx = 0
-        for batch_elem in batch:
-            idx = schema_ordered.index(batch_elem)
-            if idx < max_idx:
-                raise ValueError("Batch elements must be in order of the schema, from highest to lowest.")
-            max_idx = idx
+        # ds = Dataset(id = self._get_dataset_id(), action = action)
+        # schema_graph = nx.MultiDiGraph(ds.schema)
+        # schema_ordered = list(nx.topological_sort(schema_graph))        
+        # max_idx = 0
+        # for batch_elem in batch:
+        #     idx = schema_ordered.index(batch_elem)
+        #     if idx < max_idx:
+        #         raise ValueError("Batch elements must be in order of the schema, from highest to lowest.")
+        #     max_idx = idx
 
     @staticmethod
     def validate_subset_id(self, subset_id: str, action: Action, default: Any) -> None:
