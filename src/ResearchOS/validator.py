@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Callable
 import sys, os
+import json
 
 import networkx as nx
 
@@ -51,8 +52,14 @@ class Validator():
                 raise ValueError("Variable names in code must be strings.")
             if not str(key).isidentifier():
                 raise ValueError("Variable names in code must be valid variable names.")
-            if not isinstance(value, dict):
-                raise ValueError("Variables must be dicts themselves.")
+            # Hard-coded variables
+            if not isinstance(value, dict) or (isinstance(value, dict) and "VR" not in value.keys() and "slice" not in value.keys()):
+                try:
+                    tmp = json.dumps(value)
+                except:
+                    raise ValueError("Hard-coded variables must be JSON serializable.")
+                continue
+            # Dynamic variables
             if ["VR", "slice"] != list(value.keys()):
                 raise ValueError("Variables must have keys 'VR' and 'slice'.")
             if isinstance(value["VR"], dict):
@@ -60,6 +67,7 @@ class Validator():
             else:
                 if not ResearchObjectHandler.object_exists(value["VR"].id, action):
                     raise ValueError("Variable ID's must reference existing Variables.")
+            
 
     @staticmethod
     def validate_output_vrs(robj: "ResearchObject", outputs: dict, action: Action, default: Any) -> None:

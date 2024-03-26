@@ -21,6 +21,7 @@ from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.validator import Validator
 from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
+from ResearchOS.var_converter import convert_var
 
 class CodeRunner():
 
@@ -64,7 +65,7 @@ class CodeRunner():
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet
         # add_vr_names_source_prs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and not isinstance(value["VR"], dict))]
-        add_vr_names_source_prs_from_input_vrs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and not isinstance(value["VR"], dict))]
+        add_vr_names_source_prs_from_input_vrs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and (isinstance(value, dict) and "VR" in value.keys() and "slice" in value.keys() and not isinstance(value["VR"], dict)))]
         add_vr_names_source_prs_from_lookup_vrs = [key for key, value in robj.lookup_vrs.items() if (key not in robj.vrs_source_pr.keys())]
         add_vrs_source_prs = []
         add_vrs_source_prs_from_input_vars = []
@@ -81,6 +82,8 @@ class CodeRunner():
             vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
             vrs_source_prs_tmp = {}
             for vr_name_in_code, vr in robj.input_vrs.items():
+                if not isinstance(vr, dict) or (isinstance(vr, dict) and "VR" not in vr.keys() and "slice" not in vr.keys() and not isinstance(vr["VR"], dict)):
+                    continue
                 for vr_pr_id in vr_pr_ids_result:
                     if vr["VR"].id == vr_pr_id[0]:
                         # Same order as input variables.
@@ -106,6 +109,7 @@ class CodeRunner():
     def get_lowest_level(robj: "ResearchObject", schema_ordered: list) -> Optional[str]:
         """Get the lowest level for this batch."""
         lowest_level_idx = -1
+        lowest_level = schema_ordered[-1]
         for pr in robj.vrs_source_pr.values():
             try:
                 level = pr.level                
@@ -334,7 +338,11 @@ class CodeRunner():
 
         input_dict = {node: copy.deepcopy(batch_dict) for node in self.pl_obj.input_vrs.keys()}
         for var_name_in_code in input_dict:
-            process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
+            curr_vr = self.pl_obj.input_vrs[var_name_in_code]
+            if not isinstance(curr_vr, dict) or ("VR" not in curr_vr.keys() and "slice" not in curr_vr.keys()):
+                input_dict[var_name_in_code] = result["vr_values_in"][var_name_in_code] # To make it not be a cell array in MATLAB.
+            else:
+                process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
 
         # Run the process on the batch of nodes.
         is_batch = self.pl_obj.batch is not None
@@ -433,6 +441,12 @@ class CodeRunner():
         input_vrs_names_dict = {}
         lookup_vrs = self.pl_obj.lookup_vrs
         for var_name_in_code, vr_dict in pr.input_vrs.items():
+            # Specified as hard-coded without a ResearchOS Variable having been created at all.
+            if not isinstance(vr_dict, dict) or ("VR" not in vr_dict.keys() and "slice" not in vr_dict.keys()):
+                vr_values_in[var_name_in_code] = convert_var(vr_dict, self.matlab_numeric_types)
+                input_vrs_names_dict[var_name_in_code] = convert_var(vr_dict, self.matlab_numeric_types)
+                continue
+
             vr = vr_dict["VR"]
             slice = vr_dict["slice"]
             input_vrs_names_dict[var_name_in_code] = vr
@@ -444,7 +458,7 @@ class CodeRunner():
 
             # Hard-coded input variable.
             if type(vr) is not dict and vr.hard_coded_value is not None: 
-                vr_values_in[var_name_in_code] = vr.hard_coded_value
+                vr_values_in[var_name_in_code] = convert_var(vr.hard_coded_value, self.matlab_numeric_types)
                 continue   
 
             # Check if this variable should be pulled from another DataObject.
@@ -558,6 +572,7 @@ class CodeRunner():
         Returns:
             datetime: _description_
         """
+        from ResearchOS.variable import Variable
         cursor = self.action.conn.cursor()
         # Check if the values for all the input variables are up to date. If so, skip this node.
         # check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_vals_in.items()}            
@@ -568,7 +583,7 @@ class CodeRunner():
 
             vr = input_vrs_names_dict[vr_name]
 
-            if isinstance(vr, dict):
+            if isinstance(vr, dict) or not isinstance(vr, Variable):
                 continue
             
             # Hard coded. Return when the hard coded value was last set.
