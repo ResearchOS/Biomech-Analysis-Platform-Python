@@ -153,23 +153,25 @@ class CodeRunner():
                 level = robj.batch[0]
                 batch_list = robj.batch
 
-            def graph_to_dict(graph: nx.MultiDiGraph, batches_dict: dict, batch_list: list, node: str, subset_graph: nx.MultiDiGraph) -> dict:
+            def graph_to_dict(graph: nx.MultiDiGraph, batches_dict: dict, batch_list: list, node: str, subset_graph: nx.MultiDiGraph, node_lineage: list) -> dict:
                 if len(batch_list) == 0:
                     return None
                 level = batch_list[0]
                 # Get the list of nodes that are connected to this node.
                 all_reachable_nodes = list(graph.successors(node))
                 level_nodes = [n for n in all_reachable_nodes if n.startswith(level.prefix)]
+                level_nodes = [n for n in level_nodes if set(node_lineage).issubset(set(list(nx.ancestors(subset_graph, n)) + list(nx.ancestors(subset_graph.reverse(), n))))]
                 for n in level_nodes:
                     batches_dict[n] = {}
-                    batches_dict[n] = graph_to_dict(graph, batches_dict[n], batch_list[1:], n, subset_graph)
+                    node_lineage.append(n)
+                    batches_dict[n] = graph_to_dict(graph, batches_dict[n], batch_list[1:], n, subset_graph, node_lineage)
                 return batches_dict
             
             batches_dict_to_run = {}
             top_level_nodes = [node for node in all_batches_graph.nodes() if node.startswith(level.prefix)]
             for node in top_level_nodes:
                 batches_dict_to_run[node] = {}
-                batches_dict_to_run[node] = graph_to_dict(all_batches_graph, batches_dict_to_run[node], batch_list[1:], node, subset_graph)
+                batches_dict_to_run[node] = graph_to_dict(all_batches_graph, batches_dict_to_run[node], batch_list[1:], node, subset_graph, [node])
 
             # Dict of dicts, where each top-level dict is a batch to run.
             # Get a top level node.
