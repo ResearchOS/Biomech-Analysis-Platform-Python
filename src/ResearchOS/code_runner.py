@@ -62,19 +62,42 @@ class CodeRunner():
     @staticmethod
     def set_vrs_source_pr(robj: "ResearchObject", action: Action, schema_id: str, default_attrs: dict) -> None:
         from ResearchOS.PipelineObjects.process import Process
-        add_vr_names_source_prs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and not isinstance(value["VR"], dict))]
-        if len(add_vr_names_source_prs) > 0:
-            add_vrs_source_prs = [vr["VR"].id for name_in_code, vr in robj.input_vrs.items() if name_in_code in add_vr_names_source_prs]
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
+        # add_vr_names_source_prs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and not isinstance(value["VR"], dict))]
+        add_vr_names_source_prs_from_input_vrs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and not isinstance(value["VR"], dict))]
+        add_vr_names_source_prs_from_lookup_vrs = [key for key, value in robj.lookup_vrs.items() if (key not in robj.vrs_source_pr.keys())]
+        add_vrs_source_prs = []
+        add_vrs_source_prs_from_input_vars = []
+        add_vrs_source_prs_from_lookup_vars = []
+        if len(add_vr_names_source_prs_from_input_vrs) > 0:
+            add_vrs_source_prs_from_input_vars = [vr["VR"].id for name_in_code, vr in robj.input_vrs.items() if name_in_code in add_vr_names_source_prs_from_input_vrs]
+        if len(add_vr_names_source_prs_from_lookup_vrs) > 0:
+            add_vrs_source_prs_from_lookup_vars = [list(vr.keys())[0].id for vr in robj.lookup_vrs.values() if vr not in robj.vrs_source_pr.values()]
+        add_vrs_source_prs = add_vrs_source_prs_from_input_vars + add_vrs_source_prs_from_lookup_vars        
+        if len(add_vrs_source_prs) > 0:
             sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({}) AND schema_id = ?".format(",".join(["?" for _ in add_vrs_source_prs]))
             sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
-            params = tuple(add_vrs_source_prs + [schema_id])
+            params = tuple([vr_id for vr_id in add_vrs_source_prs] + [schema_id])
             vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
             vrs_source_prs_tmp = {}
             for vr_name_in_code, vr in robj.input_vrs.items():
                 for vr_pr_id in vr_pr_ids_result:
                     if vr["VR"].id == vr_pr_id[0]:
                         # Same order as input variables.
-                        vrs_source_prs_tmp[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+                        if vr_pr_id[1].startswith(Process.prefix):
+                            vrs_source_prs_tmp[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+                        else:
+                            vrs_source_prs_tmp[vr_name_in_code] = Logsheet(id = vr_pr_id[1], action = action)
+            for lookup_vr_name_in_code, lookup_vr_dict in robj.lookup_vrs.items():
+                lookup_vr = list(lookup_vr_dict.keys())[0]
+                for vr_pr_id in vr_pr_ids_result:
+                    if lookup_vr.id == vr_pr_id[0]:
+                        # Same order as input variables.
+                        if vr_pr_id[1].startswith(Process.prefix):
+                            vrs_source_prs_tmp[lookup_vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+                        else:
+                            vrs_source_prs_tmp[lookup_vr_name_in_code] = Logsheet(id = vr_pr_id[1], action = action)
+
             vrs_source_prs = {**robj.vrs_source_pr, **vrs_source_prs_tmp}
 
             robj._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action, None) 

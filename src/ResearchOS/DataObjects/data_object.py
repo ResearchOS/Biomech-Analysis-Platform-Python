@@ -1,6 +1,7 @@
 """The base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage.""" 
 from typing import Any, TYPE_CHECKING
 import pickle
+import os
 
 if TYPE_CHECKING:    
     from ResearchOS.PipelineObjects.process import Process
@@ -137,3 +138,25 @@ class DataObject(ResearchObject):
     #     for vr_id in vr_ids:
     #         vr = Variable(id = vr_id)
     #         self.__dict__[vr.name] = vr
+
+def load_data_object_classes() -> None:
+    """Import all data object classes from the config.data_objects_path.
+    """
+    from ResearchOS.config import Config
+
+    config = Config()
+    data_objects_import_path = config.data_objects_path
+    main_part, _, extension = data_objects_import_path.rpartition(".")
+    main_part = main_part.replace(".", os.sep)
+
+    if extension:
+        data_objects_path = main_part + '.' + extension
+    else:
+        data_objects_path = main_part
+
+    if os.path.exists(data_objects_path):
+        import importlib
+        data_objects_module = importlib.import_module(config.data_objects_path[:-3])
+        for name in dir(data_objects_module):
+            if not name.startswith("__"):                
+                globals()[name] = getattr(data_objects_module, name)

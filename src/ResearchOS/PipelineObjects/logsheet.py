@@ -13,7 +13,7 @@ from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
 from ResearchOS.default_attrs import DefaultAttrs
-from ResearchOS.var_converter import convert_var
+from ResearchOS.DataObjects.data_object import load_data_object_classes
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -159,6 +159,7 @@ class Logsheet(PipelineObject):
             
         Returns:
             formatted list of headers"""
+        load_data_object_classes()
         subclasses = DataObject.__subclasses__()
         str_var = json.loads(json_var)
         headers = []
