@@ -126,9 +126,9 @@ class Dataset(DataObject):
         if not os.path.exists(path):
             raise ValueError("Specified path is not a path or does not currently exist!")
         
-    def load_dataset_path(self, action: Action) -> str:
-        """Load the dataset path from the database in a computer-specific way."""
-        return ResearchObjectHandler.get_user_computer_path(self, "dataset_path", action)
+    # def load_dataset_path(self, action: Action) -> str:
+    #     """Load the dataset path from the database in a computer-specific way."""
+    #     return ResearchObjectHandler.get_user_computer_path(self, "dataset_path", action)
     
     ### File Schema Methods
 
@@ -224,23 +224,18 @@ class Dataset(DataObject):
         schema_id = self.get_current_schema_id(dataset_id)                
         for address_names in addresses:
             params = (address_names[0], address_names[1], schema_id, action.id)
-            action.add_sql_query(self.id, "addresses_insert", params, group_name = "robj_complex_attr_insert")            
-        # self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)        
+            action.add_sql_query(self.id, "addresses_insert", params, group_name = "robj_complex_attr_insert")    
 
     def load_addresses(self, action: Action) -> list:
-        """Load the addresses from the database."""
-        pool = SQLiteConnectionPool()        
+        """Load the addresses from the database.""" 
         schema_id = self.get_current_schema_id(self.id)
-        conn = pool.get_connection()
 
         # 2. Get the addresses for the current schema_id.
         sqlquery = f"SELECT target_object_id, source_object_id FROM data_addresses WHERE schema_id = '{schema_id}'"
-        addresses = conn.execute(sqlquery).fetchall()
-        pool.return_connection(conn)
+        addresses = action.conn.execute(sqlquery).fetchall()
 
         # 3. Convert the addresses to a list of lists (from a list of tuples).
-        addresses = [list(address) for address in addresses]                
-        # self.__dict__["address_graph"] = self.addresses_to_graph(addresses, action)
+        addresses = [list(address) for address in addresses]
 
         return addresses
 
@@ -251,18 +246,9 @@ class Dataset(DataObject):
             addresses (list) : list of addresses
         Returns:
             nx.MultiDiGraph of addresses"""
-        # action = Action("get_addresses_graph")
         addresses = self.addresses
-        G = nx.MultiDiGraph()
-        if not objs:
-            G.add_edges_from(addresses)            
-        else:
-            for address in addresses:
-                cls0 = ResearchObjectHandler._prefix_to_class(address[0])
-                cls1 = ResearchObjectHandler._prefix_to_class(address[1])
-                node0 = cls0(id = address[0], action = action)
-                node1 = cls1(id = address[1], action = action)
-                G.add_edge(node0, node1)  
+        G = nx.MultiDiGraph()        
+        G.add_edges_from(addresses)
         return G
     
 if __name__=="__main__":
