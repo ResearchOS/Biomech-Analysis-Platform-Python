@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Callable
 import sys, os
+import json
 
 import networkx as nx
 
@@ -51,8 +52,14 @@ class Validator():
                 raise ValueError("Variable names in code must be strings.")
             if not str(key).isidentifier():
                 raise ValueError("Variable names in code must be valid variable names.")
-            if not isinstance(value, dict):
-                raise ValueError("Variables must be dicts themselves.")
+            # Hard-coded variables
+            if not isinstance(value, dict) or (isinstance(value, dict) and "VR" not in value.keys() and "slice" not in value.keys()):
+                try:
+                    tmp = json.dumps(value)
+                except:
+                    raise ValueError("Hard-coded variables must be JSON serializable.")
+                continue
+            # Dynamic variables
             if ["VR", "slice"] != list(value.keys()):
                 raise ValueError("Variables must have keys 'VR' and 'slice'.")
             if isinstance(value["VR"], dict):
@@ -60,6 +67,7 @@ class Validator():
             else:
                 if not ResearchObjectHandler.object_exists(value["VR"].id, action):
                     raise ValueError("Variable ID's must reference existing Variables.")
+            
 
     @staticmethod
     def validate_output_vrs(robj: "ResearchObject", outputs: dict, action: Action, default: Any) -> None:
@@ -148,15 +156,15 @@ class Validator():
             raise ValueError("Batch elements must be DataObject types.")
         if len(batch) <= 1:
             return
-        ds = Dataset(id = self._get_dataset_id(), action = action)
-        schema_graph = nx.MultiDiGraph(ds.schema)
-        schema_ordered = list(nx.topological_sort(schema_graph))        
-        max_idx = 0
-        for batch_elem in batch:
-            idx = schema_ordered.index(batch_elem)
-            if idx < max_idx:
-                raise ValueError("Batch elements must be in order of the schema, from highest to lowest.")
-            max_idx = idx
+        # ds = Dataset(id = self._get_dataset_id(), action = action)
+        # schema_graph = nx.MultiDiGraph(ds.schema)
+        # schema_ordered = list(nx.topological_sort(schema_graph))        
+        # max_idx = 0
+        # for batch_elem in batch:
+        #     idx = schema_ordered.index(batch_elem)
+        #     if idx < max_idx:
+        #         raise ValueError("Batch elements must be in order of the schema, from highest to lowest.")
+        #     max_idx = idx
 
     @staticmethod
     def validate_subset_id(self, subset_id: str, action: Action, default: Any) -> None:

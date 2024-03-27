@@ -3,16 +3,17 @@ from typing import Any
 import numpy as np
 
 def convert_var(var: Any, matlab_numeric_types: tuple) -> Any:
-    """Walk through the variable and convert any matlab.double to numpy arrays.
+    """Walk through the variable and convert any matlab numeric types to numpy arrays.
     """        
     if isinstance(var, dict):
         for key, value in var.items():
             var[key] = convert_var(value, matlab_numeric_types)
     elif isinstance(var, list):
-        for idx, value in enumerate(var):
-            var[idx] = convert_var(value, matlab_numeric_types)
-    elif isinstance(var, matlab_numeric_types):
-        var = np.array(var)
+        all_numeric = all([isinstance(value, matlab_numeric_types) or isinstance(value, (int, float, complex)) for value in var])
+        if all_numeric:
+            var = np.array(var)            
+    # elif isinstance(var, matlab_numeric_types) or isinstance(var, (int, float, complex)):
+    #     var = np.array(var)
     return var
 
 def convert_py_to_matlab(var: Any, matlab_numeric_types: list) -> Any:

@@ -21,6 +21,7 @@ from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.validator import Validator
 from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
+from ResearchOS.var_converter import convert_var
 
 class CodeRunner():
 
@@ -62,19 +63,44 @@ class CodeRunner():
     @staticmethod
     def set_vrs_source_pr(robj: "ResearchObject", action: Action, schema_id: str, default_attrs: dict) -> None:
         from ResearchOS.PipelineObjects.process import Process
-        add_vr_names_source_prs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and not isinstance(value["VR"], dict))]
-        if len(add_vr_names_source_prs) > 0:
-            add_vrs_source_prs = [vr["VR"].id for name_in_code, vr in robj.input_vrs.items() if name_in_code in add_vr_names_source_prs]
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
+        # add_vr_names_source_prs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and not isinstance(value["VR"], dict))]
+        add_vr_names_source_prs_from_input_vrs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and (isinstance(value, dict) and "VR" in value.keys() and "slice" in value.keys() and not isinstance(value["VR"], dict)))]
+        add_vr_names_source_prs_from_lookup_vrs = [key for key, value in robj.lookup_vrs.items() if (key not in robj.vrs_source_pr.keys())]
+        add_vrs_source_prs = []
+        add_vrs_source_prs_from_input_vars = []
+        add_vrs_source_prs_from_lookup_vars = []
+        if len(add_vr_names_source_prs_from_input_vrs) > 0:
+            add_vrs_source_prs_from_input_vars = [vr["VR"].id for name_in_code, vr in robj.input_vrs.items() if name_in_code in add_vr_names_source_prs_from_input_vrs]
+        if len(add_vr_names_source_prs_from_lookup_vrs) > 0:
+            add_vrs_source_prs_from_lookup_vars = [list(vr.keys())[0].id for vr in robj.lookup_vrs.values() if vr not in robj.vrs_source_pr.values()]
+        add_vrs_source_prs = add_vrs_source_prs_from_input_vars + add_vrs_source_prs_from_lookup_vars        
+        if len(add_vrs_source_prs) > 0:
             sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({}) AND schema_id = ?".format(",".join(["?" for _ in add_vrs_source_prs]))
             sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
-            params = tuple(add_vrs_source_prs + [schema_id])
+            params = tuple([vr_id for vr_id in add_vrs_source_prs] + [schema_id])
             vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
             vrs_source_prs_tmp = {}
             for vr_name_in_code, vr in robj.input_vrs.items():
+                if not isinstance(vr, dict) or (isinstance(vr, dict) and "VR" not in vr.keys() and "slice" not in vr.keys() and not isinstance(vr["VR"], dict)):
+                    continue
                 for vr_pr_id in vr_pr_ids_result:
                     if vr["VR"].id == vr_pr_id[0]:
                         # Same order as input variables.
-                        vrs_source_prs_tmp[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+                        if vr_pr_id[1].startswith(Process.prefix):
+                            vrs_source_prs_tmp[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+                        else:
+                            vrs_source_prs_tmp[vr_name_in_code] = Logsheet(id = vr_pr_id[1], action = action)
+            for lookup_vr_name_in_code, lookup_vr_dict in robj.lookup_vrs.items():
+                lookup_vr = list(lookup_vr_dict.keys())[0]
+                for vr_pr_id in vr_pr_ids_result:
+                    if lookup_vr.id == vr_pr_id[0]:
+                        # Same order as input variables.
+                        if vr_pr_id[1].startswith(Process.prefix):
+                            vrs_source_prs_tmp[lookup_vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+                        else:
+                            vrs_source_prs_tmp[lookup_vr_name_in_code] = Logsheet(id = vr_pr_id[1], action = action)
+
             vrs_source_prs = {**robj.vrs_source_pr, **vrs_source_prs_tmp}
 
             robj._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action, None) 
@@ -83,6 +109,7 @@ class CodeRunner():
     def get_lowest_level(robj: "ResearchObject", schema_ordered: list) -> Optional[str]:
         """Get the lowest level for this batch."""
         lowest_level_idx = -1
+        lowest_level = schema_ordered[-1]
         for pr in robj.vrs_source_pr.values():
             try:
                 level = pr.level                
@@ -126,22 +153,25 @@ class CodeRunner():
                 level = robj.batch[0]
                 batch_list = robj.batch
 
-            def graph_to_dict(graph: nx.MultiDiGraph, batches_dict: dict, batch_list: list, node: str = None) -> dict:
+            def graph_to_dict(graph: nx.MultiDiGraph, batches_dict: dict, batch_list: list, node: str, subset_graph: nx.MultiDiGraph, node_lineage: list) -> dict:
                 if len(batch_list) == 0:
                     return None
                 level = batch_list[0]
-                successors = list(graph.successors(node))
-                level_nodes = [n for n in successors if n.startswith(level.prefix)]
+                # Get the list of nodes that are connected to this node.
+                all_reachable_nodes = list(graph.successors(node))
+                level_nodes = [n for n in all_reachable_nodes if n.startswith(level.prefix)]
+                # level_nodes = [n for n in level_nodes if set(node_lineage).issubset(set(list(nx.ancestors(subset_graph, n))))]
                 for n in level_nodes:
                     batches_dict[n] = {}
-                    batches_dict[n] = graph_to_dict(graph, batches_dict[n], batch_list[1:], n)
+                    node_lineage.append(n)
+                    batches_dict[n] = graph_to_dict(graph, batches_dict[n], batch_list[1:], n, subset_graph, node_lineage)
                 return batches_dict
             
             batches_dict_to_run = {}
             top_level_nodes = [node for node in all_batches_graph.nodes() if node.startswith(level.prefix)]
             for node in top_level_nodes:
                 batches_dict_to_run[node] = {}
-                batches_dict_to_run[node] = graph_to_dict(all_batches_graph, batches_dict_to_run[node], batch_list[1:], node)
+                batches_dict_to_run[node] = graph_to_dict(all_batches_graph, batches_dict_to_run[node], batch_list[1:], node, subset_graph, [node])
 
             # Dict of dicts, where each top-level dict is a batch to run.
             # Get a top level node.
@@ -186,10 +216,10 @@ class CodeRunner():
             bottom_level = batch[idx + 1]
             top_level_nodes = all_nodes_dict[top_level]
             bottom_level_nodes = all_nodes_dict[bottom_level]
-            for n in top_level_nodes:
-                for m in bottom_level_nodes:
-                    if nx.has_path(subgraph, n, m):
-                        batch_graph.add_edge(n, m)
+            for top_level_node in top_level_nodes:
+                for bottom_level_node in bottom_level_nodes:
+                    if nx.has_path(subgraph, top_level_node, bottom_level_node) or nx.has_path(subgraph, bottom_level_node, top_level_node):
+                        batch_graph.add_edge(top_level_node, bottom_level_node)
         return batch_graph
     
     def prep_for_run(self, robj: "ResearchObject", action: Action, force_redo: bool = False) -> None:
@@ -311,7 +341,11 @@ class CodeRunner():
 
         input_dict = {node: copy.deepcopy(batch_dict) for node in self.pl_obj.input_vrs.keys()}
         for var_name_in_code in input_dict:
-            process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
+            curr_vr = self.pl_obj.input_vrs[var_name_in_code]
+            if not isinstance(curr_vr, dict) or ("VR" not in curr_vr.keys() and "slice" not in curr_vr.keys()):
+                input_dict[var_name_in_code] = result["vr_values_in"][var_name_in_code] # To make it not be a cell array in MATLAB.
+            else:
+                process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
 
         # Run the process on the batch of nodes.
         is_batch = self.pl_obj.batch is not None
@@ -410,6 +444,12 @@ class CodeRunner():
         input_vrs_names_dict = {}
         lookup_vrs = self.pl_obj.lookup_vrs
         for var_name_in_code, vr_dict in pr.input_vrs.items():
+            # Specified as hard-coded without a ResearchOS Variable having been created at all.
+            if not isinstance(vr_dict, dict) or ("VR" not in vr_dict.keys() and "slice" not in vr_dict.keys()):
+                vr_values_in[var_name_in_code] = convert_var(vr_dict, self.matlab_numeric_types)
+                input_vrs_names_dict[var_name_in_code] = convert_var(vr_dict, self.matlab_numeric_types)
+                continue
+
             vr = vr_dict["VR"]
             slice = vr_dict["slice"]
             input_vrs_names_dict[var_name_in_code] = vr
@@ -421,7 +461,7 @@ class CodeRunner():
 
             # Hard-coded input variable.
             if type(vr) is not dict and vr.hard_coded_value is not None: 
-                vr_values_in[var_name_in_code] = vr.hard_coded_value
+                vr_values_in[var_name_in_code] = convert_var(vr.hard_coded_value, self.matlab_numeric_types)
                 continue   
 
             # Check if this variable should be pulled from another DataObject.
@@ -535,6 +575,7 @@ class CodeRunner():
         Returns:
             datetime: _description_
         """
+        from ResearchOS.variable import Variable
         cursor = self.action.conn.cursor()
         # Check if the values for all the input variables are up to date. If so, skip this node.
         # check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_vals_in.items()}            
@@ -545,7 +586,7 @@ class CodeRunner():
 
             vr = input_vrs_names_dict[vr_name]
 
-            if isinstance(vr, dict):
+            if isinstance(vr, dict) or not isinstance(vr, Variable):
                 continue
             
             # Hard coded. Return when the hard coded value was last set.
