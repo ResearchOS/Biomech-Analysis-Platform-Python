@@ -3,8 +3,6 @@ import json, copy, os
 
 import networkx as nx
 
-# from ResearchOS.Graphs.data_graph import DataGraph
-# from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
@@ -79,19 +77,16 @@ class Dataset(DataObject):
         if vr in graph:
             raise ValueError("The schema must not include the Variable class as a target node!")
         
+        if self.file_schema == all_default_attrs["file_schema"]:
+            self.__setattr__("file_schema", schema, action)
+        
         # nodes_with_no_targets = [node for node, out_degree in graph.out_degree() if out_degree == 0]
         # nodes_with_a_source = [node for node, in_degree in graph.in_degree() if in_degree > 0]
         # if graph[Dataset] in nodes_with_no_targets or graph[Dataset] in nodes_with_a_source:
         #     raise ValueError("The schema must include the Dataset class as a source node and not a target node!")
-
-    def save_schema(self, schema: list, action: Action) -> None:
-        """Save the schema to the database. One cohesive action.
-        Args:
-            self
-            schema (list) : dict of dicts, all keys are Python types matching a DataObject subclass, and the lowest levels are empty
-            action (Action) : a set of sequal queries that perform multiple action with one Action object call
-        Returns:
-            None"""        
+    
+    def to_json_schema(self, schema: list, action: Action) -> str:
+        """Convert the schema to a json string."""
         # 1. Convert the list of types to a list of str.
         str_schema = []
         for sch in schema:
@@ -101,34 +96,17 @@ class Dataset(DataObject):
             str_schema.append(classes)
         # 2. Convert the list of str to a json string.
         json_schema = json.dumps(str_schema)
-
-        # 3. Save the schema to the database.        
-        schema_id = IDCreator(action.conn).create_action_id()
-        params = (schema_id, json_schema, self.id, action.id)
-        action.add_sql_query(self.id, "data_address_schemas_insert", params, group_name = "robj_complex_attr_insert")
-        # Set the file schema to the dataset schema if it is still the default value.
-        if self.file_schema == all_default_attrs["file_schema"]:
-            self.__setattr__("file_schema", schema, action)
-
-    def load_schema(self, action: Action) -> list:
-        """Load the schema from the database and convert it via json."""
-
-        # 1. Get the dataset ID
-        id = self.id
-        # 2. Get the most recent action ID for the dataset in the data_address_schemas table.
-        schema_id = self.get_current_schema_id(id)
-        sqlquery = f"SELECT levels_edge_list FROM data_address_schemas WHERE schema_id = '{schema_id}'"
-        conn = action.conn
-        result = conn.execute(sqlquery).fetchone()
-
-        # 5. If the schema is not None, convert the string to a list of types.
-        str_schema = json.loads(result[0])
+        return json_schema
+    
+    def from_json_schema(self, json_schema: str, action: Action) -> list:
+        """Convert the schema from a json string to a list of DataObjects."""
+        # 3. Convert the json string to a list of types.
+        str_schema = json.loads(json_schema)
         schema = []
         for sch in str_schema:
             for idx, prefix in enumerate(sch):
                 sch[idx] = ResearchObjectHandler._prefix_to_class(prefix)
             schema.append(sch)  
-
         return schema
 
     ### Dataset path methods
