@@ -160,7 +160,7 @@ class CodeRunner():
                 # Get the list of nodes that are connected to this node.
                 all_reachable_nodes = list(graph.successors(node))
                 level_nodes = [n for n in all_reachable_nodes if n.startswith(level.prefix)]
-                level_nodes = [n for n in level_nodes if set(node_lineage).issubset(set(list(nx.ancestors(subset_graph, n)) + list(nx.ancestors(subset_graph.reverse(), n))))]
+                level_nodes = [n for n in level_nodes if set(node_lineage).issubset(set(list(nx.ancestors(subset_graph, n))))]
                 for n in level_nodes:
                     batches_dict[n] = {}
                     node_lineage.append(n)
