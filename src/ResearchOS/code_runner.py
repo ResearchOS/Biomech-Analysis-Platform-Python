@@ -684,4 +684,6 @@ class CodeRunner():
         current_script_dir = os.path.dirname(os.path.abspath(file))
         research_os_dir = os.path.abspath(os.path.join(current_script_dir, '..',))
         matlab_folder = os.path.join(research_os_dir, "matlab")
+        if self.matlab_eng is None:
+            raise ValueError("MATLAB engine not loaded. Is MATLAB engine API installed? How about MATLAB itself?")
         self.matlab_eng.addpath(matlab_folder)
