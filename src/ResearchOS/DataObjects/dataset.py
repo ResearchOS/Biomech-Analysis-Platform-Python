@@ -2,12 +2,15 @@ from typing import Any
 import json, copy, os
 
 import networkx as nx
+from bokeh.io import output_file, show
+from bokeh.models import (BoxZoomTool, Circle, HoverTool,
+                          MultiLine, Plot, Range1d, ResetTool, TapTool, BoxSelectTool, NodesAndLinkedEdges, EdgesAndLinkedNodes)
+from bokeh.palettes import Spectral4
+from bokeh.plotting import from_networkx
 
 from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
-from ResearchOS.idcreator import IDCreator
-from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 all_default_attrs = {}
 all_default_attrs["schema"] = [] # Edge list of DataObjects
@@ -246,6 +249,40 @@ class Dataset(DataObject):
         G = nx.MultiDiGraph()        
         G.add_edges_from(addresses)
         return G
+    
+    def show_graph(self) -> None:
+        """Show the graph of addresses."""
+        G = self.get_addresses_graph()
+
+        # Show with Bokeh
+        plot = Plot(width=1200, height=800,
+                    x_range=Range1d(-1.1, 1.1), y_range=Range1d(-1.1, 1.1))
+        plot.title.text = "Graph Interaction Demonstration"
+
+        node_hover_tool = HoverTool(tooltips=[("name", "@index")])
+        plot.add_tools(node_hover_tool, TapTool(), BoxSelectTool(), BoxZoomTool(), ResetTool(), )
+
+        undirected_G = G.to_undirected()
+        graph_renderer = from_networkx(undirected_G, nx.spring_layout, scale=1, center=(0, 0))
+
+        graph_renderer.node_renderer.glyph = Circle(radius=0.02, fill_color=Spectral4[0])
+        graph_renderer.node_renderer.selection_glyph = Circle(fill_color="#0B162A")
+        graph_renderer.node_renderer.hover_glyph = Circle(fill_color="#C83803")
+        graph_renderer.node_renderer.nonselection_glyph = Circle(fill_color=Spectral4[0], fill_alpha = 1)
+
+        graph_renderer.edge_renderer.glyph = MultiLine(line_color="black", line_alpha=0.8, line_width=1)
+        graph_renderer.edge_renderer.selection_glyph = MultiLine(line_color="#0B162A", line_width=5)
+        graph_renderer.edge_renderer.hover_glyph = MultiLine(line_color="#C83803", line_width=5)
+        graph_renderer.edge_renderer.nonselection_glyph = MultiLine(line_color="black", line_alpha=0.8, line_width=1)        
+
+        graph_renderer.selection_policy = NodesAndLinkedEdges()
+        graph_renderer.inspection_policy = EdgesAndLinkedNodes()
+
+        plot.renderers.append(graph_renderer)
+
+        show(plot)
+
+        print(1)
     
 if __name__=="__main__":
     pass
