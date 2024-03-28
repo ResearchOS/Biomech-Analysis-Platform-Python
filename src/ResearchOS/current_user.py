@@ -38,7 +38,7 @@ class CurrentUser():
     def set_current_user_computer_id(self, user: str = default_current_user) -> None:
         """Set the current user in the user_computer_id table in the database.
         This is the only action that does not affect any other table besides Actions. It is a special case."""
-        params = (self.action.id, user, COMPUTER_ID)
+        params = (self.action.id_num, user, COMPUTER_ID)
         self.action.db_init_params = params
         CurrentUser.current_user = user
         CurrentUser.computer_id = COMPUTER_ID

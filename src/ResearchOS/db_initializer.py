@@ -104,13 +104,13 @@ class DBInitializer():
         # Objects table. Lists all research objects in the database, and which action created them.
         cursor.execute("""CREATE TABLE IF NOT EXISTS research_objects (
                         object_id TEXT PRIMARY KEY,
-                        action_id TEXT NOT NULL,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        action_id_num INTEGER NOT NULL,
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")
 
         # Actions table. Lists all actions that have been performed, and their timestamps.
         cursor.execute("""CREATE TABLE IF NOT EXISTS actions (
-                        action_id_num INTEGER PRIMARY KEY AUTOINCREMENT,
+                        action_id_num INTEGER PRIMARY KEY,
                         action_id TEXT NOT NULL,
                         name TEXT NOT NULL,
                         datetime TEXT NOT NULL,
@@ -127,7 +127,7 @@ class DBInitializer():
 
         # Simple attributes table. Lists all "simple" (i.e. json-serializable) attributes that have been associated with research objects.
         cursor.execute("""CREATE TABLE IF NOT EXISTS simple_attributes (
-                        action_row_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        action_row_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
                         object_id TEXT NOT NULL,
                         attr_id INTEGER NOT NULL,
@@ -148,17 +148,18 @@ class DBInitializer():
                         vr_id TEXT NOT NULL,
                         pr_id TEXT NOT NULL,
                         data_blob_hash TEXT,
-                        scalar_value TEXT,
+                        str_value TEXT,
+                        numeric_value INTEGER,
                         CHECK (
-                            (data_blob_hash IS NOT NULL AND scalar_value IS NULL) OR
-                            (data_blob_hash IS NULL AND scalar_value IS NOT NULL)
+                            (data_blob_hash IS NOT NULL AND str_value IS NULL AND numeric_value IS NULL) OR
+                            (data_blob_hash IS NULL AND NOT (str_value IS NOT NULL AND numeric_value IS NOT NULL))
                         ),
                         FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,                        
+                        FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,                        
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id_num, path_id, vr_id, pr_id, data_blob_hash, scalar_value)
+                        PRIMARY KEY (action_id_num, path_id, vr_id, pr_id, data_blob_hash, str_value, numeric_value)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.
@@ -168,8 +169,7 @@ class DBInitializer():
                         target_object_id TEXT NOT NULL,
                         FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,                        
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        PRIMARY KEY (source_object_id, target_object_id, schema_id)
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")
         
         # Data address schemas. Lists all data address schemas for all data.
@@ -187,12 +187,12 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS vr_dataobjects (
                         action_id_num INTEGER NOT NULL,
                         vr_id TEXT NOT NULL,
-                        dataobject_id TEXT NOT NULL,
+                        path_id TEXT NOT NULL,
                         is_active INTEGER NOT NULL DEFAULT 1,
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        PRIMARY KEY (dataobject_id, vr_id, action_id_num)
+                        PRIMARY KEY (path_id, vr_id, action_id_num)
                         )""")
         
         # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
@@ -212,10 +212,10 @@ class DBInitializer():
         
         # Users_Computers table. Maps all users to their computers.
         cursor.execute("""CREATE TABLE IF NOT EXISTS users_computers (
-                        action_id TEXT PRIMARY KEY,
+                        action_id_num INTEGER PRIMARY KEY,
                         user_id TEXT NOT NULL,
                         computer_id TEXT NOT NULL,
-                        FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")
         
         # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
@@ -233,11 +233,11 @@ class DBInitializer():
         # Paths table. Lists all data object paths.
         # "path" column is the JSON'd list of data object names in the path.
         cursor.execute("""CREATE TABLE IF NOT EXISTS paths (
-                        path_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        path_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,                        
                         dataobject_id TEXT NOT NULL,
                         is_active INTEGER NOT NULL DEFAULT 1,
                         path TEXT NOT NULL,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")        

@@ -191,9 +191,9 @@ class Dataset(DataObject):
         if not nx.is_directed_acyclic_graph(graph):
             raise ValueError("The addresses must be a directed acyclic graph!")
         
-        non_ro_id = [node for node in graph if not IDCreator(action.conn).is_ro_id(node)]
-        if non_ro_id:
-            raise ValueError("The addresses must only include ResearchObject ID's!")
+        # non_ro_id = [node for node in graph if not IDCreator(action.conn).is_ro_id(node)]
+        # if non_ro_id:
+        #     raise ValueError("The addresses must only include ResearchObject ID's!")
                 
         if not graph[self.id]:
             raise ValueError("The addresses must include the dataset ID!")
@@ -202,14 +202,14 @@ class Dataset(DataObject):
         if vrs:
             raise ValueError("The addresses must not include Variable ID's!")
         
-        schema = self.schema
-        schema_graph = nx.MultiDiGraph()
-        schema_graph.add_edges_from(schema)
-        for address_edge in addresses:
-            cls0 = ResearchObjectHandler._prefix_to_class(address_edge[0])
-            cls1 = ResearchObjectHandler._prefix_to_class(address_edge[1])
-            if cls0 not in schema_graph.predecessors(cls1) or cls1 not in schema_graph.successors(cls0):
-                raise ValueError("The addresses must match the schema!")
+        # schema = self.schema
+        # schema_graph = nx.MultiDiGraph()
+        # schema_graph.add_edges_from(schema)
+        # for address_edge in addresses:
+        #     cls0 = ResearchObjectHandler._prefix_to_class(address_edge[0])
+        #     cls1 = ResearchObjectHandler._prefix_to_class(address_edge[1])
+        #     if cls0 not in schema_graph.predecessors(cls1) or cls1 not in schema_graph.successors(cls0):
+        #         raise ValueError("The addresses must match the schema!")
 
     def save_addresses(self, addresses: list, action: Action) -> list:
         """Save the addresses to the data_addresses table in the database.
@@ -218,20 +218,16 @@ class Dataset(DataObject):
             addresses (list) : list of addresses IDK
             action (Action) : IDK
         Returns:
-            None"""        
-        # 1. Get the schema_id for the current dataset_id that has not been overwritten by an Action.       
-        dataset_id = self.id
-        schema_id = self.get_current_schema_id(dataset_id)                
+            None"""                
         for address_names in addresses:
-            params = (address_names[0], address_names[1], schema_id, action.id)
+            params = (address_names[0], address_names[1], action.id_num)
             action.add_sql_query(self.id, "addresses_insert", params, group_name = "robj_complex_attr_insert")    
 
     def load_addresses(self, action: Action) -> list:
-        """Load the addresses from the database.""" 
-        schema_id = self.get_current_schema_id(self.id)
+        """Load the addresses from the database."""
 
         # 2. Get the addresses for the current schema_id.
-        sqlquery = f"SELECT target_object_id, source_object_id FROM data_addresses WHERE schema_id = '{schema_id}'"
+        sqlquery = f"SELECT target_object_id, source_object_id FROM data_addresses"
         addresses = action.conn.execute(sqlquery).fetchall()
 
         # 3. Convert the addresses to a list of lists (from a list of tuples).
