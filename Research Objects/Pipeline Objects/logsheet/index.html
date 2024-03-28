@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.10">
     
     
       
@@ -1230,6 +1230,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../SQL%20Database/config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Config
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1396,12 +1417,8 @@
 
 
             <details class="quote">
-              <summary>Source code in <code>src/ResearchOS/PipelineObjects/logsheet.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 29</span>
-<span class="normal"> 30</span>
-<span class="normal"> 31</span>
-<span class="normal"> 32</span>
-<span class="normal"> 33</span>
+              <summary>Source code in <code>src\ResearchOS\PipelineObjects\logsheet.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 33</span>
 <span class="normal"> 34</span>
 <span class="normal"> 35</span>
 <span class="normal"> 36</span>
@@ -1833,19 +1850,7 @@
 <span class="normal">462</span>
 <span class="normal">463</span>
 <span class="normal">464</span>
-<span class="normal">465</span>
-<span class="normal">466</span>
-<span class="normal">467</span>
-<span class="normal">468</span>
-<span class="normal">469</span>
-<span class="normal">470</span>
-<span class="normal">471</span>
-<span class="normal">472</span>
-<span class="normal">473</span>
-<span class="normal">474</span>
-<span class="normal">475</span>
-<span class="normal">476</span>
-<span class="normal">477</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Logsheet</span><span class="p">(</span><span class="n">PipelineObject</span><span class="p">):</span>
+<span class="normal">465</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Logsheet</span><span class="p">(</span><span class="n">PipelineObject</span><span class="p">):</span>
 
     <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;LG&quot;</span>
 
@@ -1978,6 +1983,7 @@
 
 <span class="sd">        Returns:</span>
 <span class="sd">            formatted list of headers&quot;&quot;&quot;</span>
+        <span class="n">load_data_object_classes</span><span class="p">()</span>
         <span class="n">subclasses</span> <span class="o">=</span> <span class="n">DataObject</span><span class="o">.</span><span class="n">__subclasses__</span><span class="p">()</span>
         <span class="n">str_var</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_var</span><span class="p">)</span>
         <span class="n">headers</span> <span class="o">=</span> <span class="p">[]</span>
@@ -2116,12 +2122,11 @@
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: more header rows than logsheet rows or incorrect schema format?&quot;&quot;&quot;</span>
+        <span class="k">global</span> <span class="n">all_default_attrs</span>
         <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;read logsheet&quot;</span><span class="p">)</span>
         <span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dataset_id</span><span class="p">(),</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">validate_class_column_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">class_column_names</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">validate_headers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">validate_num_header_rows</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_header_rows</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">validate_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">validator</span> <span class="o">=</span> <span class="n">Validator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>      
+        <span class="n">validator</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">,</span> <span class="n">all_default_attrs</span><span class="p">)</span>
 
         <span class="c1"># 1. Load the logsheet (using built-in Python libraries)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s2">&quot;xlsx&quot;</span><span class="p">,</span> <span class="s2">&quot;xls&quot;</span><span class="p">)):</span>
@@ -2173,7 +2178,7 @@
                 <span class="k">if</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="n">cls_item</span><span class="p">:</span>
                     <span class="n">dobj_column_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">column_name</span><span class="p">)</span>
 
-        <span class="c1"># Create the data objects.</span>
+        <span class="n">start_get_dobj_names</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="c1"># Get all of the names of the data objects, after they&#39;re cleaned for SQLite.</span>
         <span class="n">cols_idx</span> <span class="o">=</span> <span class="p">[</span><span class="n">headers_in_logsheet</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">header</span><span class="p">)</span> <span class="k">for</span> <span class="n">header</span> <span class="ow">in</span> <span class="n">dobj_column_names</span><span class="p">]</span> <span class="c1"># Get the indices of the data objects columns.</span>
         <span class="n">dobj_names</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># The matrix of data object names (values in the logsheet).</span>
@@ -2186,51 +2191,33 @@
                 <span class="n">dobj_names</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">row_num</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dobj_names</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">()</span> <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Row #</span><span class="si">{</span><span class="n">row_num</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">num_header_rows</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2"> (1-based): All data object names must be non-empty and valid variable names!&quot;</span><span class="p">)</span>
-        <span class="p">[</span><span class="n">row</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">]</span> <span class="c1"># Prepend the Dataset to the first column of each row.</span>
-        <span class="n">name_ids_dict</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># The dict that maps the values (names) to the IDs. Separate dict for each class, each class is a top-level key of the dict.</span>
-        <span class="n">name_ids_dict</span><span class="p">[</span><span class="n">Dataset</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">ds</span><span class="o">.</span><span class="n">id</span><span class="p">}</span>
-        <span class="n">name_dobjs_dict</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">name_dobjs_dict</span><span class="p">[</span><span class="n">Dataset</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">ds</span><span class="p">}</span>
-        <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">order</span><span class="p">:</span>
-            <span class="n">name_ids_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># Initialize the dict for this class.            </span>
-            <span class="n">name_dobjs_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Row #</span><span class="si">{</span><span class="n">row_num</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">num_header_rows</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2"> (1-based): All data object names must be non-empty and valid variable names!&quot;</span><span class="p">)</span>        
 
-        <span class="c1"># Create the DataObject instances in the dict.        </span>
-        <span class="n">all_dobjs_ordered</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># The list of lists of DataObject instances, ordered by the order of the schema.        </span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
+            <span class="n">lists</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="nb">tuple</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">]))</span>
+            <span class="p">[</span><span class="n">dobj_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">l</span><span class="p">))</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lists</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">l</span><span class="p">))</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">list</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">]</span>
+
+        <span class="n">all_dobjs_ordered</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># The list of DataObject instances.</span>
         <span class="n">id_creator</span> <span class="o">=</span> <span class="n">IDCreator</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">row_num</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dobj_names</span><span class="p">):</span>
-            <span class="n">row</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-            <span class="n">all_dobjs_ordered</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">ds</span><span class="p">])</span> <span class="c1"># Add the Dataset to the beginning of each row.</span>
-            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)):</span>
-                <span class="bp">cls</span> <span class="o">=</span> <span class="n">order</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="c1"># The class to create.</span>
-                <span class="n">col_idx</span> <span class="o">=</span> <span class="n">cols_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="c1"># The index of the column in the logsheet.</span>
-                <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_value</span><span class="p">(</span><span class="n">header_types</span><span class="p">[</span><span class="n">col_idx</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
-                <span class="c1"># NEED TO CHECK NOT ONLY IF THE VALUE MATCHES, BUT WHETHER THE ENTIRE LINEAGE MATCHES.</span>
-                <span class="c1"># For example, condition names can be reused between subjects (though not within the same subject) but a new ID should be created for each lineage.</span>
-                <span class="n">row_to_now</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">+</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
-                <span class="n">is_new</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="k">if</span> <span class="n">row_num</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">lst</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">row_num</span><span class="p">]:</span>
-                        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">row_to_now</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">lst</span><span class="p">)):</span>
-                            <span class="n">is_new</span> <span class="o">=</span> <span class="kc">False</span>
-                            <span class="k">break</span>
-                <span class="k">if</span> <span class="n">is_new</span><span class="p">:</span>
-                    <span class="n">name_ids_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">][</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="n">id_creator</span><span class="o">.</span><span class="n">create_ro_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">value</span>
-                    <span class="n">dobj</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">name_ids_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">][</span><span class="n">value</span><span class="p">],</span> <span class="n">name</span> <span class="o">=</span> <span class="n">value</span><span class="p">,</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">)</span> <span class="c1"># Create the research object.</span>
-                    <span class="n">name_dobjs_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">][</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="n">dobj</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Creating DataObject, Row: &quot;</span><span class="p">,</span> <span class="n">row_num</span><span class="p">,</span> <span class="s2">&quot;Column: &quot;</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">prefix</span><span class="p">,</span> <span class="s2">&quot;Value: &quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="s2">&quot;ID: &quot;</span><span class="p">,</span> <span class="n">dobj</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-                <span class="n">dobj</span> <span class="o">=</span> <span class="n">name_dobjs_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">][</span><span class="n">value</span><span class="p">]</span>
-                <span class="n">all_dobjs_ordered</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dobj</span><span class="p">)</span> <span class="c1"># Matrix of all research objects.                                        </span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">:</span>
+            <span class="bp">cls</span> <span class="o">=</span> <span class="n">order</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># The class to create.</span>
+            <span class="n">all_dobjs_ordered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">cls</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">id_creator</span><span class="o">.</span><span class="n">create_ro_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">),</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span> <span class="c1"># Add the Data Object to the beginning of each row.                                      </span>
 
         <span class="c1"># Assign the values to the DataObject instances.</span>
         <span class="c1"># Validates that the logsheet is of valid format.</span>
         <span class="c1"># i.e. Doesn&#39;t have conflicting values for one level (empty/None is OK)</span>
         <span class="n">attrs_cache_dict</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">default_none_vals</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">int</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">))}</span>
+        <span class="n">default_none_vals</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">int</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)),</span> <span class="nb">float</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">))}</span>
         <span class="k">for</span> <span class="n">row_num</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">logsheet</span><span class="p">):</span>
-            <span class="n">row_dobjs</span> <span class="o">=</span> <span class="n">all_dobjs_ordered</span><span class="p">[</span><span class="n">row_num</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span>
             <span class="n">row_attrs</span> <span class="o">=</span> <span class="p">[{}</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">))]</span> <span class="c1"># The list of dicts of attributes for each DataObject instance.</span>
+
+            <span class="c1"># Get the list of data object names for this row.</span>
+            <span class="n">row_dobj_names</span> <span class="o">=</span> <span class="n">dobj_names</span><span class="p">[</span><span class="n">row_num</span><span class="p">]</span>
+            <span class="n">row_dobjs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row_dobj_names</span><span class="p">)):</span>
+                <span class="n">curr_list</span> <span class="o">=</span> <span class="n">row_dobj_names</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">curr_list_idx</span> <span class="o">=</span> <span class="n">dobj_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">curr_list</span><span class="p">)</span>
+                <span class="n">row_dobjs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">all_dobjs_ordered</span><span class="p">[</span><span class="n">curr_list_idx</span><span class="p">])</span>
 
             <span class="c1"># Assign all of the data to the appropriate DataObject instances.</span>
             <span class="c1"># Includes the &quot;data object columns&quot; so that the DataObjects have an attribute with the name of the header name.</span>
@@ -2262,16 +2249,18 @@
         <span class="c1"># Arrange the address ID&#39;s that were generated into an edge list.</span>
         <span class="c1"># Then assign that to the Dataset.</span>
         <span class="n">addresses</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">all_dobjs_ordered</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">dobj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="k">continue</span>
-                <span class="n">ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">dobj</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
-                <span class="k">if</span> <span class="n">ids</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">addresses</span><span class="p">:</span>
-                    <span class="n">addresses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+        <span class="n">dobj_names</span> <span class="o">=</span> <span class="p">[[</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">+</span> <span class="n">row</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)):</span>
+                <span class="n">pair</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span>
+                <span class="k">if</span> <span class="n">pair</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">addresses</span><span class="p">:</span>
+                    <span class="n">addresses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span>
         <span class="n">all_default_attrs</span> <span class="o">=</span> <span class="n">DefaultAttrs</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">_setattrs</span><span class="p">(</span><span class="n">all_default_attrs</span><span class="o">.</span><span class="n">default_attrs</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;addresses&quot;</span><span class="p">:</span> <span class="n">addresses</span><span class="p">},</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">,</span> <span class="n">pr_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-        <span class="c1"># ds.addresses = addresses # Store addresses, also creates address_graph.</span>
+
+        <span class="c1"># Set all the paths to the DataObjects.</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dobj_names</span><span class="p">):</span>
+            <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="n">all_dobjs_ordered</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;path_insert&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">id_num</span><span class="p">,</span> <span class="n">all_dobjs_ordered</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">:])))</span>
 
         <span class="n">action</span><span class="o">.</span><span class="n">exec</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="n">action</span><span class="o">.</span><span class="n">commit</span> <span class="o">=</span> <span class="kc">True</span>
@@ -2292,7 +2281,7 @@
             <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">value</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -2373,13 +2362,8 @@
   </table>
 
           <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/PipelineObjects/logsheet.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">292</span>
-<span class="normal">293</span>
-<span class="normal">294</span>
-<span class="normal">295</span>
-<span class="normal">296</span>
-<span class="normal">297</span>
+            <summary>Source code in <code>src\ResearchOS\PipelineObjects\logsheet.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">297</span>
 <span class="normal">298</span>
 <span class="normal">299</span>
 <span class="normal">300</span>
@@ -2529,19 +2513,7 @@
 <span class="normal">444</span>
 <span class="normal">445</span>
 <span class="normal">446</span>
-<span class="normal">447</span>
-<span class="normal">448</span>
-<span class="normal">449</span>
-<span class="normal">450</span>
-<span class="normal">451</span>
-<span class="normal">452</span>
-<span class="normal">453</span>
-<span class="normal">454</span>
-<span class="normal">455</span>
-<span class="normal">456</span>
-<span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">read_logsheet</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">447</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">read_logsheet</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the logsheet import process.</span>
 
 <span class="sd">    Returns:</span>
@@ -2549,12 +2521,11 @@
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: more header rows than logsheet rows or incorrect schema format?&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">all_default_attrs</span>
     <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;read logsheet&quot;</span><span class="p">)</span>
     <span class="n">ds</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dataset_id</span><span class="p">(),</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">validate_class_column_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">class_column_names</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">validate_headers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">validate_num_header_rows</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_header_rows</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">validate_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">validator</span> <span class="o">=</span> <span class="n">Validator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>      
+    <span class="n">validator</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">,</span> <span class="n">all_default_attrs</span><span class="p">)</span>
 
     <span class="c1"># 1. Load the logsheet (using built-in Python libraries)</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s2">&quot;xlsx&quot;</span><span class="p">,</span> <span class="s2">&quot;xls&quot;</span><span class="p">)):</span>
@@ -2606,7 +2577,7 @@
             <span class="k">if</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="n">cls_item</span><span class="p">:</span>
                 <span class="n">dobj_column_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">column_name</span><span class="p">)</span>
 
-    <span class="c1"># Create the data objects.</span>
+    <span class="n">start_get_dobj_names</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="c1"># Get all of the names of the data objects, after they&#39;re cleaned for SQLite.</span>
     <span class="n">cols_idx</span> <span class="o">=</span> <span class="p">[</span><span class="n">headers_in_logsheet</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">header</span><span class="p">)</span> <span class="k">for</span> <span class="n">header</span> <span class="ow">in</span> <span class="n">dobj_column_names</span><span class="p">]</span> <span class="c1"># Get the indices of the data objects columns.</span>
     <span class="n">dobj_names</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># The matrix of data object names (values in the logsheet).</span>
@@ -2619,51 +2590,33 @@
             <span class="n">dobj_names</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">row_num</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dobj_names</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span><span class="o">.</span><span class="n">isidentifier</span><span class="p">()</span> <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Row #</span><span class="si">{</span><span class="n">row_num</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">num_header_rows</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2"> (1-based): All data object names must be non-empty and valid variable names!&quot;</span><span class="p">)</span>
-    <span class="p">[</span><span class="n">row</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">]</span> <span class="c1"># Prepend the Dataset to the first column of each row.</span>
-    <span class="n">name_ids_dict</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># The dict that maps the values (names) to the IDs. Separate dict for each class, each class is a top-level key of the dict.</span>
-    <span class="n">name_ids_dict</span><span class="p">[</span><span class="n">Dataset</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">ds</span><span class="o">.</span><span class="n">id</span><span class="p">}</span>
-    <span class="n">name_dobjs_dict</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">name_dobjs_dict</span><span class="p">[</span><span class="n">Dataset</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">ds</span><span class="p">}</span>
-    <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">order</span><span class="p">:</span>
-        <span class="n">name_ids_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># Initialize the dict for this class.            </span>
-        <span class="n">name_dobjs_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Row #</span><span class="si">{</span><span class="n">row_num</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">num_header_rows</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2"> (1-based): All data object names must be non-empty and valid variable names!&quot;</span><span class="p">)</span>        
 
-    <span class="c1"># Create the DataObject instances in the dict.        </span>
-    <span class="n">all_dobjs_ordered</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># The list of lists of DataObject instances, ordered by the order of the schema.        </span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
+        <span class="n">lists</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="nb">tuple</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">]))</span>
+        <span class="p">[</span><span class="n">dobj_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">l</span><span class="p">))</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lists</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">l</span><span class="p">))</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">list</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">]</span>
+
+    <span class="n">all_dobjs_ordered</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># The list of DataObject instances.</span>
     <span class="n">id_creator</span> <span class="o">=</span> <span class="n">IDCreator</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">row_num</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dobj_names</span><span class="p">):</span>
-        <span class="n">row</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-        <span class="n">all_dobjs_ordered</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">ds</span><span class="p">])</span> <span class="c1"># Add the Dataset to the beginning of each row.</span>
-        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)):</span>
-            <span class="bp">cls</span> <span class="o">=</span> <span class="n">order</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="c1"># The class to create.</span>
-            <span class="n">col_idx</span> <span class="o">=</span> <span class="n">cols_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="c1"># The index of the column in the logsheet.</span>
-            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_value</span><span class="p">(</span><span class="n">header_types</span><span class="p">[</span><span class="n">col_idx</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
-            <span class="c1"># NEED TO CHECK NOT ONLY IF THE VALUE MATCHES, BUT WHETHER THE ENTIRE LINEAGE MATCHES.</span>
-            <span class="c1"># For example, condition names can be reused between subjects (though not within the same subject) but a new ID should be created for each lineage.</span>
-            <span class="n">row_to_now</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">+</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">is_new</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">if</span> <span class="n">row_num</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">lst</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">row_num</span><span class="p">]:</span>
-                    <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">row_to_now</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">lst</span><span class="p">)):</span>
-                        <span class="n">is_new</span> <span class="o">=</span> <span class="kc">False</span>
-                        <span class="k">break</span>
-            <span class="k">if</span> <span class="n">is_new</span><span class="p">:</span>
-                <span class="n">name_ids_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">][</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="n">id_creator</span><span class="o">.</span><span class="n">create_ro_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">value</span>
-                <span class="n">dobj</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">name_ids_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">][</span><span class="n">value</span><span class="p">],</span> <span class="n">name</span> <span class="o">=</span> <span class="n">value</span><span class="p">,</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">)</span> <span class="c1"># Create the research object.</span>
-                <span class="n">name_dobjs_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">][</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="n">dobj</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Creating DataObject, Row: &quot;</span><span class="p">,</span> <span class="n">row_num</span><span class="p">,</span> <span class="s2">&quot;Column: &quot;</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">prefix</span><span class="p">,</span> <span class="s2">&quot;Value: &quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="s2">&quot;ID: &quot;</span><span class="p">,</span> <span class="n">dobj</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-            <span class="n">dobj</span> <span class="o">=</span> <span class="n">name_dobjs_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">][</span><span class="n">value</span><span class="p">]</span>
-            <span class="n">all_dobjs_ordered</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dobj</span><span class="p">)</span> <span class="c1"># Matrix of all research objects.                                        </span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">:</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="n">order</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># The class to create.</span>
+        <span class="n">all_dobjs_ordered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">cls</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">id_creator</span><span class="o">.</span><span class="n">create_ro_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">),</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span> <span class="c1"># Add the Data Object to the beginning of each row.                                      </span>
 
     <span class="c1"># Assign the values to the DataObject instances.</span>
     <span class="c1"># Validates that the logsheet is of valid format.</span>
     <span class="c1"># i.e. Doesn&#39;t have conflicting values for one level (empty/None is OK)</span>
     <span class="n">attrs_cache_dict</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">default_none_vals</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">int</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">))}</span>
+    <span class="n">default_none_vals</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">int</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)),</span> <span class="nb">float</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">))}</span>
     <span class="k">for</span> <span class="n">row_num</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">logsheet</span><span class="p">):</span>
-        <span class="n">row_dobjs</span> <span class="o">=</span> <span class="n">all_dobjs_ordered</span><span class="p">[</span><span class="n">row_num</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span>
         <span class="n">row_attrs</span> <span class="o">=</span> <span class="p">[{}</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">))]</span> <span class="c1"># The list of dicts of attributes for each DataObject instance.</span>
+
+        <span class="c1"># Get the list of data object names for this row.</span>
+        <span class="n">row_dobj_names</span> <span class="o">=</span> <span class="n">dobj_names</span><span class="p">[</span><span class="n">row_num</span><span class="p">]</span>
+        <span class="n">row_dobjs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row_dobj_names</span><span class="p">)):</span>
+            <span class="n">curr_list</span> <span class="o">=</span> <span class="n">row_dobj_names</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">curr_list_idx</span> <span class="o">=</span> <span class="n">dobj_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">curr_list</span><span class="p">)</span>
+            <span class="n">row_dobjs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">all_dobjs_ordered</span><span class="p">[</span><span class="n">curr_list_idx</span><span class="p">])</span>
 
         <span class="c1"># Assign all of the data to the appropriate DataObject instances.</span>
         <span class="c1"># Includes the &quot;data object columns&quot; so that the DataObjects have an attribute with the name of the header name.</span>
@@ -2695,16 +2648,18 @@
     <span class="c1"># Arrange the address ID&#39;s that were generated into an edge list.</span>
     <span class="c1"># Then assign that to the Dataset.</span>
     <span class="n">addresses</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">all_dobjs_ordered</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">dobj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="n">ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">dobj</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">ids</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">addresses</span><span class="p">:</span>
-                <span class="n">addresses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+    <span class="n">dobj_names</span> <span class="o">=</span> <span class="p">[[</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">+</span> <span class="n">row</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dobj_names</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)):</span>
+            <span class="n">pair</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="n">pair</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">addresses</span><span class="p">:</span>
+                <span class="n">addresses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span>
     <span class="n">all_default_attrs</span> <span class="o">=</span> <span class="n">DefaultAttrs</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">_setattrs</span><span class="p">(</span><span class="n">all_default_attrs</span><span class="o">.</span><span class="n">default_attrs</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;addresses&quot;</span><span class="p">:</span> <span class="n">addresses</span><span class="p">},</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">,</span> <span class="n">pr_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-    <span class="c1"># ds.addresses = addresses # Store addresses, also creates address_graph.</span>
+
+    <span class="c1"># Set all the paths to the DataObjects.</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dobj_names</span><span class="p">):</span>
+        <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="n">all_dobjs_ordered</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;path_insert&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">id_num</span><span class="p">,</span> <span class="n">all_dobjs_ordered</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">:])))</span>
 
     <span class="n">action</span><span class="o">.</span><span class="n">exec</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">action</span><span class="o">.</span><span class="n">commit</span> <span class="o">=</span> <span class="kc">True</span>
@@ -2778,7 +2733,7 @@
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.expand", "toc.follow", "navigation.top"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.bd41221c.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
     
   </body>

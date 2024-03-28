@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.10">
     
     
       
@@ -1179,6 +1179,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SQL%20Database/config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Config
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1290,7 +1311,7 @@
       <p>One research object. Parent class of Data Objects &amp; Pipeline Objects.</p>
 
             <details class="quote">
-              <summary>Source code in <code>src/ResearchOS/research_object.py</code></summary>
+              <summary>Source code in <code>src\ResearchOS\research_object.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 17</span>
 <span class="normal"> 18</span>
 <span class="normal"> 19</span>
@@ -1478,7 +1499,10 @@
 <span class="normal">201</span>
 <span class="normal">202</span>
 <span class="normal">203</span>
-<span class="normal">204</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ResearchObject</span><span class="p">():</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ResearchObject</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;One research object. Parent class of Data Objects &amp; Pipeline Objects.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
@@ -1544,7 +1568,7 @@
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">kwargs_dict</span><span class="p">:</span>
             <span class="n">kwargs_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">value</span><span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_setattrs</span><span class="p">(</span><span class="n">all_attrs</span><span class="o">.</span><span class="n">default_attrs</span><span class="p">,</span> <span class="n">kwargs_dict</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">commit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setattrs</span><span class="p">(</span><span class="n">all_attrs</span><span class="o">.</span><span class="n">default_attrs</span><span class="p">,</span> <span class="n">kwargs_dict</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
         <span class="n">action</span><span class="o">.</span><span class="n">commit</span> <span class="o">=</span> <span class="n">commit</span>
         <span class="n">action</span><span class="o">.</span><span class="n">exec</span> <span class="o">=</span> <span class="kc">True</span>
@@ -1584,7 +1608,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">prev_exists</span><span class="p">:</span>
             <span class="c1"># Create a new object.</span>
             <span class="n">query_name</span> <span class="o">=</span> <span class="s2">&quot;robj_exists_insert&quot;</span>
-            <span class="n">params</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">id_num</span><span class="p">)</span>
             <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">query_name</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">group_name</span> <span class="o">=</span> <span class="s2">&quot;robj_insert&quot;</span><span class="p">)</span>                                
 
         <span class="n">loaded_attrs</span> <span class="o">=</span> <span class="p">{}</span>
@@ -1629,6 +1653,8 @@
 
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">del_keys</span><span class="p">:</span>
             <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
         <span class="c1"># 1. Set simple &amp; complex builtin attributes.</span>
         <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_set_builtin_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">default_attrs</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
 
@@ -1636,10 +1662,11 @@
         <span class="k">if</span> <span class="n">pr_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">vr_attrs</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">default_attrs</span><span class="p">}</span>
             <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_set_vr_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vr_attrs</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">pr_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">_get_dataset_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the most recent dataset ID.&quot;&quot;&quot;</span>        
-        <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT dataset_id FROM data_address_schemas&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the most recent dataset ID. Currently assumes that there&#39;s only one Dataset object in existence.&quot;&quot;&quot;</span>        
+        <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT object_id FROM research_objects WHERE object_id LIKE &#39;DS%&#39;&quot;</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">SQLiteConnectionPool</span><span class="p">()</span>
         <span class="n">conn</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">get_connection</span><span class="p">()</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
@@ -1744,7 +1771,7 @@
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.expand", "toc.follow", "navigation.top"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.bd41221c.min.js"></script>
+      <script src="../../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
     
   </body>

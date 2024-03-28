@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.10">
     
     
       
@@ -1170,6 +1170,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../SQL%20Database/config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Config
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1257,9 +1278,8 @@
       <p>The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors.</p>
 
             <details class="quote">
-              <summary>Source code in <code>src/ResearchOS/DataObjects/data_object.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 19</span>
-<span class="normal"> 20</span>
+              <summary>Source code in <code>src\ResearchOS\DataObjects\data_object.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 20</span>
 <span class="normal"> 21</span>
 <span class="normal"> 22</span>
 <span class="normal"> 23</span>
@@ -1360,7 +1380,17 @@
 <span class="normal">118</span>
 <span class="normal">119</span>
 <span class="normal">120</span>
-<span class="normal">121</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">DataObject</span><span class="p">(</span><span class="n">ResearchObject</span><span class="p">):</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">DataObject</span><span class="p">(</span><span class="n">ResearchObject</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors.&quot;&quot;&quot;</span>    
 
     <span class="k">def</span> <span class="fm">__delattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1392,25 +1422,25 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            Any: The value of the VR for this data object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">func_result</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">func_result</span><span class="p">[</span><span class="s2">&quot;input_vrs_names_dict&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="kn">from</span> <span class="nn">ResearchOS.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
+        <span class="n">func_result</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">func_result</span><span class="p">[</span><span class="s2">&quot;input_vrs_names_dict&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>        
         <span class="c1"># 1. Check that the data object &amp; VR are currently associated. If not, throw an error.</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
         <span class="n">self_idx</span> <span class="o">=</span> <span class="n">node_lineage</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">node_lineage</span><span class="p">[</span><span class="n">self_idx</span><span class="p">:]:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vr</span><span class="p">,</span> <span class="n">Variable</span><span class="p">):</span>
-                <span class="n">sqlquery_raw</span> <span class="o">=</span> <span class="s2">&quot;SELECT action_id, is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id = ?&quot;</span>
-                <span class="n">sqlquery</span> <span class="o">=</span> <span class="n">sql_order_result</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">sqlquery_raw</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;dataobject_id&quot;</span><span class="p">,</span> <span class="s2">&quot;vr_id&quot;</span><span class="p">],</span> <span class="n">single</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">user</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">computer</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="n">sqlquery_raw</span> <span class="o">=</span> <span class="s2">&quot;SELECT action_id_num, is_active FROM vr_dataobjects WHERE path_id = ? AND vr_id = ?&quot;</span>
+                <span class="n">sqlquery</span> <span class="o">=</span> <span class="n">sql_order_result</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">sqlquery_raw</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;path_id&quot;</span><span class="p">,</span> <span class="s2">&quot;vr_id&quot;</span><span class="p">],</span> <span class="n">single</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">user</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">computer</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
                 <span class="n">params</span> <span class="o">=</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">vr</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>            
                 <span class="n">result</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="k">break</span>
-            <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># else:</span>
                 <span class="c1"># TODO: Handle dict of {type: attr_name}</span>
                 <span class="c1"># If the value is a str, then it&#39;s a builtin attribute.</span>
                 <span class="c1"># Otherwise, if the value is a Variable, then it&#39;s a Variable and need to load its value. using self.load_vr_value()</span>
-                <span class="k">pass</span>
+                <span class="c1"># pass</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">func_result</span><span class="p">[</span><span class="s2">&quot;do_run&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="n">func_result</span><span class="p">[</span><span class="s2">&quot;exit_code&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
@@ -1428,9 +1458,9 @@
             <span class="n">pr</span> <span class="o">=</span> <span class="n">process</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pr</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="n">pr</span> <span class="o">=</span> <span class="p">[</span><span class="n">pr</span><span class="p">]</span>
-        <span class="n">sqlquery_raw</span> <span class="o">=</span> <span class="s2">&quot;SELECT data_blob_hash, pr_id FROM data_values WHERE dataobject_id = ? AND vr_id = ? AND pr_id IN (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;?&quot;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">pr</span><span class="p">]))</span>
+        <span class="n">sqlquery_raw</span> <span class="o">=</span> <span class="s2">&quot;SELECT data_blob_hash, pr_id, numeric_value, str_value FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id IN (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;?&quot;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">pr</span><span class="p">]))</span>
         <span class="n">params</span> <span class="o">=</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">vr</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">pr_elem</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">pr_elem</span> <span class="ow">in</span> <span class="n">pr</span><span class="p">])</span>
-        <span class="n">sqlquery</span> <span class="o">=</span> <span class="n">sql_order_result</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">sqlquery_raw</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;dataobject_id&quot;</span><span class="p">,</span> <span class="s2">&quot;vr_id&quot;</span><span class="p">],</span> <span class="n">single</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">user</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">computer</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>        
+        <span class="n">sqlquery</span> <span class="o">=</span> <span class="n">sql_order_result</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">sqlquery_raw</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;path_id&quot;</span><span class="p">,</span> <span class="s2">&quot;vr_id&quot;</span><span class="p">],</span> <span class="n">single</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">user</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">computer</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>        
         <span class="n">result</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The VR </span><span class="si">{</span><span class="n">vr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not have a value set for the data object </span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> from Process </span><span class="si">{</span><span class="n">process</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
@@ -1451,17 +1481,26 @@
         <span class="n">data_hash</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">pr_idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="c1"># 3. Get the value from the data_values table. </span>
-        <span class="n">pool_data</span> <span class="o">=</span> <span class="n">SQLiteConnectionPool</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;data&quot;</span><span class="p">)</span>
-        <span class="n">conn_data</span> <span class="o">=</span> <span class="n">pool_data</span><span class="o">.</span><span class="n">get_connection</span><span class="p">()</span>
-        <span class="n">cursor_data</span> <span class="o">=</span> <span class="n">conn_data</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
-        <span class="n">sqlquery</span> <span class="o">=</span> <span class="s2">&quot;SELECT data_blob FROM data_values_blob WHERE data_blob_hash = ?&quot;</span>        
-        <span class="n">params</span> <span class="o">=</span> <span class="p">(</span><span class="n">data_hash</span><span class="p">,)</span>
-        <span class="n">value</span> <span class="o">=</span> <span class="n">cursor_data</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">pool_data</span><span class="o">.</span><span class="n">return_connection</span><span class="p">(</span><span class="n">conn_data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">data_hash</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pool_data</span> <span class="o">=</span> <span class="n">SQLiteConnectionPool</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;data&quot;</span><span class="p">)</span>
+            <span class="n">conn_data</span> <span class="o">=</span> <span class="n">pool_data</span><span class="o">.</span><span class="n">get_connection</span><span class="p">()</span>
+            <span class="n">cursor_data</span> <span class="o">=</span> <span class="n">conn_data</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="n">sqlquery</span> <span class="o">=</span> <span class="s2">&quot;SELECT data_blob FROM data_values_blob WHERE data_blob_hash = ?&quot;</span>        
+            <span class="n">params</span> <span class="o">=</span> <span class="p">(</span><span class="n">data_hash</span><span class="p">,)</span>
+            <span class="n">pickled_value</span> <span class="o">=</span> <span class="n">cursor_data</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">pickled_value</span><span class="p">)</span>
+            <span class="n">pool_data</span><span class="o">.</span><span class="n">return_connection</span><span class="p">(</span><span class="n">conn_data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">numeric_value</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">pr_idx</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">str_value</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">pr_idx</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">numeric_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">numeric_value</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># Omitting criteria here allows for str_value and numeric_value to both be None.</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">str_value</span>
         <span class="n">func_result</span><span class="p">[</span><span class="s2">&quot;do_run&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="n">func_result</span><span class="p">[</span><span class="s2">&quot;exit_code&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">func_result</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Success in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">). Lookup VR found: </span><span class="si">{</span><span class="n">vr_name_in_code</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">vr</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">)&quot;</span>
-        <span class="n">func_result</span><span class="p">[</span><span class="s2">&quot;vr_values_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">func_result</span><span class="p">[</span><span class="s2">&quot;vr_values_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
         <span class="k">return</span> <span class="n">func_result</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -1541,7 +1580,7 @@
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.expand", "toc.follow", "navigation.top"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.bd41221c.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
     
   </body>

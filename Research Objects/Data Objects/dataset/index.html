@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.10">
     
     
       
@@ -1206,6 +1206,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../SQL%20Database/config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Config
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1372,8 +1393,10 @@ Class-specific Attributes:
 2. data schema: The schema of the dataset (specified as a list of classes)</p>
 
             <details class="quote">
-              <summary>Source code in <code>src/ResearchOS/DataObjects/dataset.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 22</span>
+              <summary>Source code in <code>src\ResearchOS\DataObjects\dataset.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 20</span>
+<span class="normal"> 21</span>
+<span class="normal"> 22</span>
 <span class="normal"> 23</span>
 <span class="normal"> 24</span>
 <span class="normal"> 25</span>
@@ -1599,47 +1622,7 @@ Class-specific Attributes:
 <span class="normal">245</span>
 <span class="normal">246</span>
 <span class="normal">247</span>
-<span class="normal">248</span>
-<span class="normal">249</span>
-<span class="normal">250</span>
-<span class="normal">251</span>
-<span class="normal">252</span>
-<span class="normal">253</span>
-<span class="normal">254</span>
-<span class="normal">255</span>
-<span class="normal">256</span>
-<span class="normal">257</span>
-<span class="normal">258</span>
-<span class="normal">259</span>
-<span class="normal">260</span>
-<span class="normal">261</span>
-<span class="normal">262</span>
-<span class="normal">263</span>
-<span class="normal">264</span>
-<span class="normal">265</span>
-<span class="normal">266</span>
-<span class="normal">267</span>
-<span class="normal">268</span>
-<span class="normal">269</span>
-<span class="normal">270</span>
-<span class="normal">271</span>
-<span class="normal">272</span>
-<span class="normal">273</span>
-<span class="normal">274</span>
-<span class="normal">275</span>
-<span class="normal">276</span>
-<span class="normal">277</span>
-<span class="normal">278</span>
-<span class="normal">279</span>
-<span class="normal">280</span>
-<span class="normal">281</span>
-<span class="normal">282</span>
-<span class="normal">283</span>
-<span class="normal">284</span>
-<span class="normal">285</span>
-<span class="normal">286</span>
-<span class="normal">287</span>
-<span class="normal">288</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Dataset</span><span class="p">(</span><span class="n">DataObject</span><span class="p">):</span>
+<span class="normal">248</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Dataset</span><span class="p">(</span><span class="n">DataObject</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A dataset is one set of data.</span>
 <span class="sd">    Class-specific Attributes:</span>
 <span class="sd">    1. data path: The root folder location of the dataset.</span>
@@ -1699,19 +1682,16 @@ Class-specific Attributes:
         <span class="k">if</span> <span class="n">vr</span> <span class="ow">in</span> <span class="n">graph</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The schema must not include the Variable class as a target node!&quot;</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_schema</span> <span class="o">==</span> <span class="n">all_default_attrs</span><span class="p">[</span><span class="s2">&quot;file_schema&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="s2">&quot;file_schema&quot;</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+
         <span class="c1"># nodes_with_no_targets = [node for node, out_degree in graph.out_degree() if out_degree == 0]</span>
         <span class="c1"># nodes_with_a_source = [node for node, in_degree in graph.in_degree() if in_degree &gt; 0]</span>
         <span class="c1"># if graph[Dataset] in nodes_with_no_targets or graph[Dataset] in nodes_with_a_source:</span>
         <span class="c1">#     raise ValueError(&quot;The schema must include the Dataset class as a source node and not a target node!&quot;)</span>
 
-    <span class="k">def</span> <span class="nf">save_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the schema to the database. One cohesive action.</span>
-<span class="sd">        Args:</span>
-<span class="sd">            self</span>
-<span class="sd">            schema (list) : dict of dicts, all keys are Python types matching a DataObject subclass, and the lowest levels are empty</span>
-<span class="sd">            action (Action) : a set of sequal queries that perform multiple action with one Action object call</span>
-<span class="sd">        Returns:</span>
-<span class="sd">            None&quot;&quot;&quot;</span>        
+    <span class="k">def</span> <span class="nf">to_json_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the schema to a json string.&quot;&quot;&quot;</span>
         <span class="c1"># 1. Convert the list of types to a list of str.</span>
         <span class="n">str_schema</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">sch</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">:</span>
@@ -1721,34 +1701,17 @@ Class-specific Attributes:
             <span class="n">str_schema</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">classes</span><span class="p">)</span>
         <span class="c1"># 2. Convert the list of str to a json string.</span>
         <span class="n">json_schema</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">str_schema</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json_schema</span>
 
-        <span class="c1"># 3. Save the schema to the database.        </span>
-        <span class="n">schema_id</span> <span class="o">=</span> <span class="n">IDCreator</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span><span class="o">.</span><span class="n">create_action_id</span><span class="p">()</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="p">(</span><span class="n">schema_id</span><span class="p">,</span> <span class="n">json_schema</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-        <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;data_address_schemas_insert&quot;</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">group_name</span> <span class="o">=</span> <span class="s2">&quot;robj_complex_attr_insert&quot;</span><span class="p">)</span>
-        <span class="c1"># Set the file schema to the dataset schema if it is still the default value.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_schema</span> <span class="o">==</span> <span class="n">all_default_attrs</span><span class="p">[</span><span class="s2">&quot;file_schema&quot;</span><span class="p">]:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="s2">&quot;file_schema&quot;</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">load_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the schema from the database and convert it via json.&quot;&quot;&quot;</span>
-
-        <span class="c1"># 1. Get the dataset ID</span>
-        <span class="nb">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
-        <span class="c1"># 2. Get the most recent action ID for the dataset in the data_address_schemas table.</span>
-        <span class="n">schema_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_current_schema_id</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
-        <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT levels_edge_list FROM data_address_schemas WHERE schema_id = &#39;</span><span class="si">{</span><span class="n">schema_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
-        <span class="n">conn</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">conn</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
-
-        <span class="c1"># 5. If the schema is not None, convert the string to a list of types.</span>
-        <span class="n">str_schema</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">def</span> <span class="nf">from_json_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_schema</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the schema from a json string to a list of DataObjects.&quot;&quot;&quot;</span>
+        <span class="c1"># 3. Convert the json string to a list of types.</span>
+        <span class="n">str_schema</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_schema</span><span class="p">)</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">sch</span> <span class="ow">in</span> <span class="n">str_schema</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sch</span><span class="p">):</span>
                 <span class="n">sch</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_prefix_to_class</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
             <span class="n">schema</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sch</span><span class="p">)</span>  
-
         <span class="k">return</span> <span class="n">schema</span>
 
     <span class="c1">### Dataset path methods</span>
@@ -1768,9 +1731,9 @@ Class-specific Attributes:
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Specified path is not a path or does not currently exist!&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">load_dataset_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the dataset path from the database in a computer-specific way.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">get_user_computer_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;dataset_path&quot;</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+    <span class="c1"># def load_dataset_path(self, action: Action) -&gt; str:</span>
+    <span class="c1">#     &quot;&quot;&quot;Load the dataset path from the database in a computer-specific way.&quot;&quot;&quot;</span>
+    <span class="c1">#     return ResearchObjectHandler.get_user_computer_path(self, &quot;dataset_path&quot;, action)</span>
 
     <span class="c1">### File Schema Methods</span>
 
@@ -1833,9 +1796,9 @@ Class-specific Attributes:
         <span class="k">if</span> <span class="ow">not</span> <span class="n">nx</span><span class="o">.</span><span class="n">is_directed_acyclic_graph</span><span class="p">(</span><span class="n">graph</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The addresses must be a directed acyclic graph!&quot;</span><span class="p">)</span>
 
-        <span class="n">non_ro_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">IDCreator</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span><span class="o">.</span><span class="n">is_ro_id</span><span class="p">(</span><span class="n">node</span><span class="p">)]</span>
-        <span class="k">if</span> <span class="n">non_ro_id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The addresses must only include ResearchObject ID&#39;s!&quot;</span><span class="p">)</span>
+        <span class="c1"># non_ro_id = [node for node in graph if not IDCreator(action.conn).is_ro_id(node)]</span>
+        <span class="c1"># if non_ro_id:</span>
+        <span class="c1">#     raise ValueError(&quot;The addresses must only include ResearchObject ID&#39;s!&quot;)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">graph</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The addresses must include the dataset ID!&quot;</span><span class="p">)</span>
@@ -1844,14 +1807,14 @@ Class-specific Attributes:
         <span class="k">if</span> <span class="n">vrs</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The addresses must not include Variable ID&#39;s!&quot;</span><span class="p">)</span>
 
-        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema</span>
-        <span class="n">schema_graph</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">MultiDiGraph</span><span class="p">()</span>
-        <span class="n">schema_graph</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">address_edge</span> <span class="ow">in</span> <span class="n">addresses</span><span class="p">:</span>
-            <span class="n">cls0</span> <span class="o">=</span> <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_prefix_to_class</span><span class="p">(</span><span class="n">address_edge</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">cls1</span> <span class="o">=</span> <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_prefix_to_class</span><span class="p">(</span><span class="n">address_edge</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">cls0</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">schema_graph</span><span class="o">.</span><span class="n">predecessors</span><span class="p">(</span><span class="n">cls1</span><span class="p">)</span> <span class="ow">or</span> <span class="n">cls1</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">schema_graph</span><span class="o">.</span><span class="n">successors</span><span class="p">(</span><span class="n">cls0</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The addresses must match the schema!&quot;</span><span class="p">)</span>
+        <span class="c1"># schema = self.schema</span>
+        <span class="c1"># schema_graph = nx.MultiDiGraph()</span>
+        <span class="c1"># schema_graph.add_edges_from(schema)</span>
+        <span class="c1"># for address_edge in addresses:</span>
+        <span class="c1">#     cls0 = ResearchObjectHandler._prefix_to_class(address_edge[0])</span>
+        <span class="c1">#     cls1 = ResearchObjectHandler._prefix_to_class(address_edge[1])</span>
+        <span class="c1">#     if cls0 not in schema_graph.predecessors(cls1) or cls1 not in schema_graph.successors(cls0):</span>
+        <span class="c1">#         raise ValueError(&quot;The addresses must match the schema!&quot;)</span>
 
     <span class="k">def</span> <span class="nf">save_addresses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">addresses</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the addresses to the data_addresses table in the database.</span>
@@ -1860,29 +1823,20 @@ Class-specific Attributes:
 <span class="sd">            addresses (list) : list of addresses IDK</span>
 <span class="sd">            action (Action) : IDK</span>
 <span class="sd">        Returns:</span>
-<span class="sd">            None&quot;&quot;&quot;</span>        
-        <span class="c1"># 1. Get the schema_id for the current dataset_id that has not been overwritten by an Action.       </span>
-        <span class="n">dataset_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
-        <span class="n">schema_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_current_schema_id</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">)</span>                
+<span class="sd">            None&quot;&quot;&quot;</span>                
         <span class="k">for</span> <span class="n">address_names</span> <span class="ow">in</span> <span class="n">addresses</span><span class="p">:</span>
-            <span class="n">params</span> <span class="o">=</span> <span class="p">(</span><span class="n">address_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">address_names</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">schema_id</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-            <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;addresses_insert&quot;</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">group_name</span> <span class="o">=</span> <span class="s2">&quot;robj_complex_attr_insert&quot;</span><span class="p">)</span>            
-        <span class="c1"># self.__dict__[&quot;address_graph&quot;] = self.addresses_to_graph(addresses, action)        </span>
+            <span class="n">params</span> <span class="o">=</span> <span class="p">(</span><span class="n">address_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">address_names</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">action</span><span class="o">.</span><span class="n">id_num</span><span class="p">)</span>
+            <span class="n">action</span><span class="o">.</span><span class="n">add_sql_query</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;addresses_insert&quot;</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">group_name</span> <span class="o">=</span> <span class="s2">&quot;robj_complex_attr_insert&quot;</span><span class="p">)</span>    
 
     <span class="k">def</span> <span class="nf">load_addresses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the addresses from the database.&quot;&quot;&quot;</span>
-        <span class="n">pool</span> <span class="o">=</span> <span class="n">SQLiteConnectionPool</span><span class="p">()</span>        
-        <span class="n">schema_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_current_schema_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-        <span class="n">conn</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">get_connection</span><span class="p">()</span>
 
-        <span class="c1"># 2. Get the addresses for the current schema_id.</span>
-        <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT target_object_id, source_object_id FROM data_addresses WHERE schema_id = &#39;</span><span class="si">{</span><span class="n">schema_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
-        <span class="n">addresses</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
-        <span class="n">pool</span><span class="o">.</span><span class="n">return_connection</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+        <span class="c1"># 2. Get the addresses.</span>
+        <span class="n">sqlquery</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT target_object_id, source_object_id FROM data_addresses&quot;</span>
+        <span class="n">addresses</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlquery</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
 
         <span class="c1"># 3. Convert the addresses to a list of lists (from a list of tuples).</span>
-        <span class="n">addresses</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">address</span><span class="p">)</span> <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">addresses</span><span class="p">]</span>                
-        <span class="c1"># self.__dict__[&quot;address_graph&quot;] = self.addresses_to_graph(addresses, action)</span>
+        <span class="n">addresses</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">address</span><span class="p">)</span> <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">addresses</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">addresses</span>
 
@@ -1893,18 +1847,9 @@ Class-specific Attributes:
 <span class="sd">            addresses (list) : list of addresses</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            nx.MultiDiGraph of addresses&quot;&quot;&quot;</span>
-        <span class="c1"># action = Action(&quot;get_addresses_graph&quot;)</span>
         <span class="n">addresses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addresses</span>
-        <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">MultiDiGraph</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">objs</span><span class="p">:</span>
-            <span class="n">G</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span>            
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">addresses</span><span class="p">:</span>
-                <span class="n">cls0</span> <span class="o">=</span> <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_prefix_to_class</span><span class="p">(</span><span class="n">address</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-                <span class="n">cls1</span> <span class="o">=</span> <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_prefix_to_class</span><span class="p">(</span><span class="n">address</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="n">node0</span> <span class="o">=</span> <span class="n">cls0</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">address</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">)</span>
-                <span class="n">node1</span> <span class="o">=</span> <span class="n">cls1</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">address</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">)</span>
-                <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">node0</span><span class="p">,</span> <span class="n">node1</span><span class="p">)</span>  
+        <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">MultiDiGraph</span><span class="p">()</span>        
+        <span class="n">G</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">G</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -1942,45 +1887,27 @@ Returns:
     nx.MultiDiGraph of addresses</p>
 
           <details class="quote">
-            <summary>Source code in <code>src/ResearchOS/DataObjects/dataset.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">269</span>
-<span class="normal">270</span>
-<span class="normal">271</span>
-<span class="normal">272</span>
-<span class="normal">273</span>
-<span class="normal">274</span>
-<span class="normal">275</span>
-<span class="normal">276</span>
-<span class="normal">277</span>
-<span class="normal">278</span>
-<span class="normal">279</span>
-<span class="normal">280</span>
-<span class="normal">281</span>
-<span class="normal">282</span>
-<span class="normal">283</span>
-<span class="normal">284</span>
-<span class="normal">285</span>
-<span class="normal">286</span>
-<span class="normal">287</span>
-<span class="normal">288</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_addresses_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">objs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nx</span><span class="o">.</span><span class="n">MultiDiGraph</span><span class="p">:</span>
+            <summary>Source code in <code>src\ResearchOS\DataObjects\dataset.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_addresses_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">objs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nx</span><span class="o">.</span><span class="n">MultiDiGraph</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the addresses edge list to a MultiDiGraph.</span>
 <span class="sd">    Args:</span>
 <span class="sd">        self</span>
 <span class="sd">        addresses (list) : list of addresses</span>
 <span class="sd">    Returns:</span>
 <span class="sd">        nx.MultiDiGraph of addresses&quot;&quot;&quot;</span>
-    <span class="c1"># action = Action(&quot;get_addresses_graph&quot;)</span>
     <span class="n">addresses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addresses</span>
-    <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">MultiDiGraph</span><span class="p">()</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">objs</span><span class="p">:</span>
-        <span class="n">G</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span>            
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">addresses</span><span class="p">:</span>
-            <span class="n">cls0</span> <span class="o">=</span> <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_prefix_to_class</span><span class="p">(</span><span class="n">address</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">cls1</span> <span class="o">=</span> <span class="n">ResearchObjectHandler</span><span class="o">.</span><span class="n">_prefix_to_class</span><span class="p">(</span><span class="n">address</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-            <span class="n">node0</span> <span class="o">=</span> <span class="n">cls0</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">address</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">)</span>
-            <span class="n">node1</span> <span class="o">=</span> <span class="n">cls1</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">address</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="p">)</span>
-            <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">node0</span><span class="p">,</span> <span class="n">node1</span><span class="p">)</span>  
+    <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">MultiDiGraph</span><span class="p">()</span>        
+    <span class="n">G</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">G</span>
 </code></pre></div></td></tr></table></div>
           </details>
@@ -2051,7 +1978,7 @@ Returns:
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.expand", "toc.follow", "navigation.top"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.bd41221c.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
     
   </body>
