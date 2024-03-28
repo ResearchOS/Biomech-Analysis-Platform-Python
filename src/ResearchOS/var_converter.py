@@ -11,7 +11,10 @@ def convert_var(var: Any, matlab_numeric_types: tuple) -> Any:
     elif isinstance(var, list):
         all_numeric = all([isinstance(value, matlab_numeric_types) for value in var])
         if all_numeric:
-            var = np.array(var)
+            try:
+                var = np.array(var)
+            except: # Cell arrays
+                var = [convert_var(value, matlab_numeric_types) for value in var]
     elif isinstance(var, matlab_numeric_types):
         var = np.array(var)
     return var
