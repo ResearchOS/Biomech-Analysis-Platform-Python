@@ -369,7 +369,7 @@ class ResearchObjectHandler:
         """Get a user- and computer-specific path, which is a simple attribute in the database."""
         # Load the most recent path.
         attr_id = ResearchObjectHandler._get_attr_id(attr_name)
-        sqlquery_raw = "SELECT action_id, attr_value FROM simple_attributes WHERE attr_id = ? AND object_id = ?"
+        sqlquery_raw = "SELECT action_id_num, attr_value FROM simple_attributes WHERE attr_id = ? AND object_id = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, ["attr_id", "object_id"], single = True, user = True, computer = True)
         params = (attr_id, research_object.id)
         result = action.conn.execute(sqlquery, params).fetchall()
@@ -379,19 +379,19 @@ class ResearchObjectHandler:
         path = json.loads(path)
 
         # Get the timestamp of this action_id
-        sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
+        sqlquery = "SELECT datetime FROM actions WHERE action_id_num = ?"
         params = (result[0][0],)
         timestamp_path = action.conn.execute(sqlquery, params).fetchone()[0]
         
         # Check if the action_id is after the current user/computer action_id.
-        sqlquery_raw = "SELECT action_id FROM users_computers WHERE user_id = ? AND computer_id = ?"
+        sqlquery_raw = "SELECT action_id_num FROM users_computers WHERE user_id = ? AND computer_id = ?"
         # sqlquery = sql_order_result(action, sqlquery_raw, ["user_id", "computer_id"], single = True, user = False, computer = False)
         sqlquery = sql_joiner_most_recent(sqlquery_raw)
         params = (CurrentUser.current_user, COMPUTER_ID)
         action_id_users = action.conn.execute(sqlquery, params).fetchone()[0]
 
         # Get the timestamp for when the user ID was set.
-        sqlquery = "SELECT datetime FROM actions WHERE action_id = ?"
+        sqlquery = "SELECT datetime FROM actions WHERE action_id_num = ?"
         params = (action_id_users,)
         timestamp_users = action.conn.execute(sqlquery, params).fetchone()[0]
 

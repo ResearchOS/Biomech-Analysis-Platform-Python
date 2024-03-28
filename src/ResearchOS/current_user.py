@@ -55,7 +55,7 @@ class CurrentUser():
             elif type == "computer":
                 col_name = "computer_id"
                 user_or_computer_id = COMPUTER_ID
-        sqlquery = f"SELECT action_id, {col_name} FROM users_computers"
+        sqlquery = f"SELECT action_id_num, {col_name} FROM users_computers"
         result = cursor.execute(sqlquery).fetchall()
         action_ids = []
         idx_last_current = -1 # Initialize
@@ -77,7 +77,7 @@ class CurrentUser():
         for t in action_ids:
             action_ids_vector.extend(t) 
 
-        sqlquery = "SELECT datetime FROM actions WHERE action_id IN ({})".format(",".join("?" * len(action_ids_vector)))
+        sqlquery = "SELECT datetime FROM actions WHERE action_id_num IN ({})".format(",".join("?" * len(action_ids_vector)))
         result = cursor.execute(sqlquery, action_ids_vector).fetchall()
 
         timestamp_2d = []
@@ -118,7 +118,7 @@ class CurrentUser():
         """Get the action_ids when the current user was using the current computer."""
         timestamps = self.get_timestamps_when_current(user_id = user_id, computer_id = computer_id, user = user, computer = computer)
 
-        sqlquery = "SELECT action_id FROM actions WHERE "
+        sqlquery = "SELECT action_id_num FROM actions WHERE "
         placeholders = []
         params = []
         cursor = self.action.conn.cursor()

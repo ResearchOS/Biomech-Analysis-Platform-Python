@@ -61,7 +61,7 @@ class CodeRunner():
         CodeRunner.matlab_double_type = matlab_double_type
 
     @staticmethod
-    def set_vrs_source_pr(robj: "ResearchObject", action: Action, schema_id: str, default_attrs: dict) -> None:
+    def set_vrs_source_pr(robj: "ResearchObject", action: Action, default_attrs: dict) -> None:
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet
         # add_vr_names_source_prs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and not isinstance(value["VR"], dict))]
@@ -76,9 +76,9 @@ class CodeRunner():
             add_vrs_source_prs_from_lookup_vars = [list(vr.keys())[0].id for vr in robj.lookup_vrs.values() if vr not in robj.vrs_source_pr.values()]
         add_vrs_source_prs = add_vrs_source_prs_from_input_vars + add_vrs_source_prs_from_lookup_vars        
         if len(add_vrs_source_prs) > 0:
-            sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({}) AND schema_id = ?".format(",".join(["?" for _ in add_vrs_source_prs]))
+            sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({})".format(",".join(["?" for _ in add_vrs_source_prs]))
             sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
-            params = tuple([vr_id for vr_id in add_vrs_source_prs] + [schema_id])
+            params = tuple([vr_id for vr_id in add_vrs_source_prs])
             vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
             vrs_source_prs_tmp = {}
             for vr_name_in_code, vr in robj.input_vrs.items():
@@ -233,10 +233,8 @@ class CodeRunner():
         self.force_redo = force_redo
 
         ds = Dataset(id = robj._get_dataset_id(), action = action)
-        schema_id = robj.get_current_schema_id(ds.id)
 
         self.dataset = ds
-        self.schema_id = schema_id
 
         CodeRunner.import_matlab(robj.is_matlab)
                 
@@ -271,7 +269,7 @@ class CodeRunner():
         G = CodeRunner.dataset_object_graph
 
         # Set the vrs_source_prs for any var that it wasn't set for.
-        CodeRunner.set_vrs_source_pr(robj, action, schema_id, default_attrs)
+        CodeRunner.set_vrs_source_pr(robj, action, default_attrs)
 
         # Get the lowest level for this batch.
         schema_ordered = [n for n in nx.topological_sort(schema_graph)]
@@ -607,9 +605,9 @@ class CodeRunner():
                 continue
             
             # Dynamic input variable. Return when the data blob hash was last set for this VR & data object.
-            sqlquery_raw = "SELECT action_id, data_blob_hash FROM data_values WHERE vr_id = ? AND schema_id = ?"
-            sqlquery = sql_order_result(self.action, sqlquery_raw, ["vr_id", "schema_id"], single = True, user = True, computer = False)
-            params = (vr.id, self.schema_id)
+            sqlquery_raw = "SELECT action_id, data_blob_hash FROM data_values WHERE vr_id = ?"
+            sqlquery = sql_order_result(self.action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
+            params = (vr.id)
             result = cursor.execute(sqlquery, params).fetchall()
             if len(result) == 0:
                 return datetime.max.replace(tzinfo=timezone.utc) # Force the process to run.

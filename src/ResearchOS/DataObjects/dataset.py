@@ -226,7 +226,7 @@ class Dataset(DataObject):
     def load_addresses(self, action: Action) -> list:
         """Load the addresses from the database."""
 
-        # 2. Get the addresses for the current schema_id.
+        # 2. Get the addresses.
         sqlquery = f"SELECT target_object_id, source_object_id FROM data_addresses"
         addresses = action.conn.execute(sqlquery).fetchall()
 
