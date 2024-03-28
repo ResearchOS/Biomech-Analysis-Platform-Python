@@ -90,10 +90,8 @@ class Subset(PipelineObject):
                 raise ValueError("Value must be a list of lists or dicts.")
             a = [self.validate_conditions(cond, action, default = default) for cond in value] # Assigned to a just to make interpreter happy.
             
-    def get_subset(self, action: Action) -> nx.MultiDiGraph:
-        """Resolve the conditions to the actual subset of data."""
-        from ResearchOS.DataObjects.data_object import DataObject
-        dataobject_subclasses = DataObject.__subclasses__()
+    def get_subset(self, action: Action, paths: list, dobj_ids: list) -> nx.MultiDiGraph:
+        """Resolve the conditions to the actual subset of data."""        
         print(f'Getting subset of DataObjects: {self.name} ({self.id})')
         # 1. Get the dataset.
         dataset_id = self._get_dataset_id()
@@ -150,17 +148,9 @@ class Subset(PipelineObject):
                 value = numeric_value
             vr_values[vr_id][dataobject_id] = value
 
-        dataset_node = [n for n in G.nodes() if G.in_degree(n) == 0][0]
+        dataset_node = [n for n in G.nodes() if G.in_degree(n) == 0][0]        
 
-        sqlquery = "SELECT dataobject_id, path FROM paths"
-        cursor = action.conn.cursor()
-        result = cursor.execute(sqlquery).fetchall()
-        
-        paths = [[dataset_node] + json.loads(row[1]) for row in result]
-        dobj_ids = [row[0] for row in result]
-
-        for idx, row in enumerate(result):
-            node_names_lineage = paths[idx]
+        for node_names_lineage in paths:
 
             anc_nodes = [dataset_node]
             for lineage_len in range(1,len(node_names_lineage)):
@@ -168,7 +158,7 @@ class Subset(PipelineObject):
                 anc_nodes.append(dobj_ids[lin_idx])
 
             if not self._meets_conditions(anc_nodes[-1], self.conditions, G, vr_values, action, anc_nodes[0:-1]):
-                continue
+                continue            
             nodes_for_subgraph.extend([node for node in node_names_lineage if node not in nodes_for_subgraph])
 
         if len(nodes_for_subgraph) == 0:
