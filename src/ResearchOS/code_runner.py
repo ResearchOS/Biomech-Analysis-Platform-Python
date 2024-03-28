@@ -148,12 +148,12 @@ class CodeRunner():
         # Sort the level_node_ids
         level_node_ids_sorted = [level_node_ids[index_map[i]] for i in range(len(level_node_ids))]
 
-        return level_node_ids_sorted
+        return level_node_ids_sorted, paths, dobj_ids
     
     @staticmethod
-    def get_batches_dict_to_run(robj: "ResearchObject", subset_graph: nx.MultiDiGraph, schema_ordered: list, lowest_level: str, level_node_ids_sorted: list) -> dict:
+    def get_batches_dict_to_run(robj: "ResearchObject", subset_graph: nx.MultiDiGraph, schema_ordered: list, lowest_level: str, level_node_ids_sorted: list, paths: list, dobj_ids: list) -> dict:
         if robj.batch is not None:
-            all_batches_graph = CodeRunner.get_batch_graph(robj, robj.batch, subset_graph, schema_ordered, lowest_level)
+            all_batches_graph = CodeRunner.get_batch_graph(robj, robj.batch, subset_graph, schema_ordered, lowest_level, paths, dobj_ids)
 
             # Parse the MultiDiGraph to get the batches to run.
             if robj.batch is None or len(robj.batch) == 0:
@@ -171,17 +171,18 @@ class CodeRunner():
                     return None
                 level = batch_list[0]
                 # Get the list of nodes that are connected to this node.
-                all_reachable_nodes = list(graph.successors(node))
-                level_nodes = [n for n in all_reachable_nodes if n.startswith(level.prefix)]
+                successors = list(graph.successors(node))
+                # level_nodes = [n for n in successors if n.startswith(level.prefix)]
                 # level_nodes = [n for n in level_nodes if set(node_lineage).issubset(set(list(nx.ancestors(subset_graph, n))))]
-                for n in level_nodes:
+                for n in successors:
                     batches_dict[n] = {}
                     node_lineage.append(n)
                     batches_dict[n] = graph_to_dict(graph, batches_dict[n], batch_list[1:], n, subset_graph, node_lineage)
                 return batches_dict
             
             batches_dict_to_run = {}
-            top_level_nodes = [node for node in all_batches_graph.nodes() if node.startswith(level.prefix)]
+            dataset_node = paths[0][0]
+            top_level_nodes = list(all_batches_graph.successors(dataset_node))
             for node in top_level_nodes:
                 batches_dict_to_run[node] = {}
                 batches_dict_to_run[node] = graph_to_dict(all_batches_graph, batches_dict_to_run[node], batch_list[1:], node, subset_graph, [node])
@@ -205,7 +206,7 @@ class CodeRunner():
         CodeRunner.highest_level = highest_level
         return batches_dict_to_run, all_batches_graph
     
-    def get_batch_graph(robj: "ResearchObject", batch: list, subgraph: nx.MultiDiGraph = nx.MultiDiGraph(), schema_ordered: list = [], lowest_level: type = None) -> dict:
+    def get_batch_graph(robj: "ResearchObject", batch: list, subgraph: nx.MultiDiGraph = nx.MultiDiGraph(), schema_ordered: list = [], lowest_level: type = None, paths: list = [], dobj_ids: list = []) -> dict:
         """Get the batch dictionary of DataObject names. Needs to be recursive to account for the nested dicts.
         At the lowest level, if there are multiple DataObjects, they will also be a dict, each being one key, with its value being None.
         Note that the Dataset node should always be in the subgraph."""
@@ -218,21 +219,27 @@ class CodeRunner():
         if lowest_level not in batch:
             batch = batch + schema_ordered[lowest_level_idx:]
 
-        nodes = [n for b in batch for n in subgraph.nodes() if n.startswith(b.prefix)]
+        batch_idx_in_schema = [schema_ordered.index(cls)+1 for cls in batch]
+
+        paths_in_batch = [path for path in paths if len(path) in batch_idx_in_schema]
+        nodes = [path[-1] for path in paths_in_batch]
+
         batch_graph = nx.MultiDiGraph()
         batch_graph.add_nodes_from(nodes)
 
-        # Add the missing edges to the batch graph.
-        all_nodes_dict = {cls: [n for n in subgraph.nodes() if n.startswith(cls.prefix)] for cls in batch}
-        for idx in range(len(batch) - 1):
-            top_level = batch[idx]
-            bottom_level = batch[idx + 1]
-            top_level_nodes = all_nodes_dict[top_level]
-            bottom_level_nodes = all_nodes_dict[bottom_level]
-            for top_level_node in top_level_nodes:
-                for bottom_level_node in bottom_level_nodes:
-                    if nx.has_path(subgraph, top_level_node, bottom_level_node) or nx.has_path(subgraph, bottom_level_node, top_level_node):
-                        batch_graph.add_edge(top_level_node, bottom_level_node)
+        dataset_node = paths[0][0]
+        batch_graph.add_node(dataset_node)
+
+        for path in paths_in_batch:
+            len_idx = batch_idx_in_schema.index(len(path))
+            batch_path = [path[i-1] for i in batch_idx_in_schema[0:len_idx+1]]
+            if len(batch_path) == 1:
+                if (dataset_node, batch_path[0]) not in batch_graph.edges():
+                    batch_graph.add_edge(dataset_node, batch_path[0])
+            for idx in range(len(batch_path) - 1):
+                if (batch_path[idx], batch_path[idx + 1]) not in subgraph.edges():
+                    batch_graph.add_edge(batch_path[idx], batch_path[idx + 1])
+
         return batch_graph
     
     def prep_for_run(self, robj: "ResearchObject", action: Action, force_redo: bool = False) -> None:
@@ -299,9 +306,9 @@ class CodeRunner():
         self.schema_order = schema_ordered
         lowest_level = CodeRunner.get_lowest_level(robj, schema_ordered)
 
-        level_node_ids_sorted = CodeRunner.get_level_nodes_sorted(robj, action, paths, dobj_ids, subset_graph)
+        level_node_ids_sorted, paths, dobj_ids = CodeRunner.get_level_nodes_sorted(robj, action, paths, dobj_ids, subset_graph)
             
-        batches_dict_to_run, all_batches_graph = CodeRunner.get_batches_dict_to_run(robj, subset_graph, schema_ordered, lowest_level, level_node_ids_sorted)
+        batches_dict_to_run, all_batches_graph = CodeRunner.get_batches_dict_to_run(robj, subset_graph, schema_ordered, lowest_level, level_node_ids_sorted, paths, dobj_ids)
         if len(batches_dict_to_run) == 0:
             print("<<< WARNING: NO NODES TO RUN. >>>")
             time.sleep(2)
@@ -332,11 +339,13 @@ class CodeRunner():
             self.run_node(batch_id, G)
             return
         
-        lowest_nodes = [node for node in batch_graph.nodes if node.startswith(self.lowest_level.prefix)]
+        lowest_nodes = [node for node in batch_graph.nodes() if batch_graph.out_degree(node) == 0]
 
         for node in lowest_nodes:
             self.node_id = node
-            self.node = self.lowest_level(id = node)
+            path_idx = [idx for idx, path in enumerate(self.paths) if path[-1] == node][0]
+            dobj_id = self.dobj_ids[path_idx]
+            self.node = self.lowest_level(id = dobj_id)
             result = self.check_if_run_node(node, G)
             if not result["do_run"]:
                 return
@@ -344,14 +353,17 @@ class CodeRunner():
                 batch_graph.nodes[node][vr_name_in_code] = vr_val
 
         # Now that all the input VR's have been gotten, change the node to the one to save the output VR's to.
-        self.node = self.highest_level(id = batch_id)
+        batch_node_idx = [idx for idx, node in enumerate(self.paths) if node[-1] == batch_id][0]
+        batch_node = self.dobj_ids[batch_node_idx]
+        self.node = self.highest_level(id = batch_node)
                 
         def process_dict(self, batch_graph, input_dict, G, vr_name_in_code: str = None):
             all_keys = list(input_dict.keys())
             if any(isinstance(key, int) for key in all_keys):
                 raise ValueError("Check your batch list, no Variables at this level.")
             is_var_name_in_code = all_keys == list(self.pl_obj.input_vrs.keys())
-            do_recurse = is_var_name_in_code or not any([all_keys[i].startswith(self.lowest_level.prefix) for i in range(len(all_keys))])
+            leaf_nodes = [n for n in batch_graph.nodes() if batch_graph.out_degree(n) == 0]
+            do_recurse = is_var_name_in_code or not all([key in leaf_nodes for key in all_keys])
             if do_recurse and isinstance(input_dict, dict):
                 for value in input_dict.values():
                     process_dict(self, batch_graph, value, G, vr_name_in_code)
