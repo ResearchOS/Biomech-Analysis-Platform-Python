@@ -29,7 +29,8 @@ def create_folders(root_folder: str = None):
         "research_objects.subsets.py",
         "research_objects.processes.py",
         "research_objects.stats.py",
-        "research_objects.variables.py"
+        "research_objects.variables.py",
+        ".gitignore"
     ]
     cli_root = os.path.dirname(os.path.abspath(__file__))
     quickstart_root = os.path.join(cli_root, "quickstart_files")

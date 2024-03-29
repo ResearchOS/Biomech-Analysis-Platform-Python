@@ -11,12 +11,15 @@ app = typer.Typer()
 cwd = os.getcwd()
 
 @app.command()
-def quickstart(folder: str = typer.Option(cwd, help="Folder name")
+def quickstart(folder: str = typer.Option(cwd, help="Folder name"),
+               url: str = typer.Option(None, help="URL to import code from")
                ):
     create_folders(folder)
+    if url:
+        import_code(url)
 
 @app.command()
-def download(url: str):
+def import_code(url: str):
     typer.echo(f"Downloading {url}")
 
 @app.command()
