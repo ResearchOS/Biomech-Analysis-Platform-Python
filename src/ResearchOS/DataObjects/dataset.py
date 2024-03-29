@@ -2,11 +2,6 @@ from typing import Any
 import json, copy, os
 
 import networkx as nx
-from bokeh.io import output_file, show
-from bokeh.models import (BoxZoomTool, Circle, HoverTool,
-                          MultiLine, Plot, Range1d, ResetTool, TapTool, BoxSelectTool, NodesAndLinkedEdges, EdgesAndLinkedNodes)
-from bokeh.palettes import Spectral4
-from bokeh.plotting import from_networkx
 
 from ResearchOS.DataObjects.data_object import DataObject
 from ResearchOS.action import Action
@@ -252,6 +247,11 @@ class Dataset(DataObject):
     
     def show_graph(self) -> None:
         """Show the graph of addresses."""
+        from bokeh.io import output_file, show
+        from bokeh.models import (BoxZoomTool, Circle, HoverTool,
+                                MultiLine, Plot, Range1d, ResetTool, TapTool, BoxSelectTool, NodesAndLinkedEdges, EdgesAndLinkedNodes)
+        from bokeh.palettes import Spectral4
+        from bokeh.plotting import from_networkx
         G = self.get_addresses_graph()
 
         # Show with Bokeh

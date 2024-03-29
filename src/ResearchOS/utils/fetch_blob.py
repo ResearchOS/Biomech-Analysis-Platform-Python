@@ -14,8 +14,4 @@ def fetch_blob_data(db_path, query):
     # Close the connection
     conn.close()
 
-<<<<<<< Updated upstream
     return blob_data
-=======
-    return blob_data
->>>>>>> Stashed changes

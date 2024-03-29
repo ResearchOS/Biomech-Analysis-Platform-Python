@@ -24,7 +24,7 @@ packages = ["src/ResearchOS"]
 [project]
 name = "ResearchOS"
 version = "0.0.13"
-requires-python = ">=3.0.0"
+requires-python = ">=3.6"
 authors = [
     {name = "Mitchell Tillman <mtillman14@gmail.com>"},
 ]
@@ -45,9 +45,14 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 # Runtime dependencies
+# pycparser, PyGithub, and requests are from requirements.txt found here: https://github.com/Nordgaren/Github-Folder-Downloader/blob/master/requirements.txt
 dependencies = [
   "networkx>=3.2.1",
-  "numpy>=1.26.4"
+  "numpy>=1.26.4",
+  "pycparser==2.21",
+  "PyGithub==1.57",
+  "requests==2.28.2",
+  "typer==0.11.1"
 ]
 
 [project.optional-dependencies]
@@ -62,3 +67,6 @@ dev = [
 [project.urls]
 Documentation = "https://researchos.github.io/ResearchOS/"
 Repository = "https://github.com/ResearchOS/ResearchOS"
+
+[project.scripts]
+ros = "ResearchOS.cli.app:app"
