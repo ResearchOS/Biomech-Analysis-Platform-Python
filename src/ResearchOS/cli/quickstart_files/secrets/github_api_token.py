@@ -1,1 +1,0 @@
-GITHUB_API_TOKEN = "your_api_token_here"

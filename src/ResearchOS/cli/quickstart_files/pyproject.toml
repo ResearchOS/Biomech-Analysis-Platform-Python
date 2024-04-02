@@ -1,0 +1,10 @@
+[project]
+name = "project_name"
+description = "my project description"
+version = "0.1.0"
+authors = [
+    { name = "Your Name", email = "your@email.com" }
+]
+# This can be a GitHub repository URL or a package name & version from PyPI.
+dependencies = [
+]

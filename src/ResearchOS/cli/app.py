@@ -1,4 +1,3 @@
-# cli.py
 import os
 
 import typer
@@ -9,17 +8,39 @@ from ResearchOS.db_initializer import DBInitializer
 
 app = typer.Typer()
 
-cwd = os.getcwd()
+@app.command()
+def init_project(folder: str = typer.Option(None, help="Folder name"),
+               repo: str = typer.Option(None, help="Repository URL to clone code from")
+               ):
+    """Create a new blank project in the specified folder. If no arguments are provided, creates a new project in the current working directory.
+    If a URL is provided, clones the repository specified by the URL."""
+    cwd = os.getcwd()
+    if not folder:
+        folder = cwd
+    if not os.path.exists(folder):
+        try:
+            os.makedirs(folder)
+        except FileNotFoundError:
+            raise ValueError(f"Folder {folder} is not a valid folder path.")
+    create_folders(folder)
+    # If this is a project (because the current working directory and the folder name match) create project-specific folders & files.
+    if folder == cwd:
+        create_folders(folder, folders = ["data"], files = ["paths.py"])
+    db = DBInitializer() # Create the databases.
+    if repo:
+        import_code(repo)
+    print(f"Project initialized in {folder}")
 
 @app.command()
-def quickstart(folder: str = typer.Option(cwd, help="Folder name"),
-               url: str = typer.Option(None, help="URL to import code from")
-               ):
-    create_folders(folder)
-    db = DBInitializer() # Create the databases.
-    if url:
-        import_code(url)
-    # TODO: Create a .gitignore file.
+def init_package(subfolder: str = typer.Argument(help="Subfolder to create the package in. Can be relative or absolute path")):
+    """Initialize the folder structure to create a package. Must provide the subfolder to create the package in."""
+    if not os.path.exists(subfolder):
+        try:
+            os.makedirs(subfolder)
+        except FileNotFoundError:
+            raise ValueError(f"Folder {subfolder} is not a valid folder path.")
+    create_folders(subfolder)
+    print(f"Package initialized in {subfolder}")
 
 @app.command()
 def import_code(url: str):
@@ -28,7 +49,7 @@ def import_code(url: str):
 @app.command()
 def config(github_token: str = typer.Option(None, help="GitHub token"),
            db_file: str = typer.Option("researchos.db", help="Database file"),
-           data_db_file: str = typer.Option("researchos.db", help="Data database file"),
+           data_db_file: str = typer.Option("researchos_data.db", help="Data database file"),
            data_objects_path: str = typer.Option("research_objects.data_objects.py", help="Path to data objects")
         ):
     config = Config()
