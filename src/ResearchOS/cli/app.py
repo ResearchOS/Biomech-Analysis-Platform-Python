@@ -5,6 +5,7 @@ import typer
 
 from ResearchOS.config import Config
 from ResearchOS.cli.quickstart import create_folders
+from ResearchOS.db_initializer import DBInitializer
 
 app = typer.Typer()
 
@@ -15,8 +16,10 @@ def quickstart(folder: str = typer.Option(cwd, help="Folder name"),
                url: str = typer.Option(None, help="URL to import code from")
                ):
     create_folders(folder)
+    db = DBInitializer() # Create the databases.
     if url:
         import_code(url)
+    # TODO: Create a .gitignore file.
 
 @app.command()
 def import_code(url: str):
