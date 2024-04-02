@@ -44,7 +44,7 @@ computer_specific_attr_names = ["mfolder"]
 # log_stream = open("logfile_run_process.log", "w")
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG, filename = "logfile.log", filemode = "w", format = "%(asctime)s - %(levelname)s - %(message)s")
+# logging.basicConfig(level=logging.DEBUG, filename = "logfile.log", filemode = "w", format = "%(asctime)s - %(levelname)s - %(message)s")
 
 do_run = False
 

@@ -1,6 +1,5 @@
+*.DS_Store
 researchos_data.db
-secrets/
 data/
-.DS_Store
-plots/
-stats/
+output/
+paths.py

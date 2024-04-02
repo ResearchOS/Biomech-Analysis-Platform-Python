@@ -25,8 +25,16 @@ def init_project(folder: str = typer.Option(None, help="Folder name"),
     create_folders(folder)
     # If this is a project (because the current working directory and the folder name match) create project-specific folders & files.
     if folder == cwd:
-        create_folders(folder, folders = ["data"], files = ["paths.py"])
-    db = DBInitializer() # Create the databases.
+        create_folders(folder, folders = ["data"], files = ["paths.py", ".gitignore", "src..research_objects.dataset.py", "src..research_objects.logsheets.py"])
+    config = Config()
+    user_input = "y"
+    if os.path.exists(config.db_file) or os.path.exists(config.data_db_file):
+        user_input = input("Databases already exist. Do you want to overwrite them? (y/n) ")
+    if user_input.lower() == "y":
+        db = DBInitializer() # Create the databases.
+        print("Databases reset to default state.")
+    else:
+        print("Databases not modified.")
     if repo:
         import_code(repo)
     print(f"Project initialized in {folder}")

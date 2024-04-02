@@ -3,7 +3,8 @@ name = "project_name"
 description = "my project description"
 version = "0.1.0"
 authors = [
-    { name = "Your Name", email = "your@email.com" }
+    { name = "Author1 Name", email = "author1@email.com" },
+    { name = "Author2 Name", email = "author2@email.com" }
 ]
 # This can be a GitHub repository URL or a package name & version from PyPI.
 dependencies = [
