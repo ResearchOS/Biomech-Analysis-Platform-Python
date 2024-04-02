@@ -7,6 +7,7 @@ Each pipeline package should be a subfolder of the project's root folder. That p
 Note that the below directory structure contains the project `my_project` at the root, and the package `my_package_1` as a subfolder of the project. Both the project and the package contain `pyproject.toml` and `LICENSE.md` and `README.md`.
 
 ## QUESTION: Should the project be installable as a Python package? Or should that be packages only? If someone wants to replicate a project, they can just clone the repository. If someone wants to use a package (part of a project), they can install the package.
+### ANSWER: The pyproject.toml file is necessary so that the project's dependencies can be installed. Therefore the project will be installable as a package, though I'd recommend replicating a project by cloning the repository.
 
 For example:
 ```ASCII
@@ -61,3 +62,5 @@ README.md
 pyproject.toml
 .gitignore
 ```
+
+The `main.py` file is where the order of the pipeline is defined, as well as bridging the inputs and outputs between different packages. The `paths.py` file is where the paths to the data and outputs are defined.
