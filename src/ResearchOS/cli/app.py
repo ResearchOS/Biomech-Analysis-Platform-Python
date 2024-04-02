@@ -25,7 +25,7 @@ def init_project(folder: str = typer.Option(None, help="Folder name"),
     create_folders(folder)
     # If this is a project (because the current working directory and the folder name match) create project-specific folders & files.
     if folder == cwd:
-        create_folders(folder, folders = ["data"], files = ["paths.py", ".gitignore", "src..research_objects.dataset.py", "src..research_objects.logsheets.py"])
+        create_folders(folder, folders = ["data", "output", "output.plots", "output.stats"], files = ["paths.py", ".gitignore", "src..research_objects.dataset.py", "src..research_objects.logsheets.py"])
     config = Config()
     user_input = "y"
     if os.path.exists(config.db_file) or os.path.exists(config.data_db_file):
