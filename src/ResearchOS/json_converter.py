@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
 
 from ResearchOS.action import Action
+from ResearchOS.Bridges.vrport import VRPort
 
 
 class JSONConverter():
@@ -51,6 +52,10 @@ class JSONConverter():
         for name, vr_dict in input_vr_ids_dict.items():
             # Two keys: "VR" and "slice".
             input_vrs_dict[name] = {}
+            if isinstance(vr_dict, VRPort):
+                vrport = VRPort.from_str(vr_dict)
+                input_vrs_dict[name] = vrport
+                continue
             if not isinstance(vr_dict, dict) or (isinstance(vr_dict, dict) and "VR" not in vr_dict.keys()):
                 input_vrs_dict[name] = vr_dict
                 continue
@@ -81,6 +86,10 @@ class JSONConverter():
         tmp_dict = {}
         for key, vr_dict in input_vrs.items():
             tmp_dict[key] = {}
+            if isinstance(vr_dict, VRPort):
+                vr_dict.add_attrs(research_object, True, key)
+                tmp_dict[key] = vr_dict.to_str() # String representation of the VRPort.
+                continue
             if not isinstance(vr_dict, dict) or (isinstance(vr_dict, dict) and "VR" not in vr_dict.keys()):
                 tmp_dict[key] = vr_dict
                 continue
@@ -110,6 +119,10 @@ class JSONConverter():
         output_vr_ids_dict = json.loads(output_vrs)
         output_vrs_dict = {}
         for name, vr_id in output_vr_ids_dict.items():
+            if isinstance(vr_id, VRPort):
+                vrport = VRPort.from_str(vr_id)
+                output_vrs_dict[name] = vrport
+                continue
             if isinstance(vr_id, dict):
                 for key, value in vr_id.items():
                     cls = [cls for cls in data_subclasses if cls.prefix == key]
@@ -122,7 +135,14 @@ class JSONConverter():
     @staticmethod
     def to_json_output_vrs(self, output_vrs: dict, action: Action) -> str:
         """Convert a dictionary of output variables to a JSON string."""
-        return json.dumps({key: value.id for key, value in output_vrs.items()})
+        tmp_dict = {}
+        for key, value in output_vrs.items():
+            if isinstance(value, VRPort):
+                value.add_attrs(research_object, False, key)
+                tmp_dict[key] = value.to_str()
+            else:
+                tmp_dict[key] = value.id
+        return json.dumps(tmp_dict)
     
     @staticmethod
     def from_json_vrs_source_pr(self, vrs_source_pr: str, action: Action) -> dict:
