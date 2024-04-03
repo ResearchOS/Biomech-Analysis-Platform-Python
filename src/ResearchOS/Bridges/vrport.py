@@ -8,6 +8,8 @@ from port import Port
 class VRPort(Port):
     """Responsible for managing the Variable (VR) ports between DiGraphs."""
 
+    prefix: str = "VRPort"
+
     @staticmethod
     def from_str(str_in: str) -> "VRPort":
         """Converts a string to a VRPort object."""
@@ -27,7 +29,6 @@ class VRPort(Port):
         _dict["vr_name_in_code"] = str_list[3]
 
         return VRPort(**_dict)
-
 
     def to_str(self) -> str:
         """Returns the str name of the VRPort object."""
