@@ -32,7 +32,7 @@ class ProcessRunner(CodeRunner):
         if pr.is_matlab:
             if not self.matlab_loaded:
                 raise ValueError("MATLAB is not loaded.")            
-            fcn = getattr(self.matlab_eng, pr.mfunc_name)                        
+            fcn = getattr(self.matlab_eng, pr.mfunc_name)            
         else:
             fcn = getattr(pr, pr.method)
 
@@ -45,6 +45,11 @@ class ProcessRunner(CodeRunner):
             vr_vals_in = []
             for vr_name in vr_values_in:
                 vr_vals_in.append(vr_values_in[vr_name])
+
+        if pr.is_matlab:
+            for idx, vr_val in enumerate(vr_vals_in):
+                if vr_val is None:
+                    raise ValueError(f"Input variable {idx} is None. Please ensure that all input variables are assigned.")
 
         try:
             vr_values_out = fcn(*vr_vals_in, nargout=len(pr.output_vrs))

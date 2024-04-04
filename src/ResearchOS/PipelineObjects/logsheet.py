@@ -371,7 +371,7 @@ class Logsheet(PipelineObject):
                 dobj_names[-1].append(value)
         for row_num, row in enumerate(dobj_names):
             if not all([str(cell).isidentifier() for cell in row]):
-                raise ValueError(f"Row #{row_num+self.num_header_rows+1} (1-based): All data object names must be non-empty and valid variable names!")        
+                raise ValueError(f"Logsheet row #{row_num+self.num_header_rows+1}: All data object names must be non-empty and valid variable names!")        
                         
         for idx, cls in enumerate(order):
             lists = list(set([tuple(row[0:idx+1]) for row in dobj_names]))
@@ -417,10 +417,16 @@ class Logsheet(PipelineObject):
                     attrs_cache_dict[row_dobjs[level_idx].id][name] = default_none_vals[type_class]
                 print("Row: ", row_num+self.num_header_rows+1, "Column: ", name, "Value: ", value)
                 prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
-                if prev_value is not default_none_vals[type_class] and (type(prev_value) == np.ndarray and not np.isnan(prev_value)):                    
-                    if prev_value == value or value == default_none_vals[type_class] or np.isnan(value):
-                        continue
-                    raise ValueError(f"Row # (1-based): {row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
+                if prev_value == value or (isinstance(value, np.ndarray) and isinstance(prev_value, np.ndarray) and np.isnan(value) and np.isnan(prev_value)) or value is None:
+                    continue # Skip if there's nothing new here.
+                # Now the value is guaranteed to be different from the previous value.
+                if prev_value is not default_none_vals[type_class] and (value != default_none_vals[type_class] and not (isinstance(value, np.ndarray) and np.isnan(value))):
+                    raise ValueError(f"Logsheet Row #{row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
+                # if type_class in (int, float) and (type(prev_value) == np.ndarray and not np.isnan(prev_value)):
+                # if prev_value is not default_none_vals[type_class] or (type_class in (int, float) and (type(prev_value) == np.ndarray and not np.isnan(prev_value))):                    
+                #     if prev_value == value or value == default_none_vals[type_class] or np.isnan(value):
+                #         continue
+                #     raise ValueError(f"Logsheet Row #{row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
                 attrs_cache_dict[row_dobjs[level_idx].id][name] = value
                 row_attrs[level_idx][vr_id] = attrs_cache_dict[row_dobjs[level_idx].id][name]
             for idx, attrs in enumerate(row_attrs):
