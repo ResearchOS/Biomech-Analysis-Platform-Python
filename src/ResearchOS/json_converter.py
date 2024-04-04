@@ -45,12 +45,17 @@ class JSONConverter():
         """Convert a JSON string to a dictionary of input variables."""
         from ResearchOS.variable import Variable
         from ResearchOS.DataObjects.data_object import DataObject
+        from ResearchOS.Bridges.vrport import VRPort
         input_vr_ids_dict = json.loads(input_vrs)
         input_vrs_dict = {}
         dataobject_subclasses = DataObject.__subclasses__()
         for name, vr_dict in input_vr_ids_dict.items():
             # Two keys: "VR" and "slice".
             input_vrs_dict[name] = {}
+            if isinstance(vr_dict, VRPort):
+                vrport = VRPort.from_str(vr_dict)
+                input_vrs_dict[name] = vrport
+                continue
             if not isinstance(vr_dict, dict) or (isinstance(vr_dict, dict) and "VR" not in vr_dict.keys()):
                 input_vrs_dict[name] = vr_dict
                 continue
@@ -77,10 +82,15 @@ class JSONConverter():
     
     @staticmethod
     def to_json_input_vrs(self, input_vrs: dict, action: Action) -> str:
-        """Convert a dictionary of input variables to a JSON string."""        
+        """Convert a dictionary of input variables to a JSON string."""       
+        from ResearchOS.Bridges.vrport import VRPort 
         tmp_dict = {}
         for key, vr_dict in input_vrs.items():
             tmp_dict[key] = {}
+            if isinstance(vr_dict, VRPort):
+                vr_dict.add_attrs(research_object, True, key)
+                tmp_dict[key] = vr_dict.to_str() # String representation of the VRPort.
+                continue
             if not isinstance(vr_dict, dict) or (isinstance(vr_dict, dict) and "VR" not in vr_dict.keys()):
                 tmp_dict[key] = vr_dict
                 continue
@@ -106,10 +116,15 @@ class JSONConverter():
         """Convert a JSON string to a dictionary of output variables."""
         from ResearchOS.variable import Variable
         from ResearchOS.DataObjects.data_object import DataObject
+        from ResearchOS.Bridges.vrport import VRPort
         data_subclasses = DataObject.__subclasses__()
         output_vr_ids_dict = json.loads(output_vrs)
         output_vrs_dict = {}
         for name, vr_id in output_vr_ids_dict.items():
+            if isinstance(vr_id, VRPort):
+                vrport = VRPort.from_str(vr_id)
+                output_vrs_dict[name] = vrport
+                continue
             if isinstance(vr_id, dict):
                 for key, value in vr_id.items():
                     cls = [cls for cls in data_subclasses if cls.prefix == key]
@@ -122,7 +137,15 @@ class JSONConverter():
     @staticmethod
     def to_json_output_vrs(self, output_vrs: dict, action: Action) -> str:
         """Convert a dictionary of output variables to a JSON string."""
-        return json.dumps({key: value.id for key, value in output_vrs.items()})
+        from ResearchOS.Bridges.vrport import VRPort
+        tmp_dict = {}
+        for key, value in output_vrs.items():
+            if isinstance(value, VRPort):
+                value.add_attrs(research_object, False, key)
+                tmp_dict[key] = value.to_str()
+            else:
+                tmp_dict[key] = value.id
+        return json.dumps(tmp_dict)
     
     @staticmethod
     def from_json_vrs_source_pr(self, vrs_source_pr: str, action: Action) -> dict:
@@ -174,19 +197,34 @@ class JSONConverter():
     def from_json_lookup_vrs(self, lookup_vrs: str, action: Action) -> dict:
         """Convert a JSON string to a dictionary of lookup variables."""
         from ResearchOS.variable import Variable
+        from ResearchOS.Bridges.vrport import VRPort
         lookup_vrs_ids_dict = json.loads(lookup_vrs)
         lookup_vrs_dict = {}
         for key, value in lookup_vrs_ids_dict.items():
             lookup_vrs_dict[key] = {}
-            for vr_id, vr_names in value.items():             
-                vr = Variable(id = vr_id, action = action)
+            for vr_id, vr_names in value.items():
+                if vr_id.startswith(VRPort.prefix):
+                    vr = VRPort.from_str(vr_id)                    
+                else:
+                    vr = Variable(id = vr_id, action = action)
                 lookup_vrs_dict[key][vr] = vr_names 
         return lookup_vrs_dict                
     
     @staticmethod
     def to_json_lookup_vrs(self, lookup_vrs: dict, action: Action) -> str:
         """Convert a dictionary of lookup variables to a JSON string."""
-        return json.dumps({key: {k.id: v for k, v in value.items()} for key, value in lookup_vrs.items()})
+        from ResearchOS.Bridges.vrport import VRPort
+        tmp_dict = {}
+        for key, value in lookup_vrs.items():
+            tmp_dict[key] = {}
+            for k, v in value.items():
+                if isinstance(k, VRPort):
+                    k.add_attrs(research_object, True, key)
+                    tmp_k = k.to_str()
+                else:
+                    tmp_k = k.id
+                tmp_dict[key][tmp_k] = v
+        return json.dumps(tmp_dict)
     
     @staticmethod
     def from_json_level(self, json_level: str, action: Action) -> type:
