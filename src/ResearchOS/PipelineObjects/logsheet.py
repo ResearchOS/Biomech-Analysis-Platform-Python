@@ -398,6 +398,7 @@ class Logsheet(PipelineObject):
                 if level_type_obj == level:
                     break
             level_column_idx = dobj_cols_idx[count]
+            print("{:<40} {:<25}".format(f"Column: {column[0]}", f"Level: {level.__name__}"))
             for dobj in level_dobjs:
                 # Get all of the values
                 values = [self._clean_value(type_class, row[col_idx]) for row in logsheet if dobj.name == row[level_column_idx]]
@@ -413,59 +414,10 @@ class Logsheet(PipelineObject):
                 # Store it to the all_attrs dict.
                 if dobj not in all_attrs:
                     all_attrs[dobj] = {}
-                all_attrs[dobj][column[3]] = value
-                print("Column:", column[0], " Data Object:", dobj.name, " Value:", value)
+                all_attrs[dobj][column[3]] = value                
             
         for dobj, attrs in all_attrs.items():
-            dobj._setattrs({}, attrs, action = action, pr_id = self.id) 
-
-        # Validates that the logsheet is of valid format.
-        # i.e. Doesn't have conflicting values for one level (empty/None is OK)
-        # attrs_cache_dict = {}
-        # default_none_vals = {str: None, int: np.array(float('nan')), float: np.array(float('nan'))}
-        # for row_num, row in enumerate(logsheet):
-        #     row_attrs = [{} for _ in range(len(order))] # The list of dicts of attributes for each DataObject instance.
-
-        #     # Get the list of data object names for this row.
-        #     row_dobj_names = dobj_names[row_num]
-        #     row_dobjs = []
-        #     for idx in range(len(row_dobj_names)):
-        #         curr_list = row_dobj_names[0:idx+1]
-        #         curr_list_idx = dobj_names.index(curr_list)
-        #         row_dobjs.append(all_dobjs_ordered[curr_list_idx])
-
-        #     # Assign all of the data to the appropriate DataObject instances.
-        #     # Includes the "data object columns" so that the DataObjects have an attribute with the name of the header name.
-        #     for header in all_headers:
-        #         name = header[0]
-        #         col_idx = headers_in_logsheet.index(name)                
-        #         type_class = header[1]
-        #         level = header[2]
-        #         level_idx = order.index(level)
-        #         vr_id = header[3]                
-        #         value = self._clean_value(type_class, row[headers_in_logsheet.index(name)])                                    
-        #         # Set up the cache dict for this data object.
-        #         if not row_dobjs[level_idx].id in attrs_cache_dict:
-        #             attrs_cache_dict[row_dobjs[level_idx].id] = {}
-        #         # Set up the cache dict for this data object for this attribute.
-        #         if name not in attrs_cache_dict[row_dobjs[level_idx].id]:
-        #             attrs_cache_dict[row_dobjs[level_idx].id][name] = default_none_vals[type_class]
-        #         print("Row: ", row_num+self.num_header_rows+1, "Column: ", name, "Value: ", value)
-        #         prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
-        #         if prev_value == value or (isinstance(value, np.ndarray) and isinstance(prev_value, np.ndarray) and np.isnan(value) and np.isnan(prev_value)) or value is None:
-        #             continue # Skip if there's nothing new here.
-        #         # Now the value is guaranteed to be different from the previous value.
-        #         if prev_value is not default_none_vals[type_class] and (value != default_none_vals[type_class] and not (isinstance(value, np.ndarray) and np.isnan(value))):
-        #             raise ValueError(f"Logsheet Row #{row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
-        #         # if type_class in (int, float) and (type(prev_value) == np.ndarray and not np.isnan(prev_value)):
-        #         # if prev_value is not default_none_vals[type_class] or (type_class in (int, float) and (type(prev_value) == np.ndarray and not np.isnan(prev_value))):                    
-        #         #     if prev_value == value or value == default_none_vals[type_class] or np.isnan(value):
-        #         #         continue
-        #         #     raise ValueError(f"Logsheet Row #{row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
-        #         attrs_cache_dict[row_dobjs[level_idx].id][name] = value
-        #         row_attrs[level_idx][vr_id] = attrs_cache_dict[row_dobjs[level_idx].id][name]
-        #     for idx, attrs in enumerate(row_attrs):
-        #         row_dobjs[idx]._setattrs({}, attrs, action = action, pr_id = self.id)                           
+            dobj._setattrs({}, attrs, action = action, pr_id = self.id)                        
 
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.
