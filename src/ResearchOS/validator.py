@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Union
 import sys, os
 import json
 import copy
@@ -7,6 +7,9 @@ import networkx as nx
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
+    from ResearchOS.PipelineObjects.subset import Subset
+    from ResearchOS.variable import Variable
+    from ResearchOS.PipelineObjects.process import Process
 
 from ResearchOS.action import Action
 from ResearchOS.default_attrs import DefaultAttrs
@@ -42,9 +45,8 @@ class Validator():
 
     ## input & output VRs methods
     @staticmethod
-    def validate_input_vrs(robj: "ResearchObject", inputs: dict, action: Action, default: Any) -> None:
+    def validate_inputs(robj: "ResearchObject", inputs: dict, action: Action, default: Any) -> None:
         """Validate that the input variables are correct."""
-        from ResearchOS.research_object_handler import ResearchObjectHandler
         input_vr_names_in_code = []
         if not robj.is_matlab:
             input_vr_names_in_code = get_input_variable_names(robj.method)
@@ -53,31 +55,104 @@ class Validator():
         Validator.validate_method(robj, robj.method, action, None)
         if not isinstance(inputs, dict):
             raise ValueError("Variables must be a dictionary.")
-        default_attrs_list = list(DefaultAttrs(robj).default_attrs.keys())
-        for key, value in inputs.items():
-            if not isinstance(key, str):
-                raise ValueError("Variable names in code must be strings.")
-            if not str(key).isidentifier():
-                raise ValueError("Variable names in code must be valid variable names.")
+        if not all(isinstance(key, str) and key.isidentifier() for key in inputs.keys()):
+            raise ValueError("Variable names in code must be valid variable names.")
+        for vr_name_in_code, value in inputs.items():
             # Hard-coded variables
-            if not isinstance(value, dict) or (isinstance(value, dict) and "VR" not in value.keys() and "slice" not in value.keys()):
-                try:
-                    tmp = json.dumps(value)
-                except:
-                    raise ValueError("Hard-coded variables must be JSON serializable.")
-                continue
-            # Dynamic variables
-            if ["VR", "slice"] != list(value.keys()):
-                raise ValueError("Variables must have keys 'VR' and 'slice'.")
-            if isinstance(value["VR"], dict):
-                _validate_dataobject_level_attr(value["VR"], action, default_attrs_list)
-            else:
-                if not ResearchObjectHandler.object_exists(value["VR"].id, action):
-                    raise ValueError("Variable ID's must reference existing Variables.")
+            Validator.validate_input_vr(value.vr, action, robj, None)
+            Validator.validate_lookup_vr(value.lookup_vr, action, robj, None)
+            Validator.validate_source_pr(value.pr, action, robj, None)
+            if not isinstance(value.show, bool):
+                raise ValueError("Show must be a boolean.")
+            value.add_attrs(robj, vr_name_in_code)
+            
+                
+    @staticmethod
+    def validate_input_vr(vr: Union[None, dict], action: Action, robj: "ResearchObject", default: Any = None) -> None:
+        """Validate that the input variable is correct."""
+        from ResearchOS.DataObjects.data_object import DataObject
+        from ResearchOS.variable import Variable
+        dataobject_subclasses = DataObject.__subclasses__()
+        if vr == default:
+            return
+        
+        # DataObject attributes.
+        if isinstance(vr, dict):
+            cls = [cls for cls in vr.keys()][0]
+            if cls not in dataobject_subclasses:
+                raise ValueError("""Are you trying to use a DataObject attribute as a Variable? The syntax is vr_name_in_code = {cls: "attr_name"}.""")
+            attr_name = [value for value in vr.values()][0]
+            if not isinstance(attr_name, str) or not attr_name.isidentifier():
+                raise ValueError("Attribute name must be a valid variable name.")
+            return
+            
+        if not isinstance(vr, Variable):
+            raise ValueError("Input Variables must be Variable objects.")
+        
+    @staticmethod
+    def validate_lookup_vr(lookup_vr: Union[None, "Variable"], action: Action, robj: "ResearchObject", default: Any = None) -> None:
+        """Validate that the lookup variables are correct.
+        Dict keys are var names in code, values are dicts with keys as Variable objects and values as lists of strings of var names in code."""
+        from ResearchOS.variable import Variable
+        if lookup_vr == default:
+            return
+        if not isinstance(lookup_vr, Variable):
+            raise ValueError("Lookup variable must be a Variable.")
+        
+    @staticmethod
+    def validate_source_pr(source_pr: Union["Process", list], action: Action, robj: "ResearchObject", default: Any) -> None:
+        """Validate that the source process for the input variables is correct."""
+        from ResearchOS.research_object_handler import ResearchObjectHandler
+        from ResearchOS.PipelineObjects.process import Process
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
+        if source_pr == default:
+            return
+        
+        if not isinstance(source_pr, list):
+            source_pr = [source_pr]
+        if not all([isinstance(pr, (Process, Logsheet)) for pr in source_pr]):
+            raise ValueError("Source process must be one or more Process or Logsheet objects.")
+        # pGraph = ResearchObjectDigraph(action = action)
+        # # Temporarily add the new connections to the graph.
+        # # Make them all lists.
+        # all_edges = []
+        # tmp_vrs_source_pr = {}
+        # for vr_name_in_code, pr in vrs_source_pr.items():
+        #     tmp_vrs_source_pr[vr_name_in_code] = pr
+        #     if not isinstance(pr, list):
+        #         tmp_vrs_source_pr[vr_name_in_code] = [pr]
+        #     curr_var_list = tmp_vrs_source_pr[vr_name_in_code]
+        #     for pr_elem in curr_var_list:
+        #         for vr_name, vr in self.input_vrs.items():
+        #             if vr_name not in tmp_vrs_source_pr.keys():
+        #                 continue
+        #             all_edges.append((pr_elem.id, self.id, vr["VR"].id))
+        # # all_edges = [(pr.id, self.id, vr.id) for vr in self.input_vrs.values() for pr in vrs_source_pr.values()]
+        # for edge in all_edges:
+        #     pGraph.add_edge(edge[0], edge[1], edge_id = edge[2])
+        # for vr_name_in_code, pr in tmp_vrs_source_pr.items():
+        #     if not isinstance(vr_name_in_code, str):
+        #         raise ValueError("Variable names in code must be strings.")
+        #     if not str(vr_name_in_code).isidentifier():
+        #         raise ValueError("Variable names in code must be valid variable names.")
+        #     if not all([isinstance(pr_elem, (Process, Logsheet)) for pr_elem in pr]):
+        #         raise ValueError("Source process must be a Process or Logsheet object.")
+        #     if not all([ResearchObjectHandler.object_exists(pr_elem.id, action) for pr_elem in pr]):
+        #         raise ValueError("Source process must reference existing Process.")
+        #     # if not (vr_name_in_code in self.input_vrs.keys() or vr_name_in_code in self.lookup_vrs.keys()):
+        #     #     raise ValueError("Source process VR's must reference the input variables to this function. Ensure that the 'self.set_vrs_source_pr()' line is after the 'self.set_input_vrs()' line.")
+        # # Check that the PipelineObject Graph does not contain a cycle.
+        # if not nx.is_directed_acyclic_graph(pGraph):
+        #     cycles = nx.simple_cycles(pGraph)
+        #     for cycle in cycles:
+        #         print('Cycle:', cycle)
+        #         for node, next_node in zip(cycle, cycle[1:]):
+        #             print('Edge:', node, '-', next_node)
+        #     raise ValueError("Source process VR's must not create a cycle in the PipelineObject Graph.")
             
 
     @staticmethod
-    def validate_output_vrs(robj: "ResearchObject", outputs: dict, action: Action, default: Any) -> None:
+    def validate_outputs(robj: "ResearchObject", outputs: dict, action: Action, default: Any) -> None:
         """Validate that the output variables are correct."""
         from ResearchOS.research_object_handler import ResearchObjectHandler
         from ResearchOS.variable import Variable
@@ -89,65 +164,16 @@ class Validator():
         Validator.validate_method(robj, robj.method, action, None)
         if not isinstance(outputs, dict):
             raise ValueError("Variables must be a dictionary.")
+        if not all(isinstance(key, str) and key.isidentifier() for key in outputs.keys()):
+            raise ValueError("Variable names in code must be valid variable names.")
         for key, value in outputs.items():
-            if not isinstance(key, str):
-                raise ValueError("Variable names in code must be strings.")
-            if not str(key).isidentifier():
-                raise ValueError("Variable names in code must be valid variable names.")
-            if not isinstance(value, Variable):
-                raise ValueError("Variable ID's must be Variable objects.")
-            if not ResearchObjectHandler.object_exists(value.id, action):
-                raise ValueError("Variable ID's must reference existing Variables.")
+            if not isinstance(value.vr, Variable):
+                raise ValueError("Output Variables must be Variable objects.")
+            if not isinstance(value.show, bool):
+                raise ValueError("Show must be a boolean.")
+            value.add_attrs(robj, key)
         if not robj.is_matlab and output_vr_names_in_code is not None and not all([vr_name in output_vr_names_in_code for vr_name in outputs.keys()]):
-            raise ValueError("Output variables must be returned by the method.")
-        
-    @staticmethod
-    def validate_vrs_source_pr(self, vrs_source_pr: dict, action: Action, default: Any) -> None:
-        """Validate that the source process for the input variables is correct."""
-        from ResearchOS.research_object_handler import ResearchObjectHandler
-        from ResearchOS.PipelineObjects.process import Process
-        from ResearchOS.PipelineObjects.logsheet import Logsheet
-        if vrs_source_pr == default:
-            return
-        if not isinstance(vrs_source_pr, dict):
-            raise ValueError("Source process must be a dictionary.")
-        pGraph = ResearchObjectDigraph(action = action)
-        # Temporarily add the new connections to the graph.
-        # Make them all lists.
-        all_edges = []
-        tmp_vrs_source_pr = {}
-        for vr_name_in_code, pr in vrs_source_pr.items():
-            tmp_vrs_source_pr[vr_name_in_code] = pr
-            if not isinstance(pr, list):
-                tmp_vrs_source_pr[vr_name_in_code] = [pr]
-            curr_var_list = tmp_vrs_source_pr[vr_name_in_code]
-            for pr_elem in curr_var_list:
-                for vr_name, vr in self.input_vrs.items():
-                    if vr_name not in tmp_vrs_source_pr.keys():
-                        continue
-                    all_edges.append((pr_elem.id, self.id, vr["VR"].id))
-        # all_edges = [(pr.id, self.id, vr.id) for vr in self.input_vrs.values() for pr in vrs_source_pr.values()]
-        for edge in all_edges:
-            pGraph.add_edge(edge[0], edge[1], edge_id = edge[2])
-        for vr_name_in_code, pr in tmp_vrs_source_pr.items():
-            if not isinstance(vr_name_in_code, str):
-                raise ValueError("Variable names in code must be strings.")
-            if not str(vr_name_in_code).isidentifier():
-                raise ValueError("Variable names in code must be valid variable names.")
-            if not all([isinstance(pr_elem, (Process, Logsheet)) for pr_elem in pr]):
-                raise ValueError("Source process must be a Process or Logsheet object.")
-            if not all([ResearchObjectHandler.object_exists(pr_elem.id, action) for pr_elem in pr]):
-                raise ValueError("Source process must reference existing Process.")
-            # if not (vr_name_in_code in self.input_vrs.keys() or vr_name_in_code in self.lookup_vrs.keys()):
-            #     raise ValueError("Source process VR's must reference the input variables to this function. Ensure that the 'self.set_vrs_source_pr()' line is after the 'self.set_input_vrs()' line.")
-        # Check that the PipelineObject Graph does not contain a cycle.
-        if not nx.is_directed_acyclic_graph(pGraph):
-            cycles = nx.simple_cycles(pGraph)
-            for cycle in cycles:
-                print('Cycle:', cycle)
-                for node, next_node in zip(cycle, cycle[1:]):
-                    print('Edge:', node, '-', next_node)
-            raise ValueError("Source process VR's must not create a cycle in the PipelineObject Graph.")
+            raise ValueError("Output variables must be returned by the method.")            
     
     @staticmethod
     def validate_batch(self, batch: list, action: Action, default: Any) -> None:
@@ -174,13 +200,13 @@ class Validator():
         #     max_idx = idx
 
     @staticmethod
-    def validate_subset_id(self, subset_id: str, action: Action, default: Any) -> None:
+    def validate_subset(self, subset: "Subset", action: Action, default: Any) -> None:
         """Validate that the subset ID is correct."""
-        from ResearchOS.research_object_handler import ResearchObjectHandler
-        if subset_id == default:
+        from ResearchOS.PipelineObjects.subset import Subset
+        if subset == default:
             return
-        if not ResearchObjectHandler.object_exists(subset_id, action):
-            raise ValueError("Subset ID must reference an existing Subset.")
+        if not isinstance(subset, Subset):
+            raise ValueError(""""subset" attribute must be of type Subset.""")
         
     @staticmethod
     def validate_level(self, level: type, action: Action, default: Any) -> None:
@@ -240,33 +266,7 @@ class Validator():
         if not isinstance(mfunc_name, str):
             raise ValueError("Function name must be a string!")
         if not str(mfunc_name).isidentifier():
-            raise ValueError("Function name must be a valid variable name!") 
-        
-    @staticmethod
-    def validate_lookup_vrs(self, lookup_vrs: dict, action: Action, default: Any) -> None:
-        """Validate that the lookup variables are correct.
-        Dict keys are var names in code, values are dicts with keys as Variable objects and values as lists of strings of var names in code."""
-        from ResearchOS.variable import Variable
-        if lookup_vrs == default:
-            return
-        if not isinstance(lookup_vrs, dict):
-            raise ValueError("Lookup variables must be a dictionary.")
-        for key, value in lookup_vrs.items():
-            if not isinstance(key, str):
-                raise ValueError("Variable names in code must be strings.")
-            if not str(key).isidentifier():
-                raise ValueError("Variable names in code must be valid variable names.")
-            if not isinstance(value, dict):
-                raise ValueError("Lookup variable values must be a dictionary.")
-            for k, v in value.items():
-                if not isinstance(k, Variable):
-                    raise ValueError("Lookup variable keys must be Variable objects.")
-                if not all([isinstance(vr_name, str) for vr_name in v]):
-                    raise ValueError("Lookup variable values must be lists of strings.")
-                if not all([str(vr_name).isidentifier() for vr_name in v]):
-                    raise ValueError("Lookup variable values must be lists of valid variable names.")
-                # if not all([vr_name in get_input_variable_names(self.method) for vr_name in v]):
-                #     raise ValueError("Lookup variable values must be lists of valid variable names in the method.")
+            raise ValueError("Function name must be a valid variable name!")             
         
 def _validate_dataobject_level_attr(level_attr: dict, action: Action, default_attr_names: list) -> None:
     """Validate the data object level attribute. Correct format is a dictionary with the level as the key and the attribute name as the value."""

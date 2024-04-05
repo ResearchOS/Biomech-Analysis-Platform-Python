@@ -1,7 +1,6 @@
 from typing import Any
 
 from ResearchOS.research_object import ResearchObject
-from ResearchOS.research_object import ResearchObject
 
 all_default_attrs = {}
 all_default_attrs["hard_coded_value"] = None
