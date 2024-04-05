@@ -1,10 +1,8 @@
 import weakref
 from typing import Any
-import json, re
+import json
 from typing import TYPE_CHECKING
 import sqlite3
-from hashlib import sha256
-import pickle
 from datetime import datetime, timezone
 
 import numpy as np
@@ -166,68 +164,7 @@ class ResearchObjectHandler:
             save_method = getattr(research_object, "save_" + key)
             save_method(complex_attrs[key], action = action)
 
-            research_object.__dict__[key] = complex_attrs[key]
-
-    @staticmethod
-    def _set_vr_values(research_object: "ResearchObject", vr_values: dict, action: Action, pr_id: str) -> None:
-        """Set the values of the VR attributes."""
-        if not vr_values:
-            return
-        # 1. Get hash of each value.
-        vr_hashes_dict = {}
-        for vr, value in vr_values.items():
-            # Check if the value is a scalar.            
-            try:
-                if value is not None and not isinstance(value, str):
-                    assert len(value > 0) == 1 # This will capture numpy arrays of length 1 as scalar values, which is OK, but exclude longer numpy arrays.
-                    tmp = json.dumps(value) # Ensure it is a standard object by running json.dumps() on it.
-                scalar_value = value
-                data_blob = None
-                data_blob_hash = None
-            except:
-                scalar_value = None
-                data_blob = pickle.dumps(value, protocol = 4)
-                data_blob_hash = sha256(data_blob).hexdigest()
-            vr_hashes_dict[vr] = {"hash": data_blob_hash, "blob": data_blob, "scalar_value": scalar_value}
-
-        # 2. Check which VR's hashes are already in the data database so as not to duplicate a value/hash (primary key)
-        pool_data = SQLiteConnectionPool(name = "data")
-        conn_data = pool_data.get_connection()
-        cursor_data = conn_data.cursor()
-        vr_hashes = tuple(set([vr["hash"] for vr in vr_hashes_dict.values()])) # Get unique values.
-        sqlquery = "SELECT data_blob_hash FROM data_values_blob WHERE data_blob_hash IN ({})".format(", ".join("?" * len(vr_hashes)))
-        result = cursor_data.execute(sqlquery, vr_hashes).fetchall()
-        pool_data.return_connection(conn_data)
-        vr_hashes_prev_exist = []        
-        for vr in vr_hashes_dict:
-            for row in result:
-                hash = row[0]
-                if hash is not None and hash == vr_hashes_dict[vr]["hash"]:
-                    vr_hashes_prev_exist.append(vr)
-                    break    
-
-        # 2. Insert the values into the proper tables.
-        # schema_id = research_object.get_current_schema_id(research_object._get_dataset_id())
-        for vr in vr_hashes_dict:
-            blob_params = (vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["blob"])
-            blob_pk = blob_params
-            vr_dobj_params = (action.id_num, research_object.id, vr.id)
-            vr_dobj_pk = vr_dobj_params
-            if isinstance(vr_hashes_dict[vr]["scalar_value"], str):
-                vr_value_params = (action.id_num, vr.id, research_object.id, vr_hashes_dict[vr]["hash"], pr_id, vr_hashes_dict[vr]["scalar_value"], None)
-            else:
-                vr_value_params = (action.id_num, vr.id, research_object.id, vr_hashes_dict[vr]["hash"], pr_id, None, vr_hashes_dict[vr]["scalar_value"])
-            vr_value_pk = vr_value_params
-            # Don't insert the data_blob if it already exists.
-            if not vr in vr_hashes_prev_exist and vr_hashes_dict[vr]["hash"] is not None:
-                if not action.is_redundant_params(research_object.id, "data_value_in_blob_insert", blob_pk, group_name = "robj_vr_attr_insert"):
-                    action.add_sql_query(research_object.id, "data_value_in_blob_insert", blob_params, group_name = "robj_vr_attr_insert")
-            # No danger of duplicating primary keys, so no real need to check if they previously existed. But why not?
-            if not action.is_redundant_params(research_object.id, "vr_to_dobj_insert", vr_dobj_pk, group_name = "robj_vr_attr_insert"):
-                action.add_sql_query(research_object.id, "vr_to_dobj_insert", vr_dobj_params, group_name = "robj_vr_attr_insert")
-            if not action.is_redundant_params(research_object.id, "vr_value_for_dobj_insert", vr_value_pk, group_name = "robj_vr_attr_insert"):
-                action.add_sql_query(research_object.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert")
-
+            research_object.__dict__[key] = complex_attrs[key]    
 
     @staticmethod
     def clean_value_from_load_mat(numpy_array: Any) -> Any:

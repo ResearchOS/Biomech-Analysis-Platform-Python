@@ -302,6 +302,7 @@ class Logsheet(PipelineObject):
         
         Raises:
             ValueError: more header rows than logsheet rows or incorrect schema format?"""
+        logsheet_start_time = time.time()
         global all_default_attrs
         action = Action(name = "read logsheet")
         ds = Dataset(id = self._get_dataset_id(), action = action)
@@ -358,25 +359,27 @@ class Logsheet(PipelineObject):
                 if cls is cls_item:
                     dobj_column_names.append(column_name)
 
-        start_get_dobj_names = time.time()
         # Get all of the names of the data objects, after they're cleaned for SQLite.
-        cols_idx = [headers_in_logsheet.index(header) for header in dobj_column_names] # Get the indices of the data objects columns.
+        dobj_cols_idx = [headers_in_logsheet.index(header) for header in dobj_column_names] # Get the indices of the data objects columns.
         dobj_names = [] # The matrix of data object names (values in the logsheet).
         for row in logsheet:
             dobj_names.append([])
-            for idx in cols_idx:
+            for idx in dobj_cols_idx:
                 raw_value = row[idx]
                 type_class = header_types[idx]
                 value = self._clean_value(type_class, raw_value)
                 dobj_names[-1].append(value)
+        # Check that all of the data object names are valid variable names.
         for row_num, row in enumerate(dobj_names):
             if not all([str(cell).isidentifier() for cell in row]):
                 raise ValueError(f"Logsheet row #{row_num+self.num_header_rows+1}: All data object names must be non-empty and valid variable names!")        
                         
+        # Get all Data Object names that are not in the lowest level.
         for idx, cls in enumerate(order):
             lists = list(set([tuple(row[0:idx+1]) for row in dobj_names]))
             [dobj_names.append(list(l)) for l in lists if len(list(l)) < len(order) and list(l) not in dobj_names]
 
+        print('Initializing Data Objects...')
         all_dobjs_ordered = [] # The list of DataObject instances.
         id_creator = IDCreator(action.conn)
         for row in dobj_names:
@@ -384,56 +387,89 @@ class Logsheet(PipelineObject):
             all_dobjs_ordered.append(cls(id = id_creator.create_ro_id(cls), action = action, name = row[-1])) # Add the Data Object to the beginning of each row.                                      
         
         # Assign the values to the DataObject instances.
+        all_attrs = {}
+        for column in self.headers:
+            col_idx = headers_in_logsheet.index(column[0])
+            level = column[2]
+            level_dobjs = [dobj for dobj in all_dobjs_ordered if dobj.__class__ == level]
+            type_class = column[1]
+            # Get the index of the column that corresponds to the level of the DataObjects.
+            for count, level_type_obj in enumerate(order):
+                if level_type_obj == level:
+                    break
+            level_column_idx = dobj_cols_idx[count]
+            for dobj in level_dobjs:
+                # Get all of the values
+                values = [self._clean_value(type_class, row[col_idx]) for row in logsheet if dobj.name == row[level_column_idx]]
+                non_none_values = list(set([value for value in values if value is not None]))
+                num_values_non_none = len(non_none_values)
+                if num_values_non_none == 0:
+                    value = None
+                elif num_values_non_none > 1:
+                    raise ValueError(f"Logsheet Column: {column[0]} Data Object: {dobj.name} has multiple values!")
+                else:
+                    value = non_none_values[0]
+
+                # Store it to the all_attrs dict.
+                if dobj not in all_attrs:
+                    all_attrs[dobj] = {}
+                all_attrs[dobj][column[3]] = value
+                print("Column:", column[0], " Data Object:", dobj.name, " Value:", value)
+            
+        for dobj, attrs in all_attrs.items():
+            dobj._setattrs({}, attrs, action = action, pr_id = self.id) 
+
         # Validates that the logsheet is of valid format.
         # i.e. Doesn't have conflicting values for one level (empty/None is OK)
-        attrs_cache_dict = {}
-        default_none_vals = {str: None, int: np.array(float('nan')), float: np.array(float('nan'))}
-        for row_num, row in enumerate(logsheet):
-            row_attrs = [{} for _ in range(len(order))] # The list of dicts of attributes for each DataObject instance.
+        # attrs_cache_dict = {}
+        # default_none_vals = {str: None, int: np.array(float('nan')), float: np.array(float('nan'))}
+        # for row_num, row in enumerate(logsheet):
+        #     row_attrs = [{} for _ in range(len(order))] # The list of dicts of attributes for each DataObject instance.
 
-            # Get the list of data object names for this row.
-            row_dobj_names = dobj_names[row_num]
-            row_dobjs = []
-            for idx in range(len(row_dobj_names)):
-                curr_list = row_dobj_names[0:idx+1]
-                curr_list_idx = dobj_names.index(curr_list)
-                row_dobjs.append(all_dobjs_ordered[curr_list_idx])
+        #     # Get the list of data object names for this row.
+        #     row_dobj_names = dobj_names[row_num]
+        #     row_dobjs = []
+        #     for idx in range(len(row_dobj_names)):
+        #         curr_list = row_dobj_names[0:idx+1]
+        #         curr_list_idx = dobj_names.index(curr_list)
+        #         row_dobjs.append(all_dobjs_ordered[curr_list_idx])
 
-            # Assign all of the data to the appropriate DataObject instances.
-            # Includes the "data object columns" so that the DataObjects have an attribute with the name of the header name.
-            for header in all_headers:
-                name = header[0]
-                col_idx = headers_in_logsheet.index(name)                
-                type_class = header[1]
-                level = header[2]
-                level_idx = order.index(level)
-                vr_id = header[3]                
-                value = self._clean_value(type_class, row[headers_in_logsheet.index(name)])                                    
-                # Set up the cache dict for this data object.
-                if not row_dobjs[level_idx].id in attrs_cache_dict:
-                    attrs_cache_dict[row_dobjs[level_idx].id] = {}
-                # Set up the cache dict for this data object for this attribute.
-                if name not in attrs_cache_dict[row_dobjs[level_idx].id]:
-                    attrs_cache_dict[row_dobjs[level_idx].id][name] = default_none_vals[type_class]
-                print("Row: ", row_num+self.num_header_rows+1, "Column: ", name, "Value: ", value)
-                prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
-                if prev_value == value or (isinstance(value, np.ndarray) and isinstance(prev_value, np.ndarray) and np.isnan(value) and np.isnan(prev_value)) or value is None:
-                    continue # Skip if there's nothing new here.
-                # Now the value is guaranteed to be different from the previous value.
-                if prev_value is not default_none_vals[type_class] and (value != default_none_vals[type_class] and not (isinstance(value, np.ndarray) and np.isnan(value))):
-                    raise ValueError(f"Logsheet Row #{row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
-                # if type_class in (int, float) and (type(prev_value) == np.ndarray and not np.isnan(prev_value)):
-                # if prev_value is not default_none_vals[type_class] or (type_class in (int, float) and (type(prev_value) == np.ndarray and not np.isnan(prev_value))):                    
-                #     if prev_value == value or value == default_none_vals[type_class] or np.isnan(value):
-                #         continue
-                #     raise ValueError(f"Logsheet Row #{row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
-                attrs_cache_dict[row_dobjs[level_idx].id][name] = value
-                row_attrs[level_idx][vr_id] = attrs_cache_dict[row_dobjs[level_idx].id][name]
-            for idx, attrs in enumerate(row_attrs):
-                row_dobjs[idx]._setattrs({}, attrs, action = action, pr_id = self.id)                           
+        #     # Assign all of the data to the appropriate DataObject instances.
+        #     # Includes the "data object columns" so that the DataObjects have an attribute with the name of the header name.
+        #     for header in all_headers:
+        #         name = header[0]
+        #         col_idx = headers_in_logsheet.index(name)                
+        #         type_class = header[1]
+        #         level = header[2]
+        #         level_idx = order.index(level)
+        #         vr_id = header[3]                
+        #         value = self._clean_value(type_class, row[headers_in_logsheet.index(name)])                                    
+        #         # Set up the cache dict for this data object.
+        #         if not row_dobjs[level_idx].id in attrs_cache_dict:
+        #             attrs_cache_dict[row_dobjs[level_idx].id] = {}
+        #         # Set up the cache dict for this data object for this attribute.
+        #         if name not in attrs_cache_dict[row_dobjs[level_idx].id]:
+        #             attrs_cache_dict[row_dobjs[level_idx].id][name] = default_none_vals[type_class]
+        #         print("Row: ", row_num+self.num_header_rows+1, "Column: ", name, "Value: ", value)
+        #         prev_value = attrs_cache_dict[row_dobjs[level_idx].id][name]
+        #         if prev_value == value or (isinstance(value, np.ndarray) and isinstance(prev_value, np.ndarray) and np.isnan(value) and np.isnan(prev_value)) or value is None:
+        #             continue # Skip if there's nothing new here.
+        #         # Now the value is guaranteed to be different from the previous value.
+        #         if prev_value is not default_none_vals[type_class] and (value != default_none_vals[type_class] and not (isinstance(value, np.ndarray) and np.isnan(value))):
+        #             raise ValueError(f"Logsheet Row #{row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
+        #         # if type_class in (int, float) and (type(prev_value) == np.ndarray and not np.isnan(prev_value)):
+        #         # if prev_value is not default_none_vals[type_class] or (type_class in (int, float) and (type(prev_value) == np.ndarray and not np.isnan(prev_value))):                    
+        #         #     if prev_value == value or value == default_none_vals[type_class] or np.isnan(value):
+        #         #         continue
+        #         #     raise ValueError(f"Logsheet Row #{row_num+self.num_header_rows+1} Column: {name} has conflicting values!")
+        #         attrs_cache_dict[row_dobjs[level_idx].id][name] = value
+        #         row_attrs[level_idx][vr_id] = attrs_cache_dict[row_dobjs[level_idx].id][name]
+        #     for idx, attrs in enumerate(row_attrs):
+        #         row_dobjs[idx]._setattrs({}, attrs, action = action, pr_id = self.id)                           
 
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.
+        print('Creating Data Objects graph...')
         addresses = []
         dobj_names = [[ds.name] + row for row in dobj_names]
         for row in dobj_names:
@@ -445,12 +481,16 @@ class Logsheet(PipelineObject):
         ds._setattrs(all_default_attrs.default_attrs, {"addresses": addresses}, action = action, pr_id = self.id)
 
         # Set all the paths to the DataObjects.
+        print("Saving Data Objects...")
         for idx, row in enumerate(dobj_names):
             action.add_sql_query(all_dobjs_ordered[idx].id, "path_insert", (action.id_num, all_dobjs_ordered[idx].id, json.dumps(row[1:])))
 
         action.exec = True
         action.commit = True
         action.execute() # Commit the action.
+
+        elapsed_time = time.time() - logsheet_start_time
+        print(f"Logsheet import complete. {len(all_dobjs_ordered)} DataObjects created from {len(logsheet)} Logsheet rows in {round(elapsed_time, 2)} seconds.")
 
     def _clean_value(self, type_class: type, raw_value: Any) -> Any:
         """Convert to proper type and clean the value of the logsheet cell."""
@@ -465,7 +505,8 @@ class Logsheet(PipelineObject):
             value = None
         if type_class is int:
             if value is None:
-                value = np.array(float('nan'))
+                pass
+                # value = np.array(float('nan'))
             else:
                 value = float(value)
         return value

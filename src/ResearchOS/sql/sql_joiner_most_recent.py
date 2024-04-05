@@ -21,7 +21,7 @@ def sql_joiner_most_recent(sqlquery: str) -> str:
                     WHERE {where_criteria_w_tables}
                     ORDER BY actions.datetime DESC
                 ) AS ranked
-                WHERE row_num = 1;"""
+                WHERE row_num = 1"""
     return join_query
 
 def sql_joiner(sqlquery: str) -> str:

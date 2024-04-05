@@ -152,11 +152,13 @@ class Subset(PipelineObject):
 
         for node_names_lineage in paths:
 
+            # Convert the names to ID's.
             anc_nodes = [dataset_node]
             for lineage_len in range(1,len(node_names_lineage)):
                 lin_idx = paths.index(node_names_lineage[:lineage_len+1])
                 anc_nodes.append(dobj_ids[lin_idx])
 
+            # Only checking the last idx (lowest level) in each lineage, because each level will eventually be the last idx (lowest level).
             if not self._meets_conditions(anc_nodes[-1], self.conditions, G, vr_values, action, anc_nodes[0:-1]):
                 continue            
             nodes_for_subgraph.extend([node for node in node_names_lineage if node not in nodes_for_subgraph])
