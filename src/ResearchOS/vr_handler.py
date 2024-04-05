@@ -33,8 +33,6 @@ class VRHandler():
     @staticmethod
     def standardize_inputs(all_inputs: Union[Input, dict]) -> dict:
         """Standardize the inputs to be of type Input."""
-        from ResearchOS.DataObjects.data_object import DataObject
-        dataobject_subclasses = DataObject.__subclasses__()
         inputs = {}
         for vr_name_in_code, input in all_inputs.items():
             if input is None:

@@ -5,6 +5,7 @@ import typer
 from ResearchOS.config import Config
 from ResearchOS.cli.quickstart import create_folders
 from ResearchOS.db_initializer import DBInitializer
+from ResearchOS.action import Action
 
 app = typer.Typer()
 
@@ -36,7 +37,7 @@ def init_project(folder: str = typer.Option(None, help="Folder name"),
     else:
         print("Databases not modified.")
     if repo:
-        import_code(repo)
+        pass
     print(f"Project initialized in {folder}")
 
 @app.command()
@@ -49,10 +50,6 @@ def init_package(subfolder: str = typer.Argument(help="Subfolder to create the p
             raise ValueError(f"Folder {subfolder} is not a valid folder path.")
     create_folders(subfolder)
     print(f"Package initialized in {subfolder}")
-
-@app.command()
-def import_code(url: str):
-    typer.echo(f"Downloading {url}")
 
 @app.command()
 def config(github_token: str = typer.Option(None, help="GitHub token"),
@@ -69,6 +66,32 @@ def config(github_token: str = typer.Option(None, help="GitHub token"),
         config.data_db_file = data_db_file
     if data_objects_path:
         config.data_objects_path = data_objects_path
+
+@app.command()
+def dobjs(is_active: int = typer.Option(1, help="1 for active, 0 for inactive, default 1")):
+    """List all available data objects."""
+    action = Action(name = "list_dobjs")
+    cursor = action.conn.cursor()
+    sqlquery = "SELECT path_id, dataobject_id, path FROM paths WHERE is_active = ?"
+    params = (is_active,)
+    result = cursor.execute(sqlquery, params).fetchall()    
+    max_num_levels = -1
+    str_lens = []
+    for row in result:
+        str_lens_in_row = []
+        for col in row:
+            curr_len = len(str(col))
+            str_lens_in_row.append(curr_len)
+            max_num_levels = max(max_num_levels, curr_len)
+        str_lens.append(str_lens_in_row)
+
+    lens = [-1 for i in range(max_num_levels)]
+    for i in range(max_num_levels):
+        lens[i] = max([row[i] for row in str_lens if len(row)>=i+1])
+    
+    for row in result:
+        row = row.append([""]*(max_num_levels-len(row)))
+        print("{:<12} {:<15} {:<5}".format(f"Path ID: {row[0]}", f"DataObject ID: {row[1]}", f"Path: {row[2]}"))
 
 if __name__ == "__main__":
     app()
