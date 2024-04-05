@@ -38,6 +38,6 @@ def sql_order_result(action: Action, sqlquery: str, unique_cols: list = None, si
         columns_w_result_table = ", ".join([f"result.{col}" for col in columns])
         sqlquery_inner2 = "SELECT " + columns_w_table + ", ROW_NUMBER() OVER (PARTITION BY " + unique_cols_w_table + " ORDER BY current_user_actions.datetime DESC) AS row_num FROM (" + sqlquery_inner + ") AS current_user_actions JOIN " + table + " ON current_user_actions.action_id_num = " + table + ".action_id_num WHERE " + where_criteria
 
-        sqlquery_final = "SELECT " + columns_w_result_table + " FROM (" + sqlquery_inner2 + ") AS result WHERE result.row_num = 1;"
+        sqlquery_final = "SELECT " + columns_w_result_table + " FROM (" + sqlquery_inner2 + ") AS result WHERE result.row_num = 1"
 
     return sqlquery_final

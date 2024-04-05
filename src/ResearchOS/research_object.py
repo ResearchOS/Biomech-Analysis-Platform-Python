@@ -154,9 +154,12 @@ class ResearchObject():
         orig_kwargs: The original kwargs passed to the object.
         kwargs: The kwargs to be used to set the attributes. A combination of the default attributes and the original kwargs.
         pr_id: Indicates that I am setting VR attributes."""
+        from ResearchOS.DataObjects.data_object import DataObject
         del_keys = []
         if self._initialized:
             for key in kwargs:
+                if key not in default_attrs:
+                    continue
                 try:
                     if key in self.__dict__ and self.__dict__[key] == kwargs[key]:
                         del_keys.append(key) # No change.
@@ -173,7 +176,7 @@ class ResearchObject():
         # 2. Set VR attributes.
         if pr_id is not None:
             vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
-            ResearchObjectHandler._set_vr_values(self, vr_attrs, action, pr_id)
+            DataObject._set_vr_values(self, vr_attrs, action, pr_id)
         return True
 
     def _get_dataset_id(self) -> str:
