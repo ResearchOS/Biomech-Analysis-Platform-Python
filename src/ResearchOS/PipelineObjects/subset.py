@@ -28,7 +28,7 @@ plural_logic = ("in", "not in", "contains", "not contains")
 class Subset(PipelineObject):
     """Provides rules to select a subset of data from a dataset."""
     
-    prefix = "SS"
+    prefix: str = "SS"
 
     def __init__(self, conditions: dict = all_default_attrs["conditions"], **kwargs):
         if self._initialized:

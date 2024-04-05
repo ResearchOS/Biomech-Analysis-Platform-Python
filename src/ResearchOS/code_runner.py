@@ -64,55 +64,92 @@ class CodeRunner():
     def set_vrs_source_pr(robj: "ResearchObject", action: Action, default_attrs: dict) -> None:
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet
+        from ResearchOS.variable import Variable
+
+        needs_pr = []
+        for input in robj.inputs.values():
+            if input.pr is not None:
+                continue
+            if not isinstance(input.vr, Variable):
+                continue
+            if input.vr.hard_coded_value is not None:
+                continue
+            if hasattr(input.parent_ro, "import_file_vr_name") and input.parent_ro.import_file_vr_name == input.vr_name_in_code:
+                continue
+            needs_pr.append(input)
+
+        if len(needs_pr)==0:
+            return
+        
+        sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({})".format(",".join(["?" for _ in needs_pr]))
+        sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
+        params = tuple([input.vr.id for input in needs_pr])
+        vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        # TODO: Changing the "input" variable here does not change the Research Object. Need to ensure the change reaches the database.
+        for input in needs_pr:
+            vr_id = input.vr.id
+            vr_id_idx = [idx for idx, row in enumerate(vr_pr_ids_result) if row[0] == vr_id]
+            assert(len(vr_id_idx) == 1)
+            vr_id_idx = vr_id_idx[0]
+            if vr_pr_ids_result[vr_id_idx][1].startswith(Process.prefix):
+                pr = Process(id = vr_pr_ids_result[vr_id_idx][1], action = action)
+            else:
+                pr = Logsheet(id = vr_pr_ids_result[vr_id_idx][1], action = action)
+            input.pr = pr
+            robj.inputs[input.vr_name_in_code] = input
+
+        robj._setattrs(default_attrs, {"inputs": robj.inputs}, action, None) 
+
+
         # add_vr_names_source_prs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and not isinstance(value["VR"], dict))]
-        add_vr_names_source_prs_from_input_vrs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and (isinstance(value, dict) and "VR" in value.keys() and "slice" in value.keys() and not isinstance(value["VR"], dict)))]
-        add_vr_names_source_prs_from_lookup_vrs = [key for key, value in robj.lookup_vrs.items() if (key not in robj.vrs_source_pr.keys())]
-        add_vrs_source_prs = []
-        add_vrs_source_prs_from_input_vars = []
-        add_vrs_source_prs_from_lookup_vars = []
-        if len(add_vr_names_source_prs_from_input_vrs) > 0:
-            add_vrs_source_prs_from_input_vars = [vr["VR"].id for name_in_code, vr in robj.input_vrs.items() if name_in_code in add_vr_names_source_prs_from_input_vrs]
-        if len(add_vr_names_source_prs_from_lookup_vrs) > 0:
-            add_vrs_source_prs_from_lookup_vars = [list(vr.keys())[0].id for vr in robj.lookup_vrs.values() if vr not in robj.vrs_source_pr.values()]
-        add_vrs_source_prs = add_vrs_source_prs_from_input_vars + add_vrs_source_prs_from_lookup_vars        
-        if len(add_vrs_source_prs) > 0:
-            sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({})".format(",".join(["?" for _ in add_vrs_source_prs]))
-            sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
-            params = tuple([vr_id for vr_id in add_vrs_source_prs])
-            vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-            vrs_source_prs_tmp = {}
-            for vr_name_in_code, vr in robj.input_vrs.items():
-                if not isinstance(vr, dict) or (isinstance(vr, dict) and "VR" not in vr.keys() and "slice" not in vr.keys() and not isinstance(vr["VR"], dict)):
-                    continue
-                for vr_pr_id in vr_pr_ids_result:
-                    if vr["VR"].id == vr_pr_id[0]:
-                        # Same order as input variables.
-                        if vr_pr_id[1].startswith(Process.prefix):
-                            vrs_source_prs_tmp[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
-                        else:
-                            vrs_source_prs_tmp[vr_name_in_code] = Logsheet(id = vr_pr_id[1], action = action)
-            for lookup_vr_name_in_code, lookup_vr_dict in robj.lookup_vrs.items():
-                lookup_vr = list(lookup_vr_dict.keys())[0]
-                for vr_pr_id in vr_pr_ids_result:
-                    if lookup_vr.id == vr_pr_id[0]:
-                        # Same order as input variables.
-                        if vr_pr_id[1].startswith(Process.prefix):
-                            vrs_source_prs_tmp[lookup_vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
-                        else:
-                            vrs_source_prs_tmp[lookup_vr_name_in_code] = Logsheet(id = vr_pr_id[1], action = action)
+        # add_vr_names_source_prs_from_input_vrs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and (isinstance(value, dict) and "VR" in value.keys() and "slice" in value.keys() and not isinstance(value["VR"], dict)))]
+        # add_vr_names_source_prs_from_lookup_vrs = [key for key, value in robj.lookup_vrs.items() if (key not in robj.vrs_source_pr.keys())]
+        # add_vrs_source_prs = []
+        # add_vrs_source_prs_from_input_vars = []
+        # add_vrs_source_prs_from_lookup_vars = []
+        # if len(add_vr_names_source_prs_from_input_vrs) > 0:
+        #     add_vrs_source_prs_from_input_vars = [vr["VR"].id for name_in_code, vr in robj.input_vrs.items() if name_in_code in add_vr_names_source_prs_from_input_vrs]
+        # if len(add_vr_names_source_prs_from_lookup_vrs) > 0:
+        #     add_vrs_source_prs_from_lookup_vars = [list(vr.keys())[0].id for vr in robj.lookup_vrs.values() if vr not in robj.vrs_source_pr.values()]
+        # add_vrs_source_prs = add_vrs_source_prs_from_input_vars + add_vrs_source_prs_from_lookup_vars        
+        # if len(add_vrs_source_prs) > 0:
+        #     sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({})".format(",".join(["?" for _ in add_vrs_source_prs]))
+        #     sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
+        #     params = tuple([vr_id for vr_id in add_vrs_source_prs])
+        #     vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        #     vrs_source_prs_tmp = {}
+        #     for vr_name_in_code, vr in robj.input_vrs.items():
+        #         if not isinstance(vr, dict) or (isinstance(vr, dict) and "VR" not in vr.keys() and "slice" not in vr.keys() and not isinstance(vr["VR"], dict)):
+        #             continue
+        #         for vr_pr_id in vr_pr_ids_result:
+        #             if vr["VR"].id == vr_pr_id[0]:
+        #                 # Same order as input variables.
+        #                 if vr_pr_id[1].startswith(Process.prefix):
+        #                     vrs_source_prs_tmp[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+        #                 else:
+        #                     vrs_source_prs_tmp[vr_name_in_code] = Logsheet(id = vr_pr_id[1], action = action)
+        #     for lookup_vr_name_in_code, lookup_vr_dict in robj.lookup_vrs.items():
+        #         lookup_vr = list(lookup_vr_dict.keys())[0]
+        #         for vr_pr_id in vr_pr_ids_result:
+        #             if lookup_vr.id == vr_pr_id[0]:
+        #                 # Same order as input variables.
+        #                 if vr_pr_id[1].startswith(Process.prefix):
+        #                     vrs_source_prs_tmp[lookup_vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
+        #                 else:
+        #                     vrs_source_prs_tmp[lookup_vr_name_in_code] = Logsheet(id = vr_pr_id[1], action = action)
 
-            vrs_source_prs = {**robj.vrs_source_pr, **vrs_source_prs_tmp}
+        #     vrs_source_prs = {**robj.vrs_source_pr, **vrs_source_prs_tmp}
 
-            robj._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action, None) 
+        #     robj._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action, None) 
 
     @staticmethod
     def get_lowest_level(robj: "ResearchObject", schema_ordered: list) -> Optional[str]:
         """Get the lowest level for this batch."""
         lowest_level_idx = -1
         lowest_level = schema_ordered[-1]
-        for pr in robj.vrs_source_pr.values():
+        for input in robj.inputs.values():
             try:
-                level = pr.level                
+                level = input.pr.level                
             except: # For Logsheet, defer to current PR level.
                 level = robj.level
             level_idx = schema_ordered.index(level)
@@ -257,6 +294,14 @@ class CodeRunner():
         validator = Validator(robj, action)
         validator.validate(robj.__dict__, default_attrs)
 
+        for input in robj.inputs.values():
+            if input.vr is None:
+                raise ValueError(f"Input VR {input} is None.")
+            
+        for output in robj.outputs.values():
+            if output.vr is None:
+                raise ValueError(f"Output VR {output} is None.")
+
         self.action = action
         self.pl_obj = robj 
         self.force_redo = force_redo
@@ -279,7 +324,7 @@ class CodeRunner():
                 
         # 4. Run the method.
         # Get the subset of the data.
-        subset = Subset(id = robj.subset_id, action = action)
+        subset = robj.subset
         subset_graph = subset.get_subset(action, paths, dobj_ids)
 
         self.subset_graph = subset_graph
