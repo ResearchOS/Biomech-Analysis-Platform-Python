@@ -1,21 +1,23 @@
 """The base class for all data objects. Data objects are the ones not in the digraph, and represent some form of data storage.""" 
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Union
 import pickle
 import os
 from hashlib import sha256
 import json
 
 import numpy as np
+import networkx as nx
 
 if TYPE_CHECKING:    
     from ResearchOS.PipelineObjects.process import Process
-    from ResearchOS.variable import Variable
+    from ResearchOS.variable import Variable    
 
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
+from ResearchOS.Bridges.input import Input
 
 all_default_attrs = {}
 
@@ -42,7 +44,7 @@ class DataObject(ResearchObject):
         action.execute()
         del self.__dict__[name]
 
-    def _load_vr_value(self, vr: "Variable", action: Action, process: "Process" = None, vr_name_in_code: str = None, node_lineage: list = []) -> Any:
+    def get(self, vr: Union["Variable", "Input"], action: Action, process: "Process" = None, vr_name_in_code: str = None, node_lineage: list = []) -> Any:
         """Load the value of a VR from the database for this data object.
 
         Args:
@@ -53,31 +55,32 @@ class DataObject(ResearchObject):
         Returns:
             Any: The value of the VR for this data object.
         """
-        from ResearchOS.variable import Variable
+        if action is None:
+            action = Action(name = "get_vr_value")
+        if isinstance(vr, Input):
+            process = vr.pr
         func_result = {}
         func_result["input_vrs_names_dict"] = None        
         # 1. Check that the data object & VR are currently associated. If not, throw an error.
         cursor = action.conn.cursor()
         self_idx = node_lineage.index(self)
         for node in node_lineage[self_idx:]:
-            if isinstance(vr, Variable):
-                sqlquery_raw = "SELECT action_id_num, is_active FROM vr_dataobjects WHERE path_id = ? AND vr_id = ?"
-                sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)
-                params = (node.id, vr.id)            
-                result = cursor.execute(sqlquery, params).fetchall()
-                if len(result) > 0:
-                    break
-            # else:
-                # TODO: Handle dict of {type: attr_name}
-                # If the value is a str, then it's a builtin attribute.
-                # Otherwise, if the value is a Variable, then it's a Variable and need to load its value. using self.load_vr_value()
-                # pass
+            sqlquery_raw = "SELECT action_id_num, is_active, vr_id, path_id FROM vr_dataobjects"
+            sub_sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)
+            sqlquery = "SELECT subquery.action_id_num, subquery.is_active FROM ({}) AS subquery JOIN paths ON subquery.path_id = paths.path_id WHERE paths.dataobject_id = ? AND subquery.vr_id = ?".format(sub_sqlquery)
+
+
+            # sqlquery_raw = "SELECT path_id, vr_id FROM vr_dataobjects WHERE is_active = 1"
+            # sub_sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)
+            # sqlquery = "SELECT paths.dataobject_id, subquery.vr_id FROM ({}) AS subquery JOIN paths ON subquery.path_id = paths.path_id".format(sub_sqlquery)
+            
+            
+            params = (node.id, vr.id)            
+            result = cursor.execute(sqlquery, params).fetchall()
+            if len(result) > 0:
+                break
         if len(result) == 0:
-            func_result["do_run"] = False
-            func_result["exit_code"] = 1
-            func_result["message"] = f"Failed to run {self.name} ({self.id}). {vr_name_in_code} ({vr.id}) not actively connected to {node.id}."
-            func_result["vr_values_in"] = None
-            return func_result # If that variable does not exist for this dataobject, skip processing this dataobject.
+            raise ValueError(f"The VR {vr.name} ({vr.id}) is not currently associated with the data object {node.name} ({node.id}).")
         is_active = result[0][1]
         if is_active == 0:
             raise ValueError(f"The VR {vr.name} is not currently associated with the data object {node.id}.")
@@ -175,7 +178,6 @@ class DataObject(ResearchObject):
                     break    
 
         # 2. Insert the values into the proper tables.
-        # schema_id = research_object.get_current_schema_id(research_object._get_dataset_id())
         for vr in vr_hashes_dict:
             blob_params = (vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["blob"])
             blob_pk = blob_params
@@ -196,23 +198,34 @@ class DataObject(ResearchObject):
             if not action.is_redundant_params(research_object.id, "vr_value_for_dobj_insert", vr_value_pk, group_name = "robj_vr_attr_insert"):
                 action.add_sql_query(research_object.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert")
 
-    # def load_dataobject_vrs(self, action: Action) -> None:
-    #     """Load all current data values for this data object from the database."""
-    #     # 1. Get all of the latest address_id & vr_id combinations (that have not been overwritten) for the current schema for the current database.
-    #     # Get the schema_id.
-    #     # TODO: Put the schema_id into the data_values table.
-    #     # 1. Get all of the VRs for the current object.
-    #     from ResearchOS.variable import Variable
+    def get_node_lineage(self, node: "DataObject", dobj_ids: list = None, paths: list = None) -> list:
+        """Get the lineage of the DataObject node.
+        """
 
-    #     sqlquery_raw = "SELECT vr_id FROM vr_dataobjects WHERE dataobject_id = ? AND is_active = 1"
-    #     sqlquery = sql_order_result(action, sqlquery_raw, ["dataobject_id", "vr_id"], single = True, user = True, computer = False)
-    #     params = (self.id,)        
-    #     cursor = action.conn.cursor()
-    #     vr_ids = cursor.execute(sqlquery, params).fetchall()        
-    #     vr_ids = [x[0] for x in vr_ids]
-    #     for vr_id in vr_ids:
-    #         vr = Variable(id = vr_id)
-    #         self.__dict__[vr.name] = vr
+        if type(node).__name__ == "Dataset":
+            return [node]
+        node_id = node.id
+        if dobj_ids is None or paths is None:
+            sqlquery = "SELECT dataobject_id, path_id FROM paths"
+            cursor = node.action.conn.cursor()
+            result = cursor.execute(sqlquery).fetchall()
+            dobj_ids = [x[0] for x in result if node.name in x[1]]
+            paths = [json.loads(x[1]) for x in result if node.name in x[1]]
+        node_id_idx = dobj_ids.index(node_id)
+        path = paths[node_id_idx]
+        path = path[0:path.index(node.name)+1]
+
+        node_lineage = []
+        for idx in range(len(path)):
+            row_idx = paths.index(path[0:idx+1])
+            node_lineage.append(dobj_ids[row_idx])
+        subclasses = DataObject.__subclasses__()
+        node_lineage_objs = []
+        for node_id in node_lineage:
+            cls = [cls for cls in subclasses if cls.prefix == node_id[0:2]][0]
+            anc_node = cls(id = node_id)
+            node_lineage_objs.append(anc_node)
+        return node_lineage_objs[::-1] # Because expecting smallest first.
 
 def load_data_object_classes() -> None:
     """Import all data object classes from the config.data_objects_path.

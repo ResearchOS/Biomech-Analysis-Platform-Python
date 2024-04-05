@@ -26,6 +26,9 @@ def sql_order_result(action: Action, sqlquery: str, unique_cols: list = None, si
     # Extract the components of the SQL query
     columns, table, where_criteria = extract_sql_components(sqlquery)
     columns_w_table = ", ".join([f"{table}.{col}" for col in columns])
+
+    if where_criteria != "":
+        where_criteria = " WHERE " + where_criteria 
     
     if unique_cols is None:
         unique_cols = where_criteria
@@ -33,10 +36,10 @@ def sql_order_result(action: Action, sqlquery: str, unique_cols: list = None, si
         unique_cols_w_table = ", ".join([f"{table}.{col}" for col in unique_cols])      
 
     if not single:
-        sqlquery_final = "SELECT " + columns_w_table + " FROM (" + sqlquery_inner + ") AS current_user_actions JOIN " + table + " ON current_user_actions.action_id_num = " + table + ".action_id_num WHERE " + where_criteria + " ORDER BY current_user_actions.datetime DESC"
+        sqlquery_final = "SELECT " + columns_w_table + " FROM (" + sqlquery_inner + ") AS current_user_actions JOIN " + table + " ON current_user_actions.action_id_num = " + table + ".action_id_num" + where_criteria + " ORDER BY current_user_actions.datetime DESC"
     else:
         columns_w_result_table = ", ".join([f"result.{col}" for col in columns])
-        sqlquery_inner2 = "SELECT " + columns_w_table + ", ROW_NUMBER() OVER (PARTITION BY " + unique_cols_w_table + " ORDER BY current_user_actions.datetime DESC) AS row_num FROM (" + sqlquery_inner + ") AS current_user_actions JOIN " + table + " ON current_user_actions.action_id_num = " + table + ".action_id_num WHERE " + where_criteria
+        sqlquery_inner2 = "SELECT " + columns_w_table + ", ROW_NUMBER() OVER (PARTITION BY " + unique_cols_w_table + " ORDER BY current_user_actions.datetime DESC) AS row_num FROM (" + sqlquery_inner + ") AS current_user_actions JOIN " + table + " ON current_user_actions.action_id_num = " + table + ".action_id_num" + where_criteria
 
         sqlquery_final = "SELECT " + columns_w_result_table + " FROM (" + sqlquery_inner2 + ") AS result WHERE result.row_num = 1"
 

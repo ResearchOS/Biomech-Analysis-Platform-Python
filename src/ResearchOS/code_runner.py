@@ -19,9 +19,9 @@ from ResearchOS.DataObjects.dataset import Dataset
 
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.validator import Validator
-from ResearchOS.PipelineObjects.subset import Subset
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.var_converter import convert_var
+from ResearchOS.Bridges.vr_value import VRValue
 
 class CodeRunner():
 
@@ -98,49 +98,39 @@ class CodeRunner():
             input.pr = pr
             robj.inputs[input.vr_name_in_code] = input
 
+        # Lookup PR
+        # needs_pr = []
+        # for input in robj.inputs.values():
+        #     if input.lookup_pr is not None:
+        #         continue
+        #     if not isinstance(input.lookup_vr, Variable):
+        #         continue
+        #     needs_pr.append(input)
+
+        # if len(needs_pr)==0:
+        #     return
+        
+        # sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({})".format(",".join(["?" for _ in needs_pr]))
+        # sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
+        # params = tuple([input.lookup_vr.id for input in needs_pr])
+        # vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        # # TODO: Changing the "input" variable here does not change the Research Object. Need to ensure the change reaches the database.
+        # for input in needs_pr:
+        #     vr_id = input.lookup_vr.id
+        #     vr_id_idx = [idx for idx, row in enumerate(vr_pr_ids_result) if row[0] == vr_id]
+        #     assert(len(vr_id_idx) == 1)
+        #     vr_id_idx = vr_id_idx[0]
+        #     if vr_pr_ids_result[vr_id_idx][1].startswith(Process.prefix):
+        #         pr = Process(id = vr_pr_ids_result[vr_id_idx][1], action = action)
+        #     else:
+        #         pr = Logsheet(id = vr_pr_ids_result[vr_id_idx][1], action = action)
+        #     input.lookup_pr = pr
+        #     robj.inputs[input.vr_name_in_code] = input
+
         robj._setattrs(default_attrs, {"inputs": robj.inputs}, action, None) 
 
 
-        # add_vr_names_source_prs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and not isinstance(value["VR"], dict))]
-        # add_vr_names_source_prs_from_input_vrs = [key for key, value in robj.input_vrs.items() if (key not in robj.vrs_source_pr.keys() and (isinstance(value, dict) and "VR" in value.keys() and "slice" in value.keys() and not isinstance(value["VR"], dict)))]
-        # add_vr_names_source_prs_from_lookup_vrs = [key for key, value in robj.lookup_vrs.items() if (key not in robj.vrs_source_pr.keys())]
-        # add_vrs_source_prs = []
-        # add_vrs_source_prs_from_input_vars = []
-        # add_vrs_source_prs_from_lookup_vars = []
-        # if len(add_vr_names_source_prs_from_input_vrs) > 0:
-        #     add_vrs_source_prs_from_input_vars = [vr["VR"].id for name_in_code, vr in robj.input_vrs.items() if name_in_code in add_vr_names_source_prs_from_input_vrs]
-        # if len(add_vr_names_source_prs_from_lookup_vrs) > 0:
-        #     add_vrs_source_prs_from_lookup_vars = [list(vr.keys())[0].id for vr in robj.lookup_vrs.values() if vr not in robj.vrs_source_pr.values()]
-        # add_vrs_source_prs = add_vrs_source_prs_from_input_vars + add_vrs_source_prs_from_lookup_vars        
-        # if len(add_vrs_source_prs) > 0:
-        #     sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({})".format(",".join(["?" for _ in add_vrs_source_prs]))
-        #     sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
-        #     params = tuple([vr_id for vr_id in add_vrs_source_prs])
-        #     vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        #     vrs_source_prs_tmp = {}
-        #     for vr_name_in_code, vr in robj.input_vrs.items():
-        #         if not isinstance(vr, dict) or (isinstance(vr, dict) and "VR" not in vr.keys() and "slice" not in vr.keys() and not isinstance(vr["VR"], dict)):
-        #             continue
-        #         for vr_pr_id in vr_pr_ids_result:
-        #             if vr["VR"].id == vr_pr_id[0]:
-        #                 # Same order as input variables.
-        #                 if vr_pr_id[1].startswith(Process.prefix):
-        #                     vrs_source_prs_tmp[vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
-        #                 else:
-        #                     vrs_source_prs_tmp[vr_name_in_code] = Logsheet(id = vr_pr_id[1], action = action)
-        #     for lookup_vr_name_in_code, lookup_vr_dict in robj.lookup_vrs.items():
-        #         lookup_vr = list(lookup_vr_dict.keys())[0]
-        #         for vr_pr_id in vr_pr_ids_result:
-        #             if lookup_vr.id == vr_pr_id[0]:
-        #                 # Same order as input variables.
-        #                 if vr_pr_id[1].startswith(Process.prefix):
-        #                     vrs_source_prs_tmp[lookup_vr_name_in_code] = Process(id = vr_pr_id[1], action = action)
-        #                 else:
-        #                     vrs_source_prs_tmp[lookup_vr_name_in_code] = Logsheet(id = vr_pr_id[1], action = action)
-
-        #     vrs_source_prs = {**robj.vrs_source_pr, **vrs_source_prs_tmp}
-
-        #     robj._setattrs(default_attrs, {"vrs_source_pr": vrs_source_prs}, action, None) 
+        
 
     @staticmethod
     def get_lowest_level(robj: "ResearchObject", schema_ordered: list) -> Optional[str]:
@@ -318,6 +308,9 @@ class CodeRunner():
         result = cursor.execute(sqlquery).fetchall()        
         paths = [[ds.name] + json.loads(row[1]) for row in result]
         dobj_ids = [row[0] for row in result]
+        # Append Dataset into the paths.
+        paths.append([ds.name])
+        dobj_ids.append(ds.id)
 
         self.paths = paths
         self.dobj_ids = dobj_ids
@@ -505,42 +498,19 @@ class CodeRunner():
             result["vr_values_in"] = input_vrs
             result["exit_code"] = 0
             result["message"] = f"Running {self.node.name} ({self.node.id})."
-        return result # Do NOT run the process.
-        
-    def get_node_lineage(self, node: DataObject, G: nx.MultiDiGraph) -> list:
-        """Get the lineage of the DataObject node.
-        """
-
-        if node.name == self.dataset.name:
-            return [node]
-        node_id = node.id
-        node_id_idx = self.dobj_ids.index(node_id)
-        path = self.paths[node_id_idx]
-        path = path[0:path.index(node.name)+1]
-
-        node_lineage = [self.dataset.name]
-        for idx in range(1,len(path)):
-            row_idx = self.paths.index(path[0:idx+1])
-            node_lineage.append(self.dobj_ids[row_idx])
-        subclasses = DataObject.__subclasses__()
-        node_lineage_objs = []
-        for node_id in node_lineage:
-            cls = [cls for cls in subclasses if cls.prefix == node_id[0:2]][0]
-            anc_node = cls(id = node_id, action = self.action)
-            node_lineage_objs.append(anc_node)
-        return node_lineage_objs[::-1] # Because expecting smallest first.
+        return result # Do NOT run the process.            
 
     def get_input_vrs(self, G: nx.MultiDiGraph) -> dict:
         """Load the input variables.
         """
         pr = self.pl_obj
         node = self.node
-        # Get the values for the input variables for this DataObject node. 
-        # Get the lineage so I can get the file path for import functions and create the lineage.        
+        for input in self.pl_obj.inputs.values():
+            node.get(vr = input, action=self.action)
+            input.vr._value = VRValue(input = input, code_runner = self, G = G)
         node_lineage = self.get_node_lineage(node, G)     
         vr_values_in = {}     
         input_vrs_names_dict = {}
-        lookup_vrs = self.pl_obj.lookup_vrs
         for var_name_in_code, vr_dict in pr.input_vrs.items():
             # Specified as hard-coded without a ResearchOS Variable having been created at all.
             if not isinstance(vr_dict, dict) or ("VR" not in vr_dict.keys() and "slice" not in vr_dict.keys()):
