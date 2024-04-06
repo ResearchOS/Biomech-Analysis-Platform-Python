@@ -10,7 +10,7 @@ import networkx as nx
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
 
-from ResearchOS.DataObjects.data_object import DataObject
+
 
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
@@ -359,25 +359,7 @@ class CodeRunner():
         if len(batches_dict_to_run) == 0:
             print("<<< WARNING: NO NODES TO RUN. >>>")
             time.sleep(2)
-        return batches_dict_to_run, all_batches_graph, G, pool
-    
-    def get_node_info(self, node_id: str) -> dict:
-        """Provide the node lineage information for conditional debugging in the scientific code."""
-        path_idx = self.dobj_ids.index(node_id)
-        path = self.paths[path_idx]
-        classes = DataObject.__subclasses__()
-        cls = [cls for cls in classes if cls.prefix == node_id[0:2]][0]
-        node_lineage = self.get_node_lineage(cls(id = node_id), self.subset_graph)
-        info = {}        
-        info["lineage"] = {}
-        
-        assert len(node_lineage) == len(self.schema_order)
-        for node in node_lineage:
-            prefix = cls.prefix
-            info["lineage"][prefix] = {}
-            info["lineage"][prefix]["name"] = node.name
-            info["lineage"][prefix]["id"] = node.id
-        return info
+        return batches_dict_to_run, all_batches_graph, G, pool        
     
     def run_batch(self, batch_id: str, batch_dict: dict = {}, G: nx.MultiDiGraph = nx.MultiDiGraph(), batch_graph: nx.MultiDiGraph = nx.MultiDiGraph) -> None:
         """Get all of the input values for the batch of nodes and run the process on the whole batch.
@@ -446,23 +428,17 @@ class CodeRunner():
         pl_obj = self.pl_obj
         node = pl_obj.level(id = node_id, action = self.action)
         self.node = node
-        
-        # result.do_run = bool
-        # result.vr_values = Any
-        # result.message = str
-        # result.exit_code = int
         result = self.check_if_run_node(node_id, G) # Verify whether this node should be run or skipped.
         
-        if result["exit_code"] != 0:
-            print(result["message"])
+        if not result:
             return
         
-        node_info = self.get_node_info(node_id)
+        node_info = node.get_node_info()
         run_msg = f"Running {node.name} ({node.id})."
         print(run_msg)
         is_batch = pl_obj.batch is not None
         assert is_batch == False
-        self.compute_and_assign_outputs(result["vr_values_in"], pl_obj, node_info, is_batch)
+        self.compute_and_assign_outputs(self.pl_obj.inputs, pl_obj, node_info, is_batch)
 
         self.action.commit = True
         self.action.exec = True
@@ -478,119 +454,24 @@ class CodeRunner():
         self.node_id = node_id                      
         result = {}
 
-        result = self.get_input_vrs(G)
-        input_vrs, input_vrs_names_dict = result["vr_values_in"], result["input_vrs_names_dict"]
-        if input_vrs is None:
-            result["do_run"] = False
-            result["vr_values_in"] = input_vrs
-            result["exit_code"] = 2
-            result["message"] = f"Skipping {self.node.name} ({self.node.id}). Missing some variable?"     
-            return result
+        self.get_input_vrs()
+        for input in self.pl_obj.inputs.values():
+            if input.vr._value.exit_code != 0:
+                raise ValueError(f"Input VR {input} has exit code {input.vr._value.exit_code}.")
         earliest_output_vr_time = self.get_earliest_output_vr_time()
-        latest_input_vr_time = self.get_latest_input_vr_time(input_vrs, input_vrs_names_dict)
+        latest_input_vr_time = self.get_latest_input_vr_time(self.pl_obj.inputs)
         if latest_input_vr_time < earliest_output_vr_time and not self.force_redo:
-            result["do_run"] = False
-            result["vr_values_in"] = input_vrs
-            result["exit_code"] = 1
-            result["message"] = f"Skipping {self.node.name} ({self.node.id}). The output VR's are newer than the input VR's."            
+            return False
         else:
-            result["do_run"] = True
-            result["vr_values_in"] = input_vrs
-            result["exit_code"] = 0
-            result["message"] = f"Running {self.node.name} ({self.node.id})."
-        return result # Do NOT run the process.            
+            return True          
 
-    def get_input_vrs(self, G: nx.MultiDiGraph) -> dict:
+    def get_input_vrs(self) -> dict:
         """Load the input variables.
         """
-        pr = self.pl_obj
-        node = self.node
-        for input in self.pl_obj.inputs.values():
-            node.get(vr = input, action=self.action)
-            input.vr._value = VRValue(input = input, code_runner = self, G = G)
-        node_lineage = self.get_node_lineage(node, G)     
-        vr_values_in = {}     
-        input_vrs_names_dict = {}
-        for var_name_in_code, vr_dict in pr.input_vrs.items():
-            # Specified as hard-coded without a ResearchOS Variable having been created at all.
-            if not isinstance(vr_dict, dict) or ("VR" not in vr_dict.keys() and "slice" not in vr_dict.keys()):
-                vr_values_in[var_name_in_code] = convert_var(vr_dict, self.matlab_numeric_types)
-                input_vrs_names_dict[var_name_in_code] = convert_var(vr_dict, self.matlab_numeric_types)
-                continue
-
-            vr = vr_dict["VR"]
-            slice = vr_dict["slice"]
-            input_vrs_names_dict[var_name_in_code] = vr
-            node_lineage_use = node_lineage
-            curr_node = node_lineage_use[0] # Always the lowest level to start.
-
-            if hasattr(pr, "import_file_vr_name") and var_name_in_code == pr.import_file_vr_name:
-                continue # Skip the import file variable.
-
-            # Hard-coded input variable.
-            if type(vr) is not dict and vr.hard_coded_value is not None: 
-                vr_values_in[var_name_in_code] = convert_var(vr.hard_coded_value, self.matlab_numeric_types)
-                continue   
-
-            # Check if this variable should be pulled from another DataObject.
-            for lookup_var_name_in_code, lookup_vr_dict in lookup_vrs.items():
-                for lookup_vr, lookup_var_names_in_code in lookup_vr_dict.items():
-                    if var_name_in_code not in lookup_var_names_in_code:
-                        continue
-                    if lookup_var_name_in_code not in self.pl_obj.vrs_source_pr:
-                        raise ValueError(f"Lookup variable {lookup_var_name_in_code} not found in Pipeline Object's vrs_source_pr.")
-                    lookup_process = self.pl_obj.vrs_source_pr[lookup_var_name_in_code]                    
-                    result = curr_node._load_vr_value(lookup_vr, self.action, lookup_process, lookup_var_name_in_code, node_lineage_use)                    
-                    if result["exit_code"] != 0:   
-                        result["message"] = f"Missing lookup VR {lookup_var_name_in_code}"
-                        return result # The file does not exist. Skip this node.
-                    
-                    # Currently assumes that all DataObjects have unique names across the entire dataset.
-                    lookup_dataobject_name = [n for n in G.nodes if n == result["vr_values_in"]][0]
-                    path_idx = [i for i, p in enumerate(self.paths) if lookup_dataobject_name == p[-1]][0]                    
-                    lookup_dataobject = self.dobj_ids[path_idx]
-                    cls = [cls for cls in DataObject.__subclasses__() if cls.prefix == lookup_dataobject[0:2]][0]
-                    node_lineage_use = self.get_node_lineage(cls(id = lookup_dataobject), G)
-                    curr_node = node_lineage_use[0] # Replace the current node if needed.
-                    break                    
-
-            # Get the DataObject attribute if needed.
-            if isinstance(vr, dict):
-                dobj_level = [key for key in vr.keys()][0]
-                dobj_attr_name = [value for value in vr.values()][0]
-                data_object = [tmp_node for tmp_node in node_lineage_use if isinstance(tmp_node, dobj_level)][0]
-                vr_values_in[var_name_in_code] = getattr(data_object, dobj_attr_name)
-                continue                                 
-
-            # Not hard-coded input variable.            
-            result = curr_node._load_vr_value(vr, self.action, self.pl_obj, var_name_in_code, node_lineage_use)
-            if result["exit_code"] != 0:
-                return result # The file does not exist. Skip this node.
-            value = result["vr_values_in"]
-            if slice is not None:
-                value = value.__getitem__(slice)
-            vr_values_in[var_name_in_code] = value
-
-        # Handle if this node has an import file variable.
-        data_path = self.dataset.dataset_path
-        # Isolate the parts of the ordered schema that are present in the file schema.
-        file_node_lineage = [node for node in node_lineage if isinstance(node, tuple(self.dataset.file_schema))]
-        for node in file_node_lineage[1::-1]:
-            data_path = os.path.join(data_path, node.name)
-        if hasattr(pr, "import_file_vr_name") and pr.import_file_vr_name is not None:
-            file_path = data_path + pr.import_file_ext
-            if not os.path.exists(file_path):
-                result["exit_code"] = -1
-                result["message"] = f"{pr.import_file_ext} file does not exist for {node.name} ({node.id})."
-                result["vr_values_in"] = None
-                return result
-            vr_values_in[pr.import_file_vr_name] = file_path        
-
-        result["exit_code"] = 0
-        result["vr_values_in"] = vr_values_in
-        result["input_vrs_names_dict"] = input_vrs_names_dict
-        return result
-    
+        for vr_name_in_code, input in self.pl_obj.inputs.items():
+            value = self.node.get(input = input, action=self.action)
+            self.pl_obj.inputs[vr_name_in_code].vr._value = value
+        
     def check_output_vrs_active(self) -> bool:
         """Check if the output variables are active.
 
@@ -622,9 +503,9 @@ class CodeRunner():
         cursor = self.action.conn.cursor()
         pr = self.pl_obj
         output_vrs_earliest_time = datetime.min.replace(tzinfo=timezone.utc)
-        if not hasattr(pr, "output_vrs"):
-            return output_vrs_earliest_time
-        output_vr_ids = [vr.id for vr in pr.output_vrs.values()]
+        if not hasattr(pr, "outputs"):
+            return output_vrs_earliest_time # Logsheet
+        output_vr_ids = [output.vr.id for output in pr.outputs.values()]
         sqlquery_raw = "SELECT action_id_num FROM data_values WHERE path_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
         sqlquery = sql_order_result(self.action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False) # The data is ordered. The most recent action_id is the first one.
         params = tuple([self.node.id] + output_vr_ids)
@@ -640,7 +521,7 @@ class CodeRunner():
 
         return output_vrs_earliest_time
     
-    def get_latest_input_vr_time(self, vr_vals_in: dict, input_vrs_names_dict: dict) -> datetime:
+    def get_latest_input_vr_time(self, inputs: list) -> datetime:
         """Get the datetime when the last input VR was modified.
 
         Returns:
@@ -651,14 +532,14 @@ class CodeRunner():
         # Check if the values for all the input variables are up to date. If so, skip this node.
         # check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_vals_in.items()}            
         input_vrs_latest_time = datetime.min.replace(tzinfo=timezone.utc)
-        for vr_name in vr_vals_in:
-            if hasattr(self.pl_obj, "import_file_vr_name") and vr_name == self.pl_obj.import_file_vr_name:
+        for vr_name_in_code, input in inputs.items():
+            if hasattr(input.parent_ro, "import_file_vr_name") and vr_name_in_code == input.parent_ro.import_file_vr_name:
                 continue # Special case. Skip the import file variable.
 
-            vr = input_vrs_names_dict[vr_name]
+            vr = input.vr
 
             if isinstance(vr, dict) or not isinstance(vr, Variable):
-                continue
+                continue  # Skip DataObject attributes and hard-coded variables (that aren't Variable objects).
             
             # Hard coded. Return when the hard coded value was last set.
             if vr.hard_coded_value is not None:
@@ -678,7 +559,7 @@ class CodeRunner():
                 continue
             
             # Dynamic input variable. Return when the data blob hash was last set for this VR & data object.
-            sqlquery_raw = "SELECT action_id_num, data_blob_hash FROM data_values WHERE vr_id = ?"
+            sqlquery_raw = "SELECT action_id_num FROM data_values WHERE vr_id = ?"
             sqlquery = sql_order_result(self.action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
             params = (vr.id,)
             result = cursor.execute(sqlquery, params).fetchall()

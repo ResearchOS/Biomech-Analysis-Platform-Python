@@ -6,18 +6,19 @@ from hashlib import sha256
 import json
 
 import numpy as np
-import networkx as nx
 
 if TYPE_CHECKING:    
     from ResearchOS.PipelineObjects.process import Process
-    from ResearchOS.variable import Variable    
-
+    
+from ResearchOS.variable import Variable    
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.Bridges.input import Input
+from ResearchOS.var_converter import convert_var
+from ResearchOS.Bridges.vr_value import VRValue
 
 all_default_attrs = {}
 
@@ -44,7 +45,7 @@ class DataObject(ResearchObject):
         action.execute()
         del self.__dict__[name]
 
-    def get(self, vr: Union["Variable", "Input"], action: Action, process: "Process" = None, vr_name_in_code: str = None, node_lineage: list = []) -> Any:
+    def get(self, input: Union["Variable", "Input"], action: Action, process: "Process" = None, node_lineage: list = None) -> Any:
         """Load the value of a VR from the database for this data object.
 
         Args:
@@ -55,51 +56,94 @@ class DataObject(ResearchObject):
         Returns:
             Any: The value of the VR for this data object.
         """
+        from ResearchOS.code_runner import CodeRunner
+        from ResearchOS.DataObjects.dataset import Dataset
+        vr_value = VRValue()
+        if isinstance(input, Input):
+            vr = input.vr
+            process = input.pr
+        else:
+            vr = input        
         if action is None:
-            action = Action(name = "get_vr_value")
-        if isinstance(vr, Input):
-            process = vr.pr
-        func_result = {}
-        func_result["input_vrs_names_dict"] = None        
-        # 1. Check that the data object & VR are currently associated. If not, throw an error.
+            action = Action(name = "get_vr_value")             
         cursor = action.conn.cursor()
+        if node_lineage is None:
+            node_lineage = self.get_node_lineage()
+
+        # DataObject attribute.
+        if isinstance(vr, dict) and len(vr) == 1 and isinstance([key for key in vr.keys()][0], DataObject):
+            cls = [key for key in vr.keys()][0]
+            node = [node for node in node_lineage if isinstance(node, cls)][0]
+            attr = [value for value in vr.values()][0]
+            vr_value.value = getattr(node, attr)
+            vr_value.exit_code = 0
+            return vr_value
+        
+        # Specified directly as the hard-coded value, not using a Variable. Also is not a DataObject attribute.
+        if not isinstance(vr, Variable):
+            value = convert_var(vr, CodeRunner.matlab_numeric_types)
+            vr_value.value = value
+            vr_value.exit_code = 0
+            return vr_value
+        
+        # Specified as a Variable, and is hard-coded.
+        if vr.hard_coded_value is not None:
+            vr_value.value = convert_var(vr.hard_coded_value, CodeRunner.matlab_numeric_types)
+            vr_value.exit_code = 0
+            return vr_value
+        
+        # Import file VR.              
+        if hasattr(input.parent_ro, "import_file_vr_name") and input.vr_name_in_code == input.parent_ro.import_file_vr_name and input.parent_ro.import_file_vr_name is not None:            
+            dataset_id = self._get_dataset_id()
+            dataset = Dataset(id = dataset_id)
+            # Isolate the parts of the ordered schema that are present in the file schema.
+            file_node_lineage = [node for node in node_lineage if isinstance(node, tuple(dataset.file_schema))]
+            data_path = dataset.dataset_path
+            for node in file_node_lineage[1::-1]:
+                data_path = os.path.join(data_path, node.name)
+            file_path = data_path + input.parent_ro.import_file_ext
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"{input.parent_ro.import_file_ext} file does not exist for {node.name} ({node.id}).")
+            vr_value.value = file_path
+            vr_value.exit_code = 0
+            return vr_value
+        
+        # Lookup VR.
+        if input.lookup_vr is not None:
+            lookup_input = Input(vr=input.lookup_vr, parent_ro=input.parent_ro, pr=input.pr)
+            lookup_vr_value = self.get(lookup_input, action)            
+            process = lookup_vr_value
+            node_lineage = self.get_node_lineage(lookup_input.vr, None, action)
+
+        assert process is not None
+        
         self_idx = node_lineage.index(self)
+        base_node = node_lineage[self_idx]
         for node in node_lineage[self_idx:]:
-            sqlquery_raw = "SELECT action_id_num, is_active, vr_id, path_id FROM vr_dataobjects"
-            sub_sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)
-            sqlquery = "SELECT subquery.action_id_num, subquery.is_active FROM ({}) AS subquery JOIN paths ON subquery.path_id = paths.path_id WHERE paths.dataobject_id = ? AND subquery.vr_id = ?".format(sub_sqlquery)
-
-
-            # sqlquery_raw = "SELECT path_id, vr_id FROM vr_dataobjects WHERE is_active = 1"
-            # sub_sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)
-            # sqlquery = "SELECT paths.dataobject_id, subquery.vr_id FROM ({}) AS subquery JOIN paths ON subquery.path_id = paths.path_id".format(sub_sqlquery)
-            
-            
+            sqlquery_raw = "SELECT action_id_num, is_active FROM vr_dataobjects WHERE path_id = ? AND vr_id = ?"
+            sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)
+                        
             params = (node.id, vr.id)            
             result = cursor.execute(sqlquery, params).fetchall()
             if len(result) > 0:
                 break
         if len(result) == 0:
-            raise ValueError(f"The VR {vr.name} ({vr.id}) is not currently associated with the data object {node.name} ({node.id}).")
+            raise ValueError(f"The VR {vr.name} ({vr.id}) has never been associated with the data object {base_node.name} ({base_node.id}).")
         is_active = result[0][1]
         if is_active == 0:
-            raise ValueError(f"The VR {vr.name} is not currently associated with the data object {node.id}.")
+            raise ValueError(f"The VR {vr.name} is not currently associated with the data object {base_node.name} ({base_node.id}).")
         
         # 2. Load the data hash from the database.
-        if hasattr(process, "vrs_source_pr"):
-            pr = process.vrs_source_pr[vr_name_in_code]
-        else:
-            pr = process
-        if not isinstance(pr, list):
-            pr = [pr]
-        sqlquery_raw = "SELECT data_blob_hash, pr_id, numeric_value, str_value FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id IN ({})".format(", ".join(["?" for _ in pr]))
-        params = (node.id, vr.id) + tuple([pr_elem.id for pr_elem in pr])
+        if not isinstance(process, list):
+            process = [process]
+        sqlquery_raw = "SELECT data_blob_hash, pr_id, numeric_value, str_value FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id IN ({})".format(", ".join(["?" for _ in process]))
+        params = (node.id, vr.id) + tuple([pr_elem.id for pr_elem in process])
         sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)        
         result = cursor.execute(sqlquery, params).fetchall()
         if len(result) == 0:
-            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {node.id} from Process {process.id}.")
+            raise ValueError(f"The VR {vr.name} does not have a value for the data object {base_node.name} ({base_node.id}) from Process {process.id}.")
         if len(result) > 1:
-            raise ValueError(f"The VR {vr.name} has multiple values set for the data object {node.id} from Process {process.id}.")
+            raise ValueError(f"The VR {vr.name} has multiple values for the data object {base_node.name} ({base_node.id}) from Process {process.id}.")
         pr_ids = [x[1] for x in result]
         pr_idx = None
         for pr_id in pr_ids:
@@ -111,7 +155,7 @@ class DataObject(ResearchObject):
             if pr_idx is not None:
                 break
         if pr_idx is None:
-            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {node.id} from any process provided.")
+            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {base_node.name} ({base_node.id}) from any Process provided.")
         data_hash = result[pr_idx][0]
 
         # 3. Get the value from the data_values table. 
@@ -131,11 +175,9 @@ class DataObject(ResearchObject):
                 value = numeric_value
             else: # Omitting criteria here allows for str_value and numeric_value to both be None.
                 value = str_value
-        func_result["do_run"] = True
-        func_result["exit_code"] = 0
-        func_result["message"] = f"Success in {self.name} ({self.id}). Lookup VR found: {vr_name_in_code} ({vr.id})"
-        func_result["vr_values_in"] = value
-        return func_result
+        vr_value.value = value
+        vr_value.exit_code = 0
+        return vr_value
     
     @staticmethod
     def _set_vr_values(research_object: "ResearchObject", vr_values: dict, action: Action, pr_id: str) -> None:
@@ -150,8 +192,10 @@ class DataObject(ResearchObject):
             try:
                 if isinstance(value, (type(None), str, int, float, bool)):
                     tmp = json.dumps(value)
-                if isinstance(value, np.ndarray):
+                elif isinstance(value, np.ndarray):
                     assert len(value) == 1
+                else:
+                    assert False
                 scalar_value = value
                 data_blob = None
                 data_blob_hash = None
@@ -198,22 +242,23 @@ class DataObject(ResearchObject):
             if not action.is_redundant_params(research_object.id, "vr_value_for_dobj_insert", vr_value_pk, group_name = "robj_vr_attr_insert"):
                 action.add_sql_query(research_object.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert")
 
-    def get_node_lineage(self, node: "DataObject", dobj_ids: list = None, paths: list = None) -> list:
+    def get_node_lineage(self, dobj_ids: list = None, paths: list = None, action: Action = None) -> list:
         """Get the lineage of the DataObject node.
         """
-
-        if type(node).__name__ == "Dataset":
-            return [node]
-        node_id = node.id
+        if type(self).__name__ == "Dataset":
+            return [self]
+        node_id = self.id
+        if action is None:
+            action = Action(name = "get_node_lineage")
         if dobj_ids is None or paths is None:
-            sqlquery = "SELECT dataobject_id, path_id FROM paths"
-            cursor = node.action.conn.cursor()
+            sqlquery = "SELECT dataobject_id, path FROM paths"
+            cursor = action.conn.cursor()
             result = cursor.execute(sqlquery).fetchall()
-            dobj_ids = [x[0] for x in result if node.name in x[1]]
-            paths = [json.loads(x[1]) for x in result if node.name in x[1]]
+            paths = [json.loads(x[1]) for x in result]
+            dobj_ids = [x[0] for x in result]
         node_id_idx = dobj_ids.index(node_id)
         path = paths[node_id_idx]
-        path = path[0:path.index(node.name)+1]
+        path = path[0:path.index(self.name)+1]
 
         node_lineage = []
         for idx in range(len(path)):
@@ -226,6 +271,20 @@ class DataObject(ResearchObject):
             anc_node = cls(id = node_id)
             node_lineage_objs.append(anc_node)
         return node_lineage_objs[::-1] # Because expecting smallest first.
+    
+    def get_node_info(self) -> dict:
+        """Provide the node lineage information to the scientific code. Helpful for conditional debugging in the scientific code."""
+        classes = DataObject.__subclasses__()
+        cls = [cls for cls in classes if cls.prefix == self.id[0:2]][0]
+        node_lineage = self.get_node_lineage()
+        info = {}        
+        info["lineage"] = {}
+        for node in node_lineage:
+            prefix = cls.prefix
+            info["lineage"][prefix] = {}
+            info["lineage"][prefix]["name"] = node.name
+            info["lineage"][prefix]["id"] = node.id
+        return info
 
 def load_data_object_classes() -> None:
     """Import all data object classes from the config.data_objects_path.
