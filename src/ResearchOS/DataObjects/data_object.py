@@ -63,10 +63,14 @@ class DataObject(ResearchObject):
             vr = input.vr
             process = input.pr
         else:
-            vr = input        
+            vr = input
+        return_conn = False
         if action is None:
-            action = Action(name = "get_vr_value")             
-        cursor = action.conn.cursor()
+            return_conn = True
+            conn = SQLiteConnectionPool()
+        else:
+            conn = action.conn         
+        cursor = conn.cursor()
         if node_lineage is None:
             node_lineage = self.get_node_lineage()
 
@@ -77,6 +81,8 @@ class DataObject(ResearchObject):
             attr = [value for value in vr.values()][0]
             vr_value.value = getattr(node, attr)
             vr_value.exit_code = 0
+            if return_conn:
+                conn.return_connection(conn)
             return vr_value
         
         # Specified directly as the hard-coded value, not using a Variable. Also is not a DataObject attribute.
@@ -84,12 +90,16 @@ class DataObject(ResearchObject):
             value = convert_var(vr, CodeRunner.matlab_numeric_types)
             vr_value.value = value
             vr_value.exit_code = 0
+            if return_conn:
+                conn.return_connection(conn)
             return vr_value
         
         # Specified as a Variable, and is hard-coded.
         if vr.hard_coded_value is not None:
             vr_value.value = convert_var(vr.hard_coded_value, CodeRunner.matlab_numeric_types)
             vr_value.exit_code = 0
+            if return_conn:
+                conn.return_connection(conn)
             return vr_value
         
         # Import file VR.              
@@ -106,6 +116,8 @@ class DataObject(ResearchObject):
                 raise FileNotFoundError(f"{input.parent_ro.import_file_ext} file does not exist for {node.name} ({node.id}).")
             vr_value.value = file_path
             vr_value.exit_code = 0
+            if return_conn:
+                conn.return_connection(conn)
             return vr_value
         
         # Lookup VR.
@@ -177,6 +189,8 @@ class DataObject(ResearchObject):
                 value = str_value
         vr_value.value = value
         vr_value.exit_code = 0
+        if return_conn:
+            conn.return_connection(conn)
         return vr_value
     
     @staticmethod
@@ -248,11 +262,16 @@ class DataObject(ResearchObject):
         if type(self).__name__ == "Dataset":
             return [self]
         node_id = self.id
+        return_conn = False
         if action is None:
-            action = Action(name = "get_node_lineage")
+            return_conn = True
+            pool = SQLiteConnectionPool()
+            conn = pool.get_connection()
+        else:
+            conn = action.conn
         if dobj_ids is None or paths is None:
             sqlquery = "SELECT dataobject_id, path FROM paths"
-            cursor = action.conn.cursor()
+            cursor = conn.cursor()
             result = cursor.execute(sqlquery).fetchall()
             paths = [json.loads(x[1]) for x in result]
             dobj_ids = [x[0] for x in result]
@@ -270,6 +289,8 @@ class DataObject(ResearchObject):
             cls = [cls for cls in subclasses if cls.prefix == node_id[0:2]][0]
             anc_node = cls(id = node_id)
             node_lineage_objs.append(anc_node)
+        if return_conn:
+            pool.return_connection(conn)
         return node_lineage_objs[::-1] # Because expecting smallest first.
     
     def get_node_info(self) -> dict:
