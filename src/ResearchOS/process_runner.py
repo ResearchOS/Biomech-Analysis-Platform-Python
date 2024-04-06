@@ -39,7 +39,10 @@ class ProcessRunner(CodeRunner):
         if not is_batch:
             vr_vals_in = []
             for input in inputs.values():
-                vr_vals_in.append(input.vr._value.value)
+                value = input.vr._value.value
+                if value is None:
+                    value = np.nan
+                vr_vals_in.append(value)
             # vr_vals_in = list(vr_values_in.values())
             if self.num_inputs > len(vr_vals_in): # There's an extra input open.
                 vr_vals_in.append(info)

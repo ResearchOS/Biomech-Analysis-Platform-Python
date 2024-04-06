@@ -122,8 +122,8 @@ class Process(PipelineObject):
         if process_runner.matlab_loaded and self.is_matlab:
             ProcessRunner.matlab_eng.rmpath(self.mfolder)
             
-        for vr_name, vr in self.output_vrs.items():
-            print(f"Saved VR {vr_name} (VR: {vr.id}).")
+        for vr_name, output in self.outputs.items():
+            print(f"Saved VR {vr_name} (VR: {output.vr.id}).")
 
         if action.conn:
             pool.return_connection(action.conn)
