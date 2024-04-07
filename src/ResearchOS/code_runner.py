@@ -74,6 +74,8 @@ class CodeRunner():
                 continue
             if input.vr.hard_coded_value is not None:
                 continue
+            if input.vr._dataobject_attr is not None:
+                continue
             if hasattr(input.parent_ro, "import_file_vr_name") and input.parent_ro.import_file_vr_name == input.vr_name_in_code:
                 continue
             needs_pr.append(input)
@@ -365,7 +367,7 @@ class CodeRunner():
         """Get all of the input values for the batch of nodes and run the process on the whole batch.
         """
         if self.pl_obj.batch is None:
-            self.run_node(batch_id, G)
+            self.run_node(batch_id)
             return
         
         lowest_nodes = [node for node in batch_graph.nodes() if batch_graph.out_degree(node) == 0]
@@ -375,7 +377,7 @@ class CodeRunner():
             path_idx = [idx for idx, path in enumerate(self.paths) if path[-1] == node][0]
             dobj_id = self.dobj_ids[path_idx]
             self.node = self.lowest_level(id = dobj_id)
-            result = self.check_if_run_node(node, G)
+            result = self.check_if_run_node(node)
             if not result["do_run"]:
                 return
             for vr_name_in_code, vr_val in result["vr_values_in"].items():
@@ -420,7 +422,7 @@ class CodeRunner():
         self.action.exec = True
         self.action.execute(return_conn = False)         
 
-    def run_node(self, node_id: str, G: nx.MultiDiGraph) -> None:
+    def run_node(self, node_id: str) -> None:
         """Run the process on the given node ID.
         """
         start_run_time = time.time()
@@ -428,7 +430,7 @@ class CodeRunner():
         pl_obj = self.pl_obj
         node = pl_obj.level(id = node_id, action = self.action)
         self.node = node
-        result = self.check_if_run_node(node_id, G) # Verify whether this node should be run or skipped.
+        result = self.check_if_run_node(node_id) # Verify whether this node should be run or skipped.
         
         if not result:
             return
@@ -448,11 +450,10 @@ class CodeRunner():
         done_msg = f"Running {node.name} ({node.id}) took {round(done_run_time - start_run_time, 3)} seconds."
         print(done_msg)
         
-    def check_if_run_node(self, node_id: str, G: nx.MultiDiGraph) -> bool:
+    def check_if_run_node(self, node_id: str) -> bool:
         """Check whether to run the Process on the given node ID. If False, skip. If True, run.
         """
-        self.node_id = node_id                      
-        result = {}
+        self.node_id = node_id
 
         self.get_input_vrs()
         for input in self.pl_obj.inputs.values():

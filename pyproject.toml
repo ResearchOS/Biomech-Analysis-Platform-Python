@@ -9,6 +9,7 @@ exclude = [
   "/docs",
   "/how_to",
   "mkdocs.yml",
+  "/research_objects",
   "requirements_dev.txt",
   "pypi_upload_instructions.md",
   "dev_env_file.py",

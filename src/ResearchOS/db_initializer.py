@@ -33,13 +33,21 @@ class DBInitializer():
         else:
             config.db_file = main_db_file
         if os.path.exists(main_db_file):
-            os.remove(main_db_file)
+            try:
+                os.remove(main_db_file)
+            except PermissionError:
+                print(f"Could not remove {main_db_file}. Please close the file and try again.")
+                return
         if data_db_file is None:
             data_db_file = config.data_db_file
         else:
             config.data_db_file = data_db_file
         if os.path.exists(data_db_file):
-            os.remove(data_db_file)
+            try:
+                os.remove(data_db_file)
+            except PermissionError:
+                print(f"Could not remove {data_db_file}. Please close the file and try again.")
+                return
         with open(sql_settings_path, "r") as file:
             sql_settings = json.load(file) 
         intended_tables = sql_settings["intended_tables"]

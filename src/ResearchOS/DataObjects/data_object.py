@@ -62,6 +62,9 @@ class DataObject(ResearchObject):
         if isinstance(input, Input):
             vr = input.vr
             process = input.pr
+            # if isinstance(vr, dict):
+            #     vr = Variable(id = "VRhard_coded_ResearchOS")
+            #     input.vr = vr
         else:
             vr = input
         return_conn = False
@@ -75,10 +78,11 @@ class DataObject(ResearchObject):
             node_lineage = self.get_node_lineage()
 
         # DataObject attribute.
-        if isinstance(vr, dict) and len(vr) == 1 and isinstance([key for key in vr.keys()][0], DataObject):
-            cls = [key for key in vr.keys()][0]
+        dataobject_subclasses = DataObject.__subclasses__()
+        if vr._dataobject_attr is not None and [key for key in vr._dataobject_attr.keys()][0] in dataobject_subclasses:
+            cls = [key for key in vr._dataobject_attr.keys()][0]
             node = [node for node in node_lineage if isinstance(node, cls)][0]
-            attr = [value for value in vr.values()][0]
+            attr = [value for value in vr._dataobject_attr.values()][0]
             vr_value.value = getattr(node, attr)
             vr_value.exit_code = 0
             if return_conn:
@@ -122,7 +126,7 @@ class DataObject(ResearchObject):
         
         # Lookup VR.
         if input.lookup_vr is not None:
-            lookup_input = Input(vr=input.lookup_vr, parent_ro=input.parent_ro, pr=input.pr)
+            lookup_input = Input(vr=input.lookup_vr, parent_ro=input.parent_ro, pr=input.lookup_pr, vr_name_in_code=input.vr_name_in_code)
             lookup_vr_value = self.get(lookup_input, action)            
             process = lookup_vr_value
             node_lineage = self.get_node_lineage(lookup_input.vr, None, action)
@@ -153,9 +157,9 @@ class DataObject(ResearchObject):
         sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)        
         result = cursor.execute(sqlquery, params).fetchall()
         if len(result) == 0:
-            raise ValueError(f"The VR {vr.name} does not have a value for the data object {base_node.name} ({base_node.id}) from Process {process.id}.")
+            raise ValueError(f"The VR {vr.name} does not have a value for the data object {base_node.name} ({base_node.id}) from Process {process[0].id}.")
         if len(result) > 1:
-            raise ValueError(f"The VR {vr.name} has multiple values for the data object {base_node.name} ({base_node.id}) from Process {process.id}.")
+            raise ValueError(f"The VR {vr.name} has multiple values for the data object {base_node.name} ({base_node.id}) from Process {process[0].id}.")
         pr_ids = [x[1] for x in result]
         pr_idx = None
         for pr_id in pr_ids:

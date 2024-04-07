@@ -38,11 +38,17 @@ class VRHandler():
             if input is None:
                 inputs[vr_name_in_code] = Input()
             elif isinstance(input, dict) and "vr" in input:
-                inputs[vr_name_in_code] = Input(**input) # Multiple kwargs were specified.
-            elif isinstance(input, (dict, Variable)):
+                inputs[vr_name_in_code] = Input(**input) # One or more kwargs were specified.
+            elif isinstance(input, (Variable)):
                 inputs[vr_name_in_code] = Input(vr = input) # Only a Variable was specified.
-            else:
+            elif isinstance(input, dict):
+                vr = Variable(id = "VRDataObject_Attribute")
+                vr._dataobject_attr = input
+                inputs[vr_name_in_code] = Input(vr = vr) # Only a DataObject attribute was specified.
+            elif isinstance(input, Input):
                 inputs[vr_name_in_code] = input # Already an Input.
+            else:
+                raise ValueError(f"Input must be of type Input, Variable, or dict, not {type(input)}.")
         return inputs
     
     @staticmethod
