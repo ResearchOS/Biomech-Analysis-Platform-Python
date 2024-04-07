@@ -18,7 +18,7 @@ def init_project(folder: str = typer.Option(None, help="Folder name"),
     """Create a new blank project in the specified folder. If no arguments are provided, creates a new project in the current working directory.
     If a URL is provided, clones the repository specified by the URL."""
     cwd = os.getcwd()
-    if not folder:
+    if folder is None:
         folder = cwd
     if not os.path.exists(folder):
         try:
@@ -28,7 +28,7 @@ def init_project(folder: str = typer.Option(None, help="Folder name"),
     create_folders(folder)
     # If this is a project (because the current working directory and the folder name match) create project-specific folders & files.
     if folder == cwd:
-        create_folders(folder, folders = ["data", "output", "output.plots", "output.stats"], files = ["paths.py", ".gitignore", "src..research_objects.dataset.py", "src..research_objects.logsheets.py"])
+        create_folders(folder, folders = ["data", "output", "output.plots", "output.stats", "packages"], files = ["paths.py", ".gitignore", "src..research_objects.dataset.py", "src..research_objects.logsheets.py"])
     config = Config()
     user_input = "y"
     if os.path.exists(config.db_file) or os.path.exists(config.data_db_file):
@@ -43,15 +43,18 @@ def init_project(folder: str = typer.Option(None, help="Folder name"),
     print(f"Project initialized in {folder}")
 
 @app.command()
-def init_package(subfolder: str = typer.Argument(help="Subfolder to create the package in. Can be relative or absolute path")):
+def init_package(name: str = typer.Argument(help="Package name. This will be the name of the folder.")):
     """Initialize the folder structure to create a package. Must provide the subfolder to create the package in."""
-    if not os.path.exists(subfolder):
+    cwd = os.getcwd()
+    packages_folder = os.path.join(cwd, "packages")
+    package_folder = os.path.join(packages_folder, name)
+    if not os.path.exists(package_folder):
         try:
-            os.makedirs(subfolder)
+            os.makedirs(package_folder)
         except FileNotFoundError:
-            raise ValueError(f"Folder {subfolder} is not a valid folder path.")
-    create_folders(subfolder)
-    print(f"Package initialized in {subfolder}")
+            raise ValueError(f"Folder {package_folder} is not a valid folder path.")
+    create_folders(package_folder)
+    print(f"Package {name} initialized in {package_folder}")
 
 @app.command()
 def config(github_token: str = typer.Option(None, help="GitHub token"),
@@ -71,12 +74,12 @@ def config(github_token: str = typer.Option(None, help="GitHub token"),
 
 @app.command()
 def dobjs(is_active: int = typer.Option(1, help="1 for active, 0 for inactive, default 1")):
-    """List all available data objects."""
+    """List all available data objects."""    
     action = Action(name = "list_dobjs")
     cursor = action.conn.cursor()
     sqlquery = "SELECT path_id, dataobject_id, path FROM paths WHERE is_active = ?"
-    params = (is_active,)
-    result = cursor.execute(sqlquery, params).fetchall()    
+    params = (is_active,)    
+    result = cursor.execute(sqlquery, params).fetchall()      
     max_num_levels = -1
     str_lens = []
     for row in result:
@@ -86,14 +89,17 @@ def dobjs(is_active: int = typer.Option(1, help="1 for active, 0 for inactive, d
             str_lens_in_row.append(curr_len)
             max_num_levels = max(max_num_levels, curr_len)
         str_lens.append(str_lens_in_row)
-
+     
     lens = [-1 for i in range(max_num_levels)]
     for i in range(max_num_levels):
         lens[i] = max([row[i] for row in str_lens if len(row)>=i+1])
     
+    print("here")
+    lens_str = [f"{{:<{lens[i]}}}" for i in range(max_num_levels)]
     for row in result:
         row = row.append([""]*(max_num_levels-len(row)))
-        print("{:<12} {:<15} {:<5}".format(f"Path ID: {row[0]}", f"DataObject ID: {row[1]}", f"Path: {row[2]}"))
+        style_str = "{:<12} {:<15} {:<5} " + lens_str
+        print(style_str.format(f"Path ID: {row[0]}", f"DataObject ID: {row[1]}", f"Path: {row[2]}"))
 
 @app.command()
 def db_reset():
@@ -115,5 +121,5 @@ def logsheet_read(path: str = typer.Argument(help="Path to the logsheet research
     lg_obj.read_logsheet()
 
 if __name__ == "__main__":
-    pass
+    app()
     # app("logsheet-read","C:\\Users\\Mitchell\\Desktop\\Matlab Code\\GitRepos\\CAREER-SLG-SPEED\\research_objects\\logsheets.py")

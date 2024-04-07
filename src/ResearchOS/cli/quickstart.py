@@ -10,7 +10,7 @@ folders = [
     "src..plot",
     "src..process",
     "src..stats",
-    "src..research_objects",
+    "src..research_objects"
 ]
 
 files = [
