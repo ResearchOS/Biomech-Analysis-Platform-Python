@@ -59,10 +59,12 @@ dependencies = [
 [project.optional-dependencies]
 # Development dependencies
 dev = [
-  "pytest",
-  "mkdocstrings",
-  "mkdocs-material",
-  "mkdocstrings-python"
+  "pytest>=8.0.1",
+  "mkdocstrings==0.24.0",
+  "mkdocs-material==9.5.10",
+  "mkdocstrings-python==1.8.0",
+  "netgraph>=4.13.2",
+  "snakeviz>=2.2.0"
 ]
 
 [project.urls]
