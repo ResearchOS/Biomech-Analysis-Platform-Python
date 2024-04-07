@@ -1,6 +1,8 @@
 import os
+import importlib
 
 import typer
+from typer.testing import CliRunner
 
 from ResearchOS.config import Config
 from ResearchOS.cli.quickstart import create_folders
@@ -93,5 +95,25 @@ def dobjs(is_active: int = typer.Option(1, help="1 for active, 0 for inactive, d
         row = row.append([""]*(max_num_levels-len(row)))
         print("{:<12} {:<15} {:<5}".format(f"Path ID: {row[0]}", f"DataObject ID: {row[1]}", f"Path: {row[2]}"))
 
+@app.command()
+def db_reset():
+    """Reset the databases to their default state."""
+    # Ask the user for confirmation.
+    user_input = input("Are you sure you want to reset the databases to their default (empty) state? All data will be deleted! (y/n) ")
+    if user_input.lower() != "y":
+        print("Databases not modified.")
+        return
+    db = DBInitializer()
+    print("Databases reset to default state.")
+
+@app.command()
+def logsheet_read(path: str = typer.Argument(help="Path to the logsheet research object file. Default is research_objects.logsheets.py", default="research_objects.logsheets.py")):
+    """Run the logsheet."""
+    lgs = importlib.import_module(path)
+    lg_objs = [lg_obj for lg_obj in dir(lgs) if hasattr(lg_obj,"prefix") and lg_obj.prefix == "LG"]
+    lg_obj = lg_objs[0]
+    lg_obj.read_logsheet()
+
 if __name__ == "__main__":
-    app()
+    pass
+    # app("logsheet-read","C:\\Users\\Mitchell\\Desktop\\Matlab Code\\GitRepos\\CAREER-SLG-SPEED\\research_objects\\logsheets.py")

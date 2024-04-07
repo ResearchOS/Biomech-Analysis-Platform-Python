@@ -72,6 +72,9 @@ class ResearchObject():
         if name == "_value" and self.id.startswith("VR"):
             self.__dict__[name] = value
             return # Store but don't save the changes to Variable values.
+        if name.startswith("_") and name != "_initialized":
+            self.__dict__[name] = value
+            return
             
         # Set the attribute. Create Action when __setattr__ is called as the top level.
         if all_attrs is None:
