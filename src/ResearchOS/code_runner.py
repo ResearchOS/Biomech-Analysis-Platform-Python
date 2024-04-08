@@ -128,8 +128,8 @@ class CodeRunner():
         #         pr = Logsheet(id = vr_pr_ids_result[vr_id_idx][1], action = action)
         #     input.lookup_pr = pr
         #     robj.inputs[input.vr_name_in_code] = input
-
-        robj._setattrs(default_attrs, {"inputs": robj.inputs}, action, None) 
+        
+        robj.__setattr__("inputs", robj.inputs, action=action)
 
 
         

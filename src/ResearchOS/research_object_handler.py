@@ -121,91 +121,70 @@ class ResearchObjectHandler:
 
     @staticmethod
     def _set_builtin_attributes(research_object: "ResearchObject", default_attrs: dict, kwargs: dict, action: Action):
-        """Responsible for setting the value of all builtin attributes, simple or not."""  
+        """Responsible for setting the value of all builtin attributes, simple or not."""
 
+        # 1. Validate
         validator = Validator(research_object, action)
         validator.validate(kwargs, default_attrs)
 
-        # 1. Set simple builtin attributes.
-        complex_attrs = {}
         for key in kwargs:
 
-            if key not in default_attrs:
-                continue # Skip the attribute if it is not a default attribute.
+            # 2. Skip the attribute if the value has not changed.
+            if key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
+                continue
 
-            # 1. Skip the complex attributes.
+            # 3. Save simple & complex attributes.
             if hasattr(research_object, "save_" + key):
-                complex_attrs[key] = kwargs[key]
-                continue # Complex attributes are set in the next step.
+                save_method = getattr(research_object, "save_" + key)
+                save_method(kwargs[key], action = action)
+            else:            
+                json_value = JSONConverter.to_json(research_object, key, kwargs[key], action) 
+                simple_params = (action.id_num, research_object.id, ResearchObjectHandler._get_attr_id(key), json_value)
+                action.add_sql_query(research_object.id, "robj_simple_attr_insert", simple_params, group_name = "robj_simple_attr_insert")
 
-            # 2. If previously initialized, skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
-            if research_object._initialized and key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
-                continue
+            # 4. Set the attribute in the object's __dict__.
+            research_object.__dict__[key] = kwargs[key] # Set the attribute in the object's __dict__.         
 
-            json_value = JSONConverter.to_json(research_object, key, kwargs[key], action) 
+    # @staticmethod
+    # def clean_value_from_load_mat(numpy_array: Any) -> Any:
+    #     """Ensure that all data types are from scipy.io.loadmat are Pythonic."""
+    #     if isinstance(numpy_array, np.ndarray) and numpy_array.dtype.names is not None:
+    #         return {name: ResearchObjectHandler.clean_value_from_load_mat(numpy_array[name]) for name in numpy_array.dtype.names}
+    #     elif isinstance(numpy_array, np.ndarray):
+    #         numpy_array_tmp = numpy_array
+    #         if numpy_array.size == 1:
+    #             numpy_array_tmp = numpy_array[0]
+    #         return numpy_array_tmp.tolist()
+    #     else:
+    #         return numpy_array
 
-            simple_params = (action.id_num, research_object.id, ResearchObjectHandler._get_attr_id(key), json_value)
-            action.add_sql_query(research_object.id, "robj_simple_attr_insert", simple_params, group_name = "robj_simple_attr_insert")
+    # @staticmethod
+    # def clean_value_for_save_mat(value: Any) -> Any:
+    #     """Ensure that all data types are compatible with the scipy.io.savemat method."""
+    #     # Recursive.
+    #     if isinstance(value, (dict, set)):
+    #         for key in value.keys():
+    #             value[key] = ResearchObjectHandler.clean_value_for_save_mat(value[key])
+    #         return value
 
-            # 4. Get the parameters for the SQL query to set the attribute.            
-            research_object.__dict__[key] = kwargs[key] # Set the attribute in the object's __dict__.        
+    #     if isinstance(value, (list, tuple)):
+    #         if len(value) == 0:
+    #             return value
+    #         if isinstance(value[0], (list, tuple, dict, set)):
+    #             for i, item in enumerate(value):
+    #                 value[i] = ResearchObjectHandler.clean_value_for_save_mat(item)
+    #             return value
 
-        # 2. Set complex builtin attributes.
-        for key in complex_attrs:
-
-            if key not in default_attrs:
-                continue # Skip the attribute if it is not a default attribute.
-
-            # 1. Skip the attribute if it was previously loaded and the value has not changed (even if it was a kwarg).
-            if key in research_object.__dict__ and getattr(research_object, key) == complex_attrs[key]:
-                continue
-
-            # 3.  Save the "complex" builtin attribute to the database.
-            save_method = getattr(research_object, "save_" + key)
-            save_method(complex_attrs[key], action = action)
-
-            research_object.__dict__[key] = complex_attrs[key]    
-
-    @staticmethod
-    def clean_value_from_load_mat(numpy_array: Any) -> Any:
-        """Ensure that all data types are from scipy.io.loadmat are Pythonic."""
-        if isinstance(numpy_array, np.ndarray) and numpy_array.dtype.names is not None:
-            return {name: ResearchObjectHandler.clean_value_from_load_mat(numpy_array[name]) for name in numpy_array.dtype.names}
-        elif isinstance(numpy_array, np.ndarray):
-            numpy_array_tmp = numpy_array
-            if numpy_array.size == 1:
-                numpy_array_tmp = numpy_array[0]
-            return numpy_array_tmp.tolist()
-        else:
-            return numpy_array
-
-    @staticmethod
-    def clean_value_for_save_mat(value: Any) -> Any:
-        """Ensure that all data types are compatible with the scipy.io.savemat method."""
-        # Recursive.
-        if isinstance(value, (dict, set)):
-            for key in value.keys():
-                value[key] = ResearchObjectHandler.clean_value_for_save_mat(value[key])
-            return value
-
-        if isinstance(value, (list, tuple)):
-            if len(value) == 0:
-                return value
-            if isinstance(value[0], (list, tuple, dict, set)):
-                for i, item in enumerate(value):
-                    value[i] = ResearchObjectHandler.clean_value_for_save_mat(item)
-                return value
-
-        # Actually clean the values.
-        return np.array(value)
+    #     # Actually clean the values.
+    #     return np.array(value)
     
-    @staticmethod
-    def save_simple_attribute(id: str, name: str, json_value: Any, action: Action) -> Action:
-        """If no store_attr method exists for the object attribute, use this default method."""                                      
-        sqlquery = "INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES (?, ?, ?, ?)"
-        params = (action.id, id, ResearchObjectHandler._get_attr_id(name), json_value)
-        action.add_sql_query(sqlquery, params)
-        action.add_params(params)
+    # @staticmethod
+    # def save_simple_attribute(id: str, name: str, json_value: Any, action: Action) -> Action:
+    #     """If no store_attr method exists for the object attribute, use this default method."""                                      
+    #     sqlquery = "INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES (?, ?, ?, ?)"
+    #     params = (action.id, id, ResearchObjectHandler._get_attr_id(name), json_value)
+    #     action.add_sql_query(sqlquery, params)
+    #     action.add_params(params)
     
     @staticmethod
     def _get_attr_name(attr_id: int) -> str:
@@ -285,21 +264,21 @@ class ResearchObjectHandler:
                 return cls
         raise ValueError("No class with that prefix exists.")
     
-    @staticmethod
-    def _set_simple_builtin_attr(research_object, name: str, value: Any, action: Action = None) -> None:
-        """Set the attributes of a research object in memory and in the SQL database.
-        Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it).
-        If it is not a built-in ResearchOS attribute, then no validation occurs."""
-        # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.     
+    # @staticmethod
+    # def _set_simple_builtin_attr(research_object, name: str, value: Any, action: Action = None) -> None:
+    #     """Set the attributes of a research object in memory and in the SQL database.
+    #     Validates the attribute if it is a built-in ResearchOS attribute (i.e. a method exists to validate it).
+    #     If it is not a built-in ResearchOS attribute, then no validation occurs."""
+    #     # TODO: Have already implemented adding current_XXX_id object to digraph in the database, but should also update the in-memory digraph.     
         
-        if hasattr(research_object, "to_json_" + name):
-            to_json_method = getattr(research_object, "to_json_" + name)
-            json_value = to_json_method(value, action)
-        else:
-            json_value = json.dumps(value)   
+    #     if hasattr(research_object, "to_json_" + name):
+    #         to_json_method = getattr(research_object, "to_json_" + name)
+    #         json_value = to_json_method(value, action)
+    #     else:
+    #         json_value = json.dumps(value)   
 
-        ResearchObjectHandler.save_simple_attribute(research_object.id, name, json_value, action = action)            
-        research_object.__dict__[name] = value
+    #     ResearchObjectHandler.save_simple_attribute(research_object.id, name, json_value, action = action)            
+    #     research_object.__dict__[name] = value
 
     @staticmethod
     def get_user_computer_path(research_object, attr_name: str, action: Action) -> str:

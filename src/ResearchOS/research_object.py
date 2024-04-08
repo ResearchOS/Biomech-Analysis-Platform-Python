@@ -52,33 +52,23 @@ class ResearchObject():
         return instance 
     
     def __setattr__(self, name: str = None, value: Any = None, action: Action = None, all_attrs: DefaultAttrs = None, kwargs_dict: dict = {}) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""        
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""    
+        from ResearchOS.DataObjects.data_object import DataObject    
         if not self._initialized:
             self.__dict__[name] = value
-            return
+            return        
         # Ensure that the criteria to set the attribute are met.
-        if not str(name).isidentifier():
-            raise ValueError(f"{name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.        
-        if name == "id":
-            raise ValueError("Cannot change the ID of a research object.")
-        if name == "prefix":
-            raise ValueError("Cannot change the prefix of a research object.")
-        if name == "name":
-            if not str(value).isidentifier():
-                raise ValueError(f"name attribute, value: {value} is not a valid attribute name.")
-        if name == "slice" and self.id.startswith("VR"):
-            self.__dict__[name] = value
-            return # Store but don't save the changes to Variable slices. That is handled when saving the input VR's.
-        if name == "_value" and self.id.startswith("VR"):
-            self.__dict__[name] = value
-            return # Store but don't save the changes to Variable values.
-        if name.startswith("_") and name != "_initialized":
-            self.__dict__[name] = value
-            return
+        validate_attr(name)        
             
         # Set the attribute. Create Action when __setattr__ is called as the top level.
         if all_attrs is None:
-            all_attrs = DefaultAttrs(self)                
+            all_attrs = DefaultAttrs(self) 
+        default_attrs = all_attrs.default_attrs
+
+        if name not in default_attrs:
+            self.__dict__[name] = value # "Temporary" values that won't persist in the database.
+            return
+                       
         commit = False
         if action is None:
             commit = True
@@ -86,7 +76,19 @@ class ResearchObject():
 
         if not kwargs_dict:
             kwargs_dict = {name: value}
-        commit = self._setattrs(all_attrs.default_attrs, kwargs_dict, action, None)
+                
+        del_keys = []
+        for key in kwargs_dict:
+            try:
+                if self.__dict__[key] == kwargs_dict[key]:
+                    del_keys.append(key) # No change.
+            except ValueError:
+                pass # Allow the Variable to not exist yet.
+            
+        for key in del_keys:
+            del kwargs_dict[key]
+        # 1. Set simple & complex builtin attributes.
+        ResearchObjectHandler._set_builtin_attributes(self, default_attrs, kwargs_dict, action)
         
         action.commit = commit
         action.exec = True
@@ -145,7 +147,8 @@ class ResearchObject():
             except:
                 pass
                 
-        self._setattrs(default_attrs_dict, save_dict, action, None)
+        self.__setattr__(None, None, action, attrs, save_dict) # Set the attributes.
+        # self._setattrs(default_attrs_dict, save_dict, action, None)
         self._initialized = True
 
         # Set the attributes.
@@ -154,36 +157,36 @@ class ResearchObject():
             action.commit = True
             action.execute()
 
-    def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action, pr_id: str) -> None:
-        """Set the attributes of the object.
-        default_attrs: The default attributes of the object.
-        orig_kwargs: The original kwargs passed to the object.
-        kwargs: The kwargs to be used to set the attributes. A combination of the default attributes and the original kwargs.
-        pr_id: Indicates that I am setting VR attributes."""
-        from ResearchOS.DataObjects.data_object import DataObject
-        del_keys = []
-        if self._initialized:
-            for key in kwargs:
-                if key not in default_attrs:
-                    continue
-                try:
-                    if key in self.__dict__ and self.__dict__[key] == kwargs[key]:
-                        del_keys.append(key) # No change.
-                except ValueError:
-                    pass # Allow the Variable to not exist yet.
+    # def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action, pr_id: str) -> None:
+    #     """Set the attributes of the object.
+    #     default_attrs: The default attributes of the object.
+    #     orig_kwargs: The original kwargs passed to the object.
+    #     kwargs: The kwargs to be used to set the attributes. A combination of the default attributes and the original kwargs.
+    #     pr_id: Indicates that I am setting VR attributes."""
+    #     from ResearchOS.DataObjects.data_object import DataObject
+    #     del_keys = []
+    #     if self._initialized:
+    #         for key in kwargs:
+    #             if key not in default_attrs:
+    #                 continue
+    #             try:
+    #                 if key in self.__dict__ and self.__dict__[key] == kwargs[key]:
+    #                     del_keys.append(key) # No change.
+    #             except ValueError:
+    #                 pass # Allow the Variable to not exist yet.
             
-        for key in del_keys:
-            del kwargs[key]
-        if len(kwargs)==0:
-            return False
-        # 1. Set simple & complex builtin attributes.
-        ResearchObjectHandler._set_builtin_attributes(self, default_attrs, kwargs, action)
+    #     for key in del_keys:
+    #         del kwargs[key]
+    #     if len(kwargs)==0:
+    #         return False
+    #     # 1. Set simple & complex builtin attributes.
+    #     ResearchObjectHandler._set_builtin_attributes(self, default_attrs, kwargs, action)
 
-        # 2. Set VR attributes.
-        if pr_id is not None:
-            vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
-            DataObject._set_vr_values(self, vr_attrs, action, pr_id)
-        return True
+    #     # 2. Set VR attributes.
+    #     if pr_id is not None:
+    #         vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
+    #         DataObject._set_vr_values(self, vr_attrs, action, pr_id)
+    #     return True
 
     def _get_dataset_id(self) -> str:
         """Get the most recent dataset ID. Currently assumes that there's only one Dataset object in existence."""        
@@ -214,3 +217,14 @@ class ResearchObject():
         schema_id = schema_id[0] if schema_id else None
         pool.return_connection(conn)
         return schema_id
+    
+def validate_attr(name: str, value: Any):
+    if not str(name).isidentifier():
+        raise ValueError(f"{name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.        
+    if name == "id":
+        raise ValueError("Cannot change the ID of a research object.")
+    if name == "prefix":
+        raise ValueError("Cannot change the prefix of a research object.")
+    if name == "name":
+        if not str(value).isidentifier():
+            raise ValueError(f"name attribute, value: {value} is not a valid attribute name.")

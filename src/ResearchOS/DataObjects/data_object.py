@@ -19,6 +19,7 @@ from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.Bridges.input import Input
 from ResearchOS.var_converter import convert_var
 from ResearchOS.Bridges.vr_value import VRValue
+from ResearchOS.process_runner import ProcessRunner
 
 all_default_attrs = {}
 
@@ -197,28 +198,34 @@ class DataObject(ResearchObject):
             conn.return_connection(conn)
         return vr_value
     
-    @staticmethod
-    def _set_vr_values(research_object: "ResearchObject", vr_values: dict, action: Action, pr_id: str) -> None:
-        """Set the values of the VR attributes."""
+    def _set_vr_values(self, vr_values: dict, pr_id: str, action: Action = None) -> None:
+        """Top level function to set the values of the VR attributes.
+        Called like: self._set_vr_values(research_object, vr_values, pr_id, action)
+        vr_values: dict with keys of type Variable and values of the values to set.
+        pr_id: str, the process id."""
         if not vr_values:
             return
-        # result = get_all_dataobjects_vrs(action)
-        # 1. Get hash of each value.
+        commit = False
+        if action is None:
+            commit = True
+            action = Action(name = "set_vr_values")
+        # 1. Get hash or value of each value.
         vr_hashes_dict = {}
-        for vr, value in vr_values.items():
+        for vr, raw_value in vr_values.items():
+            value = convert_var(raw_value, ProcessRunner.matlab_numeric_types)
+            data_blob = None
+            data_blob_hash = None
+            scalar_value = None
             # Check if the value is a scalar.            
             try:
                 if isinstance(value, (type(None), str, int, float, bool)):
-                    tmp = json.dumps(value)
+                    tmp = json.dumps(value) # Scalars
                 elif isinstance(value, np.ndarray):
-                    assert len(value) == 1
+                    assert len(value) == 1 # Scalar numpy arrays
                 else:
-                    assert False
-                scalar_value = value
-                data_blob = None
-                data_blob_hash = None
-            except:
-                scalar_value = None
+                    assert False # Blob value.
+                scalar_value = value                
+            except:                
                 data_blob = pickle.dumps(value, protocol = 4)
                 data_blob_hash = sha256(data_blob).hexdigest()
             vr_hashes_dict[vr] = {"hash": data_blob_hash, "blob": data_blob, "scalar_value": scalar_value}
@@ -243,22 +250,27 @@ class DataObject(ResearchObject):
         for vr in vr_hashes_dict:
             blob_params = (vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["blob"])
             blob_pk = blob_params
-            vr_dobj_params = (action.id_num, research_object.id, vr.id)
+            vr_dobj_params = (action.id_num, self.id, vr.id)
             vr_dobj_pk = vr_dobj_params
             if isinstance(vr_hashes_dict[vr]["scalar_value"], str):
-                vr_value_params = (action.id_num, vr.id, research_object.id, vr_hashes_dict[vr]["hash"], pr_id, vr_hashes_dict[vr]["scalar_value"], None)
+                vr_value_params = (action.id_num, vr.id, self.id, vr_hashes_dict[vr]["hash"], pr_id, vr_hashes_dict[vr]["scalar_value"], None)
             else:
-                vr_value_params = (action.id_num, vr.id, research_object.id, vr_hashes_dict[vr]["hash"], pr_id, None, vr_hashes_dict[vr]["scalar_value"])
+                vr_value_params = (action.id_num, vr.id, self.id, vr_hashes_dict[vr]["hash"], pr_id, None, vr_hashes_dict[vr]["scalar_value"])
             vr_value_pk = vr_value_params
             # Don't insert the data_blob if it already exists.
             if not vr in vr_hashes_prev_exist and vr_hashes_dict[vr]["hash"] is not None:
-                if not action.is_redundant_params(research_object.id, "data_value_in_blob_insert", blob_pk, group_name = "robj_vr_attr_insert"):
-                    action.add_sql_query(research_object.id, "data_value_in_blob_insert", blob_params, group_name = "robj_vr_attr_insert")
+                if not action.is_redundant_params(self.id, "data_value_in_blob_insert", blob_pk, group_name = "robj_vr_attr_insert"):
+                    action.add_sql_query(self.id, "data_value_in_blob_insert", blob_params, group_name = "robj_vr_attr_insert")
             # No danger of duplicating primary keys, so no real need to check if they previously existed. But why not?
-            if not action.is_redundant_params(research_object.id, "vr_to_dobj_insert", vr_dobj_pk, group_name = "robj_vr_attr_insert"):
-                action.add_sql_query(research_object.id, "vr_to_dobj_insert", vr_dobj_params, group_name = "robj_vr_attr_insert")
-            if not action.is_redundant_params(research_object.id, "vr_value_for_dobj_insert", vr_value_pk, group_name = "robj_vr_attr_insert"):
-                action.add_sql_query(research_object.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert")
+            if not action.is_redundant_params(self.id, "vr_to_dobj_insert", vr_dobj_pk, group_name = "robj_vr_attr_insert"):
+                action.add_sql_query(self.id, "vr_to_dobj_insert", vr_dobj_params, group_name = "robj_vr_attr_insert")
+            if not action.is_redundant_params(self.id, "vr_value_for_dobj_insert", vr_value_pk, group_name = "robj_vr_attr_insert"):
+                action.add_sql_query(self.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert")
+
+        if commit:
+            action.commit = commit
+            action.exec = True
+            action.execute()
 
     def get_node_lineage(self, dobj_ids: list = None, paths: list = None, action: Action = None) -> list:
         """Get the lineage of the DataObject node.

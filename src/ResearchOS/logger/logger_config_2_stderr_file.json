@@ -30,11 +30,11 @@
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
-            "level": "DEBUG",
-            "mode": "w",
+            "level": "DEBUG",            
             "formatter": "json",
             "filename": "logs/ResearchOS.jsonl",
-            "maxBytes": 100000000
+            "maxBytes": 100000000,
+            "mode": "w"
         }
     },
     "loggers": {
