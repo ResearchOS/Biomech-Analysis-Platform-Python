@@ -80,6 +80,6 @@ class ProcessRunner(CodeRunner):
             else:
                 idx += 1
             # Search through the variable to look for any matlab numeric types and convert them to numpy arrays.
-            kwargs_dict[vr.vr] = convert_var(vr_values_out[idx], ProcessRunner.matlab_numeric_types) # Convert any matlab.double to numpy arrays. (This is a recursive function.)
+            kwargs_dict[vr.vr] = vr_values_out[idx] # Convert any matlab.double to numpy arrays. (This is a recursive function.)
 
-        self.node._setattrs({}, kwargs_dict, action = self.action, pr_id = self.pl_obj.id)
+        self.node._set_vr_values(kwargs_dict, pr_id = self.pl_obj.id, action = self.action)
