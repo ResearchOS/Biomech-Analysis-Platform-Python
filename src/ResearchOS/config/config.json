@@ -1,6 +1,4 @@
 {
-    "db_file": "researchos.db",
-    "data_db_file": "researchos_data.db",
-    "data_objects_path": "research_objects.data_objects.py",
-    "github_token": ""
+    "abstract_id_len": 6,
+    "instance_id_len": 3
 }

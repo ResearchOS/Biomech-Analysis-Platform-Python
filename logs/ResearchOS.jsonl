@@ -1,0 +1,52 @@
+{"timestamp": "2024-04-08T02:54:00.110028+00:00", "level": "DEBUG", "message": "This is a debug message", "module": "logger", "line": 21, "function": "main", "msg": "This is a debug message", "args": [], "levelno": 10, "processName": "MainProcess", "user": "John Doe"}
+{"timestamp": "2024-04-08T02:54:00.111723+00:00", "level": "INFO", "message": "This is an info message", "module": "logger", "line": 22, "function": "main", "msg": "This is an info message", "args": [], "levelno": 20, "processName": "MainProcess"}
+{"timestamp": "2024-04-08T02:54:00.113666+00:00", "level": "WARNING", "message": "This is a warning message", "module": "logger", "line": 23, "function": "main", "msg": "This is a warning message", "args": [], "levelno": 30, "processName": "MainProcess"}
+{"timestamp": "2024-04-08T02:54:00.115020+00:00", "level": "ERROR", "message": "This is an error message", "module": "logger", "line": 24, "function": "main", "msg": "This is an error message", "args": [], "levelno": 40, "processName": "MainProcess"}
+{"timestamp": "2024-04-08T02:54:00.116195+00:00", "level": "CRITICAL", "message": "This is a critical message", "module": "logger", "line": 25, "function": "main", "msg": "This is a critical message", "args": [], "levelno": 50, "processName": "MainProcess"}
+{"timestamp": "2024-04-08T02:54:00.116195+00:00", "level": "ERROR", "message": "This is an exception message", "module": "logger", "line": 29, "function": "main", "exception": "Traceback (most recent call last):\n  File \"C:\\Users\\Mitchell\\Desktop\\Projects\\Biomech-Analysis-Platform-Python\\src\\ResearchOS\\logger\\logger.py\", line 27, in main\n    1/0\nZeroDivisionError: division by zero", "msg": "This is an exception message", "args": [], "levelno": 40, "processName": "MainProcess"}
+{"timestamp": "2024-04-08T02:55:17.054517+00:00", "level": "DEBUG", "message": "This is a debug message", "module": "logger", "line": 21, "function": "main", "msg": "This is a debug message", "args": [], "levelno": 10, "processName": "MainProcess", "user": "John Doe"}
+{"timestamp": "2024-04-08T02:55:17.055514+00:00", "level": "INFO", "message": "This is an info message", "module": "logger", "line": 22, "function": "main", "msg": "This is an info message", "args": [], "levelno": 20, "processName": "MainProcess"}
+{"timestamp": "2024-04-08T02:55:17.055514+00:00", "level": "WARNING", "message": "This is a warning message", "module": "logger", "line": 23, "function": "main", "msg": "This is a warning message", "args": [], "levelno": 30, "processName": "MainProcess"}
+{"timestamp": "2024-04-08T02:55:17.056513+00:00", "level": "ERROR", "message": "This is an error message", "module": "logger", "line": 24, "function": "main", "msg": "This is an error message", "args": [], "levelno": 40, "processName": "MainProcess"}
+{"timestamp": "2024-04-08T02:55:17.056784+00:00", "level": "CRITICAL", "message": "This is a critical message", "module": "logger", "line": 25, "function": "main", "msg": "This is a critical message", "args": [], "levelno": 50, "processName": "MainProcess"}
+{"timestamp": "2024-04-08T02:55:17.056784+00:00", "level": "ERROR", "message": "This is an exception message", "module": "logger", "line": 29, "function": "main", "msg": "This is an exception message", "args": [], "levelno": 40, "processName": "MainProcess"}
+{"timestamp": "2024-04-08T02:57:01.633938+00:00", "level": "DEBUG", "message": "This is a debug message", "module": "logger", "line": 21, "function": "main", "msg": "This is a debug message", "user": "John Doe"}
+{"timestamp": "2024-04-08T02:57:01.634934+00:00", "level": "INFO", "message": "This is an info message", "module": "logger", "line": 22, "function": "main", "msg": "This is an info message"}
+{"timestamp": "2024-04-08T02:57:01.634934+00:00", "level": "WARNING", "message": "This is a warning message", "module": "logger", "line": 23, "function": "main", "msg": "This is a warning message"}
+{"timestamp": "2024-04-08T02:57:01.635933+00:00", "level": "ERROR", "message": "This is an error message", "module": "logger", "line": 24, "function": "main", "msg": "This is an error message"}
+{"timestamp": "2024-04-08T02:57:01.635933+00:00", "level": "CRITICAL", "message": "This is a critical message", "module": "logger", "line": 25, "function": "main", "msg": "This is a critical message"}
+{"timestamp": "2024-04-08T02:57:01.635933+00:00", "level": "ERROR", "message": "This is an exception message", "module": "logger", "line": 29, "function": "main", "msg": "This is an exception message"}
+{"timestamp": "2024-04-08T02:57:38.235338+00:00", "level": "DEBUG", "message": "This is a debug message", "module": "logger", "line": 21, "function": "main", "user": "John Doe"}
+{"timestamp": "2024-04-08T02:57:38.236337+00:00", "level": "INFO", "message": "This is an info message", "module": "logger", "line": 22, "function": "main"}
+{"timestamp": "2024-04-08T02:57:38.236337+00:00", "level": "WARNING", "message": "This is a warning message", "module": "logger", "line": 23, "function": "main"}
+{"timestamp": "2024-04-08T02:57:38.236337+00:00", "level": "ERROR", "message": "This is an error message", "module": "logger", "line": 24, "function": "main"}
+{"timestamp": "2024-04-08T02:57:38.237306+00:00", "level": "CRITICAL", "message": "This is a critical message", "module": "logger", "line": 25, "function": "main"}
+{"timestamp": "2024-04-08T02:57:38.237306+00:00", "level": "ERROR", "message": "This is an exception message", "module": "logger", "line": 29, "function": "main"}
+{"timestamp": "2024-04-08T02:59:27.530838+00:00", "level": "DEBUG", "message": "This is a debug message", "module": "logger", "line": 21, "function": "main", "user": "John Doe"}
+{"timestamp": "2024-04-08T02:59:27.531836+00:00", "level": "INFO", "message": "This is an info message", "module": "logger", "line": 22, "function": "main"}
+{"timestamp": "2024-04-08T02:59:27.531836+00:00", "level": "WARNING", "message": "This is a warning message", "module": "logger", "line": 23, "function": "main"}
+{"timestamp": "2024-04-08T02:59:27.532261+00:00", "level": "ERROR", "message": "This is an error message", "module": "logger", "line": 24, "function": "main"}
+{"timestamp": "2024-04-08T02:59:27.532261+00:00", "level": "CRITICAL", "message": "This is a critical message", "module": "logger", "line": 25, "function": "main"}
+{"timestamp": "2024-04-08T02:59:27.533156+00:00", "level": "ERROR", "message": "This is an exception message", "module": "logger", "line": 29, "function": "main"}
+{"timestamp": "2024-04-08T03:00:10.222886+00:00", "level": "DEBUG", "message": "This is a debug message", "module": "logger", "line": 21, "function": "main", "user": "John Doe"}
+{"timestamp": "2024-04-08T03:00:10.223880+00:00", "level": "INFO", "message": "This is an info message", "module": "logger", "line": 22, "function": "main"}
+{"timestamp": "2024-04-08T03:00:10.223880+00:00", "level": "WARNING", "message": "This is a warning message", "module": "logger", "line": 23, "function": "main"}
+{"timestamp": "2024-04-08T03:00:10.224877+00:00", "level": "ERROR", "message": "This is an error message", "module": "logger", "line": 24, "function": "main"}
+{"timestamp": "2024-04-08T03:00:10.224877+00:00", "level": "CRITICAL", "message": "This is a critical message", "module": "logger", "line": 25, "function": "main"}
+{"timestamp": "2024-04-08T03:00:10.224877+00:00", "level": "ERROR", "message": "This is an exception message", "module": "logger", "line": 29, "function": "main"}
+{"timestamp": "2024-04-08T03:00:29.892848+00:00", "level": "DEBUG", "message": "This is a debug message", "module": "logger", "line": 21, "function": "main", "user": "John Doe"}
+{"timestamp": "2024-04-08T03:00:43.472152+00:00", "level": "INFO", "message": "This is an info message", "module": "logger", "line": 22, "function": "main"}
+{"timestamp": "2024-04-08T03:00:48.789601+00:00", "level": "WARNING", "message": "This is a warning message", "module": "logger", "line": 23, "function": "main"}
+{"timestamp": "2024-04-08T03:00:54.814867+00:00", "level": "ERROR", "message": "This is an error message", "module": "logger", "line": 24, "function": "main"}
+{"timestamp": "2024-04-08T03:00:56.917830+00:00", "level": "CRITICAL", "message": "This is a critical message", "module": "logger", "line": 25, "function": "main"}
+{"timestamp": "2024-04-08T03:02:14.894751+00:00", "level": "DEBUG", "message": "This is a debug message", "module": "logger", "line": 21, "function": "main", "user": "John Doe"}
+{"timestamp": "2024-04-08T03:02:14.895757+00:00", "level": "INFO", "message": "This is an info message", "module": "logger", "line": 22, "function": "main"}
+{"timestamp": "2024-04-08T03:02:14.895757+00:00", "level": "WARNING", "message": "This is a warning message", "module": "logger", "line": 23, "function": "main"}
+{"timestamp": "2024-04-08T03:02:14.896488+00:00", "level": "ERROR", "message": "This is an error message", "module": "logger", "line": 24, "function": "main"}
+{"timestamp": "2024-04-08T03:02:47.333172+00:00", "level": "CRITICAL", "message": "This is a critical message", "module": "logger", "line": 25, "function": "main"}
+{"timestamp": "2024-04-08T03:02:47.333172+00:00", "level": "ERROR", "message": "This is an exception message", "module": "logger", "line": 29, "function": "main"}
+{"timestamp": "2024-04-08T03:02:58.073469+00:00", "level": "DEBUG", "message": "This is a debug message", "module": "logger", "line": 21, "function": "main", "user": "John Doe"}
+{"timestamp": "2024-04-08T03:02:58.074432+00:00", "level": "INFO", "message": "This is an info message", "module": "logger", "line": 22, "function": "main"}
+{"timestamp": "2024-04-08T03:02:58.075429+00:00", "level": "WARNING", "message": "This is a warning message", "module": "logger", "line": 23, "function": "main"}
+{"timestamp": "2024-04-08T03:02:58.075429+00:00", "level": "ERROR", "message": "This is an error message", "module": "logger", "line": 24, "function": "main"}
+{"timestamp": "2024-04-08T03:03:04.838321+00:00", "level": "CRITICAL", "message": "This is a critical message", "module": "logger", "line": 25, "function": "main"}

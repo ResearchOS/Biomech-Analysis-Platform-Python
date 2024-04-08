@@ -4,10 +4,10 @@ import uuid
 from ResearchOS.config import Config
 # from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
-config = Config()
+config = Config("Immutable")
 
-abstract_id_len = config.immutable["abstract_id_len"]
-instance_id_len = config.immutable["instance_id_len"]
+abstract_id_len = config.abstract_id_len
+instance_id_len = config.instance_id_len
 
 class IDCreator():
     """Creates all ID's for the ResearchOS database."""

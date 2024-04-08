@@ -6,6 +6,22 @@ authors = [
     { name = "Author1 Name", email = "author1@email.com" },
     { name = "Author2 Name", email = "author2@email.com" }
 ]
-# This can be a GitHub repository URL or a package name & version from PyPI.
+# TODO: This can be a GitHub repository URL or a package name & version from PyPI.
 dependencies = [
 ]
+
+# No need to adjust the tool.researchos.paths tables unless you are using code from directories besides these.
+[tool.researchos.paths.research_objects]
+DataObject = "research_objects/data_objects.py"
+Dataset = "research_objects/datasets.py"
+Logsheet = "research_objects/logsheets.py"
+Process = "research_objects/processes.py"
+Variable = "research_objects/variables.py"
+Subset = "research_objects/subsets.py"
+Plot = "research_objects/plots.py"
+Stats = "research_objects/stats.py"
+
+[tool.researchos.paths.code]
+Process = ["process/"]
+Plot = ["plot/"]
+Stats = ["stats/"]
