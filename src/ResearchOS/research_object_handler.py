@@ -98,7 +98,7 @@ class ResearchObjectHandler:
         ordered_attr_result_dict = ordered_attr_result_all_computers_dict | ordered_attr_result_computer_dict # Current computer dict takes precedence.
 
         if not ordered_attr_result_all_computers:
-            raise ValueError("No object with that ID exists.")
+            return {} # The research object exists (if it is in the research_objects table), but there are no simple attributes.
         
         if not ordered_attr_result_computer and computer_specific_attr_names:
             raise ValueError("No computer-specific attributes exist for this object.")

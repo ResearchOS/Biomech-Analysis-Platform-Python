@@ -19,7 +19,6 @@ from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.Bridges.input import Input
 from ResearchOS.var_converter import convert_var
 from ResearchOS.Bridges.vr_value import VRValue
-from ResearchOS.process_runner import ProcessRunner
 
 all_default_attrs = {}
 
@@ -203,6 +202,7 @@ class DataObject(ResearchObject):
         Called like: self._set_vr_values(research_object, vr_values, pr_id, action)
         vr_values: dict with keys of type Variable and values of the values to set.
         pr_id: str, the process id."""
+        from ResearchOS.code_runner import CodeRunner
         if not vr_values:
             return
         commit = False
@@ -212,7 +212,7 @@ class DataObject(ResearchObject):
         # 1. Get hash or value of each value.
         vr_hashes_dict = {}
         for vr, raw_value in vr_values.items():
-            value = convert_var(raw_value, ProcessRunner.matlab_numeric_types)
+            value = convert_var(raw_value, CodeRunner.matlab_numeric_types)
             data_blob = None
             data_blob_hash = None
             scalar_value = None

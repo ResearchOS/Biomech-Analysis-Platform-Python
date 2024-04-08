@@ -1,9 +1,9 @@
 import datetime, sqlite3
 from datetime import timezone
 import os
+import logging
 
 from ResearchOS.idcreator import IDCreator
-# from ResearchOS.current_user import CurrentUser
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 count = 0
@@ -20,6 +20,26 @@ for file_path in file_paths:
     file_name, ext = os.path.splitext(os.path.basename(file_path))
     with open(file_path, "r") as f:
         queries[file_name] = f.read()
+
+# Initialize the logger.
+logger = logging.getLogger("ResearchOS")
+logger.setLevel(logging.DEBUG)
+
+# Create a file handler that logs all levels.
+file_handler = logging.FileHandler("researchos.log")
+file_handler.setLevel(logging.DEBUG)
+file_formatter = logging.Formatter("[%(asctime)s|%(levelname)s|%(filename)s|%(lineno)s] %(message)s")
+file_handler.setFormatter(file_formatter)
+
+# Create a console handler that logs only warnings and above.
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.WARNING)
+console_formatter = logging.Formatter("[%(levelname)s|%(filename)s|%(lineno)s] %(message)s")
+console_handler.setFormatter(console_formatter)
+
+# Add the handlers to the logger.
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 class Action():
     """An action is a set of SQL queries that are executed together."""

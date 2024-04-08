@@ -12,14 +12,16 @@ all_default_attrs["notes"] = None
 
 computer_specific_attr_names = []
 
-root_data_path = "data"
-
 class ResearchObject():
     """One research object. Parent class of Data Objects & Pipeline Objects."""
 
     def __deepcopy__(self, memo):
         """Raise an error if attempting to deepcopy this object."""
         raise ValueError("Research objects cannot be deepcopied.")
+    
+    def __copy__(self):
+        """Raise an error if attempting to copy this object."""
+        raise ValueError("Research objects cannot be copied.")
 
     def __hash__(self):
         return hash(self.id)
@@ -52,13 +54,12 @@ class ResearchObject():
         return instance 
     
     def __setattr__(self, name: str = None, value: Any = None, action: Action = None, all_attrs: DefaultAttrs = None, kwargs_dict: dict = {}) -> None:
-        """Set the attribute value. If the attribute value is not valid, an error is thrown."""    
-        from ResearchOS.DataObjects.data_object import DataObject    
+        """Set the attribute value. If the attribute value is not valid, an error is thrown."""
         if not self._initialized:
             self.__dict__[name] = value
             return        
         # Ensure that the criteria to set the attribute are met.
-        validate_attr(name)        
+        precheck_attr(name, value)        
             
         # Set the attribute. Create Action when __setattr__ is called as the top level.
         if all_attrs is None:
@@ -87,7 +88,6 @@ class ResearchObject():
             
         for key in del_keys:
             del kwargs_dict[key]
-        # 1. Set simple & complex builtin attributes.
         ResearchObjectHandler._set_builtin_attributes(self, default_attrs, kwargs_dict, action)
         
         action.commit = commit
@@ -147,7 +147,7 @@ class ResearchObject():
             except:
                 pass
                 
-        self.__setattr__(None, None, action, attrs, save_dict) # Set the attributes.
+        self.__setattr__(None, None, action=action, all_attrs=attrs, kwargs_dict=save_dict) # Set the attributes.
         # self._setattrs(default_attrs_dict, save_dict, action, None)
         self._initialized = True
 
@@ -156,37 +156,6 @@ class ResearchObject():
             action.exec = True
             action.commit = True
             action.execute()
-
-    # def _setattrs(self, default_attrs: dict, kwargs: dict, action: Action, pr_id: str) -> None:
-    #     """Set the attributes of the object.
-    #     default_attrs: The default attributes of the object.
-    #     orig_kwargs: The original kwargs passed to the object.
-    #     kwargs: The kwargs to be used to set the attributes. A combination of the default attributes and the original kwargs.
-    #     pr_id: Indicates that I am setting VR attributes."""
-    #     from ResearchOS.DataObjects.data_object import DataObject
-    #     del_keys = []
-    #     if self._initialized:
-    #         for key in kwargs:
-    #             if key not in default_attrs:
-    #                 continue
-    #             try:
-    #                 if key in self.__dict__ and self.__dict__[key] == kwargs[key]:
-    #                     del_keys.append(key) # No change.
-    #             except ValueError:
-    #                 pass # Allow the Variable to not exist yet.
-            
-    #     for key in del_keys:
-    #         del kwargs[key]
-    #     if len(kwargs)==0:
-    #         return False
-    #     # 1. Set simple & complex builtin attributes.
-    #     ResearchObjectHandler._set_builtin_attributes(self, default_attrs, kwargs, action)
-
-    #     # 2. Set VR attributes.
-    #     if pr_id is not None:
-    #         vr_attrs = {k: v for k, v in kwargs.items() if k not in default_attrs}
-    #         DataObject._set_vr_values(self, vr_attrs, action, pr_id)
-    #     return True
 
     def _get_dataset_id(self) -> str:
         """Get the most recent dataset ID. Currently assumes that there's only one Dataset object in existence."""        
@@ -218,7 +187,9 @@ class ResearchObject():
         pool.return_connection(conn)
         return schema_id
     
-def validate_attr(name: str, value: Any):
+def precheck_attr(name: str, value: Any):
+    if name is None and value is None:
+        return
     if not str(name).isidentifier():
         raise ValueError(f"{name} is not a valid attribute name.") # Offers some protection for having to eval() the name to get custom function names.        
     if name == "id":
