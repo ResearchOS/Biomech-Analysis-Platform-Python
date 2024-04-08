@@ -1,15 +1,20 @@
-import os
+import os, sys
 import importlib
 
 import typer
 from typer.testing import CliRunner
+import toml
 
+from ResearchOS.research_object import ResearchObject
+from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.config import Config
 from ResearchOS.cli.quickstart import create_folders
 from ResearchOS.db_initializer import DBInitializer
 from ResearchOS.action import Action
 
 app = typer.Typer()
+# Add the current working directory to the path so that the code can be imported.
+sys.path.append(os.getcwd())
 
 @app.command()
 def init_project(folder: str = typer.Option(None, help="Folder name"),
@@ -25,12 +30,13 @@ def init_project(folder: str = typer.Option(None, help="Folder name"),
             os.makedirs(folder)
         except FileNotFoundError:
             raise ValueError(f"Folder {folder} is not a valid folder path.")
+    # create_folders(folder, files = ["config.json"]) # This needs to exist before the Config object is created.
     create_folders(folder)
     # If this is a project (because the current working directory and the folder name match) create project-specific folders & files.
-    if folder == cwd:
-        create_folders(folder, folders = ["data", "output", "output.plots", "output.stats", "packages"], files = ["paths.py", ".gitignore", "src..research_objects.dataset.py", "src..research_objects.logsheets.py"])
-    config = Config()
+    create_folders(folder, folders = ["data", "output", "output/plots", "output/stats", "packages"], files = ["paths.py", ".gitignore", "src/research_objects/dataset.py", "src/research_objects/logsheets.py"])
+    config = Config(type="Project")
     user_input = "y"
+    print(config.__dict__)
     if os.path.exists(config.db_file) or os.path.exists(config.data_db_file):
         user_input = input("Databases already exist. Do you want to overwrite them? (y/n) ")
     if user_input.lower() == "y":
@@ -113,13 +119,73 @@ def db_reset():
     print("Databases reset to default state.")
 
 @app.command()
-def logsheet_read(path: str = typer.Argument(help="Path to the logsheet research object file. Default is research_objects.logsheets.py", default="research_objects.logsheets.py")):
-    """Run the logsheet."""
+def logsheet_read(path: str = typer.Argument(help="Path to the logsheet research object file. Default is research_objects.logsheets.py", default="research_objects.logsheets")):
+    """Run the logsheet."""    
     lgs = importlib.import_module(path)
-    lg_objs = [lg_obj for lg_obj in dir(lgs) if hasattr(lg_obj,"prefix") and lg_obj.prefix == "LG"]
+    # dir() returns names of the attributes of the module. So getattr(module, name) gets the object.
+    lg_objs = [getattr(lgs, lg_obj) for lg_obj in dir(lgs) if hasattr(getattr(lgs, lg_obj),"prefix") and getattr(lgs, lg_obj).prefix == "LG"]
     lg_obj = lg_objs[0]
     lg_obj.read_logsheet()
 
+@app.command()
+def graph_show(package_or_project_name: str = typer.Argument(default=None, help="Name of the package or project to visualize.")):
+    """Show the directed graph of Pipeline Objects within one package or project.
+    If no argument is entered, look in the current project's database for the objects.
+    If a package name is provided, look in the package's code for the objects."""
+    if package_or_project_name is None:
+        project_name = os.path.basename(os.getcwd())
+        package_or_project_name = os.path.basename(os.getcwd())
+
+@app.command()
+def open(ro_type: str = typer.Argument(help="Research object type (e.g. data, logsheet, pipeline)"),
+         p: str = typer.Option(None, help="The package name to open the research object from")):
+    """Open a research object in the default editor.
+    They can come from a few places:
+    1. The project: Looks in the root/pyproject.toml file for the research object location.
+    2. The package: Looks in root/packages/package_name/pyproject.toml for the research object location. 
+    If root/packages/package_name does not exist, searches through the pip installed packages for a package with the name package_name."""
+    subclasses = ResearchObjectHandler._get_subclasses()
+    name_list = [cls.__name__ for cls in subclasses if cls.__name__.lower() == ro_type.lower()]
+    if len(name_list) == 0:        
+        name_list = [cls.__name__ for cls in subclasses if cls.prefix.lower() == ro_type.lower()]
+    if len(name_list) == 0:
+        raise ValueError(f"Research object type {ro_type} not found.")
+    ro_type = name_list[0]
+    # Get the pyproject.toml file path.
+    root_path = os.getcwd()
+    root_package_path = os.path.join(root_path, "packages", str(p))
+    venv_package_path = os.path.join(os.getcwd(), "venv", "lib", "site-packages", str(p))
+    if os.path.exists(os.path.join(root_path, "pyproject.toml")):
+        toml_path = os.path.join(root_path, "pyproject.toml")
+    elif os.path.exists(os.path.join(root_package_path, "pyproject.toml")):
+        toml_path = os.path.join(root_package_path, "pyproject.toml")
+    elif os.path.exists(os.path.join(venv_package_path, "pyproject.toml")):
+        toml_path = os.path.join(venv_package_path, "pyproject.toml")
+
+    if not os.path.exists(toml_path):
+        raise ValueError(f"pyproject.toml file not found in {root_path} or {root_package_path} or {venv_package_path}")
+    
+    with open(toml_path, "r") as f:
+        pyproject = toml.load(f)
+
+    if "tool" not in pyproject:
+        raise ValueError("No tool section in pyproject.toml file.")
+    
+    if "researchos" not in pyproject["tool"]:
+        raise ValueError("No researchos section in pyproject.toml file.")
+    
+    if "paths" not in pyproject["tool"]["researchos"]:
+        raise ValueError("No paths section in pyproject.toml file.")
+    
+    if ro_type not in pyproject["tool"]["researchos"]["paths"]:
+        raise ValueError(f"No path for {ro_type} in pyproject.toml file.")
+
+    path = pyproject["tool"]["researchos"]["paths"][ro_type]
+
+    command = ["code", path]
+
+    os.system(" ".join(command))
+
 if __name__ == "__main__":
-    app()
-    # app("logsheet-read","C:\\Users\\Mitchell\\Desktop\\Matlab Code\\GitRepos\\CAREER-SLG-SPEED\\research_objects\\logsheets.py")
+    # app()
+    app(["init-project"])
