@@ -5,6 +5,8 @@ import numpy as np
 def convert_var(var: Any, matlab_numeric_types: tuple) -> Any:
     """Walk through the variable and convert any matlab numeric types to numpy arrays.
     """        
+    if matlab_numeric_types==[]:
+        matlab_numeric_types = ()
     if isinstance(var, dict):
         for key, value in var.items():
             var[key] = convert_var(value, matlab_numeric_types)

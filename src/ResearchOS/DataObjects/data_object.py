@@ -6,6 +6,7 @@ from hashlib import sha256
 import json
 
 import numpy as np
+import toml
 
 if TYPE_CHECKING:    
     from ResearchOS.PipelineObjects.process import Process
@@ -326,21 +327,24 @@ class DataObject(ResearchObject):
 def load_data_object_classes() -> None:
     """Import all data object classes from the config.data_objects_path.
     """
-    from ResearchOS.config import Config
+    # from ResearchOS.config import Config
 
-    config = Config()
-    data_objects_import_path = config.data_objects_path
-    main_part, _, extension = data_objects_import_path.rpartition(".")
-    main_part = main_part.replace(".", os.sep)
+    # config = Config()
+    # data_objects_import_path = config.data_objects_path    
+    with open("pyproject.toml", "r") as f:
+        pyproject = toml.load(f)
+    data_objects_import_path = pyproject["tool"]["researchos"]["paths"]["research_objects"]["DataObject"]
+    # main_part, _, extension = data_objects_import_path.rpartition(".")
+    # main_part = main_part.replace(".", os.sep)
 
-    if extension:
-        data_objects_path = main_part + '.' + extension
-    else:
-        data_objects_path = main_part
+    # if extension:
+    #     data_objects_path = main_part + '.' + extension
+    # else:
+    #     data_objects_path = main_part
 
-    if os.path.exists(data_objects_path):
+    if os.path.exists(data_objects_import_path):
         import importlib
-        data_objects_module = importlib.import_module(config.data_objects_path[:-3])
+        data_objects_module = importlib.import_module(data_objects_import_path[:-3]) # Excluding .py
         for name in dir(data_objects_module):
             if not name.startswith("__"):                
                 globals()[name] = getattr(data_objects_module, name)

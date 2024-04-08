@@ -1,9 +1,7 @@
 from typing import Any
 import json, csv, platform, os
-import copy
 
 import networkx as nx
-import numpy as np
 
 import time
 
@@ -12,12 +10,13 @@ from ResearchOS.variable import Variable
 from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
-from ResearchOS.action import Action
+from ResearchOS.action import Action, logger
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.idcreator import IDCreator
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.DataObjects.data_object import load_data_object_classes
 from ResearchOS.validator import Validator
+from ResearchOS.sql.sql_runner import sql_order_result
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -325,7 +324,11 @@ class Logsheet(PipelineObject):
         else:
             logsheet = full_logsheet[self.num_header_rows:]
 
-        # logsheet = logsheet[0:50] # For testing purposes, only read the first 50 rows.
+        # Load the existing paths.
+        sqlquery = "SELECT dataobject_id, path FROM paths"
+        result = action.conn.cursor().execute(sqlquery).fetchall()
+        dataobject_ids = [row[0] for row in result]
+        paths = [json.loads(row[1]) for row in result]
         
         # For each row, connect instances of the appropriate DataObject subclass to all other instances of appropriate DataObject subclasses.
         headers_in_logsheet = full_logsheet[0]
@@ -372,7 +375,7 @@ class Logsheet(PipelineObject):
         # Check that all of the data object names are valid variable names.
         for row_num, row in enumerate(dobj_names):
             if not all([str(cell).isidentifier() for cell in row]):
-                raise ValueError(f"Logsheet row #{row_num+self.num_header_rows+1}: All data object names must be non-empty and valid variable names!")        
+                raise ValueError(f"Logsheet row #{row_num+self.num_header_rows+1}: All data object names must be non-empty and valid variable names!")                    
                         
         # Get all Data Object names that are not in the lowest level.
         for idx, cls in enumerate(order):
@@ -384,7 +387,27 @@ class Logsheet(PipelineObject):
         id_creator = IDCreator(action.conn)
         for row in dobj_names:
             cls = order[len(row)-1] # The class to create.
-            all_dobjs_ordered.append(cls(id = id_creator.create_ro_id(cls), action = action, name = row[-1])) # Add the Data Object to the beginning of each row.                                      
+            if row not in paths: # If the path is not in the database, create a new DataObject.
+                all_dobjs_ordered.append(cls(id = id_creator.create_ro_id(cls), action = action, name = row[-1])) # Add the Data Object to the beginning of each row.                                      
+            else: # If the path is in the database, load the existing DataObject.
+                idx = paths.index(row)
+                all_dobjs_ordered.append(cls(id = dataobject_ids[idx], action = action, name = row[-1]))
+
+        # To format the print statements.
+        max_len = -1
+        for header in headers_in_logsheet:
+            if len(header) > max_len:
+                max_len = len(header)
+
+        # Remove the data objects that are unchanged                
+        sqlquery_raw = "SELECT path_id, vr_id, str_value, numeric_value, pr_id FROM data_values WHERE pr_id = ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single=True, user=True, computer=True)
+        result = action.conn.cursor().execute(sqlquery, (self.id,)).fetchall()
+        path_ids = [row[0] for row in result]
+        vr_ids = [row[1] for row in result]
+        str_values = [row[2] for row in result]
+        numeric_values = [row[3] for row in result]
+        pr_ids = [row[4] for row in result]
         
         # Assign the values to the DataObject instances.
         all_attrs = {}
@@ -393,12 +416,13 @@ class Logsheet(PipelineObject):
             level = column[2]
             level_dobjs = [dobj for dobj in all_dobjs_ordered if dobj.__class__ == level]
             type_class = column[1]
+            vr = column[3]
             # Get the index of the column that corresponds to the level of the DataObjects.
             for count, level_type_obj in enumerate(order):
                 if level_type_obj == level:
                     break
             level_column_idx = dobj_cols_idx[count]
-            print("{:<40} {:<25}".format(f"Column: {column[0]}", f"Level: {level.__name__}"))
+            print("{:<{width}} {:<25}".format(f"Column: {column[0]}", f"Level: {level.__name__}", width = max_len+2))
             for dobj in level_dobjs:
                 # Get all of the values
                 values = [self._clean_value(type_class, row[col_idx]) for row in logsheet if dobj.name == row[level_column_idx]]
@@ -414,11 +438,43 @@ class Logsheet(PipelineObject):
                 # Store it to the all_attrs dict.
                 if dobj not in all_attrs:
                     all_attrs[dobj] = {}
-                all_attrs[dobj][column[3]] = value                
-            
+                all_attrs[dobj][vr] = value
+                # assign_vr = True
+                # if dobj.id in path_ids:
+                #     logger.info(f"Data Object: {dobj.id} was pre-existing. Checking for changes...")
+                #     assign_vr = False
+                #     path_idx = [index for index, value in enumerate(path_ids) if value == dobj.id]
+                #     vr_idx = [index for index, value in enumerate(vr_ids) if value == vr.id]
+                #     vr_idx_inter = list(set(vr_idx).intersection(set(path_idx)))
+                #     # breakpoint()
+                #     # logger.warning(f"vr_idx_inter: {vr_idx_inter}.")
+                #     # logger.warning(f"Length of vr_idx_inter: {len(vr_idx_inter)}.")
+                #     assert len(vr_idx_inter) == 1
+                #     vr_idx_inter = vr_idx_inter[0]
+                #     if str_values[vr_idx_inter] is not None:
+                #         prev_value = str_values[vr_idx_inter]
+                #     else:
+                #         prev_value = numeric_values[vr_idx_inter]
+                #     if prev_value != value:
+                #         logger.info(f"Data Object: {dobj.id} has changed. For {vr.id}, value was {prev_value} and is now {value}.")
+                #         assign_vr = True
+                # else:
+                #     logger.info(f"Data Object: {dobj.id} was not present before. Assigning value {value}.")
+                # if assign_vr:
+                #     all_attrs[dobj][vr] = value
+                    
+        modified_dobjs = []
         for dobj, attrs in all_attrs.items():
-            dobj._set_vr_values(attrs, pr_id = self.id, action = action)
-            # dobj._setattrs({}, attrs, action = action, pr_id = self.id)                        
+            # Create dict for the DataObject with previous values.
+            if dobj.id in path_ids:
+                prev_attrs = {}
+                path_idx = [index for index, value in enumerate(path_ids) if value == dobj.id]
+                prev_attrs = {Variable(id = vr_ids[idx], action = action): str_values[idx] if str_values[idx] is not None else numeric_values[idx] for idx in path_idx if pr_ids[idx] == self.id}
+                # Remove the attributes that are the same as the previous attributes.
+                attrs = {vr: value for vr, value in attrs.items() if vr not in prev_attrs or prev_attrs[vr] != value}
+                if len(attrs) > 0:
+                    modified_dobjs.append(dobj)            
+            dobj._set_vr_values(attrs, pr_id = self.id, action = action)                     
 
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.
@@ -434,16 +490,18 @@ class Logsheet(PipelineObject):
         ds.__setattr__("addresses", addresses, action = action, all_attrs = all_default_attrs)
 
         # Set all the paths to the DataObjects.
-        print("Saving Data Objects...")
+        print("Saving Data Objects...")        
         for idx, row in enumerate(dobj_names):
             action.add_sql_query(all_dobjs_ordered[idx].id, "path_insert", (action.id_num, all_dobjs_ordered[idx].id, json.dumps(row[1:])))
 
+        breakpoint()
         action.exec = True
         action.commit = True
         action.execute() # Commit the action.
 
         elapsed_time = time.time() - logsheet_start_time
-        print(f"Logsheet import complete. {len(all_dobjs_ordered)} DataObjects created from {len(logsheet)} Logsheet rows in {round(elapsed_time, 2)} seconds.")
+        new_dobjs = [dobj for dobj in all_dobjs_ordered if dobj.id not in dataobject_ids]
+        print(f"Logsheet import complete (nrows={len(logsheet)}). Created {len(new_dobjs)} new DataObjects, modified {len(modified_dobjs)} DataObjects in {round(elapsed_time, 2)} seconds.")
 
     def _clean_value(self, type_class: type, raw_value: Any) -> Any:
         """Convert to proper type and clean the value of the logsheet cell."""
