@@ -111,6 +111,8 @@ class Action():
 
     def execute(self, return_conn: bool = True) -> None:
         """Run all of the sql queries in the action."""
+        # if self.conn is not None:
+        #     breakpoint()
         if not self.exec:
             return
         global count
