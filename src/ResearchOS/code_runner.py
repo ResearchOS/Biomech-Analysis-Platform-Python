@@ -10,8 +10,6 @@ import networkx as nx
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
 
-
-
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.research_object_handler import ResearchObjectHandler
@@ -20,8 +18,6 @@ from ResearchOS.DataObjects.dataset import Dataset
 from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.validator import Validator
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
-from ResearchOS.var_converter import convert_var
-from ResearchOS.Bridges.vr_value import VRValue
 
 class CodeRunner():
 

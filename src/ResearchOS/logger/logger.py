@@ -1,12 +1,20 @@
 # Created following: https://youtu.be/9L77QExPmI0?si=iVuQfyaXmWa5MM-q
 
 import logging.config
-import json, os
+import json, os, sys
 
 logger = logging.getLogger("ResearchOS")
 
 def setup_logging():
-    config_path = "src\ResearchOS\logger\logger_config_2_stderr_file.json"
+    config_path = os.sep.join(["ResearchOS","logger","logger_config_2_stderr_file.json"])
+    abs_paths = [path + os.sep + config_path for path in sys.path]
+    print("PATH: ", abs_paths)
+    for path in abs_paths:
+        if os.path.exists(path):
+            config_path = path
+            break
+    print(config_path)
+
     with open(config_path, "r") as f:
         logging_config = json.load(f)    
     for handler_name in logging_config["loggers"]["root"]["handlers"]:
@@ -18,16 +26,4 @@ def setup_logging():
                 os.makedirs(parent_dir)
     logging.config.dictConfig(config=logging_config)
 
-def main():
-    setup_logging()
-    logger.debug("This is a debug message", extra={"user": "John Doe"})
-    logger.info("This is an info message")
-    logger.warning("This is a warning message")
-    logger.error("This is an error message")
-    logger.critical("This is a critical message")
-    try:
-        1/0
-    except ZeroDivisionError:
-        logger.exception("This is an exception message")
-    
-main()
+setup_logging()
