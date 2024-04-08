@@ -4,7 +4,7 @@ import json, copy, os
 import networkx as nx
 
 from ResearchOS.DataObjects.data_object import DataObject
-from ResearchOS.action import Action
+from ResearchOS.action import Action, logger
 from ResearchOS.research_object_handler import ResearchObjectHandler
 
 all_default_attrs = {}
@@ -122,7 +122,9 @@ class Dataset(DataObject):
         if path == default:
             return
         if not os.path.exists(path):
-            raise ValueError("Specified path is not a path or does not currently exist!")
+            msg = f"The dataset path {path} does not exist!"
+            logger.exception(msg)
+            raise ValueError(msg)
         
     # def load_dataset_path(self, action: Action) -> str:
     #     """Load the dataset path from the database in a computer-specific way."""

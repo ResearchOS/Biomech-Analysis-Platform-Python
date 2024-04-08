@@ -1,6 +1,5 @@
 import os, sys
 import importlib
-import subprocess
 
 import typer
 from typer.testing import CliRunner
@@ -11,10 +10,19 @@ from ResearchOS.config import Config
 from ResearchOS.cli.quickstart import create_folders
 from ResearchOS.db_initializer import DBInitializer
 from ResearchOS.action import Action, logger
+from ResearchOS.tomlhandler import TOMLHandler
 
 app = typer.Typer()
 # Add the current working directory to the path so that the code can be imported.
 sys.path.append(os.getcwd())
+with open ("pyproject.toml", "r") as f:
+    pyproject = toml.load(f)
+src_path = pyproject["tool"]["researchos"]["paths"]["root"]["root"]
+if not os.path.isabs(src_path):
+    src_path = os.path.join(os.getcwd(), src_path)
+sys.path.append(src_path)
+logger.warning(f"Adding {src_path} to the path.")
+
 
 @app.command()
 def init_project(folder: str = typer.Option(None, help="Folder name"),
@@ -91,16 +99,18 @@ def config(github_token: str = typer.Option(None, help="GitHub token"),
         config.data_objects_path = data_objects_path
 
 @app.command()
-def db_reset():
+def db_reset(yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type 'y' to reset the databases to their default state.")):
     """Reset the databases to their default state."""
     # Ask the user for confirmation.
-    user_input = input("Are you sure you want to reset the databases to their default (empty) state? All data will be deleted! (y/n) ")
+    user_input = "y"
+    if not yes_or_no:
+        user_input = input("Are you sure you want to reset the databases to their default (empty) state? All data will be deleted! (y/n) ")        
     if user_input.lower() != "y":
         print("Databases not modified.")
         return
     db = DBInitializer()
     db_msg = "Databases reset to default state."
-    logger.info(db_msg)
+    logger.warning(db_msg)
 
 @app.command()
 def dobjs(is_active: int = typer.Option(1, help="1 for active, 0 for inactive, default 1")):
@@ -131,12 +141,22 @@ def dobjs(is_active: int = typer.Option(1, help="1 for active, 0 for inactive, d
         print(style_str.format(f"Path ID: {row[0]}", f"DataObject ID: {row[1]}", f"Path: {row[2]}"))
 
 @app.command()
-def logsheet_read(path: str = typer.Argument(help="Path to the logsheet research object file. Default is research_objects.logsheets.py", default="src.research_objects.logsheets")):
-    """Run the logsheet."""    
+def logsheet_read(path: str = typer.Argument(help="Path to the logsheet research object file. Default is research_objects.logsheets.py", default="research_objects.logsheets")):
+    """Run the logsheet."""
+    tomlhandler = TOMLHandler("pyproject.toml")
+    dataset_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["Dataset"]
+    logger.warning("DATASET_RAW_PATH: " + dataset_raw_path)
+    dataset_py_path = tomlhandler.make_abs_path(dataset_raw_path)
+    dataset_py_path = dataset_py_path.replace("/", os.sep)
+    dataset_py_path = dataset_py_path.replace(os.sep, ".").replace(".py", "")
+    logger.warning("DATASET_PY_PATH: " + dataset_py_path)
+    logger.warning("CWD: " + os.getcwd())
+    logger.warning("MODULE_PATH:" + path)
     lgs = importlib.import_module(path)
     # dir() returns names of the attributes of the module. So getattr(module, name) gets the object.
     lg_objs = [getattr(lgs, lg_obj) for lg_obj in dir(lgs) if hasattr(getattr(lgs, lg_obj),"prefix") and getattr(lgs, lg_obj).prefix == "LG"]
     lg_obj = lg_objs[0]
+    ds = importlib.import_module(dataset_py_path)
     lg_obj.read_logsheet()
 
 @app.command()
