@@ -364,8 +364,6 @@ class Logsheet(PipelineObject):
                 if cls is cls_item:
                     dobj_column_names.append(column_name)
 
-        print("Conn", action.conn)
-
         # Get all of the names of the data objects, after they're cleaned for SQLite.
         dobj_cols_idx = [headers_in_logsheet.index(header) for header in dobj_column_names] # Get the indices of the data objects columns.
         dobj_names = [] # The matrix of data object names (values in the logsheet).
