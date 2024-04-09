@@ -20,4 +20,5 @@ class TOMLHandler():
         root = self.toml_dict["tool"]["researchos"]["paths"]["root"]["root"]
         if not os.path.isabs(path):
             path = os.path.join(root, path)
+        path = path.replace("/", os.sep)
         return path

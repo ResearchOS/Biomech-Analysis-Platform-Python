@@ -5,6 +5,7 @@ import json
 import typer
 from typer.testing import CliRunner
 import toml
+import networkx as nx
 
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.config import Config
@@ -110,16 +111,28 @@ def db_reset(yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type 'y'
     logger.warning(db_msg)
 
 @app.command()
-def dobjs(is_active: int = typer.Option(1, help="1 for active, 0 for inactive, default 1")):
-    """List all available data objects."""    
+def dobjs(path = typer.Option(None, "--path", "-p", help="Path to the data object of interest")):
+    """List all available data objects."""
+    from ResearchOS.research_object import ResearchObject
+    from ResearchOS.DataObjects.dataset import Dataset
+    from ResearchOS.DataObjects.data_object import load_data_object_classes
+    import matplotlib.pyplot as plt
+    from netgraph import Graph, InteractiveGraph, EditableGraph
+    breakpoint()
+    if path is not None and not isinstance(path, list):
+        path = [path]
     action = Action(name = "list_dobjs")
     cursor = action.conn.cursor()
     sqlquery = "SELECT path_id, dataobject_id, path FROM paths WHERE is_active = ?"
+    is_active = 1
     params = (is_active,)    
     result = cursor.execute(sqlquery, params).fetchall()
-
-    # ds = Dataset(id = self._get_dataset_id())
-    # G = ds.get_addresses_graph()
+    if not result:
+        print("No data objects found.")
+        return
+    if path is not None:
+        result = [row for row in result if path in row[2]]
+    
     max_num_levels = -1
     str_lens = []
     for row in result:
@@ -142,6 +155,14 @@ def dobjs(is_active: int = typer.Option(1, help="1 for active, 0 for inactive, d
         # Prepare the complete format string
         style_str = "{:<12} {:<15} {:<7} " + lens_str          
         print(style_str.format(f"Path ID: {row[0]}", f"DataObject ID: {row[1]}", "Path: ", *path))
+    
+    # load_data_object_classes() # import the data objects.
+    # ds = Dataset(id = ResearchObject._get_dataset_id(False))
+    # G = ds.get_addresses_graph()
+
+    # G = nx.DiGraph(G)
+    # plot_instance = Graph(G)
+    # plt.show()
 
 @app.command()
 def logsheet_read():

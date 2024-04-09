@@ -259,7 +259,8 @@ class ResearchObjectHandler:
     def _prefix_to_class(prefix: str) -> type:
         """Convert a prefix to a class."""
         from ResearchOS.research_object import ResearchObject
-        for cls in ResearchObjectHandler._get_subclasses(ResearchObject):
+        subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
+        for cls in subclasses:
             if hasattr(cls, "prefix") and prefix.startswith(cls.prefix):
                 return cls
         raise ValueError("No class with that prefix exists.")

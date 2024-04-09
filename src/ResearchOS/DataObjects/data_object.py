@@ -4,6 +4,7 @@ import pickle
 import os
 from hashlib import sha256
 import json
+import importlib
 
 import numpy as np
 import toml
@@ -20,6 +21,7 @@ from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.Bridges.input import Input
 from ResearchOS.var_converter import convert_var
 from ResearchOS.Bridges.vr_value import VRValue
+from ResearchOS.tomlhandler import TOMLHandler
 
 all_default_attrs = {}
 
@@ -327,24 +329,18 @@ class DataObject(ResearchObject):
 def load_data_object_classes() -> None:
     """Import all data object classes from the config.data_objects_path.
     """
-    # from ResearchOS.config import Config
+    tomlhandler = TOMLHandler("pyproject.toml")
+    data_objects_import_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["DataObject"]
+    data_objects_import_abs_path = tomlhandler.make_abs_path(data_objects_import_path)
 
-    # config = Config()
-    # data_objects_import_path = config.data_objects_path    
-    with open("pyproject.toml", "r") as f:
-        pyproject = toml.load(f)
-    data_objects_import_path = pyproject["tool"]["researchos"]["paths"]["research_objects"]["DataObject"]
-    # main_part, _, extension = data_objects_import_path.rpartition(".")
-    # main_part = main_part.replace(".", os.sep)
+    if data_objects_import_path.endswith(".py"):
+        data_objects_import_path = data_objects_import_path[:-3].replace("/", ".")
+    else:
+        data_objects_import_path = data_objects_import_path.replace("/", ".")
 
-    # if extension:
-    #     data_objects_path = main_part + '.' + extension
-    # else:
-    #     data_objects_path = main_part
-
-    if os.path.exists(data_objects_import_path):
+    if os.path.exists(data_objects_import_abs_path):
         import importlib
-        data_objects_module = importlib.import_module(data_objects_import_path[:-3]) # Excluding .py
+        data_objects_module = importlib.import_module(data_objects_import_path)
         for name in dir(data_objects_module):
             if not name.startswith("__"):                
                 globals()[name] = getattr(data_objects_module, name)

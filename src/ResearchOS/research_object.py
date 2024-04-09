@@ -158,7 +158,7 @@ class ResearchObject():
             action.execute()
 
     def _get_dataset_id(self) -> str:
-        """Get the most recent dataset ID. Currently assumes that there's only one Dataset object in existence."""        
+        """Get the most recent dataset ID. Currently assumes that there's only one Dataset object in existence."""      
         sqlquery = f"SELECT object_id FROM research_objects WHERE object_id LIKE 'DS%'"
         pool = SQLiteConnectionPool()
         conn = pool.get_connection()
