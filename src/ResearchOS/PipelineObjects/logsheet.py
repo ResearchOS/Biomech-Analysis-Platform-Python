@@ -444,7 +444,7 @@ class Logsheet(PipelineObject):
                     all_attrs[dobj] = {}
                 all_attrs[dobj][vr] = value        
                     
-        modified_dobjs = []
+        modified_dobjs = []        
         for dobj, attrs in all_attrs.items():
             # Create dict for the DataObject with previous values.
             if dobj.id in path_ids:
@@ -454,7 +454,7 @@ class Logsheet(PipelineObject):
                 # Remove the attributes that are the same as the previous attributes.
                 attrs = {vr: value for vr, value in attrs.items() if vr not in prev_attrs or prev_attrs[vr] != value}
                 if len(attrs) > 0:
-                    modified_dobjs.append(dobj)            
+                    modified_dobjs.append(dobj)
             dobj._set_vr_values(attrs, pr_id = self.id, action = action)         
 
         # Arrange the address ID's that were generated into an edge list.
@@ -475,7 +475,8 @@ class Logsheet(PipelineObject):
         # Set all the paths to the DataObjects.        
         print("Saving Data Objects...")        
         for idx, row in enumerate(dobj_names):
-            action.add_sql_query(all_dobjs_ordered[idx].id, "path_insert", (action.id_num, all_dobjs_ordered[idx].id, json.dumps(row[1:])))
+            if row[1:] not in paths: # Exclude Dataset object.
+                action.add_sql_query(all_dobjs_ordered[idx].id, "path_insert", (action.id_num, all_dobjs_ordered[idx].id, json.dumps(row[1:])))
         
         action.exec = True
         action.commit = True        

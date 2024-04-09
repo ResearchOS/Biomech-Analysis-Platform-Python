@@ -1,5 +1,6 @@
 import os, sys
 import importlib
+import json
 
 import typer
 from typer.testing import CliRunner
@@ -41,7 +42,6 @@ def init_project(folder: str = typer.Option(None, help="Folder name"),
             msg = f"Folder {folder} is not a valid folder path."
             logger.error(msg)
             raise ValueError(msg)
-    # create_folders(folder, files = ["config.json"]) # This needs to exist before the Config object is created.
     create_folders(folder)
     # If this is a project (because the current working directory and the folder name match) create project-specific folders & files.
     create_folders(folder, folders = ["data", "output", "output/plots", "output/stats", "packages"], files = ["paths.py", ".gitignore", "src/research_objects/dataset.py", "src/research_objects/logsheets.py"])
@@ -82,9 +82,6 @@ def config(github_token: str = typer.Option(None, help="GitHub token"),
            data_db_file: str = typer.Option(None, help="Data database file"),
            data_objects_path: str = typer.Option(None, help="Path to data objects")
         ):
-    # default_db_file = "researchos.db"
-    # default_data_db_file = "researchos_data.db"
-    # default_data_objects_path = "research_objects" + os.sep + "data_objects.py"
     config = Config()
     command = f'code "{config._config_path}"'
     if github_token is None and db_file is None and data_db_file is None and data_objects_path is None:
@@ -119,44 +116,53 @@ def dobjs(is_active: int = typer.Option(1, help="1 for active, 0 for inactive, d
     cursor = action.conn.cursor()
     sqlquery = "SELECT path_id, dataobject_id, path FROM paths WHERE is_active = ?"
     params = (is_active,)    
-    result = cursor.execute(sqlquery, params).fetchall()      
+    result = cursor.execute(sqlquery, params).fetchall()
+
+    # ds = Dataset(id = self._get_dataset_id())
+    # G = ds.get_addresses_graph()
     max_num_levels = -1
     str_lens = []
     for row in result:
         str_lens_in_row = []
+        max_num_levels = max(max_num_levels, len(row))
         for col in row:
             curr_len = len(str(col))
-            str_lens_in_row.append(curr_len)
-            max_num_levels = max(max_num_levels, curr_len)
+            str_lens_in_row.append(curr_len)            
         str_lens.append(str_lens_in_row)
-     
+    
     lens = [-1 for i in range(max_num_levels)]
     for i in range(max_num_levels):
         lens[i] = max([row[i] for row in str_lens if len(row)>=i+1])
-    
-    lens_str = [f"{{:<{lens[i]}}}" for i in range(max_num_levels)]
+        
     for row in result:
-        row = row.append([""]*(max_num_levels-len(row)))
-        style_str = "{:<12} {:<15} {:<5} " + lens_str
-        print(style_str.format(f"Path ID: {row[0]}", f"DataObject ID: {row[1]}", f"Path: {row[2]}"))
+        path = json.loads(row[2])
+        lens_list = [f"{{:<{lens[i]}}}" for i in range(len(path))]
+        lens_str = " ".join(lens_list)
+
+        # Prepare the complete format string
+        style_str = "{:<12} {:<15} {:<7} " + lens_str          
+        print(style_str.format(f"Path ID: {row[0]}", f"DataObject ID: {row[1]}", "Path: ", *path))
 
 @app.command()
-def logsheet_read(path: str = typer.Argument(help="Path to the logsheet research object file. Default is research_objects.logsheets.py", default="research_objects.logsheets")):
+def logsheet_read():
     """Run the logsheet."""
     tomlhandler = TOMLHandler("pyproject.toml")
-    dataset_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["Dataset"]
-    logger.warning("DATASET_RAW_PATH: " + dataset_raw_path)
+    dataset_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["Dataset"]    
     dataset_py_path = tomlhandler.make_abs_path(dataset_raw_path)
     dataset_py_path = dataset_py_path.replace("/", os.sep)
     dataset_py_path = dataset_py_path.replace(os.sep, ".").replace(".py", "")
-    logger.warning("DATASET_PY_PATH: " + dataset_py_path)
-    logger.warning("CWD: " + os.getcwd())
-    logger.warning("MODULE_PATH:" + path)
-    lgs = importlib.import_module(path)
+
+    logsheet_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["Logsheet"]
+    logsheet_py_path = tomlhandler.make_abs_path(logsheet_raw_path)
+    logsheet_py_path = logsheet_py_path.replace("/", os.sep)
+    logsheet_py_path = logsheet_py_path.replace(os.sep, ".").replace(".py", "")
+
+    logger.warning("MODULE_PATH:" + logsheet_py_path)
+    lgs = importlib.import_module(logsheet_py_path)
     # dir() returns names of the attributes of the module. So getattr(module, name) gets the object.
     lg_objs = [getattr(lgs, lg_obj) for lg_obj in dir(lgs) if hasattr(getattr(lgs, lg_obj),"prefix") and getattr(lgs, lg_obj).prefix == "LG"]
     lg_obj = lg_objs[0]
-    ds = importlib.import_module(dataset_py_path)
+    ds = importlib.import_module(dataset_py_path) # Included to ensure the Dataset object is in the database.
     lg_obj.read_logsheet()
 
 @app.command()
