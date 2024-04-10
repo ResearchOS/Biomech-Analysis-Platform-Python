@@ -196,50 +196,63 @@ def graph_show(package_or_project_name: str = typer.Argument(default=None, help=
         package_or_project_name = os.path.basename(os.getcwd())
 
 @app.command()
-def open(ro_type: str = typer.Argument(help="Research object type (e.g. data, logsheet, pipeline)"),
+def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, logsheet, pipeline)"),
          p: str = typer.Option(None, help="The package name to open the research object from")):
     """Open a research object in the default editor.
     They can come from a few places:
     1. The project: Looks in the root/pyproject.toml file for the research object location.
     2. The package: Looks in root/packages/package_name/pyproject.toml for the research object location. 
     If root/packages/package_name does not exist, searches through the pip installed packages for a package with the name package_name."""
-    subclasses = ResearchObjectHandler._get_subclasses()
-    name_list = [cls.__name__ for cls in subclasses if cls.__name__.lower() == ro_type.lower()]
-    if len(name_list) == 0:        
-        name_list = [cls.__name__ for cls in subclasses if cls.prefix.lower() == ro_type.lower()]
-    if len(name_list) == 0:
-        raise ValueError(f"Research object type {ro_type} not found.")
-    ro_type = name_list[0]
+    from ResearchOS.research_object import ResearchObject
+    subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
+    cls = [cls for cls in subclasses if cls.__name__.lower() == ro_type.lower()]
+    if len(cls) == 0:        
+        cls = [cls for cls in subclasses if cls.prefix.lower() == ro_type.lower()]
+    if len(cls) == 0:
+        print(f"Research object type {ro_type} not found.")
+        return        
+    ro_type = cls[0]
     # Get the pyproject.toml file path.
     root_path = os.getcwd()
     root_package_path = os.path.join(root_path, "packages", str(p))
     venv_package_path = os.path.join(os.getcwd(), "venv", "lib", "site-packages", str(p))
+    # Project
     if os.path.exists(os.path.join(root_path, "pyproject.toml")):
         toml_path = os.path.join(root_path, "pyproject.toml")
+    # My package
     elif os.path.exists(os.path.join(root_package_path, "pyproject.toml")):
         toml_path = os.path.join(root_package_path, "pyproject.toml")
+    # Venv package
     elif os.path.exists(os.path.join(venv_package_path, "pyproject.toml")):
         toml_path = os.path.join(venv_package_path, "pyproject.toml")
 
     if not os.path.exists(toml_path):
         raise ValueError(f"pyproject.toml file not found in {root_path} or {root_package_path} or {venv_package_path}")
     
+    ro_name = ro_type.__name__.lower()    
+    if ro_name == "dataobjects":
+        ro_name = ro_name[:4] + ro_name[4].upper() + ro_name[5:]
+    ro_name = ro_name[0].upper() + ro_name[1:]
+    
     with open(toml_path, "r") as f:
         pyproject = toml.load(f)
 
     if "tool" not in pyproject:
-        raise ValueError("No tool section in pyproject.toml file.")
+        raise ValueError(f"No tool section in {toml_path}.")
     
     if "researchos" not in pyproject["tool"]:
-        raise ValueError("No researchos section in pyproject.toml file.")
+        raise ValueError(f"No researchos section in{toml_path} file.")
     
     if "paths" not in pyproject["tool"]["researchos"]:
-        raise ValueError("No paths section in pyproject.toml file.")
+        raise ValueError(f"No paths section in {toml_path}.")
     
-    if ro_type not in pyproject["tool"]["researchos"]["paths"]:
-        raise ValueError(f"No path for {ro_type} in pyproject.toml file.")
+    if "research_objects" not in pyproject["tool"]["researchos"]["paths"]:
+        raise ValueError(f"No research_objects section in {toml_path} file.")
+    
+    if ro_name not in pyproject["tool"]["researchos"]["paths"]["research_objects"]:
+        raise ValueError(f"No path for {ro_name} in {toml_path} file.")
 
-    path = pyproject["tool"]["researchos"]["paths"][ro_type]
+    path = pyproject["tool"]["researchos"]["paths"]["research_objects"][ro_name]
 
     command = "code " + path
 
