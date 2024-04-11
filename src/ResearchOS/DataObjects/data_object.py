@@ -28,7 +28,7 @@ all_default_attrs = {}
 computer_specific_attr_names = []
 
 class DataObject(ResearchObject):
-    """The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors."""
+    """The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors."""    
 
     def __delattr__(self, name: str, action: Action = None) -> None:
         """Delete an attribute. If it's a builtin attribute, don't delete it.

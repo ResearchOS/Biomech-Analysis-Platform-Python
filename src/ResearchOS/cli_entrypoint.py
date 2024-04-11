@@ -1,6 +1,7 @@
 import os, sys
 import importlib
 import json
+import time
 
 import typer
 from typer.testing import CliRunner
@@ -207,12 +208,13 @@ def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, lo
     subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
     cls = [cls for cls in subclasses if cls.__name__.lower() == ro_type.lower()]
     if len(cls) == 0:        
-        cls = [cls for cls in subclasses if cls.prefix.lower() == ro_type.lower()]
+        cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix.lower() == ro_type.lower()]
     if len(cls) == 0:
         print(f"Research object type {ro_type} not found.")
         return        
     ro_type = cls[0]
-    # Get the pyproject.toml file path.
+    # Get the pyproject.toml file path from all the places it could be.
+    # TODO: Support more than "venv" here.
     root_path = os.getcwd()
     root_package_path = os.path.join(root_path, "packages", str(p))
     venv_package_path = os.path.join(os.getcwd(), "venv", "lib", "site-packages", str(p))
@@ -252,12 +254,100 @@ def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, lo
     if ro_name not in pyproject["tool"]["researchos"]["paths"]["research_objects"]:
         raise ValueError(f"No path for {ro_name} in {toml_path} file.")
 
-    path = pyproject["tool"]["researchos"]["paths"]["research_objects"][ro_name]
+    paths = pyproject["tool"]["researchos"]["paths"]["research_objects"][ro_name]
+    root = pyproject["tool"]["researchos"]["paths"]["root"]["root"]
 
-    command = "code " + path
+    if not isinstance(paths, list):
+        paths = [paths]
 
-    os.system(command)
+    if not os.path.isabs(root):
+        root = os.path.join(os.getcwd(), root)
+    
+    for path in paths:
+        full_path = os.path.join(root, path)
+        command = "code " + full_path
+        os.system(command)
+
+@app.command()
+def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None)):
+    """Run the runnable pipeline objects."""
+    from ResearchOS.PipelineObjects.logsheet import Logsheet
+    from ResearchOS.PipelineObjects.process import Process
+    if plobj_id is None:
+        lg_id = None
+        plobj_id = lg_id
+
+    # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.
+    G = nx.MultiDiGraph()
+    
+    plobj = None
+    for plobj in G.nodes():
+        if plobj.id == plobj_id:            
+            break
+
+    if plobj is None:
+        raise ValueError("Pipeline object not found.")
+
+    # Check if the previous nodes are all up to date.
+    anc_nodes = list(nx.ancestors(G, plobj))
+    anc_nodes_sorted = []
+    if len(anc_nodes) > 0:
+        anc_graph = G.subgraph(anc_nodes) # Include the ancestors, NOT the current node.
+        anc_nodes_sorted = nx.topological_sort(anc_graph)
+        if anc_nodes_sorted[0].startswith("LG"):
+            anc_nodes_sorted = anc_nodes_sorted[1:] # Remove the Logsheet from the start of the pipeline.
+    else:
+        print('Starting at the root node of the Pipeline!')
+
+    out_of_date_objs = []
+    for anc_node in anc_nodes_sorted:        
+        # Check if the previous nodes are up to date.
+        if anc_node.up_to_date == False:
+            out_of_date_objs.append(anc_node)
+
+    succ_nodes = []
+    for out_of_date_obj in out_of_date_objs:
+        succ_nodes.extend(list(nx.descendants(G, out_of_date_obj)))
+        succ_nodes.append(out_of_date_obj)
+    succ_nodes = list(set(succ_nodes))
+    pl_nodes_sorted = []
+    if len(succ_nodes) > 0:
+        succ_graph = G.subgraph(succ_nodes) # Include the successors and the current node.
+        pl_nodes_sorted = nx.topological_sort(succ_graph)
+    else:
+        print('No nodes to run!')
+        return
+
+    print('Running the following nodes, in order:')
+    for pl_node in pl_nodes_sorted:
+        print(pl_node.id)
+
+    dur = 5
+    result = input_with_timeout(f"Press Enter to continue, or any other key to cancel. Or auto-start in {dur} seconds.", dur)
+    if result == "":
+        pass # No user input, or hit enter.
+    else:
+        print('Pipeline run cancelled.')
+        return
+        
+    for pl_node in pl_nodes_sorted:
+        pl_node.run()
+
+def input_with_timeout(prompt, timeout):
+    import threading
+    result = [""]
+
+    def wait_for_input():
+        result[0] = input(prompt)
+
+    thread = threading.Thread(target=wait_for_input)
+    thread.daemon = True
+    thread.start()
+    thread.join(timeout)
+    if thread.is_alive():
+        print('Starting the pipeline...')
+
+    return result[0]
 
 if __name__ == "__main__":
-    # app()
     app(["logsheet-read"])
