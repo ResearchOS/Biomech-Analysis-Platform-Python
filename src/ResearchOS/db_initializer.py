@@ -118,7 +118,7 @@ class DBInitializer():
 
         # Actions table. Lists all actions that have been performed, and their timestamps.
         cursor.execute("""CREATE TABLE IF NOT EXISTS actions (
-                        action_id_num INTEGER PRIMARY KEY,
+                        action_id_num INTEGER PRIMARY KEY AUTOINCREMENT,
                         action_id TEXT NOT NULL,
                         name TEXT NOT NULL,
                         datetime TEXT NOT NULL,
@@ -180,17 +180,6 @@ class DBInitializer():
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")
         
-        # Data address schemas. Lists all data address schemas for all data.
-        # cursor.execute("""CREATE TABLE IF NOT EXISTS data_address_schemas (
-        #                 action_id TEXT NOT NULL,
-        #                 schema_id TEXT NOT NULL,
-        #                 dataset_id TEXT NOT NULL,
-        #                 levels_edge_list TEXT NOT NULL,
-        #                 FOREIGN KEY (dataset_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-        #                 FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
-        #                 PRIMARY KEY (dataset_id, schema_id)
-        #                 )""")
-        
         # Variable -> DataObjects table. Lists all variables and which data objects they are associated with.
         cursor.execute("""CREATE TABLE IF NOT EXISTS vr_dataobjects (
                         action_id_num INTEGER NOT NULL,
@@ -224,19 +213,7 @@ class DBInitializer():
                         user_id TEXT NOT NULL,
                         computer_id TEXT NOT NULL,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
-                        )""")
-        
-        # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
-                        action_id_num INTEGER NOT NULL,
-                        source_object_id TEXT NOT NULL,
-                        target_object_id TEXT NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id_num, source_object_id, target_object_id, is_active)
-                        )""")
+                        )""")        
         
         # Paths table. Lists all data object paths.
         # "path" column is the JSON'd list of data object names in the path.
@@ -248,4 +225,51 @@ class DBInitializer():
                         path TEXT NOT NULL,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
-                        )""")        
+                        )""")
+        
+        # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
+                        action_id_num INTEGER NOT NULL,
+                        source_object_id TEXT NOT NULL,
+                        target_object_id TEXT NOT NULL,
+                        edge_id TEXT NOT NULL,
+                        is_active INTEGER NOT NULL DEFAULT 1,
+                        FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id_num, edge_id, source_object_id, target_object_id, is_active)
+                        )""")
+        
+        # Connections table. Lists all connections between all inlets and outlets.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS connections (
+                        connection_id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                        action_id_num INTEGER NOT NULL,
+                        inlet_id TEXT NOT NULL,
+                        outlet_id TEXT NOT NULL,
+                        is_active INTEGER NOT NULL DEFAULT 1,
+                        FOREIGN KEY (inlet_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (outlet_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
+                        )""")
+        
+        # Inlets table. Lists all inlets.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS inlets (
+                        inlet_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        action_id_num INTEGER NOT NULL,
+                        vr_name_in_code TEXT NOT NULL,
+                        pl_object_id TEXT NOT NULL,
+                        is_active INTEGER NOT NULL DEFAULT 1,
+                        FOREIGN KEY (pl_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
+                        )""")
+        
+        # Outlets table. Lists all outlets.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS outlets (
+                        outlet_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        action_id_num INTEGER NOT NULL,
+                        vr_name_in_code TEXT NOT NULL,
+                        pl_object_id TEXT NOT NULL,
+                        is_active INTEGER NOT NULL DEFAULT 1,
+                        FOREIGN KEY (pl_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
+                        )""")

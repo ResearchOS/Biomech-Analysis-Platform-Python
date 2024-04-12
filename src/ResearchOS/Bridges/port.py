@@ -93,6 +93,4 @@ class Port():
             return Input(**tmp_dict)
         else:
             return Output(**tmp_dict)
-
-
         

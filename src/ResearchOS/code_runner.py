@@ -95,40 +95,8 @@ class CodeRunner():
                 pr = Logsheet(id = vr_pr_ids_result[vr_id_idx][1], action = action)
             input.pr = pr
             robj.inputs[input.vr_name_in_code] = input
-
-        # Lookup PR
-        # needs_pr = []
-        # for input in robj.inputs.values():
-        #     if input.lookup_pr is not None:
-        #         continue
-        #     if not isinstance(input.lookup_vr, Variable):
-        #         continue
-        #     needs_pr.append(input)
-
-        # if len(needs_pr)==0:
-        #     return
-        
-        # sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({})".format(",".join(["?" for _ in needs_pr]))
-        # sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
-        # params = tuple([input.lookup_vr.id for input in needs_pr])
-        # vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        # # TODO: Changing the "input" variable here does not change the Research Object. Need to ensure the change reaches the database.
-        # for input in needs_pr:
-        #     vr_id = input.lookup_vr.id
-        #     vr_id_idx = [idx for idx, row in enumerate(vr_pr_ids_result) if row[0] == vr_id]
-        #     assert(len(vr_id_idx) == 1)
-        #     vr_id_idx = vr_id_idx[0]
-        #     if vr_pr_ids_result[vr_id_idx][1].startswith(Process.prefix):
-        #         pr = Process(id = vr_pr_ids_result[vr_id_idx][1], action = action)
-        #     else:
-        #         pr = Logsheet(id = vr_pr_ids_result[vr_id_idx][1], action = action)
-        #     input.lookup_pr = pr
-        #     robj.inputs[input.vr_name_in_code] = input
         
         robj.__setattr__("inputs", robj.inputs, action=action)
-
-
-        
 
     @staticmethod
     def get_lowest_level(robj: "ResearchObject", schema_ordered: list) -> Optional[str]:
@@ -201,8 +169,6 @@ class CodeRunner():
                 level = batch_list[0]
                 # Get the list of nodes that are connected to this node.
                 successors = list(graph.successors(node))
-                # level_nodes = [n for n in successors if n.startswith(level.prefix)]
-                # level_nodes = [n for n in level_nodes if set(node_lineage).issubset(set(list(nx.ancestors(subset_graph, n))))]
                 for n in successors:
                     batches_dict[n] = {}
                     node_lineage.append(n)
@@ -210,7 +176,6 @@ class CodeRunner():
                 return batches_dict
             
             batches_dict_to_run = {}
-            dataset_node = [paths[0][0]]
             top_level_idx = schema_ordered.index(level)
             top_level_nodes = list(set([p[top_level_idx] for p in paths if len(p) > top_level_idx]))
             for node in top_level_nodes:
@@ -262,13 +227,6 @@ class CodeRunner():
         
         for path in paths_in_batch:
             batch_path = [path[idx-1] if idx-1 < len(path) else None for idx in batch_idx_in_schema]
-            # batch_idx_in_schema_subtracted = [idx - 1 for idx in batch_idx_in_schema if idx - 1 < len(path)]
-            # arranged_path = [path[idx] for idx in batch_idx_in_schema_subtracted[0:len(path)]]
-            # batch_path = [n for n in arranged_path if n in batch_graph.nodes()]
-            # if len(batch_path) == 1:
-            #     # Avoid self-loops
-            #     if dataset_node != batch_path[0] and (dataset_node, batch_path[0]) not in batch_graph.edges():
-            #         batch_graph.add_edge(dataset_node, batch_path[0])
             for idx in range(len(batch_path) - 1):
                 edge = (batch_path[idx], batch_path[idx + 1])
                 if all([e is not None for e in edge]) and edge not in batch_graph.edges():
@@ -526,8 +484,7 @@ class CodeRunner():
         """
         from ResearchOS.variable import Variable
         cursor = self.action.conn.cursor()
-        # Check if the values for all the input variables are up to date. If so, skip this node.
-        # check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_vals_in.items()}            
+        # Check if the values for all the input variables are up to date. If so, skip this node.        
         input_vrs_latest_time = datetime.min.replace(tzinfo=timezone.utc)
         for vr_name_in_code, input in inputs.items():
             if hasattr(input.parent_ro, "import_file_vr_name") and vr_name_in_code == input.parent_ro.import_file_vr_name:
@@ -579,4 +536,4 @@ class CodeRunner():
         matlab_folder = os.path.join(research_os_dir, "matlab")
         if self.matlab_eng is None:
             raise ValueError("MATLAB engine not loaded. Run `pip list` to check whether the MATLAB Engine API is installed. Is MATLAB itself installed?")
-        self.matlab_eng.addpath(matlab_folder)
+        self.matlab_eng.addpath(matlab_folder)    

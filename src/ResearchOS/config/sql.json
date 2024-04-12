@@ -8,7 +8,10 @@
         "data_addresses",
         "paths",
         "vr_dataobjects",
-        "pipelineobjects_graph"
+        "pipelineobjects_graph",
+        "connections",
+        "inlets",
+        "outlets"
     ],
     "intended_tables_data": [
         "data_values_blob"
