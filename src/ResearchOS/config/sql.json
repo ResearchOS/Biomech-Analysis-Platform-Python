@@ -10,8 +10,9 @@
         "vr_dataobjects",
         "pipelineobjects_graph",
         "connections",
-        "inlets",
-        "outlets"
+        "inlets_outlets",
+        "inputs_outputs",
+        "lets_puts"
     ],
     "intended_tables_data": [
         "data_values_blob"

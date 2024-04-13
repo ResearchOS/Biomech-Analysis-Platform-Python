@@ -22,3 +22,21 @@ class TOMLHandler():
             path = os.path.join(root, path)
         path = path.replace("/", os.sep)
         return path
+    
+    def get(self, search_str: str):
+        """Get the value of the search string."""
+        search_str = search_str.split(".")
+        value = self.toml_dict
+        for key in search_str:            
+            key = str(key).lower()
+            if key not in value:
+                raise ValueError(f"Could not find {key} in {value} in TOML file {self.file_path}")
+            value = value[key]
+        return value    
+    
+    def file_path_to_module(self, path: str):
+        """Convert a file path to a module path."""
+        path = path.replace(os.sep, "/")
+        path = path.replace(".py", "")
+        path = path.replace("/", ".")
+        return path

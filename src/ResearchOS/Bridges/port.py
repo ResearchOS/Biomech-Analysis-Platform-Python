@@ -17,6 +17,12 @@ class Port():
         self.parent_ro = parent_ro
         self.vr_name_in_code = vr_name_in_code
 
+    def load_from_db(self, id: int) -> None:
+        """Load the Port object from the database."""
+        self.id = id
+        sqlquery = f"SELECT * FROM {self.table_name} WHERE {self.id_col} = ?"
+        
+
     def to_serializable(self) -> dict:
         """Returns a serializable dictionary of the Port object."""
         _dict = self.__dict__

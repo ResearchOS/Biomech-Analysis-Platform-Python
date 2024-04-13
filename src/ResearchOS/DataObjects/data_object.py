@@ -330,7 +330,7 @@ def load_data_object_classes() -> None:
     """Import all data object classes from the config.data_objects_path.
     """
     tomlhandler = TOMLHandler("pyproject.toml")
-    data_objects_import_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["DataObject"]
+    data_objects_import_path = tomlhandler.get("tool.researchos.paths.research_objects.dataobject")
     data_objects_import_abs_path = tomlhandler.make_abs_path(data_objects_import_path)
 
     if data_objects_import_path.endswith(".py"):

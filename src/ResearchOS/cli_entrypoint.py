@@ -232,30 +232,11 @@ def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, lo
         raise ValueError(f"pyproject.toml file not found in {root_path} or {root_package_path} or {venv_package_path}")
     
     ro_name = ro_type.__name__.lower()    
-    if ro_name == "dataobjects":
-        ro_name = ro_name[:4] + ro_name[4].upper() + ro_name[5:]
-    ro_name = ro_name[0].upper() + ro_name[1:]
     
-    with open(toml_path, "r") as f:
-        pyproject = toml.load(f)
+    toml_handler = TOMLHandler(toml_path)
 
-    if "tool" not in pyproject:
-        raise ValueError(f"No tool section in {toml_path}.")
-    
-    if "researchos" not in pyproject["tool"]:
-        raise ValueError(f"No researchos section in{toml_path} file.")
-    
-    if "paths" not in pyproject["tool"]["researchos"]:
-        raise ValueError(f"No paths section in {toml_path}.")
-    
-    if "research_objects" not in pyproject["tool"]["researchos"]["paths"]:
-        raise ValueError(f"No research_objects section in {toml_path} file.")
-    
-    if ro_name not in pyproject["tool"]["researchos"]["paths"]["research_objects"]:
-        raise ValueError(f"No path for {ro_name} in {toml_path} file.")
-
-    paths = pyproject["tool"]["researchos"]["paths"]["research_objects"][ro_name]
-    root = pyproject["tool"]["researchos"]["paths"]["root"]["root"]
+    paths = toml_handler.get("tool.researchos.paths.research_objects." + ro_name)
+    root = toml_handler.get("tool.researchos.paths.root.root")
 
     if not isinstance(paths, list):
         paths = [paths]
@@ -271,14 +252,21 @@ def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, lo
 @app.command()
 def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None)):
     """Run the runnable pipeline objects."""
-    from ResearchOS.PipelineObjects.logsheet import Logsheet
     from ResearchOS.PipelineObjects.process import Process
+    from ResearchOS.build_pl import build_pl
+    # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.      
+    Process.multi = True
+    G = build_pl()
+    try:
+        pass
+    except Exception as e:
+        print(f"Error building the pipeline: {e}")
+    finally:
+        delattr(Process, "multi")
+
     if plobj_id is None:
         lg_id = None
         plobj_id = lg_id
-
-    # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.
-    G = nx.MultiDiGraph()
     
     plobj = None
     for plobj in G.nodes():
@@ -350,4 +338,4 @@ def input_with_timeout(prompt, timeout):
     return result[0]
 
 if __name__ == "__main__":
-    app(["logsheet-read"])
+    app(["run"])

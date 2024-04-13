@@ -4,11 +4,15 @@ if TYPE_CHECKING:
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.logsheet import Logsheet   
     source_type = Union[Process, Logsheet]
+    from ResearchOS.research_object import ResearchObject
 
 from ResearchOS.variable import Variable
-from ResearchOS.DataObjects.data_object import DataObject
+from ResearchOS.Bridges.inlet import Inlet
+from ResearchOS.Bridges.outlet import Outlet
 from ResearchOS.Bridges.input import Input
 from ResearchOS.Bridges.output import Output
+from ResearchOS.action import Action
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 class VRHandler():
 
@@ -31,38 +35,80 @@ class VRHandler():
     #     return new_dict
     
     @staticmethod
-    def standardize_inputs(all_inputs: Union[Input, dict]) -> dict:
+    def standardize_inputs(parent_ro: "ResearchObject", all_inputs: Union[Input, dict], action: Action = None) -> dict:
         """Standardize the inputs to be of type Input."""
-        inputs = {}
-        for vr_name_in_code, input in all_inputs.items():
-            if input is None:
-                inputs[vr_name_in_code] = Input()
-            elif isinstance(input, dict) and "vr" in input:
-                inputs[vr_name_in_code] = Input(**input) # One or more kwargs were specified.
-            elif isinstance(input, (Variable)):
-                inputs[vr_name_in_code] = Input(vr = input) # Only a Variable was specified.
-            elif isinstance(input, dict):
-                vr = Variable(id = "VRDataObject_Attribute")
-                vr._dataobject_attr = input
-                inputs[vr_name_in_code] = Input(vr = vr) # Only a DataObject attribute was specified.
-            elif isinstance(input, Input):
-                inputs[vr_name_in_code] = input # Already an Input.
+        return_conn = False
+        if action is None:
+            action = Action(name = "Set_Inputs")
+            return_conn = True
+        # 1. Create/load all of the Inlets
+        inlets_dict = {key: Inlet(parent_ro, key, action) for key in all_inputs.keys()}        
+
+        # 2. Create/load all of the Inputs        
+        for key, input in all_inputs.items():
+            inlet = inlets_dict[key]
+
+            if isinstance(input, Input):
+                inlet.input = input
+            elif isinstance(input, Variable):
+                input = Input(vr=input)
             else:
-                raise ValueError(f"Input must be of type Input, Variable, or dict, not {type(input)}.")
-        return inputs
+                input = Input(value=input) # Directly hard-coded value. May be a DataObject attribute.
+            
+            inlet.input = input
+        
+        if return_conn:
+            pool = SQLiteConnectionPool()
+            pool.return_connection(action.conn)
+        
+        return inlets_dict
+        # inputs = {}
+        # for vr_name_in_code, input in all_inputs.items():
+        #     if input is None:
+        #         inputs[vr_name_in_code] = Input()
+        #     elif isinstance(input, dict) and "vr" in input:
+        #         # VR with slice?
+        #         inputs[vr_name_in_code] = Input(**input) # One or more kwargs were specified.
+        #     elif isinstance(input, (Variable)):
+        #         inputs[vr_name_in_code] = Input(vr = input) # Only a Variable was specified.
+        #     elif isinstance(input, dict):
+        #         vr = Variable(id = "VRDataObject_Attribute")
+        #         vr._dataobject_attr = input
+        #         inputs[vr_name_in_code] = Input(vr = vr) # Only a DataObject attribute was specified.
+        #     elif isinstance(input, Input):
+        #         inputs[vr_name_in_code] = input # Already an Input.
+        #     else:
+        #         raise ValueError(f"Input must be of type Input, Variable, or dict, not {type(input)}.")
+        # return inputs
     
     @staticmethod
-    def standardize_outputs(all_outputs: Union[Output, dict]) -> dict:
+    def standardize_outputs(parent_ro: "ResearchObject", all_outputs: Union[Output, dict], action: Action = None) -> dict:
         """Standardize the outputs to be of type Output."""
-        outputs = {}
-        for vr_name_in_code, output in all_outputs.items():
-            if output is None:
-                outputs[vr_name_in_code] = Output()
-            elif not isinstance(output, Output):
-                outputs[vr_name_in_code] = Output(vr = output)
+        return_conn = False
+        if action is None:
+            action = Action(name = "Set_Inputs")
+            return_conn = True
+        # 1. Create/load all of the Inlets
+        outlets_dict = {key: Outlet(parent_ro, key, action) for key in all_outputs.keys()}
+
+        # 2. Create/load all of the Inputs
+        for key, output in all_outputs.items():
+            outlet = outlets_dict[key]
+
+            if isinstance(output, Output):
+                outlet.output = output
+            elif isinstance(output, Variable):
+                output = Output(vr=output)
             else:
-                outputs[vr_name_in_code] = output
-        return outputs
+                output = Output(value=output) # Directly hard-coded value. May be a DataObject attribute.
+
+            outlet.output = output
+        
+        if return_conn:
+            pool = SQLiteConnectionPool()
+            pool.return_connection(action.conn)
+        
+        return outlets_dict
     
     @staticmethod
     def deserialize_input_vr(vr: Union[None, dict]) -> Union[None, "Variable"]:

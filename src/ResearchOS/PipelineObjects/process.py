@@ -96,12 +96,12 @@ class Process(PipelineObject):
     
     def set_inputs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict."""
-        standardized_kwargs = VRHandler.standardize_inputs(kwargs)
+        standardized_kwargs = VRHandler.standardize_inputs(self, kwargs)
         self.__setattr__("inputs", standardized_kwargs)
 
     def set_outputs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict."""
-        standardized_kwargs = VRHandler.standardize_outputs(kwargs)
+        standardized_kwargs = VRHandler.standardize_outputs(self, kwargs)
         self.__setattr__("outputs", standardized_kwargs)
 
     def run(self, force_redo: bool = False) -> None:

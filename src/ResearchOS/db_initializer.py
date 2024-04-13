@@ -252,9 +252,10 @@ class DBInitializer():
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")
         
-        # Inlets table. Lists all inlets.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS inlets (
-                        inlet_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        # Inlets & outlets table. Lists all inlets & outlets.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS inlets_outlets (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        is_inlet INTEGER NOT NULL DEFAULT 1,
                         action_id_num INTEGER NOT NULL,
                         vr_name_in_code TEXT NOT NULL,
                         pl_object_id TEXT NOT NULL,
@@ -263,13 +264,34 @@ class DBInitializer():
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")
         
-        # Outlets table. Lists all outlets.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS outlets (
-                        outlet_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        # Inputs & outputs table. Lists all inputs & outputs.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS inputs_outputs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        is_input INTEGER NOT NULL DEFAULT 1,
                         action_id_num INTEGER NOT NULL,
-                        vr_name_in_code TEXT NOT NULL,
-                        pl_object_id TEXT NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (pl_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        vr_id TEXT,
+                        pr_id TEXT,
+                        lookup_vr_id TEXT,
+                        lookup_pr_id TEXT,
+                        value TEXT,
+                        show INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (lookup_vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (lookup_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        CHECK (                            
+                            (is_input = 0 AND value IS NULL AND lookup_vr_id IS NULL AND lookup_pr_id IS NULL)
+                        )
+                        )""")
+        
+        # lets_puts table. Lists which inlets are connected to which inputs, and which outlets are connected to which outputs.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS lets_puts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        action_id_num INTEGER NOT NULL,
+                        let_id TEXT NOT NULL,
+                        put_id TEXT NOT NULL,
+                        FOREIGN KEY (let_id) REFERENCES inlets_outlets(id) ON DELETE CASCADE,
+                        FOREIGN KEY (put_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")

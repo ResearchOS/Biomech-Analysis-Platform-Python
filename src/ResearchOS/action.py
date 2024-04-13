@@ -65,17 +65,22 @@ class Action():
         self.timestamp = timestamp        
         self.redo_of = redo_of
         self.commit = commit # False by default. If True, the action will be committed to the database. Overrides self.exec.
-        self.exec = exec # True to run cursor.execute() and False to skip it.        
+        self.exec = exec # True to run cursor.execute() and False to skip it.   
         try:
             sqlquery = "SELECT MAX(action_id_num) FROM actions"
-            result = self.conn.execute(sqlquery).fetchone()[0] + 1
-        except:
-            sqlquery = "SELECT name FROM sqlite_master WHERE type='table' AND name='actions'"
             result = self.conn.execute(sqlquery).fetchone()
-            if result is not None:
-                raise ValueError("The actions table exists, but there are no rows in it.")
+            if result[0] is not None:
+                result = result[0] + 1
             else:
-                result = 1 # The actions table does not exist, so the action_id_num = 1
+                assert False              
+        except:
+            result = 1 # The actions table does not exist.
+            # sqlquery = "SELECT name FROM sqlite_master WHERE type='table' AND name='actions'"
+            # result = self.conn.execute(sqlquery).fetchone()
+            # if result is not None:
+            #     raise ValueError("The actions table does not exist. Database must have been corrupted. Run 'ros db-reset' to properly re-initialize the databases.")
+            # else:
+            #     result = 1 # The actions table does not exist, so the action_id_num = 1
         self.id_num = result
         self.creation_params = (action_id, self.id_num, name, timestamp, redo_of) # The parameters for the creation query.
 
@@ -92,6 +97,8 @@ class Action():
             self.dobjs[group_name] = {}
         if query_name not in self.dobjs[group_name]:
             self.dobjs[group_name][query_name] = {} # Initialize the dobj_id if it doesn't exist.
+        if dobj_id is None:
+            dobj_id = "None"
         if dobj_id not in self.dobjs[group_name][query_name]:
             self.dobjs[group_name][query_name][dobj_id] = [] # Initialize the query_name if it doesn't exist for this dobj_id        
         
