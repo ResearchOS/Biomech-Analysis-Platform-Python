@@ -49,37 +49,19 @@ class VRHandler():
             inlet = inlets_dict[key]
 
             if isinstance(input, Input):
-                inlet.input = input
+                pass
             elif isinstance(input, Variable):
                 input = Input(vr=input)
             else:
                 input = Input(value=input) # Directly hard-coded value. May be a DataObject attribute.
             
-            inlet.input = input
+            inlet.add_put(input, action=action)
         
         if return_conn:
             pool = SQLiteConnectionPool()
             pool.return_connection(action.conn)
         
         return inlets_dict
-        # inputs = {}
-        # for vr_name_in_code, input in all_inputs.items():
-        #     if input is None:
-        #         inputs[vr_name_in_code] = Input()
-        #     elif isinstance(input, dict) and "vr" in input:
-        #         # VR with slice?
-        #         inputs[vr_name_in_code] = Input(**input) # One or more kwargs were specified.
-        #     elif isinstance(input, (Variable)):
-        #         inputs[vr_name_in_code] = Input(vr = input) # Only a Variable was specified.
-        #     elif isinstance(input, dict):
-        #         vr = Variable(id = "VRDataObject_Attribute")
-        #         vr._dataobject_attr = input
-        #         inputs[vr_name_in_code] = Input(vr = vr) # Only a DataObject attribute was specified.
-        #     elif isinstance(input, Input):
-        #         inputs[vr_name_in_code] = input # Already an Input.
-        #     else:
-        #         raise ValueError(f"Input must be of type Input, Variable, or dict, not {type(input)}.")
-        # return inputs
     
     @staticmethod
     def standardize_outputs(parent_ro: "ResearchObject", all_outputs: Union[Output, dict], action: Action = None) -> dict:
@@ -88,21 +70,21 @@ class VRHandler():
         if action is None:
             action = Action(name = "Set_Inputs")
             return_conn = True
-        # 1. Create/load all of the Inlets
+        # 1. Create/load all of the Outlets
         outlets_dict = {key: Outlet(parent_ro, key, action) for key in all_outputs.keys()}
 
-        # 2. Create/load all of the Inputs
+        # 2. Create/load all of the Outputs
         for key, output in all_outputs.items():
             outlet = outlets_dict[key]
 
             if isinstance(output, Output):
-                outlet.output = output
+                pass
             elif isinstance(output, Variable):
                 output = Output(vr=output)
             else:
                 output = Output(value=output) # Directly hard-coded value. May be a DataObject attribute.
 
-            outlet.output = output
+            outlet.add_put(output, action=action)
         
         if return_conn:
             pool = SQLiteConnectionPool()

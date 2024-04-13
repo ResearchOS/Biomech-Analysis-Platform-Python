@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 import weakref
+import logging
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
@@ -7,6 +8,9 @@ if TYPE_CHECKING:
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.action import Action
+from ResearchOS.Bridges.port import Port
+
+logger = logging.getLogger("ResearchOS")
 
 class InletOrOutlet():
 
@@ -23,11 +27,13 @@ class InletOrOutlet():
     def __init__(self, parent_ro: "ResearchObject", vr_name_in_code: str, action: "Action" = None):
         """Initializes the Inlet or Outlet object."""
         if hasattr(self, "id"):
+            logger.info(f"Already initialized InletOrOutlet with id {self.id}")
             return # Already initialized.
         self.parent_ro = parent_ro
         self.vr_name_in_code = vr_name_in_code
         self.id = None
         self.action = action
+        self.puts = []
         self.create_inlet_or_outlet()
 
     def create_inlet_or_outlet(self):
@@ -55,4 +61,45 @@ class InletOrOutlet():
 
         if return_conn:
             pool = SQLiteConnectionPool()
+            pool.return_connection(action.conn)
+
+    def add_put(self, put: Port, action: Action = None):
+        """Adds an In/Output to the In/Outlet."""
+        self.puts.append(put)
+        put.let = self
+        # Make the change in the database
+        sqlquery = "INSERT INTO lets_puts (let_id, put_id) VALUES (?, ?)"
+
+        return_conn = False
+        if action is None:
+            action = Action(name="add_put to let")
+            return_conn = True
+            action.conn.execute(sqlquery, (self.id, put.id))
+        else:
+            action.add_sqlquery(sqlquery, (self.id, put.id))
+        
+        if return_conn:
+            pool = SQLiteConnectionPool()            
+            pool.return_connection(action.conn)
+
+    def remove_put(self, put: Port, action: Action = None):
+        """Removes an In/Output from the In/Outlet."""
+        if put not in self.puts:
+            logger.info(f"{put.__class__.__name__} {put.id} is not in the list of puts of {self.__class__.__name__} {self.id}")
+            return
+        self.puts.remove(put)
+        put.let = None
+        # Make the change in the database
+        sqlquery = "INSERT INTO lets_puts (let_id, put_id, is_active) VALUES (?, ?, ?)"
+
+        return_conn = False
+        if action is None:
+            action = Action(name="remove_put from let")
+            return_conn = True
+            action.conn.execute(sqlquery, (self.id, put.id, 0))
+        else:
+            action.add_sqlquery(sqlquery, (self.id, put.id, 0))
+        
+        if return_conn:
+            pool = SQLiteConnectionPool()            
             pool.return_connection(action.conn)

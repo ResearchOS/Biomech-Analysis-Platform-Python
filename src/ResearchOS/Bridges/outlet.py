@@ -10,8 +10,7 @@ class Outlet(InletOrOutlet):
     attr_name: str = "output"
 
     def __init__(self, parent_ro, vr_name_in_code, action: Action = None):
-        """Initializes the Outlet object."""
-        self.output = None
+        """Initializes the Outlet object."""        
         super().__init__(parent_ro, vr_name_in_code, action)
 
     def connect_to(self, inlet: Inlet, action: Action) -> None:
