@@ -32,6 +32,7 @@ class Edge():
             self.id = action.conn.lastrowid
 
         if return_conn:
-            pool.return_connection(action.conn)
+            action.commit = True
+            action.execute()            
 
     

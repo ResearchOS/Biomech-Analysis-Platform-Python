@@ -13,8 +13,9 @@ if TYPE_CHECKING:
 
 from ResearchOS.action import Action
 from ResearchOS.default_attrs import DefaultAttrs
-from ResearchOS.code_inspector import get_returned_variable_names, get_input_variable_names
-from ResearchOS.Digraph.rodigraph import ResearchObjectDigraph
+from ResearchOS.code_inspector import get_returned_variable_names
+from ResearchOS.Bridges.inlet import Inlet
+from ResearchOS.Bridges.outlet import Outlet
 
 class Validator():
     def __init__(self, research_object: "ResearchObject", action = Action):
@@ -47,9 +48,6 @@ class Validator():
     @staticmethod
     def validate_inputs(robj: "ResearchObject", inputs: dict, action: Action, default: Any) -> None:
         """Validate that the input variables are correct."""
-        input_vr_names_in_code = []
-        if not robj.is_matlab:
-            input_vr_names_in_code = get_input_variable_names(robj.method)
         if inputs == default:
             return
         Validator.validate_method(robj, robj.method, action, None)
@@ -57,34 +55,46 @@ class Validator():
             raise ValueError("Variables must be a dictionary.")
         if not all(isinstance(key, str) and key.isidentifier() for key in inputs.keys()):
             raise ValueError("Variable names in code must be valid variable names.")
-        for vr_name_in_code, value in inputs.items():
-            # Hard-coded variables
-            Validator.validate_input_vr(value.vr, action, robj, None)
-            Validator.validate_lookup_vr(value.lookup_vr, action, robj, None)
-            Validator.validate_source_pr(value.pr, action, robj, None)
-            if not isinstance(value.show, bool):
+        if not all(isinstance(value, Inlet) for value in inputs.values()):
+            raise ValueError("Values must be Inlets.")
+        for inlet in inputs.values():
+            if not inlet.puts:
+                continue
+            input = inlet.puts[0]
+            input.add_attrs(robj, inlet.vr_name_in_code)
+            Validator.validate_input_vr(input.vr, action, robj, None)
+            Validator.validate_lookup_vr(input.lookup_vr, action, robj, None)
+            Validator.validate_source_pr(input.pr, action, robj, None)
+            Validator.validate_input_value(input.value, action, robj, None)
+            if not isinstance(input.show, bool):
                 raise ValueError("Show must be a boolean.")
-            value.add_attrs(robj, vr_name_in_code)
+            
+    @staticmethod
+    def validate_input_value(value: Any, action: Action, robj: "ResearchObject", default: Any) -> None:
+        """Validate the data object attributes."""
+        from ResearchOS.DataObjects.data_object import DataObject
+        dataobject_subclasses = DataObject.__subclasses__()
+        # DataObject attributes.
+        if isinstance(value, dict):
+            cls = [cls for cls in value.keys()][0]
+            if cls in dataobject_subclasses:                
+                attr_name = [v for v in value.values()][0]
+                value = {cls.prefix: attr_name}
+                if not isinstance(attr_name, str) or not attr_name.isidentifier():
+                    raise ValueError("Attribute name for DataObject attribute must be a valid variable name.")
+            
+        try:
+            json.dumps(value)
+        except:
+            raise ValueError("Value must be JSON serializable.")
             
                 
     @staticmethod
     def validate_input_vr(vr: Union[None, dict], action: Action, robj: "ResearchObject", default: Any = None) -> None:
         """Validate that the input variable is correct."""
-        from ResearchOS.DataObjects.data_object import DataObject
-        from ResearchOS.variable import Variable
-        dataobject_subclasses = DataObject.__subclasses__()
+        from ResearchOS.variable import Variable        
         if vr == default:
-            return
-        
-        # DataObject attributes.
-        if isinstance(vr, dict):
-            cls = [cls for cls in vr.keys()][0]
-            if cls not in dataobject_subclasses:
-                raise ValueError("""Are you trying to use a DataObject attribute as a Variable? The syntax is vr_name_in_code = {cls: "attr_name"}.""")
-            attr_name = [value for value in vr.values()][0]
-            if not isinstance(attr_name, str) or not attr_name.isidentifier():
-                raise ValueError("Attribute name must be a valid variable name.")
-            return
+            return        
             
         if not isinstance(vr, Variable):
             raise ValueError("Input Variables must be Variable objects.")
@@ -154,11 +164,6 @@ class Validator():
     @staticmethod
     def validate_outputs(robj: "ResearchObject", outputs: dict, action: Action, default: Any) -> None:
         """Validate that the output variables are correct."""
-        from ResearchOS.research_object_handler import ResearchObjectHandler
-        from ResearchOS.variable import Variable
-        output_vr_names_in_code = []
-        if not robj.is_matlab:
-            output_vr_names_in_code = get_returned_variable_names(robj.method)
         if outputs == default:
             return
         Validator.validate_method(robj, robj.method, action, None)
@@ -166,14 +171,18 @@ class Validator():
             raise ValueError("Variables must be a dictionary.")
         if not all(isinstance(key, str) and key.isidentifier() for key in outputs.keys()):
             raise ValueError("Variable names in code must be valid variable names.")
-        for key, value in outputs.items():
-            if not isinstance(value.vr, Variable):
-                raise ValueError("Output Variables must be Variable objects.")
-            if not isinstance(value.show, bool):
+        if not all(isinstance(value, Outlet) for value in outputs.values()):
+            raise ValueError("Values must be Inlets.")
+        for outlet in outputs.values():
+            if not outlet.puts:
+                continue
+            output = outlet.puts[0]
+            output.add_attrs(robj, outlet.vr_name_in_code)
+            Validator.validate_input_vr(output.vr, action, robj, None)
+            Validator.validate_source_pr(output.pr, action, robj, None)
+            if not isinstance(output.show, bool):
                 raise ValueError("Show must be a boolean.")
-            value.add_attrs(robj, key)
-        if not robj.is_matlab and output_vr_names_in_code is not None and not all([vr_name in output_vr_names_in_code for vr_name in outputs.keys()]):
-            raise ValueError("Output variables must be returned by the method.")            
+         
     
     @staticmethod
     def validate_batch(self, batch: list, action: Action, default: Any) -> None:

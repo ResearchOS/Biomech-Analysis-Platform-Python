@@ -1,0 +1,1 @@
+INSERT INTO inputs_outputs (id, is_input, action_id_num, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)

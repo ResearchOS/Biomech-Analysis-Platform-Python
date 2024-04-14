@@ -15,24 +15,6 @@ from ResearchOS.action import Action
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 class VRHandler():
-
-    # @staticmethod
-    # def add_slice_to_input_vrs(input_dict: dict):
-    #     """To add a slice to a "vr", it must be a ResearchOS Variable object."""
-    #     new_dict = {}
-    #     for key, input in input_dict.items():
-    #         if not isinstance(vr, Variable) and not (isinstance(vr, dict) and list(vr.keys())[0] in DataObject.__subclasses__()):
-    #             new_dict[key] = vr # The variable is hard-coded
-    #         else:
-    #             new_dict[key] = {}
-    #             new_dict[key]["vr"] = vr
-    #             slice = getattr(vr, "slice", None)
-    #             new_dict[key]["slice"] = slice
-    #             try:
-    #                 del vr.slice
-    #             except:
-    #                 pass
-    #     return new_dict
     
     @staticmethod
     def standardize_inputs(parent_ro: "ResearchObject", all_inputs: Union[Input, dict], action: Action = None) -> dict:
@@ -51,15 +33,15 @@ class VRHandler():
             if isinstance(input, Input):
                 pass
             elif isinstance(input, Variable):
-                input = Input(vr=input)
+                input = Input(vr=input, action=action)
             else:
-                input = Input(value=input) # Directly hard-coded value. May be a DataObject attribute.
+                input = Input(value=input, action=action) # Directly hard-coded value. May be a DataObject attribute.
             
             inlet.add_put(input, action=action)
         
         if return_conn:
-            pool = SQLiteConnectionPool()
-            pool.return_connection(action.conn)
+            action.commit = True
+            action.execute()
         
         return inlets_dict
     
@@ -80,15 +62,15 @@ class VRHandler():
             if isinstance(output, Output):
                 pass
             elif isinstance(output, Variable):
-                output = Output(vr=output)
+                output = Output(vr=output, action=action)
             else:
-                output = Output(value=output) # Directly hard-coded value. May be a DataObject attribute.
+                output = Output(value=output, action=action) # Directly hard-coded value. May be a DataObject attribute.
 
             outlet.add_put(output, action=action)
         
         if return_conn:
-            pool = SQLiteConnectionPool()
-            pool.return_connection(action.conn)
+            action.commit = True
+            action.execute()
         
         return outlets_dict
     

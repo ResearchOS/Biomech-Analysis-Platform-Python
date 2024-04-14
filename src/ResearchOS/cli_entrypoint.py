@@ -169,12 +169,12 @@ def dobjs(path = typer.Option(None, "--path", "-p", help="Path to the data objec
 def logsheet_read():
     """Run the logsheet."""
     tomlhandler = TOMLHandler("pyproject.toml")
-    dataset_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["Dataset"]    
+    dataset_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["dataset"]    
     dataset_py_path = tomlhandler.make_abs_path(dataset_raw_path)
     dataset_py_path = dataset_py_path.replace("/", os.sep)
     dataset_py_path = dataset_py_path.replace(os.sep, ".").replace(".py", "")
 
-    logsheet_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["Logsheet"]
+    logsheet_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["logsheet"]
     logsheet_py_path = tomlhandler.make_abs_path(logsheet_raw_path)
     logsheet_py_path = logsheet_py_path.replace("/", os.sep)
     logsheet_py_path = logsheet_py_path.replace(os.sep, ".").replace(".py", "")

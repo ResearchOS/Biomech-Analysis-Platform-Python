@@ -1,0 +1,1 @@
+INSERT INTO lets_puts (id, action_id_num, let_id, put_id, is_active) VALUES (?, ?, ?, ?, ?)

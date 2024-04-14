@@ -65,9 +65,6 @@ class DataObject(ResearchObject):
         if isinstance(input, Input):
             vr = input.vr
             process = input.pr
-            # if isinstance(vr, dict):
-            #     vr = Variable(id = "VRhard_coded_ResearchOS")
-            #     input.vr = vr
         else:
             vr = input
         return_conn = False
@@ -89,7 +86,7 @@ class DataObject(ResearchObject):
             vr_value.value = getattr(node, attr)
             vr_value.exit_code = 0
             if return_conn:
-                conn.return_connection(conn)
+                action.execute()
             return vr_value
         
         # Specified directly as the hard-coded value, not using a Variable. Also is not a DataObject attribute.
@@ -98,7 +95,7 @@ class DataObject(ResearchObject):
             vr_value.value = value
             vr_value.exit_code = 0
             if return_conn:
-                conn.return_connection(conn)
+                action.execute()
             return vr_value
         
         # Specified as a Variable, and is hard-coded.
@@ -106,7 +103,7 @@ class DataObject(ResearchObject):
             vr_value.value = convert_var(vr.hard_coded_value, CodeRunner.matlab_numeric_types)
             vr_value.exit_code = 0
             if return_conn:
-                conn.return_connection(conn)
+                action.execute()
             return vr_value
         
         # Import file VR.              
@@ -124,7 +121,7 @@ class DataObject(ResearchObject):
             vr_value.value = file_path
             vr_value.exit_code = 0
             if return_conn:
-                conn.return_connection(conn)
+                action.execute()
             return vr_value
         
         # Lookup VR.

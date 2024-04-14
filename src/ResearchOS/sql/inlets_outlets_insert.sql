@@ -1,0 +1,1 @@
+INSERT INTO inlets_outlets (id, is_inlet, pl_object_id, vr_name_in_code, action_id_num) VALUES (?, ?, ?, ?, ?)
