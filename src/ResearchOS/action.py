@@ -118,13 +118,10 @@ class Action():
 
     def execute(self, return_conn: bool = True) -> None:
         """Run all of the sql queries in the action."""
-        # if self.conn is not None:
-        #     breakpoint()
         if not self.exec:
             return
         global count
         count += 1
-        # print(f"Action.execute() called {count} times.")
         pool = SQLiteConnectionPool(name = "main")
         
         # The queries that use the other database.
@@ -191,7 +188,6 @@ class Action():
 
         # Commit the Action.  
         if self.commit:
-            # print("Commit count:", count)
             self.conn.commit()
             if uses_data:
                 conn_data.commit()

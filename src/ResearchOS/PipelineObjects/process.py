@@ -6,6 +6,7 @@ from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.action import Action
 from ResearchOS.process_runner import ProcessRunner
 from ResearchOS.vr_handler import VRHandler
+from ResearchOS.build_pl import make_all_edges
 
 all_default_attrs = {}
 # For MATLAB
@@ -98,6 +99,7 @@ class Process(PipelineObject):
         """Convenience function to set the input variables with named variables rather than a dict."""
         standardized_kwargs = VRHandler.standardize_inputs(self, kwargs)
         self.__setattr__("inputs", standardized_kwargs)
+        make_all_edges(self)
 
     def set_outputs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict."""

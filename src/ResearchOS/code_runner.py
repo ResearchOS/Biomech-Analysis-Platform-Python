@@ -57,48 +57,6 @@ class CodeRunner():
         CodeRunner.matlab_double_type = matlab_double_type
 
     @staticmethod
-    def set_vrs_source_pr(robj: "ResearchObject", action: Action, default_attrs: dict) -> None:
-        from ResearchOS.PipelineObjects.process import Process
-        from ResearchOS.PipelineObjects.logsheet import Logsheet
-        from ResearchOS.variable import Variable
-
-        needs_pr = []
-        for input in robj.inputs.values():
-            if input.pr is not None:
-                continue
-            if not isinstance(input.vr, Variable):
-                continue
-            if input.vr.hard_coded_value is not None:
-                continue
-            if input.vr._dataobject_attr is not None:
-                continue
-            if hasattr(input.parent_ro, "import_file_vr_name") and input.parent_ro.import_file_vr_name == input.vr_name_in_code:
-                continue
-            needs_pr.append(input)
-
-        if len(needs_pr)==0:
-            return
-        
-        sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({})".format(",".join(["?" for _ in needs_pr]))
-        sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
-        params = tuple([input.vr.id for input in needs_pr])
-        vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        # TODO: Changing the "input" variable here does not change the Research Object. Need to ensure the change reaches the database.
-        for input in needs_pr:
-            vr_id = input.vr.id
-            vr_id_idx = [idx for idx, row in enumerate(vr_pr_ids_result) if row[0] == vr_id]
-            assert(len(vr_id_idx) == 1)
-            vr_id_idx = vr_id_idx[0]
-            if vr_pr_ids_result[vr_id_idx][1].startswith(Process.prefix):
-                pr = Process(id = vr_pr_ids_result[vr_id_idx][1], action = action)
-            else:
-                pr = Logsheet(id = vr_pr_ids_result[vr_id_idx][1], action = action)
-            input.pr = pr
-            robj.inputs[input.vr_name_in_code] = input
-        
-        robj.__setattr__("inputs", robj.inputs, action=action)
-
-    @staticmethod
     def get_lowest_level(robj: "ResearchObject", schema_ordered: list) -> Optional[str]:
         """Get the lowest level for this batch."""
         lowest_level_idx = -1
@@ -300,9 +258,6 @@ class CodeRunner():
         if CodeRunner.dataset_object_graph is None:
             CodeRunner.dataset_object_graph = ds.get_addresses_graph(objs = True, action = action)
         G = CodeRunner.dataset_object_graph
-
-        # Set the vrs_source_prs for any var that it wasn't set for.
-        CodeRunner.set_vrs_source_pr(robj, action, default_attrs)
 
         # Get the lowest level for this batch.
         schema_ordered = [n for n in nx.topological_sort(schema_graph)]

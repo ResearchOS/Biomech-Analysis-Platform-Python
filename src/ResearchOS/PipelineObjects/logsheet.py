@@ -93,6 +93,8 @@ class Logsheet(PipelineObject):
         
         Raises:
             ValueError: incorrect ''header'' format"""
+        from ResearchOS.Bridges.outlet import Outlet
+        from ResearchOS.Bridges.output import Output
         if headers == default:
             return
         self.validate_path(self.path, action, None)
@@ -128,6 +130,12 @@ class Logsheet(PipelineObject):
 
         if len(missing) > 0:
             raise ValueError(f"The headers {missing} do not match between logsheet and code!")
+        
+        # Create Outlets and Outputs for the Logsheet
+        for header in headers:
+            outlet = Outlet(parent_ro = self, vr_name_in_code=header[0])
+            output = Output(vr=header[3], pr=self)
+            outlet.add_put(output)
             
     def to_json_headers(self, headers: list, action: Action) -> str:
         """Convert the headers to a JSON string.
@@ -292,7 +300,6 @@ class Logsheet(PipelineObject):
         df = pd.read_excel(self.path, header = None)
         return df.values.tolist()
     
-    # @profile(stream = read_logsheet_stream)
     def read_logsheet(self) -> None:
         """Run the logsheet import process.
         

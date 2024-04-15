@@ -1,7 +1,10 @@
 import networkx as nx
 
+from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.cli.get_all_paths_of_type import import_objects_of_type
-from ResearchOS.PipelineObjects.process import Process
+from ResearchOS.Bridges.edge import Edge
+from ResearchOS.action import Action
+from ResearchOS.sql.sql_runner import sql_order_result
 
 # 1. When running a Process's "set_inputs" or "set_outputs" the user will expect to have the inputs & outputs connected to the proper places after each run.
 # However, when "building" the pipeline, doing that for each Process would be inefficient.
@@ -16,11 +19,59 @@ from ResearchOS.PipelineObjects.process import Process
 # The Inlets & Outlets and Inputs & Outputs are created in SQL when the Processes' settings are created.
 # Edges are created in SQL when the Processes' settings are created, using currently available Processes in memory.
 
-def build_pl():
-    """Builds the pipeline."""
-    import src.research_objects.processes as pr
-    all_pr_objs = import_objects_of_type(Process)
+def build_pl(import_objs: bool = True):
+    """Builds the pipeline."""   
+    from ResearchOS.PipelineObjects.process import Process
+    import src.research_objects.processes
+    if import_objs: 
+        import_objects_of_type(Process)
 
-    for pr_obj in all_pr_objs:
-        pr_obj.set_inputs()
-        pr_obj.set_outputs()
+    action = Action(name="Build_PL")
+
+    sqlquery_raw = "SELECT source_object_id, target_object_id, edge_id WHERE is_active = 1"
+    sqlquery = sql_order_result(action, sqlquery_raw, ["source_object_id", "target_object_id", "edge_id"], single = True, user = True, computer = False)
+    result = action.conn.cursor().execute(sqlquery).fetchall()
+    if result is None:
+         raise ValueError("No connections found.")
+    edges = [Edge(id = row[2]) for row in result]
+
+    G = nx.MultiDiGraph()
+    for edge in edges:
+        source_obj = edge.inlet.parent_ro
+        target_obj = edge.outlet.parent_ro
+        G.add_edge(source_obj, target_obj, edge=edge)
+
+def make_all_edges(ro: "ResearchObject"):
+        # For each input, find an Outlet with a matching output.
+        from ResearchOS.PipelineObjects.process import Process
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
+        from ResearchOS.Bridges.outlet import Outlet                
+        all_pr_objs = [pr() for pr in ResearchObjectHandler.instances_list if pr() is not None and isinstance(pr(), (Process,))]
+        lg_objs = [lg() for lg in ResearchObjectHandler.instances_list if lg() is not None and isinstance(lg(), (Logsheet,))]
+        last_idx = all_pr_objs.index(ro)
+        all_pr_objs = all_pr_objs[:last_idx]
+        action = Action(name="Build_PL")
+        for inlet in ro.inputs.values():
+            input = inlet.puts[0]
+            if input.vr is None:
+                 continue
+            for pr in all_pr_objs:
+                for outlet in pr.outputs.values():
+                    output = outlet.puts[0]
+                    if output.vr is None:
+                         continue
+                    if input.vr == output.vr and input.pr == output.pr:
+                        e = Edge(inlet=inlet, outlet=outlet, action=action)
+                        print("Created: ", e)
+            for lg in lg_objs:
+                 lg.validate_headers(lg.headers, action, [])
+                 for h in lg.headers:
+                      if h[3] == input.vr:
+                        outlet = Outlet(parent_ro=lg, vr_name_in_code=h[0])
+                        e = Edge(inlet=inlet, outlet=Outlet(vr=input.vr, pr=lg), action=action)
+                        print("Created: ", e)
+        
+        # Now that all the Edges have been created, commit the Action.
+        action.commit = True
+        action.execute()
+

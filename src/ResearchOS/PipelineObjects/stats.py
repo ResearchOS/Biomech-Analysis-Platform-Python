@@ -60,14 +60,6 @@ class Stats(PipelineObject):
     def set_input_vrs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict."""
         self.__setattr__("input_vrs", VRHandler.add_slice_to_input_vrs(kwargs))
-
-    def set_vrs_source_pr(self, **kwargs) -> None:
-        """Convenience function to set the source process for the input variables with named variables rather than a dict."""
-        self.__setattr__("vrs_source_pr", kwargs)
-
-    def set_lookup_vrs(self, **kwargs) -> None:
-        """Convenience function to set the lookup variables with named variables rather than a dict."""
-        self.__setattr__("lookup_vrs", kwargs)
     
     def run(self, force_redo: bool = False) -> None:
         """Execute the attached method.
