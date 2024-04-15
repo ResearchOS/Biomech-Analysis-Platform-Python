@@ -50,8 +50,10 @@ class JSONConverter():
         serializable_dict = json.loads(inputs)
         tmp_dict = {}
         for key in serializable_dict:
-            tmp_dict[key] = Inlet(self, key, action)            
-            tmp_dict[key].add_put(Input(id=serializable_dict[key], action=action), action, do_insert=False)
+            inlet = Inlet(self, key, action)                        
+            input = Input(id=serializable_dict[key], action=action, let=inlet)
+            inlet.add_put(input, action, do_insert=False)
+            tmp_dict[key] = inlet
         return tmp_dict
     
     @staticmethod

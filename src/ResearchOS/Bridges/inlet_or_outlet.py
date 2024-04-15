@@ -67,6 +67,8 @@ class InletOrOutlet():
         inlet_or_outlet.parent_ro = parent_ro
         inlet_or_outlet.vr_name_in_code = vr_name_in_code
         InletOrOutlet.instances[id] = inlet_or_outlet
+        if return_conn:
+            action.execute() # Return the connection.
         return inlet_or_outlet        
 
 

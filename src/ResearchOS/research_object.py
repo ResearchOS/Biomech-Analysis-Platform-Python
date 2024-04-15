@@ -1,5 +1,6 @@
 from typing import Any
 import copy
+import weakref
 
 from .research_object_handler import ResearchObjectHandler
 from .action import Action
@@ -44,9 +45,10 @@ class ResearchObject():
             ResearchObjectHandler.instances[id].__dict__["prev_loaded"] = True
             ResearchObjectHandler.instances[id].__dict__["_initialized"] = True
             return ResearchObjectHandler.instances[id]
-        
+                
         ResearchObjectHandler.counts[id] = 1
         instance = super(ResearchObject, cls).__new__(cls)
+        ResearchObjectHandler.instances_list.append(weakref.ref(instance))
         ResearchObjectHandler.instances[id] = instance
         instance.__dict__["id"] = id # Put the ID in the object.
         instance.__dict__["prev_loaded"] = False

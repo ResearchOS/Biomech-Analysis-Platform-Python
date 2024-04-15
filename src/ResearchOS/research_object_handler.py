@@ -25,10 +25,9 @@ class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
 
     instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
-    counts = {} # Keep track of the number of instances of each ID.    
-    # pool = SQLiteConnectionPool(name = "main")
-    # pool_data = SQLiteConnectionPool(name = "data")
+    counts = {} # Keep track of the number of instances of each ID.
     default_attrs = {} # Keep track of the default attributes for each class.     
+    instances_list = []
 
     @staticmethod
     def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any, action: Action = None) -> Any:

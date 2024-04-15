@@ -33,9 +33,9 @@ class VRHandler():
             if isinstance(input, Input):
                 pass
             elif isinstance(input, Variable):
-                input = Input(vr=input, action=action)
+                input = Input(vr=input, action=action, let=inlet)
             else:
-                input = Input(value=input, action=action) # Directly hard-coded value. May be a DataObject attribute.
+                input = Input(value=input, action=action, let=inlet) # Directly hard-coded value. May be a DataObject attribute.
             
             inlet.add_put(input, action=action)
         
