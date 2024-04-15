@@ -156,14 +156,6 @@ def dobjs(path = typer.Option(None, "--path", "-p", help="Path to the data objec
         # Prepare the complete format string
         style_str = "{:<12} {:<15} {:<7} " + lens_str          
         print(style_str.format(f"Path ID: {row[0]}", f"DataObject ID: {row[1]}", "Path: ", *path))
-    
-    # load_data_object_classes() # import the data objects.
-    # ds = Dataset(id = ResearchObject._get_dataset_id(False))
-    # G = ds.get_addresses_graph()
-
-    # G = nx.DiGraph(G)
-    # plot_instance = Graph(G)
-    # plt.show()
 
 @app.command()
 def logsheet_read():
@@ -250,19 +242,17 @@ def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, lo
         os.system(command)
 
 @app.command()
-def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None)):
+def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
+        yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type '-y' to run the pipeline without confirmation.")):
     """Run the runnable pipeline objects."""
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.build_pl import build_pl
     # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.      
-    Process.multi = True
     G = build_pl()
     try:
         pass
     except Exception as e:
         print(f"Error building the pipeline: {e}")
-    finally:
-        delattr(Process, "multi")
 
     if plobj_id is None:
         lg_id = None
@@ -311,7 +301,9 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None))
         print(pl_node.id)
 
     dur = 5
-    result = input_with_timeout(f"Press Enter to continue, or any other key to cancel. Or auto-start in {dur} seconds.", dur)
+    result = ""
+    if yes_or_no != "y":
+        result = input_with_timeout(f"Press Enter to continue, or any other key to cancel. Or auto-start in {dur} seconds.", dur)        
     if result == "":
         pass # No user input, or hit enter.
     else:

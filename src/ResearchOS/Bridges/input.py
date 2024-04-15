@@ -83,6 +83,6 @@ class Input(Port):
                         break
 
         if not final_pr:
-            raise ValueError(f"Could not find the source PR for VR {vr}.")
+            raise ValueError(f"Could not find the source PR for VR {vr}. If this is an import_file_vr, then put that attribute before the 'set_inputs' command.")
 
         return final_pr

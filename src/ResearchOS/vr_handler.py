@@ -62,7 +62,7 @@ class VRHandler():
             if isinstance(output, Output):
                 pass
             elif isinstance(output, Variable):
-                output = Output(vr=output, action=action)
+                output = Output(vr=output, pr=parent_ro, action=action)
             else:
                 output = Output(value=output, action=action) # Directly hard-coded value. May be a DataObject attribute.
 

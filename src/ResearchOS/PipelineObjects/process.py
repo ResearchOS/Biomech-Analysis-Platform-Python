@@ -92,8 +92,8 @@ class Process(PipelineObject):
             raise ValueError("Variable name must be a string.")
         if not str(vr_name).isidentifier():
             raise ValueError("Variable name must be a valid variable name.")
-        if vr_name not in self.inputs:
-            raise ValueError("Variable name must be one of the input variable names in code.")                
+        # if vr_name not in self.inputs:
+        #     raise ValueError("Variable name must be one of the input variable names in code.")                
     
     def set_inputs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict."""

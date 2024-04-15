@@ -27,8 +27,6 @@ all_default_attrs["class_column_names"] = {}
 
 computer_specific_attr_names = ["path"]
 
-# read_logsheet_stream = open("logfile_read_logsheet.log", "w")
-
 class Logsheet(PipelineObject):
 
     prefix = "LG"
@@ -133,9 +131,9 @@ class Logsheet(PipelineObject):
         
         # Create Outlets and Outputs for the Logsheet
         for header in headers:
-            outlet = Outlet(parent_ro = self, vr_name_in_code=header[0])
-            output = Output(vr=header[3], pr=self)
-            outlet.add_put(output)
+            outlet = Outlet(parent_ro = self, vr_name_in_code=header[0], action=action)
+            output = Output(vr=header[3], pr=self, action=action)
+            outlet.add_put(output, action=action)
             
     def to_json_headers(self, headers: list, action: Action) -> str:
         """Convert the headers to a JSON string.
