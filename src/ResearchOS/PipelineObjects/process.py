@@ -108,7 +108,7 @@ class Process(PipelineObject):
 
     def run(self, force_redo: bool = False, action: Action = None) -> None:
         """Execute the attached method.
-        kwargs are the input VR's."""        
+        kwargs are the input VR's."""
         start_msg = f"Running {self.mfunc_name} on {self.level.__name__}s."
         print(start_msg)
         return_conn = False

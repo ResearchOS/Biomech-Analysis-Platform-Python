@@ -79,3 +79,9 @@ def make_all_edges(ro: "ResearchObject"):
         action.commit = True
         action.execute()
 
+if __name__=="__main__":
+    import sys, os
+    sys.path.append(os.getcwd())
+    sys.path.append(os.getcwd() + "/src")
+    build_pl()
+    print("Done.")

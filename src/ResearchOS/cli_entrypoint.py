@@ -17,15 +17,17 @@ from ResearchOS.tomlhandler import TOMLHandler
 from ResearchOS.sql.sql_runner import sql_order_result
 
 app = typer.Typer()
-# Add the current working directory to the path so that the code can be imported.
-sys.path.append(os.getcwd())
-with open ("pyproject.toml", "r") as f:
-    pyproject = toml.load(f)
-src_path = pyproject["tool"]["researchos"]["paths"]["root"]["root"]
-if not os.path.isabs(src_path):
-    src_path = os.path.join(os.getcwd(), src_path)
-sys.path.append(src_path)
-logger.warning(f"Adding {src_path} to the path.")
+
+def add_src_to_path():
+    # Add the current working directory to the path so that the code can be imported.
+    sys.path.append(os.getcwd())
+    with open ("pyproject.toml", "r") as f:
+        pyproject = toml.load(f)
+    src_path = pyproject["tool"]["researchos"]["paths"]["root"]["root"]
+    if not os.path.isabs(src_path):
+        src_path = os.path.join(os.getcwd(), src_path)
+    sys.path.append(src_path)
+    logger.warning(f"Adding {src_path} to the path.")
 
 
 @app.command()
@@ -67,6 +69,7 @@ def init_project(folder: str = typer.Option(None, help="Folder name"),
 def init_package(name: str = typer.Argument(help="Package name. This will be the name of the folder.")):
     """Initialize the folder structure to create a package. Must provide the subfolder to create the package in."""
     cwd = os.getcwd()
+    add_src_to_path()
     packages_folder = os.path.join(cwd, "packages")
     package_folder = os.path.join(packages_folder, name)
     if not os.path.exists(package_folder):
@@ -85,6 +88,7 @@ def config(github_token: str = typer.Option(None, help="GitHub token"),
            data_db_file: str = typer.Option(None, help="Data database file"),
            data_objects_path: str = typer.Option(None, help="Path to data objects")
         ):
+    add_src_to_path()
     config = Config()
     command = f'code "{config._config_path}"'
     if github_token is None and db_file is None and data_db_file is None and data_objects_path is None:
@@ -102,6 +106,7 @@ def config(github_token: str = typer.Option(None, help="GitHub token"),
 def db_reset(yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type 'y' to reset the databases to their default state.")):
     """Reset the databases to their default state."""
     # Ask the user for confirmation.
+    add_src_to_path()
     user_input = "y"
     if not yes_or_no:
         user_input = input("Are you sure you want to reset the databases to their default (empty) state? All data will be deleted! (y/n) ")        
@@ -161,6 +166,7 @@ def dobjs(path = typer.Option(None, "--path", "-p", help="Path to the data objec
 @app.command()
 def logsheet_read():
     """Run the logsheet."""
+    add_src_to_path()
     tomlhandler = TOMLHandler("pyproject.toml")
     dataset_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["dataset"]    
     dataset_py_path = tomlhandler.make_abs_path(dataset_raw_path)
@@ -198,6 +204,7 @@ def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, lo
     2. The package: Looks in root/packages/package_name/pyproject.toml for the research object location. 
     If root/packages/package_name does not exist, searches through the pip installed packages for a package with the name package_name."""
     from ResearchOS.research_object import ResearchObject
+    add_src_to_path()
     subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
     cls = [cls for cls in subclasses if cls.__name__.lower() == ro_type.lower()]
     if len(cls) == 0:        
@@ -246,9 +253,14 @@ def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, lo
 def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type '-y' to run the pipeline without confirmation.")):
     """Run the runnable pipeline objects."""
-    from ResearchOS.PipelineObjects.process import Process
+    # from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.logsheet import Logsheet
+    from ResearchOS.DataObjects.dataset import Dataset
     from ResearchOS.build_pl import build_pl
+    from ResearchOS.build_pl import import_objects_of_type
+    add_src_to_path()
+    import_objects_of_type(Dataset)
+    lgs = import_objects_of_type(Logsheet)
     # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.      
     action = Action(name = "run_pipeline", type="run")
     G = build_pl()
@@ -287,22 +299,44 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         anc_nodes_sorted = anc_nodes_sorted[1:] # Remove the Logsheet from the start of the pipeline.
 
     # Get the date last edited for each pipeline object, and see if it was settings or run action.
-    sqlquery_raw = "SELECT pl_object_id, action_id_num FROM run_history WHERE pl_object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
+    sqlquery_raw = "SELECT action_id_num, pl_object_id FROM run_history WHERE pl_object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
     sqlquery = sql_order_result(action, sqlquery_raw, ["pl_object_id", "action_id_num"], single = False, user = True, computer = False)
     params = tuple([node.id for node in anc_nodes_sorted])
     run_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-    run_history_result = [r.append("run") for r in run_history_result]
+    run_history_result = [(r + ("run",)) for r in run_history_result]
+
+    if not run_history_result:
+        print("No run history found. Need to run the logsheet first. Attempting to run the logsheet for you...")
+        time.sleep(2)
+        try:
+            lg = lgs[0]
+            lg.read_logsheet()
+        except:
+            raise ValueError("Error auto-running logsheet. Must be addressed before the pipeline can be run.")
 
     sqlquery_raw = "SELECT action_id_num, object_id FROM simple_attributes WHERE object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
     sqlquery = sql_order_result(action, sqlquery_raw, ["action_id_num", "object_id"], single = False, user = True, computer = False)
     settings_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-    settings_history_result = [r.append("settings") for r in settings_history_result]
+    settings_history_result = [(r + ("settings",)) for r in settings_history_result]
     result = run_history_result + settings_history_result
+    action_id_nums = list(set([r[0] for r in result]))
+
+    # Get the dates for action_ids
+    sqlquery_raw = "SELECT action_id_num, datetime FROM actions WHERE action_id_num IN ({})".format(",".join(["?" for i in range(len(action_id_nums))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["action_id_num"], single = False, user = True, computer = False)
+    params = tuple(action_id_nums)
+    action_dates = action.conn.cursor().execute(sqlquery, params).fetchall()
+    action_dates_dict = {r[0]: r[1] for r in action_dates}
+    result = [(r + (action_dates_dict[r[0]],)) for r in result]
+    result = sorted(result, key = lambda x: x[3], reverse = True) # Sorted by datetime, descending.
     first_out_of_date = None
     for anc_node in anc_nodes_sorted:        
-        # Check if the previous nodes are up to date.
-        if anc_node.up_to_date == False:
+        most_recent_idx = [idx for idx, r in enumerate(result) if r[1] == anc_node.id][0]
+        if result[most_recent_idx][2] == "run":
+            continue
+        else:
             first_out_of_date = anc_node
+            break
 
     if first_out_of_date:
         print(f"Node {first_out_of_date.id} is out of date. Running the pipeline starting from this node.")        
@@ -318,11 +352,11 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
 
     run_nodes_graph = G.subgraph(run_nodes)
 
-    run_nodes_sorted = nx.topological_sort(run_nodes_graph)
+    run_nodes_sorted = list(nx.topological_sort(run_nodes_graph))
 
     print('Running the following nodes, in order:')
-    for pl_node in run_nodes_sorted:
-        print(pl_node.id)
+    for idx, pl_node in enumerate(run_nodes_sorted):
+        print(idx, pl_node.id)
 
     dur = 5
     result = ""

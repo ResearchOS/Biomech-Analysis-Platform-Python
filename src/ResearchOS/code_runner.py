@@ -198,12 +198,18 @@ class CodeRunner():
         validator = Validator(robj, action)
         validator.validate(robj.__dict__, default_attrs)
 
-        for input in robj.inputs.values():
-            if input.vr is None:
+        for inlet in robj.inputs.values():
+            if not inlet.puts:
+                raise ValueError(f"Input VR {inlet} has no inputs.")
+            input = inlet.puts[0]
+            if input is None:
                 raise ValueError(f"Input VR {input} is None.")
             
-        for output in robj.outputs.values():
-            if output.vr is None:
+        for outlet in robj.outputs.values():
+            if not outlet.puts:
+                raise ValueError(f"Output VR {outlet} has no outputs.")
+            output = outlet.puts[0]
+            if output is None:
                 raise ValueError(f"Output VR {output} is None.")
 
         self.action = action

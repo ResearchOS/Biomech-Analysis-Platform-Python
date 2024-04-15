@@ -42,8 +42,6 @@ class ResearchObjectHandler:
     @staticmethod
     def object_exists(id: str, action: Action) -> bool:
         """Return true if the specified id exists in the database, false if not."""
-        # if id in ResearchObjectHandler.instances:
-        #     return True
         cursor = action.conn.cursor()
         sqlquery = "SELECT object_id FROM research_objects WHERE object_id = ?"
         cursor.execute(sqlquery, (id,))

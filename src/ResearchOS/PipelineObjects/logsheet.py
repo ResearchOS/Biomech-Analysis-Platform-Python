@@ -308,7 +308,8 @@ class Logsheet(PipelineObject):
             ValueError: more header rows than logsheet rows or incorrect schema format?"""
         logsheet_start_time = time.time()
         global all_default_attrs
-        action = Action(name = "read logsheet")
+        action = Action(name = "read logsheet", type="run")
+        action.add_sql_query(None, "run_history_insert", (action.id_num, self.id))
         ds = Dataset(id = self._get_dataset_id(), action = action)
         validator = Validator(self, action)      
         validator.validate(self.__dict__, all_default_attrs)
@@ -333,9 +334,7 @@ class Logsheet(PipelineObject):
         sqlquery = "SELECT dataobject_id, path FROM paths"
         result = action.conn.cursor().execute(sqlquery).fetchall()
         dataobject_ids = [row[0] for row in result]
-        paths = [json.loads(row[1]) for row in result]
-
-        print("Conn", action.conn)
+        paths = [json.loads(row[1]) for row in result]        
         
         # For each row, connect instances of the appropriate DataObject subclass to all other instances of appropriate DataObject subclasses.
         headers_in_logsheet = full_logsheet[0]
@@ -406,7 +405,7 @@ class Logsheet(PipelineObject):
             if len(header) > max_len:
                 max_len = len(header)
 
-        # Remove the data objects that are unchanged                
+        # Prep to omit the data objects that are unchanged                
         sqlquery_raw = "SELECT path_id, vr_id, str_value, numeric_value, pr_id FROM data_values WHERE pr_id = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single=True, user=True, computer=True)
         result = action.conn.cursor().execute(sqlquery, (self.id,)).fetchall()
@@ -507,3 +506,15 @@ class Logsheet(PipelineObject):
             else:
                 value = float(value)
         return value
+    
+if __name__=="__main__":
+    import sys, os
+    from ResearchOS.PipelineObjects.logsheet import Logsheet
+    from ResearchOS.DataObjects.dataset import Dataset
+    from ResearchOS.build_pl import import_objects_of_type
+    sys.path.append(os.getcwd())
+    sys.path.append(os.path.join(os.getcwd(), "src"))
+    lgs = import_objects_of_type(Logsheet)
+    ds = import_objects_of_type(Dataset)
+    lg = lgs[0]
+    lg.read_logsheet()
