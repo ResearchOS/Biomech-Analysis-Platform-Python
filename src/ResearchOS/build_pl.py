@@ -19,13 +19,16 @@ from ResearchOS.sql.sql_runner import sql_order_result
 # The Inlets & Outlets and Inputs & Outputs are created in SQL when the Processes' settings are created.
 # Edges are created in SQL when the Processes' settings are created, using currently available Processes in memory.
 
-def build_pl(import_objs: bool = True) -> nx.MultiDiGraph:
+def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph:
     """Builds the pipeline."""   
     from ResearchOS.PipelineObjects.process import Process
     if import_objs: 
         import_objects_of_type(Process)
 
-    action = Action(name="Build_PL")
+    return_conn = True
+    if action is None:
+        return_conn = False
+        action = Action(name="Build_PL")
     sqlquery_raw = "SELECT source_object_id, target_object_id, edge_id FROM pipelineobjects_graph WHERE is_active = 1"
     sqlquery = sql_order_result(action, sqlquery_raw, ["source_object_id", "target_object_id", "edge_id"], single = True, user = True, computer = False)
     result = action.conn.cursor().execute(sqlquery).fetchall()
@@ -38,6 +41,10 @@ def build_pl(import_objs: bool = True) -> nx.MultiDiGraph:
         target_obj = edge.inlet.parent_ro
         source_obj = edge.outlet.parent_ro
         G.add_edge(source_obj, target_obj, edge=edge)
+
+    if return_conn:
+        action.commit = True
+        action.execute()
     return G
 
 def make_all_edges(ro: "ResearchObject"):

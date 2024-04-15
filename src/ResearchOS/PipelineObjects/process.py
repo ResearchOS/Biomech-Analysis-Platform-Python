@@ -106,12 +106,15 @@ class Process(PipelineObject):
         standardized_kwargs = VRHandler.standardize_outputs(self, kwargs)
         self.__setattr__("outputs", standardized_kwargs)
 
-    def run(self, force_redo: bool = False) -> None:
+    def run(self, force_redo: bool = False, action: Action = None) -> None:
         """Execute the attached method.
         kwargs are the input VR's."""        
         start_msg = f"Running {self.mfunc_name} on {self.level.__name__}s."
         print(start_msg)
-        action = Action(name = start_msg)
+        return_conn = False
+        if action is None:
+            return_conn = True
+            action = Action(name = start_msg)
         process_runner = ProcessRunner()        
         batches_dict_to_run, all_batches_graph, G, pool = process_runner.prep_for_run(self, action, force_redo)
         curr_batch_graph = nx.MultiDiGraph()
@@ -127,5 +130,8 @@ class Process(PipelineObject):
         for vr_name, output in self.outputs.items():
             print(f"Saved VR {vr_name} (VR: {output.vr.id}).")
 
-        if action.conn:
-            pool.return_connection(action.conn)
+        action.add_sql_query(None, "run_history_insert", (action.id_num, self.id))
+
+        if return_conn:
+            action.commit = True
+            action.execute()

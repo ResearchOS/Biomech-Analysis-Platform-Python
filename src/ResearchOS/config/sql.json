@@ -12,7 +12,8 @@
         "connections",
         "inlets_outlets",
         "inputs_outputs",
-        "lets_puts"
+        "lets_puts",
+        "run_history"
     ],
     "intended_tables_data": [
         "data_values_blob"

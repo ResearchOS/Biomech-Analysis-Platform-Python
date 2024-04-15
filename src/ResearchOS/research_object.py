@@ -31,6 +31,9 @@ class ResearchObject():
         if isinstance(other, ResearchObject):
             return self.id == other.id and self is other
         return False
+    
+    def __repr__(self):
+        return f"{self.id}"
      
     def __new__(cls, **kwargs):
         """Create a new research object in memory. If the object already exists in memory with this ID, return the existing object."""

@@ -47,7 +47,15 @@ class Action():
     latest_action_id: str = None
     queries: dict = queries
     
-    def __init__(self, name: str = None, action_id: str = None, redo_of: str = None, timestamp: datetime.datetime = None, commit: bool = False, exec: bool = True, force_create: bool = False):        
+    def __init__(self, 
+                 name: str = None, 
+                 action_id: str = None, 
+                 redo_of: str = None, 
+                 timestamp: datetime.datetime = None, 
+                 commit: bool = False, 
+                 exec: bool = True, 
+                 force_create: bool = False,
+                 type: str = "settings"):        
         pool = SQLiteConnectionPool()
         self.conn = pool.get_connection()
         if not action_id:
@@ -58,6 +66,10 @@ class Action():
         # Set up for the queries.
         self.dobjs = {}
 
+        type = type.lower()
+        if type not in ["settings", "run"]:
+            raise ValueError(f"Invalid action type: {type}. Must be 'settings' or 'run'.")
+
         self.force_create = force_create        
         self.is_created = False # Indicates that the action has not been created in the database yet.        
         self.id = action_id
@@ -65,24 +77,19 @@ class Action():
         self.timestamp = timestamp        
         self.redo_of = redo_of
         self.commit = commit # False by default. If True, the action will be committed to the database. Overrides self.exec.
-        self.exec = exec # True to run cursor.execute() and False to skip it.   
+        self.exec = exec # True to run cursor.execute() and False to skip it. 
+        self.type = type  
         try:
             sqlquery = "SELECT MAX(action_id_num) FROM actions"
             result = self.conn.execute(sqlquery).fetchone()
             if result[0] is not None:
                 result = result[0] + 1
             else:
-                assert False              
+                assert False
         except:
-            result = 1 # The actions table does not exist.
-            # sqlquery = "SELECT name FROM sqlite_master WHERE type='table' AND name='actions'"
-            # result = self.conn.execute(sqlquery).fetchone()
-            # if result is not None:
-            #     raise ValueError("The actions table does not exist. Database must have been corrupted. Run 'ros db-reset' to properly re-initialize the databases.")
-            # else:
-            #     result = 1 # The actions table does not exist, so the action_id_num = 1
+            result = 1 # The actions table does not exist.            
         self.id_num = result
-        self.creation_params = (action_id, self.id_num, name, timestamp, redo_of) # The parameters for the creation query.
+        self.creation_params = (action_id, self.id_num, name, timestamp, redo_of, type) # The parameters for the creation query.                
 
     def add_sql_query(self, dobj_id: str, query_name: str, params: tuple = None, group_name: str = "all") -> None:
         """Add a sqlquery to the action. Can be a raw SQL query (one input) or a parameterized query (two inputs).

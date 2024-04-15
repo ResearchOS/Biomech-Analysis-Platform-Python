@@ -123,6 +123,7 @@ class DBInitializer():
                         name TEXT NOT NULL,
                         datetime TEXT NOT NULL,
                         redo_of TEXT,
+                        type TEXT NOT NULL,
                         FOREIGN KEY (redo_of) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
 
@@ -296,4 +297,13 @@ class DBInitializer():
                         FOREIGN KEY (put_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         PRIMARY KEY (action_id_num, id, let_id, put_id, is_active)
+                        )""")
+        
+        # run_history table. Lists all actions that occurred during runs.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS run_history (
+                        action_id_num INTEGER,
+                        pl_object_id TEXT NOT NULL,
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        FOREIGN KEY (pl_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id_num, pl_object_id)
                         )""")

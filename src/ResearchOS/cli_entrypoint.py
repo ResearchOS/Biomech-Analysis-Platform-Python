@@ -14,6 +14,7 @@ from ResearchOS.cli.quickstart import create_folders
 from ResearchOS.db_initializer import DBInitializer
 from ResearchOS.action import Action, logger
 from ResearchOS.tomlhandler import TOMLHandler
+from ResearchOS.sql.sql_runner import sql_order_result
 
 app = typer.Typer()
 # Add the current working directory to the path so that the code can be imported.
@@ -246,8 +247,10 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type '-y' to run the pipeline without confirmation.")):
     """Run the runnable pipeline objects."""
     from ResearchOS.PipelineObjects.process import Process
+    from ResearchOS.PipelineObjects.logsheet import Logsheet
     from ResearchOS.build_pl import build_pl
     # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.      
+    action = Action(name = "run_pipeline", type="run")
     G = build_pl()
     try:
         pass
@@ -259,45 +262,66 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         plobj_id = lg_id
     
     plobj = None
-    for plobj in G.nodes():
-        if plobj.id == plobj_id:            
+    for plobj_tmp in G.nodes():
+        if plobj_tmp.id == plobj_id: 
+            plobj = plobj_tmp           
             break
 
-    if plobj is None:
+    if plobj is None and plobj_id is not None:
         raise ValueError("Pipeline object not found.")
 
     # Check if the previous nodes are all up to date.
-    anc_nodes = list(nx.ancestors(G, plobj))
+    if plobj:
+        anc_nodes = list(nx.ancestors(G, plobj))
+    else:
+        anc_nodes = []
     anc_nodes_sorted = []
     if len(anc_nodes) > 0:
         anc_graph = G.subgraph(anc_nodes) # Include the ancestors, NOT the current node.
-        anc_nodes_sorted = nx.topological_sort(anc_graph)
-        if anc_nodes_sorted[0].startswith("LG"):
-            anc_nodes_sorted = anc_nodes_sorted[1:] # Remove the Logsheet from the start of the pipeline.
+        anc_nodes_sorted = list(nx.topological_sort(anc_graph))        
     else:
+        anc_nodes_sorted = list(nx.topological_sort(G)) # This will check whether there is anything to run.
         print('Starting at the root node of the Pipeline!')
 
-    out_of_date_objs = []
+    if isinstance(anc_nodes_sorted[0], Logsheet):
+        anc_nodes_sorted = anc_nodes_sorted[1:] # Remove the Logsheet from the start of the pipeline.
+
+    # Get the date last edited for each pipeline object, and see if it was settings or run action.
+    sqlquery_raw = "SELECT pl_object_id, action_id_num FROM run_history WHERE pl_object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["pl_object_id", "action_id_num"], single = False, user = True, computer = False)
+    params = tuple([node.id for node in anc_nodes_sorted])
+    run_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    run_history_result = [r.append("run") for r in run_history_result]
+
+    sqlquery_raw = "SELECT action_id_num, object_id FROM simple_attributes WHERE object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["action_id_num", "object_id"], single = False, user = True, computer = False)
+    settings_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    settings_history_result = [r.append("settings") for r in settings_history_result]
+    result = run_history_result + settings_history_result
+    first_out_of_date = None
     for anc_node in anc_nodes_sorted:        
         # Check if the previous nodes are up to date.
         if anc_node.up_to_date == False:
-            out_of_date_objs.append(anc_node)
+            first_out_of_date = anc_node
 
-    succ_nodes = []
-    for out_of_date_obj in out_of_date_objs:
-        succ_nodes.extend(list(nx.descendants(G, out_of_date_obj)))
-        succ_nodes.append(out_of_date_obj)
-    succ_nodes = list(set(succ_nodes))
-    pl_nodes_sorted = []
-    if len(succ_nodes) > 0:
-        succ_graph = G.subgraph(succ_nodes) # Include the successors and the current node.
-        pl_nodes_sorted = nx.topological_sort(succ_graph)
+    if first_out_of_date:
+        print(f"Node {first_out_of_date.id} is out of date. Running the pipeline starting from this node.")        
     else:
-        print('No nodes to run!')
-        return
+        if not plobj:
+            print('Nothing new to run! Aborting...')
+            return
+        print('All previous nodes are up to date. Run starting from specified node.')
+        first_out_of_date = plobj
+
+    run_nodes = list(nx.descendants(G, first_out_of_date))
+    run_nodes.append(first_out_of_date)
+
+    run_nodes_graph = G.subgraph(run_nodes)
+
+    run_nodes_sorted = nx.topological_sort(run_nodes_graph)
 
     print('Running the following nodes, in order:')
-    for pl_node in pl_nodes_sorted:
+    for pl_node in run_nodes_sorted:
         print(pl_node.id)
 
     dur = 5
@@ -309,9 +333,9 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     else:
         print('Pipeline run cancelled.')
         return
-        
-    for pl_node in pl_nodes_sorted:
-        pl_node.run()
+            
+    for pl_node in run_nodes_sorted:
+        pl_node.run(action=action)
 
 def input_with_timeout(prompt, timeout):
     import threading
