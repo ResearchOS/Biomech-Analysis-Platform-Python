@@ -261,6 +261,7 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     add_src_to_path()
     import_objects_of_type(Dataset)
     lgs = import_objects_of_type(Logsheet)
+    lg = lgs[0]
     # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.      
     action = Action(name = "run_pipeline", type="run")
     G = build_pl()
@@ -295,24 +296,26 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         anc_nodes_sorted = list(nx.topological_sort(G)) # This will check whether there is anything to run.
         print('Starting at the root node of the Pipeline!')
 
-    if isinstance(anc_nodes_sorted[0], Logsheet):
-        anc_nodes_sorted = anc_nodes_sorted[1:] # Remove the Logsheet from the start of the pipeline.
+    # if isinstance(anc_nodes_sorted[0], Logsheet):
+    #     anc_nodes_sorted = anc_nodes_sorted[1:] # Remove the Logsheet from the start of the pipeline.
 
     # Get the date last edited for each pipeline object, and see if it was settings or run action.
     sqlquery_raw = "SELECT action_id_num, pl_object_id FROM run_history WHERE pl_object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
     sqlquery = sql_order_result(action, sqlquery_raw, ["pl_object_id", "action_id_num"], single = False, user = True, computer = False)
-    params = tuple([node.id for node in anc_nodes_sorted])
-    run_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-    run_history_result = [(r + ("run",)) for r in run_history_result]
+    anc_node_ids = [node.id for node in anc_nodes_sorted]    
+    params = tuple(anc_node_ids)
+    run_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()    
 
     if not run_history_result:
         print("No run history found. Need to run the logsheet first. Attempting to run the logsheet for you...")
         time.sleep(2)
-        try:
-            lg = lgs[0]
+        try:            
             lg.read_logsheet()
+            run_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()    
         except:
             raise ValueError("Error auto-running logsheet. Must be addressed before the pipeline can be run.")
+        
+    run_history_result = [(r + ("run",)) for r in run_history_result]
 
     sqlquery_raw = "SELECT action_id_num, object_id FROM simple_attributes WHERE object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
     sqlquery = sql_order_result(action, sqlquery_raw, ["action_id_num", "object_id"], single = False, user = True, computer = False)
@@ -332,7 +335,7 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     first_out_of_date = None
     for anc_node in anc_nodes_sorted:        
         most_recent_idx = [idx for idx, r in enumerate(result) if r[1] == anc_node.id][0]
-        if result[most_recent_idx][2] == "run":
+        if result[most_recent_idx][2] == "settings":
             continue
         else:
             first_out_of_date = anc_node

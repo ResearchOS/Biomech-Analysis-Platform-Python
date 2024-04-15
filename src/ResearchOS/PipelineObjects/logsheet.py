@@ -308,8 +308,7 @@ class Logsheet(PipelineObject):
             ValueError: more header rows than logsheet rows or incorrect schema format?"""
         logsheet_start_time = time.time()
         global all_default_attrs
-        action = Action(name = "read logsheet", type="run")
-        action.add_sql_query(None, "run_history_insert", (action.id_num, self.id))
+        action = Action(name = "read logsheet", type="run")        
         ds = Dataset(id = self._get_dataset_id(), action = action)
         validator = Validator(self, action)      
         validator.validate(self.__dict__, all_default_attrs)
@@ -480,6 +479,7 @@ class Logsheet(PipelineObject):
             if row[1:] not in paths: # Exclude Dataset object.
                 action.add_sql_query(all_dobjs_ordered[idx].id, "path_insert", (action.id_num, all_dobjs_ordered[idx].id, json.dumps(row[1:])))
         
+        action.add_sql_query(None, "run_history_insert", (action.id_num, self.id))
         action.exec = True
         action.commit = True        
         action.execute() # Commit the action.
