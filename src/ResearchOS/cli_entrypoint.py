@@ -388,5 +388,4 @@ def input_with_timeout(prompt, timeout):
     return result[0]
 
 if __name__ == "__main__":
-    # app(["run"])
-    app(["logsheet-read"])
+    app(["run"])    

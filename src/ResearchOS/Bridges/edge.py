@@ -54,17 +54,19 @@ class Edge():
         if result:
             self.id = result[0][0]
         else:
-            sqlquery = "INSERT INTO connections (connection_id, outlet_id, inlet_id, action_id_num) VALUES (?, ?, ?, ?)"
+            # sqlquery = "INSERT INTO connections (connection_id, outlet_id, inlet_id, action_id_num) VALUES (?, ?, ?, ?)"
             idcreator = IDCreator(action.conn)
             id = idcreator.create_generic_id("connections", "connection_id")
             params = (id, outlet.id, inlet.id, action.id_num)
-            cursor = action.conn.cursor()
-            cursor.execute(sqlquery, params)
+            # cursor = action.conn.cursor()
+            action.add_sql_query("None", "connection_insert", params)
+            # cursor.execute(sqlquery, params)
             self.id = id
 
-            sqlquery = "INSERT INTO pipelineobjects_graph (source_object_id, target_object_id, edge_id, action_id_num) VALUES (?, ?, ?, ?)"
+            # sqlquery = "INSERT INTO pipelineobjects_graph (source_object_id, target_object_id, edge_id, action_id_num) VALUES (?, ?, ?, ?)"
             params = (outlet.parent_ro.id, inlet.parent_ro.id, self.id, action.id_num)
-            cursor.execute(sqlquery, params)
+            # cursor.execute(sqlquery, params)
+            action.add_sql_query("None", "pipelineobjects_graph_insert", params)
             if print_edge:
                 print("Created: ", self)
 

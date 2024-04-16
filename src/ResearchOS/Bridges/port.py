@@ -34,14 +34,15 @@ class Port():
                  vr: "Variable" = None,
                  pr: "source_type" = None,
                  show: bool = False,
-                 action: Action = None):
+                 action: Action = None,
+                 let: "InletOrOutlet" = None):
         if hasattr(self, "id"):
             logger.info(f"Already initialized Port with id {self.id}")
             return
         self.vr = vr
         self.pr = pr
         self.show = show
-        self.let = None
+        self.let = let
         self.action = action
         self.id = None
         self.create_input_or_output()    
@@ -133,9 +134,35 @@ class Port():
         except:
             key = [key for key in value.keys()][0]
             value = json.dumps({key.prefix: value[key]})        
-        sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE is_input = ? AND vr_id = ? AND pr_id = ? AND lookup_vr_id = ? AND lookup_pr_id = ? AND value = ?"               
-        params = (self.is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value)
-        unique_list = ["is_input", "vr_id", "pr_id", "lookup_vr_id", "lookup_pr_id", "value"]
+
+        template_notnull = "{} = ?"
+        vr_id_str = "vr_id IS NULL"
+        pr_id_str = "pr_id IS NULL"
+        lookup_vr_id_str = "lookup_vr_id IS NULL"
+        lookup_pr_id_str = "lookup_pr_id IS NULL"
+        params = [int(self.is_input)]
+        unique_list = ["is_input"]
+        if vr_id is not None:
+            vr_id_str = template_notnull.format("vr_id")
+            params.append(vr_id)
+            unique_list.append("vr_id")
+        if pr_id is not None:
+            pr_id_str = template_notnull.format("pr_id")
+            params.append(pr_id)
+            unique_list.append("pr_id")
+        if lookup_vr_id is not None:
+            lookup_vr_id_str = template_notnull.format("lookup_vr_id")
+            params.append(lookup_vr_id)
+            unique_list.append("lookup_vr_id")
+        if lookup_pr_id is not None:
+            lookup_pr_id_str = template_notnull.format("lookup_pr_id")
+            params.append(lookup_pr_id)
+            unique_list.append("lookup_pr_id")
+        params.append(value)
+        params = tuple(params)
+        unique_list.append("value")
+
+        sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE is_input = ? AND {vr_id_str} AND {pr_id_str} AND {lookup_vr_id_str} AND {lookup_pr_id_str} AND value = ?"                               
         sqlquery = sql_order_result(action, sqlquery_raw, unique_list, single=True, user = True, computer = False) 
 
         result = action.conn.execute(sqlquery, params).fetchall()

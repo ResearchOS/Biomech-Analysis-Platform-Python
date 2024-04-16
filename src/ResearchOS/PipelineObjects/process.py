@@ -96,15 +96,17 @@ class Process(PipelineObject):
         #     raise ValueError("Variable name must be one of the input variable names in code.")                
     
     def set_inputs(self, **kwargs) -> None:
-        """Convenience function to set the input variables with named variables rather than a dict."""
+        """Convenience function to set the input variables with named variables rather than a dict.
+        Edges are created here."""
         standardized_kwargs = VRHandler.standardize_inputs(self, kwargs)
         self.__setattr__("inputs", standardized_kwargs)
         make_all_edges(self)
 
     def set_outputs(self, **kwargs) -> None:
-        """Convenience function to set the output variables with named variables rather than a dict."""
+        """Convenience function to set the output variables with named variables rather than a dict.
+        Edges are NOT created here."""
         standardized_kwargs = VRHandler.standardize_outputs(self, kwargs)
-        self.__setattr__("outputs", standardized_kwargs)
+        self.__setattr__("outputs", standardized_kwargs)        
 
     def run(self, force_redo: bool = False, action: Action = None) -> None:
         """Execute the attached method.

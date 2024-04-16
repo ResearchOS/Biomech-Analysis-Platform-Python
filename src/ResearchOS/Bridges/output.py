@@ -18,9 +18,10 @@ class Output(Port):
                  vr: "Variable" = None,
                  pr: "source_type" = None,
                  show: bool = False,
-                 action: "Action" = None):
+                 action: "Action" = None,
+                 let: "InletOrOutlet" = None):
         """Initializes the Output object. "vr" and "pr" together make up the main source of the output."""
         if vr is None and pr is None:
             show = True     
 
-        super().__init__(id=id, vr=vr, pr=pr, show=show, action=action)
+        super().__init__(id=id, vr=vr, pr=pr, show=show, action=action, let=let)

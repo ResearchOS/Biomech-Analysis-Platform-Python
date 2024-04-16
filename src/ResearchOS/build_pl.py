@@ -1,3 +1,8 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ResearchOS.research_object import ResearchObject
+
 import networkx as nx
 
 from ResearchOS.research_object_handler import ResearchObjectHandler
@@ -52,7 +57,8 @@ def make_all_edges(ro: "ResearchObject"):
         # For each input, find an Outlet with a matching output.
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet
-        from ResearchOS.Bridges.outlet import Outlet                
+        from ResearchOS.Bridges.outlet import Outlet    
+        from ResearchOS.Bridges.output import Output            
         all_pr_objs = [pr() for pr in ResearchObjectHandler.instances_list if pr() is not None and isinstance(pr(), (Process,))]
         lg_objs = [lg() for lg in ResearchObjectHandler.instances_list if lg() is not None and isinstance(lg(), (Logsheet,))]
         last_idx = all_pr_objs.index(ro)
@@ -73,6 +79,7 @@ def make_all_edges(ro: "ResearchObject"):
                  lg.validate_headers(lg.headers, action, [])
                  for h in lg.headers:
                       if h[3] == input.vr:
+                        # output = Output(vr=h[3], pr=lg, action=action)
                         outlet = Outlet(parent_ro=lg, vr_name_in_code=h[0], action=action)
                         e = Edge(inlet=inlet, outlet=outlet, action=action, print_edge=True)                        
         

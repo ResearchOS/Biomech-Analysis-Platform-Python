@@ -76,7 +76,7 @@ class JSONConverter():
         tmp_dict = {}
         for key in serializable_dict:
             tmp_dict[key] = Outlet(self, key, action)
-            tmp_dict[key].add_put(Output(id=serializable_dict[key], action=action), action, do_insert=False)
+            tmp_dict[key].add_put(Output.load(id=serializable_dict[key], action=action), action, do_insert=False)
         return tmp_dict
     
     @staticmethod

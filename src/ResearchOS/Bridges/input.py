@@ -32,7 +32,11 @@ class Input(Port):
                  action: "Action" = None,
                  let: "InletOrOutlet" = None):
         """Initializes the Input object. "vr" and "pr" together make up the main source of the input. "lookup_vr" and "lookup_pr" together make up the lookup source of the input.
-        "value" is the hard-coded value. If specified, supercedes the main source."""              
+        "value" is the hard-coded value. If specified, supercedes the main source."""
+        
+        import_value_default = "import_file_vr_name"
+        if let is not None and hasattr(let, "parent_ro") and let.vr_name_in_code==let.parent_ro.import_file_vr_name:
+            value = import_value_default
 
         if src is not None:
             vr = src.vr
@@ -40,17 +44,17 @@ class Input(Port):
         
         self.action=action        
         if pr is None and vr is None:
-            show = True            
+            show = True       
+
+        if vr is not None and vr.hard_coded_value is not None:
+            value = vr.hard_coded_value
         # Make sure this is a truly dynamic variable that needs an edge from an Output to have a value.
         is_hard_coded = (value is not None and vr is None) or vr.hard_coded_value is not None
-        if pr is None and not is_hard_coded:
+        if pr is None and is_hard_coded:
             if let is None:
                 raise ValueError("If specifying Input and a dynamic VR, then must also specify the source PR. Alternatively, just specify the VR and let the system find the most recent source PR.")
-            is_hard_coded = vr.hard_coded_value is not None or (hasattr(let.parent_ro, "import_file_vr_name") and let.parent_ro.import_file_vr_name == let.vr_name_in_code)
-            if vr is not None and vr.hard_coded_value is not None:
-                value = vr.hard_coded_value
-                vr = None
-        if not is_hard_coded and pr is None:
+            is_hard_coded = vr.hard_coded_value is not None or (hasattr(let.parent_ro, "import_file_vr_name") and let.parent_ro.import_file_vr_name == let.vr_name_in_code)            
+        if not is_hard_coded and pr is None and value != import_value_default:
             if let is None:
                 raise ValueError("If specifying Input and a dynamic VR, then must also specify the source PR. Alternatively, just specify the VR and let the system find the most recent source PR.")           
             self.add_attrs(let.parent_ro, let.vr_name_in_code)
@@ -59,7 +63,7 @@ class Input(Port):
         self.lookup_vr = lookup_vr
         self.lookup_pr = lookup_pr
         self.value = value
-        super().__init__(id=id, vr=vr, pr=pr, show=show, action=action)
+        super().__init__(id=id, vr=vr, pr=pr, show=show, action=action, let=let)
 
     def set_source_pr(self, vr: "Variable"):
         """Set the source process or logsheet."""
