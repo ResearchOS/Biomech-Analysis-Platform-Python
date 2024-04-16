@@ -120,12 +120,8 @@ def db_reset(yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type 'y'
 @app.command()
 def dobjs(path = typer.Option(None, "--path", "-p", help="Path to the data object of interest")):
     """List all available data objects."""
-    from ResearchOS.research_object import ResearchObject
-    from ResearchOS.DataObjects.dataset import Dataset
-    from ResearchOS.DataObjects.data_object import load_data_object_classes
     import matplotlib.pyplot as plt
     from netgraph import Graph, InteractiveGraph, EditableGraph
-    breakpoint()
     if path is not None and not isinstance(path, list):
         path = [path]
     action = Action(name = "list_dobjs")
@@ -253,18 +249,19 @@ def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, lo
 def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type '-y' to run the pipeline without confirmation.")):
     """Run the runnable pipeline objects."""
-    # from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.logsheet import Logsheet
     from ResearchOS.DataObjects.dataset import Dataset
     from ResearchOS.build_pl import build_pl
     from ResearchOS.build_pl import import_objects_of_type
     add_src_to_path()
+    print('Importing Dataset objects...')
     import_objects_of_type(Dataset)
+    print('Importing Logsheet objects...')
     lgs = import_objects_of_type(Logsheet)
     lg = lgs[0]
-    # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.      
-    action = Action(name = "run_pipeline", type="run")
+    # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.          
     G = build_pl()
+    action = Action(name = "run_pipeline", type="run")
     try:
         pass
     except Exception as e:
@@ -287,18 +284,14 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     if plobj:
         anc_nodes = list(nx.ancestors(G, plobj))
     else:
-        anc_nodes = []
-    anc_nodes_sorted = []
-    if len(anc_nodes) > 0:
-        anc_graph = G.subgraph(anc_nodes) # Include the ancestors, NOT the current node.
-        anc_nodes_sorted = list(nx.topological_sort(anc_graph))        
-    else:
-        anc_nodes_sorted = list(nx.topological_sort(G)) # This will check whether there is anything to run.
+        anc_nodes = list(G.nodes())
         print('Starting at the root node of the Pipeline!')
-
-    # if isinstance(anc_nodes_sorted[0], Logsheet):
-    #     anc_nodes_sorted = anc_nodes_sorted[1:] # Remove the Logsheet from the start of the pipeline.
-
+    anc_graph = G.subgraph(anc_nodes)
+    anc_nodes_sorted = list(nx.topological_sort(anc_graph))
+    if not anc_nodes_sorted:
+        print('Nothing to run! Aborting...')
+        return
+        
     # Get the date last edited for each pipeline object, and see if it was settings or run action.
     sqlquery_raw = "SELECT action_id_num, pl_object_id FROM run_history WHERE pl_object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
     sqlquery = sql_order_result(action, sqlquery_raw, ["pl_object_id", "action_id_num"], single = False, user = True, computer = False)
@@ -307,7 +300,7 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     run_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()    
 
     if not run_history_result:
-        print("No run history found. Need to run the logsheet first. Attempting to run the logsheet for you...")
+        print("No run history found. Need to run the logsheet before running the pipeline. Attempting to run the logsheet for you...")
         time.sleep(2)
         try:            
             lg.read_logsheet()
@@ -333,7 +326,9 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     result = [(r + (action_dates_dict[r[0]],)) for r in result]
     result = sorted(result, key = lambda x: x[3], reverse = True) # Sorted by datetime, descending.
     first_out_of_date = None
-    for anc_node in anc_nodes_sorted:        
+    for anc_node in anc_nodes_sorted:
+        if isinstance(anc_node, Logsheet):
+            continue # Can't run the pipeline from a Logsheet.
         most_recent_idx = [idx for idx, r in enumerate(result) if r[1] == anc_node.id][0]
         if result[most_recent_idx][2] == "settings":
             continue
@@ -345,9 +340,9 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         print(f"Node {first_out_of_date.id} is out of date. Running the pipeline starting from this node.")        
     else:
         if not plobj:
-            print('Nothing new to run! Aborting...')
+            print('All nodes are up to date. Nothing to run.')
             return
-        print('All previous nodes are up to date. Run starting from specified node.')
+        print('All previous nodes are up to date. Run starting from specified node.')        
         first_out_of_date = plobj
 
     run_nodes = list(nx.descendants(G, first_out_of_date))
@@ -372,6 +367,8 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         return
             
     for pl_node in run_nodes_sorted:
+        if isinstance(pl_node, Logsheet):
+            continue
         pl_node.run(action=action)
 
 def input_with_timeout(prompt, timeout):
@@ -391,4 +388,5 @@ def input_with_timeout(prompt, timeout):
     return result[0]
 
 if __name__ == "__main__":
-    app(["run"])
+    # app(["run"])
+    app(["logsheet-read"])

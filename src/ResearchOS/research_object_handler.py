@@ -101,17 +101,20 @@ class ResearchObjectHandler:
             raise ValueError("No computer-specific attributes exist for this object.")
 
         # Computer-specific and computer-independent attributes.
+        # Ordered to be in the same order as in the default_attrs.
+        ordered_attr_result_dict_name = {key: ordered_attr_result_dict[ResearchObjectHandler._get_attr_id(key)] for key in default_attrs if ResearchObjectHandler._get_attr_id(key) in ordered_attr_result_dict.keys()}
         attrs = {}
-        for attr_id, value in ordered_attr_result_dict.items():            
-            attr_name = ResearchObjectHandler._get_attr_name(attr_id)
+        for attr_name, value in ordered_attr_result_dict_name.items():                        
             attr_value = JSONConverter.from_json(research_object, attr_name, value, action)
-            attrs[attr_name] = attr_value        
+            research_object.__dict__[attr_name] = attr_value  
+            attrs[attr_name] = attr_value      
 
         # 3. Load the class-specific/"complex" builtin attributes.
         for attr_name in default_attrs.keys():
             if hasattr(research_object, "load_" + attr_name):
                 load_method = getattr(research_object, "load_" + attr_name)
                 value = load_method(action)
+                research_object.__dict__[attr_name] = value
                 attrs[attr_name] = value
 
         return attrs

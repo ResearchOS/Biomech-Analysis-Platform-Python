@@ -3,10 +3,11 @@ import json
 import weakref
 import logging
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:    
+    from ResearchOS.Bridges.inlet_or_outlet import InletOrOutlet
+    from ResearchOS.variable import Variable
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.logsheet import Logsheet
-    from ResearchOS.variable import Variable
     source_type = Union[Process, Logsheet]
 
 from ResearchOS.idcreator import IDCreator
@@ -46,10 +47,13 @@ class Port():
         self.create_input_or_output()    
 
     @staticmethod
-    def load(id: int, action: Action = None) -> "Port":
+    def load(id: int, action: Action = None, let="InletOrOutlet") -> "Port":
         """Load a Port from the database."""
         from ResearchOS.Bridges.input import Input
         from ResearchOS.Bridges.output import Output
+        from ResearchOS.variable import Variable
+        from ResearchOS.PipelineObjects.process import Process
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
         if id in Port.instances.keys():
             return Port.instances[id]
         sqlquery_raw = "SELECT id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show FROM inputs_outputs WHERE id = ?"
@@ -64,6 +68,9 @@ class Port():
         if not result:
             raise ValueError(f"Port with id {id} not found in database.")
         id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show = result[0]
+        if not pr_id:
+            pr_id = json.dumps([])
+        value = json.loads(value)
         vr = Variable(id=vr_id, action=action) if vr_id is not None else None
         pr = []
         for p in json.loads(pr_id):
@@ -76,12 +83,13 @@ class Port():
                 pr.append(Logsheet(id=p, action=action))
         if len(pr)==1:
             pr = pr[0]
+        elif len(pr)==0:
+            pr = None
         lookup_vr = Variable(id=lookup_vr_id, action=action) if lookup_vr_id is not None else None
         lookup_pr = Process(id=lookup_pr_id, action=action) if lookup_pr_id is not None else None
-        value = json.loads(value)
         is_input = bool(is_input)
         show = bool(show)
-        port = Input(id=id, vr=vr, pr=pr, lookup_vr=lookup_vr, lookup_pr=lookup_pr, value=value, show=show, action=action) if is_input else Output(id=id, vr=vr, pr=pr, show=show, action=action)
+        port = Input(id=id, vr=vr, pr=pr, lookup_vr=lookup_vr, lookup_pr=lookup_pr, value=value, show=show, action=action, let=let) if is_input else Output(id=id, vr=vr, pr=pr, show=show, action=action, let=let)
 
         if return_conn:
             action.execute()

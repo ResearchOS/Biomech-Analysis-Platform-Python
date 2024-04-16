@@ -42,12 +42,20 @@ class Input(Port):
         if pr is None and vr is None:
             show = True            
         # Make sure this is a truly dynamic variable that needs an edge from an Output to have a value.
-        if pr is None and vr is not None:
+        is_hard_coded = (value is not None and vr is None) or vr.hard_coded_value is not None
+        if pr is None and not is_hard_coded:
             if let is None:
                 raise ValueError("If specifying Input and a dynamic VR, then must also specify the source PR. Alternatively, just specify the VR and let the system find the most recent source PR.")
-            if not (vr.hard_coded_value is not None or (hasattr(let.parent_ro, "import_file_vr_name") and let.parent_ro.import_file_vr_name == let.vr_name_in_code)):            
-                self.add_attrs(let.parent_ro, let.vr_name_in_code)
-                pr = self.set_source_pr(vr)
+            is_hard_coded = vr.hard_coded_value is not None or (hasattr(let.parent_ro, "import_file_vr_name") and let.parent_ro.import_file_vr_name == let.vr_name_in_code)
+            if vr is not None and vr.hard_coded_value is not None:
+                value = vr.hard_coded_value
+                vr = None
+        if not is_hard_coded and pr is None:
+            if let is None:
+                raise ValueError("If specifying Input and a dynamic VR, then must also specify the source PR. Alternatively, just specify the VR and let the system find the most recent source PR.")           
+            self.add_attrs(let.parent_ro, let.vr_name_in_code)
+            pr = self.set_source_pr(vr)
+            assert pr is not None
         self.lookup_vr = lookup_vr
         self.lookup_pr = lookup_pr
         self.value = value

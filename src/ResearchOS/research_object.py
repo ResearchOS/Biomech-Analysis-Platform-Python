@@ -82,6 +82,8 @@ class ResearchObject():
 
         if not kwargs_dict:
             kwargs_dict = {name: value}
+        # Reorder it to be in the same order as specified in the default attributes.
+        kwargs_dict = {key: kwargs_dict[key] for key in default_attrs if key in kwargs_dict}
                 
         del_keys = []
         for key in kwargs_dict:
@@ -140,7 +142,6 @@ class ResearchObject():
         if prev_exists and not prev_loaded:
             # Load the existing object's attributes from the database.
             loaded_attrs = ResearchObjectHandler._load_ro(self, attrs, action)
-            self.__dict__.update(loaded_attrs) # Set the loaded attributes.            
         
         # If creating a new object, save all attributes.
         # If loaded an existing object: save only the changed attributes.        

@@ -90,9 +90,7 @@ class Logsheet(PipelineObject):
             None
         
         Raises:
-            ValueError: incorrect ''header'' format"""
-        from ResearchOS.Bridges.outlet import Outlet
-        from ResearchOS.Bridges.output import Output
+            ValueError: incorrect ''header'' format"""        
         if headers == default:
             return
         self.validate_path(self.path, action, None)
@@ -116,10 +114,10 @@ class Logsheet(PipelineObject):
             if header[2] not in DataObject.__subclasses__():
                 raise ValueError("Third element of each header tuple must be a ResearchObject subclass!")
             # 6. Check that the third element of each header tuple is a valid variable ID.                
-            if not isinstance(header[3],(str, Variable)):
+            if not isinstance(header[3],Variable):
                 raise ValueError("Fourth element of each header tuple must be a valid pre-existing variable ID OR the variable object itself!")
-            if isinstance(header[3], str) and not (header[3].startswith(Variable.prefix) and ResearchObjectHandler.object_exists(header[3], action)):
-                raise ValueError("Fourth element of each header tuple (if provided as a str) must be a valid pre-existing variable ID!")
+            # if isinstance(header[3], str) and not (header[3].startswith(Variable.prefix) and ResearchObjectHandler.object_exists(header[3], action)):
+            #     raise ValueError("Fourth element of each header tuple (if provided as a str) must be a valid pre-existing variable ID!")
             
         logsheet = self._read_and_clean_logsheet(nrows = 1)
         headers_in_logsheet = logsheet[0]
@@ -127,13 +125,7 @@ class Logsheet(PipelineObject):
         missing = [header for header in headers_in_logsheet if header not in header_names]
 
         if len(missing) > 0:
-            raise ValueError(f"The headers {missing} do not match between logsheet and code!")
-        
-        # Create Outlets and Outputs for the Logsheet
-        for header in headers:
-            outlet = Outlet(parent_ro = self, vr_name_in_code=header[0], action=action)
-            output = Output(vr=header[3], pr=self, action=action)
-            outlet.add_put(output, action=action)
+            raise ValueError(f"The headers {missing} do not match between logsheet and code!")        
             
     def to_json_headers(self, headers: list, action: Action) -> str:
         """Convert the headers to a JSON string.
@@ -145,6 +137,15 @@ class Logsheet(PipelineObject):
             
         Returns:
             ''headers'' as a JSON string using ''json.dumps''"""
+        from ResearchOS.Bridges.outlet import Outlet
+        from ResearchOS.Bridges.output import Output
+        # Create Outlets and Outputs for the Logsheet        
+        for header in headers:
+            # breakpoint()
+            outlet = Outlet(parent_ro = self, vr_name_in_code=header[0], action=action)
+            output = Output(vr=header[3], pr=self, action=action)
+            outlet.add_put(output, action=action)
+
         str_headers = []        
         for header in headers:
             # Update the Variable object with the name if it is not already set, and the level.
@@ -152,7 +153,6 @@ class Logsheet(PipelineObject):
                 vr = header[3]                
             else:
                 vr = Variable(id = header[3], action = action)
-            # default_attrs = DefaultAttrs(vr).default_attrs
             kwarg_dict = {"name": header[0]}
             vr.__setattr__(None, None, action=action, kwargs_dict=kwarg_dict)
             str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, vr.id))
@@ -179,7 +179,7 @@ class Logsheet(PipelineObject):
         }
         for header in str_var:
             cls_header = [cls for cls in subclasses if cls.prefix == header[2]][0]
-            headers.append((header[0], mapping[header[1]], cls_header, header[3]))                
+            headers.append((header[0], mapping[header[1]], cls_header, Variable(id=header[3], action=action)))                
         return headers
             
     ### Num header rows
@@ -321,10 +321,7 @@ class Logsheet(PipelineObject):
 
         if len(full_logsheet) < self.num_header_rows:
             raise ValueError("The number of header rows is greater than the number of rows in the logsheet!")
-
-        # Run the logsheet import.
-        # headers = full_logsheet[0:self.num_header_rows]
-        if len(full_logsheet) == self.num_header_rows:
+        elif len(full_logsheet) == self.num_header_rows:
             logsheet = []
         else:
             logsheet = full_logsheet[self.num_header_rows:]

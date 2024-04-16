@@ -1,3 +1,6 @@
+v0.0.14
+Minimum Python version bumped to 3.7 for dict key ordering reasons. Also added/expanded CLI commands.
+
 v0.0.13
 Can run Process objects, and use batches. Uploading after docs edits so others can try it.
 

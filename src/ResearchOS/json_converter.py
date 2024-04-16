@@ -49,9 +49,9 @@ class JSONConverter():
         from ResearchOS.Bridges.inlet import Inlet
         serializable_dict = json.loads(inputs)
         tmp_dict = {}
-        for key in serializable_dict:
+        for key in serializable_dict:            
             inlet = Inlet(self, key, action)                        
-            input = Input(id=serializable_dict[key], action=action, let=inlet)
+            input = Input.load(id=serializable_dict[key], action=action, let=inlet)
             inlet.add_put(input, action, do_insert=False)
             tmp_dict[key] = inlet
         return tmp_dict

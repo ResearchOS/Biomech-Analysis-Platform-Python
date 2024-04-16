@@ -9,6 +9,10 @@ from ResearchOS.vr_handler import VRHandler
 from ResearchOS.build_pl import make_all_edges
 
 all_default_attrs = {}
+# For import
+all_default_attrs["import_file_ext"] = None
+all_default_attrs["import_file_vr_name"] = None
+
 # For MATLAB
 all_default_attrs["is_matlab"] = False
 all_default_attrs["mfolder"] = None
@@ -20,10 +24,6 @@ all_default_attrs["level"] = None
 all_default_attrs["inputs"] = {}
 all_default_attrs["outputs"] = {}
 all_default_attrs["subset"] = None
-
-# For import
-all_default_attrs["import_file_ext"] = None
-all_default_attrs["import_file_vr_name"] = None
 
 # For including other Data Object attributes from the node lineage in the input variables.
 # For example, if a Process is run on a Trial, and one of the inputs needs to be the Subject's name.
