@@ -26,44 +26,44 @@ class VRHandler():
         # 1. Create/load all of the Inlets
         inlets_dict = {key: Inlet(parent_ro, key, action) for key in all_inputs.keys()}        
 
-        # See which inputs are already associated with the inlets
-        # sqlquery_raw = "SELECT put_id FROM lets_puts WHERE let_id IN ({})".format(", ".join(["?" for _ in inlets_dict]))
-        # params = tuple([inlet.id for inlet in inlets_dict.values()])
-        # sqlquery = sql_order_result(action, sqlquery_raw, ["put_id", "let_id"], single = True, user = True, computer = False)
-        # result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        # put_ids = [row[0] for row in result]
-
-        # inputs = [Input.load(id=put_id) for put_id in put_ids]
-
         # 2. Create/load all of the Inputs        
         for key, input in all_inputs.items():
             inlet = inlets_dict[key]
 
-            found_input = False
-            for tmp_input in inputs:
-                if found_input:
-                    continue
-                if isinstance(input, Input):
-                    pass
-                elif isinstance(input, Variable): 
-                    if tmp_input.vr == input:
-                        found_input = True
-                        input = tmp_input  
-                    else:     
-                        pass                                                        
-                        # input = Input(vr=input, action=action, let=inlet)
-                else:
-                    if tmp_input.value == input:
-                        found_input = True
-                        input = tmp_input                        
-                    # input = Input(value=input, action=action, let=inlet) # Directly hard-coded value. May be a DataObject attribute.            
-            if not found_input:
+            if isinstance(input, Input):
                 pass
+            elif isinstance(input, Variable): 
+                input = Input(vr=input, action=action, let=inlet)
+            else:
+                input = Input(value=input, action=action, let=inlet)
 
-            do_insert = True
-            if found_input:
-                do_insert = input.id not in put_ids
             inlet.add_put(input, action=action, do_insert=do_insert)
+
+            # found_input = False
+            # for tmp_input in inputs:
+            #     if found_input:
+            #         continue
+            #     if isinstance(input, Input):
+            #         pass
+            #     elif isinstance(input, Variable): 
+            #         if tmp_input.vr == input:
+            #             found_input = True
+            #             input = tmp_input  
+            #         else:     
+            #             pass                                                        
+            #             # input = Input(vr=input, action=action, let=inlet)
+            #     else:
+            #         if tmp_input.value == input:
+            #             found_input = True
+            #             input = tmp_input                        
+            #         # input = Input(value=input, action=action, let=inlet) # Directly hard-coded value. May be a DataObject attribute.            
+            # if not found_input:
+            #     pass
+
+            # do_insert = True
+            # if found_input:
+            #     do_insert = input.id not in put_ids
+            
         
         if return_conn:
             action.commit = True

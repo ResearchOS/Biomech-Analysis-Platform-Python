@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     source_type = Union[Process, Logsheet]
 
 from ResearchOS.Bridges.port import Port
+import ResearchOS.Bridges.input_types as it
 
 class Output(Port):
     """Output port to connect between DiGraphs."""
@@ -22,6 +23,12 @@ class Output(Port):
                  let: "InletOrOutlet" = None):
         """Initializes the Output object. "vr" and "pr" together make up the main source of the output."""
         if vr is None and pr is None:
-            show = True     
+            output = it.DynamicMain(show = True)
+        else:
+            output = it.DynamicMain(it.Dynamic(vr=vr, pr=pr), show=show)
+        
+        self.put_value = output
+        self.action = action
+        self.let = let
 
-        super().__init__(id=id, vr=vr, pr=pr, show=show, action=action, let=let)
+        super().__init__()

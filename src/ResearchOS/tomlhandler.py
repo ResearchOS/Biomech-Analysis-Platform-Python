@@ -17,7 +17,7 @@ class TOMLHandler():
 
     def make_abs_path(self, path: str) -> None:
         """Make the path an absolute path."""
-        root = self.toml_dict["tool"]["researchos"]["paths"]["root"]["root"]
+        root = self.get("tool.researchos.paths.root.root")
         if not os.path.isabs(path):
             path = os.path.join(root, path)
         path = path.replace("/", os.sep)

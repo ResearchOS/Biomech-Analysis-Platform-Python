@@ -3,9 +3,7 @@ import json
 import weakref
 import logging
 
-if TYPE_CHECKING:    
-    from ResearchOS.Bridges.inlet_or_outlet import InletOrOutlet
-    from ResearchOS.variable import Variable
+if TYPE_CHECKING:
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.logsheet import Logsheet
     source_type = Union[Process, Logsheet]
@@ -13,6 +11,7 @@ if TYPE_CHECKING:
 from ResearchOS.idcreator import IDCreator
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.action import Action
+import ResearchOS.Bridges.input_types as it
 
 logger = logging.getLogger("ResearchOS")
 
@@ -30,21 +29,33 @@ class Port():
         return super().__new__(cls)
                     
         
-    def __init__(self, id: int = None,
-                 vr: "Variable" = None,
-                 pr: "source_type" = None,
-                 show: bool = False,
-                 action: Action = None,
-                 let: "InletOrOutlet" = None):
+    def __init__(self):
         if hasattr(self, "id"):
             logger.info(f"Already initialized Port with id {self.id}")
             return
-        self.vr = vr
-        self.pr = pr
-        self.show = show
-        self.let = let
-        self.action = action
+        self.vr = None
+        self.pr = None
         self.id = None
+        self.value = None
+        self.lookup_pr = None
+        self.lookup_vr = None
+        put = self.put_value
+        if put.__class__ == it.HardCoded:
+            self.value = put.value
+        elif put.__class__ == it.HardCodedVR:
+            self.vr = put.vr
+            self.value = put.value
+        elif put.__class__ == it.ImportFile:
+            self.value = put.value
+        elif put.__class__ == it.DataObjAttr:
+            self.value = {put.cls: put.attr}
+        elif put.__class__ == it.DynamicMain:
+            self.vr = put.main_vr.vr
+            self.pr = put.main_vr.pr
+            if put.lookup_vr.vr is not None:
+                self.lookup_vr = put.lookup_vr.vr
+                self.lookup_pr = put.lookup_vr.pr
+            self.show = put.show
         self.create_input_or_output()    
 
     @staticmethod

@@ -387,5 +387,76 @@ def input_with_timeout(prompt, timeout):
 
     return result[0]
 
+@app.command()
+def init_bridges():
+    """Creates the bridges.py file in the project root directory.
+    If the file already exists, does not do anything."""
+    from ResearchOS.build_pl import build_pl
+    from ResearchOS.build_pl import import_objects_of_type
+    tomlhandler = TOMLHandler("pyproject.toml")
+    # Respects the root folder.
+    bridges_path = tomlhandler.get("tool.researchos.paths.root.bridges") 
+    bridges_path = tomlhandler.make_abs_path(bridges_path)   
+    if os.path.exists(bridges_path):
+        print("Bridges file already exists. Aborting...")
+        return
+    
+    # 1. Build the pipeline.
+    G = build_pl()
+
+    # 2. Get the most up-to-date inputs and outputs where show = True.
+    sqlquery_raw = "SELECT id FROM inputs_outputs WHERE show = ?"
+    action = Action(name = "init_bridges")
+    params = (1,)
+    sqlquery = sql_order_result(action, sqlquery_raw, ["show"], single = False, user = True, computer = False)
+    result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    put_ids = [r[0] for r in result]
+
+    # 3. Look at lets_puts table to see which inlets/outlest are connected to those inputs/outputs.
+    sqlquery_raw = "SELECT let_id, put_id FROM lets_puts WHERE put_id IN ({})".format(",".join(["?" for i in range(len(put_ids))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["put_id"], single = False, user = True, computer = False)
+    params = tuple(put_ids)
+    result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    let_put_ids = [(r[0], r[1]) for r in result]
+    let_ids = [r[0] for r in let_put_ids]
+
+    # 4. Get the inlets/outlets vr_name_in_code and the source pr_id.
+    sqlquery_raw = "SELECT id, vr_name_in_code, source_pr_id FROM inlets_outlets WHERE id IN ({})".format(",".join(["?" for i in range(len(let_ids))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single = False, user = True, computer = False)
+    params = tuple(let_ids)
+    result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    let_ids = [r[0] for r in result]
+    vr_name_in_codes = [r[1] for r in result]
+    source_pr_ids = [r[2] for r in result]
+
+    # 5. Look in each loaded module under each package's Process field for the variable name in the code.
+    # 5.1. Get the package names.
+    packages_folder = os.path.join(os.getcwd(), "packages")
+    packages = os.listdir(packages_folder)
+    # 5.2. Get the process names for each package by scanning each module with dir()
+    # Is this right? No idea. Thanks Copilot.
+    package_process_dict = {}
+    for package in packages:
+        package_path = os.path.join(packages_folder, package)
+        if not os.path.isdir(package_path):
+            continue
+        package_process_dict[package] = []
+        for root, dirs, files in os.walk(package_path):
+            for file in files:
+                if file.endswith(".py"):
+                    module_path = os.path.join(root, file)
+                    module_path = module_path.replace("/", os.sep)
+                    module_path = module_path.replace(os.sep, ".").replace(".py", "")
+                    module = importlib.import_module(module_path)
+                    process_names = [obj for obj in dir(module) if obj.startswith("PR")]
+                    package_process_dict[package].extend(process_names)        
+
+    # 6. Compose each line of the bridges.py file as: 
+    # <package_abbrev>.<process_name>[<variable_name_in_code>] = None
+
+    # 7. Write the file. Organize the rows by packages, then by process name organized topologically.
+
+    
+
 if __name__ == "__main__":
     app(["run"])    
