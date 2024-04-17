@@ -58,7 +58,7 @@ class ResearchObject():
         instance.__dict__["_initialized"] = False
         return instance 
     
-    def __setattr__(self, name: str = None, value: Any = None, action: Action = None, all_attrs: DefaultAttrs = None, kwargs_dict: dict = {}) -> None:
+    def __setattr__(self, name: str = None, value: Any = None, action: Action = None, all_attrs: DefaultAttrs = None, kwargs_dict: dict = {}, exec: bool = True) -> None:
         """Set the attribute value. If the attribute value is not valid, an error is thrown."""
         if not self._initialized:
             self.__dict__[name] = value
@@ -71,7 +71,7 @@ class ResearchObject():
             all_attrs = DefaultAttrs(self) 
         default_attrs = all_attrs.default_attrs
 
-        if name not in default_attrs:
+        if name not in default_attrs and (len(kwargs_dict)==0 or kwargs_dict is None):
             self.__dict__[name] = value # "Temporary" values that won't persist in the database.
             return
                        
@@ -88,7 +88,7 @@ class ResearchObject():
         del_keys = []
         for key in kwargs_dict:
             try:
-                if self.__dict__[key] == kwargs_dict[key]:
+                if key in self.__dict__ and self.__dict__[key] == kwargs_dict[key]:
                     del_keys.append(key) # No change.
             except ValueError:
                 pass # Allow the Variable to not exist yet.
@@ -98,30 +98,27 @@ class ResearchObject():
         ResearchObjectHandler._set_builtin_attributes(self, default_attrs, kwargs_dict, action)
         
         action.commit = commit
-        action.exec = True
+        action.exec = exec
         action.execute()     
     
-    def __init__(self, action: Action = None, **other_kwargs):
+    def __init__(self, action: Action = None, **kwargs):
         """Initialize the research object.
         On initialization, all attributes should be saved! 
         Unless the object is being loaded, in which case only *changed* attributes should be saved."""
         attrs = DefaultAttrs(self) # Get the default attributes for the class.
         default_attrs_dict = attrs.default_attrs
-        if "name" in other_kwargs:
-            self.name = other_kwargs["name"] # Set the name to the default name.
-        elif "name" not in self.__dict__:
-            self.name = default_attrs_dict["name"]                
-        if "notes" in other_kwargs:
-            self.notes = other_kwargs["notes"]
-        elif "notes" not in self.__dict__:
-            self.notes = all_default_attrs["notes"] # Set the notes to the default notes.
+        # Special step needed for "name" and "notes" because they're default for all Research Objects.
+        if "name" not in kwargs:
+            self.name = default_attrs_dict["name"]
+        if "notes" not in kwargs:
+            self.notes = default_attrs_dict["notes"]        
 
         prev_loaded = self.__dict__["prev_loaded"]
         del self.__dict__["prev_loaded"] # Remove prev_loaded attribute.      
 
-        self_dict = copy.copy(self.__dict__) # Get the current values of the object's attributes. These are mostly default but could have been overriden in the constructor.
-        del self_dict["_initialized"] # Remove the _initialized attribute from the kwargs so that it is not set as an attribute.        
-        del self_dict["id"] # Remove the ID from the kwargs so that it is not set as an attribute.                    
+        # self_dict = copy.copy(self.__dict__) # Get the current values of the object's attributes. These are mostly default but could have been overriden by loading it from cache.
+        # del self_dict["_initialized"] # Remove the _initialized attribute from the kwargs so that it is not set as an attribute.        
+        # del self_dict["id"] # Remove the ID from the kwargs so that it is not set as an attribute.
         
         finish_action = False
         if action is None:
@@ -141,21 +138,16 @@ class ResearchObject():
         loaded_attrs = {}
         if prev_exists and not prev_loaded:
             # Load the existing object's attributes from the database.
-            loaded_attrs = ResearchObjectHandler._load_ro(self, attrs, action)
+            loaded_attrs = ResearchObjectHandler._load_ro(self, attrs, action)            
         
         # If creating a new object, save all attributes.
-        # If loaded an existing object: save only the changed attributes.        
-        save_dict = {}
-        for attr in self_dict:
-            try:
-                if not prev_exists or (self_dict[attr] != default_attrs_dict[attr] and self_dict[attr] != loaded_attrs[attr]):
-                    save_dict[attr] = self_dict[attr]
-            except:
-                pass
+        # If loaded an existing object: save only the changed attributes.
+        save_dict = {**self.__dict__, **kwargs} # loaded_attrs already added to self.__dict__ in .load_ro()
+        for kwarg in save_dict:
+            if kwarg in 
                 
-        self.__setattr__(None, None, action=action, all_attrs=attrs, kwargs_dict=save_dict) # Set the attributes.
-        # self._setattrs(default_attrs_dict, save_dict, action, None)
         self._initialized = True
+        self.__setattr__(None, None, action=action, all_attrs=attrs, kwargs_dict=kwargs) # Set the attributes.               
 
         # Set the attributes.
         if finish_action:
