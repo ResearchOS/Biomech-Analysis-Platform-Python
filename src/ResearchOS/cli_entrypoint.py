@@ -324,13 +324,13 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     action_dates = action.conn.cursor().execute(sqlquery, params).fetchall()
     action_dates_dict = {r[0]: r[1] for r in action_dates}
     result = [(r + (action_dates_dict[r[0]],)) for r in result]
-    result = sorted(result, key = lambda x: x[3], reverse = True) # Sorted by datetime, descending.
+    result = sorted(result, key = lambda x: x[3]) # Sorted by datetime, descending.
     first_out_of_date = None
     for anc_node in anc_nodes_sorted:
         if isinstance(anc_node, Logsheet):
             continue # Can't run the pipeline from a Logsheet.
-        most_recent_idx = [idx for idx, r in enumerate(result) if r[1] == anc_node.id][0]
-        if result[most_recent_idx][2] == "settings":
+        most_recent_idx = [idx for idx, r in enumerate(result) if r[1] == anc_node.id][-1]
+        if result[most_recent_idx][2] == "run":
             continue
         else:
             first_out_of_date = anc_node
