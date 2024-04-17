@@ -48,6 +48,13 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
         source_obj = edge.output.pr
         G.add_edge(source_obj, target_obj, edge=edge)
 
+    # import matplotlib.pyplot as plt
+
+    # pos = nx.spring_layout(G)
+    # nx.draw(G, pos, with_labels=True, node_size=700)
+
+    # plt.show()
+
     if return_conn:
         action.commit = True
         action.execute()
@@ -79,8 +86,8 @@ def make_all_edges(ro: "ResearchObject"):
                     if input.vr == output.vr and output.pr in input_pr:
                         used_pr = True
                         e = Edge(input=input, output=output, action=action, print_edge=True)
-            if not used_pr:
-                lg = lg_objs[0]
+            lg = lg_objs[0]
+            if lg in input_pr:
                 lg.validate_headers(lg.headers, action, [])
                 for h in lg.headers:
                     if h[3] == input.vr:
