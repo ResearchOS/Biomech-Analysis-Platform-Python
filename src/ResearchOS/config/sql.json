@@ -9,10 +9,7 @@
         "paths",
         "vr_dataobjects",
         "pipelineobjects_graph",
-        "connections",
-        "inlets_outlets",
         "inputs_outputs",
-        "lets_puts",
         "run_history"
     ],
     "intended_tables_data": [
