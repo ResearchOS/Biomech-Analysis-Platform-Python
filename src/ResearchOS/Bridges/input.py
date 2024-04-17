@@ -4,8 +4,7 @@ import weakref, json
 import networkx as nx
 
 if TYPE_CHECKING:
-    from ResearchOS.variable import Variable
-    from ResearchOS.action import Action
+    from ResearchOS.variable import Variable    
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.logsheet import Logsheet
     from ResearchOS.research_object import ResearchObject
@@ -14,6 +13,7 @@ if TYPE_CHECKING:
 from ResearchOS.Bridges.port import Port
 from ResearchOS.sql.sql_runner import sql_order_result
 import ResearchOS.Bridges.input_types as it
+from ResearchOS.action import Action
 
 class Input(Port):
     """Input port to connect between DiGraphs."""
@@ -39,6 +39,11 @@ class Input(Port):
         from ResearchOS.variable import Variable
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet
+
+        return_conn = False
+        if action is None:
+            action = Action(name = "Set_Inputs")
+            return_conn = True
 
         if hasattr(self, "id"):
             return # Already initialized, loaded from Port.instances
@@ -97,6 +102,7 @@ class Input(Port):
         self.action = action
         self.parent_ro = parent_ro
         self._id = id
+        self.return_conn = return_conn
         super().__init__()
 
     def set_source_pr(parent_ro: "ResearchObject", vr: "Variable"):

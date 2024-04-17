@@ -31,17 +31,15 @@ class VRHandler():
         for key, dict_input in all_inputs.items():          
 
             if isinstance(dict_input, Variable):
-                input = Input(vr=dict_input, action=action, parent_ro=parent_ro, vr_name_in_code=key)
+                if dict_input.hard_coded_value is None:
+                    input = Input(vr=dict_input, action=action) # Don't put DynamicMain in database yet because PR may need to be set.
+                else:
+                    input = Input(vr=dict_input, action=action, parent_ro=parent_ro, vr_name_in_code=key)
             elif not isinstance(dict_input, Input):
                 input = Input(value=dict_input, action=action, parent_ro=parent_ro, vr_name_in_code=key) # Directly hard-coded value. May be a DataObject attribute.
             else:
-                if input.parent_ro is None or input.parent_ro.id is None:
-                    if not input.parent_ro:
-                        input.parent_ro = parent_ro
-                    if not input.vr_name_in_code:
-                        input.vr_name_in_code = key
-                    del input.id
-                    input = Input(**input.__dict__)
+                input = dict_input
+
             # 1. import file vr name        
             if hasattr(parent_ro, "import_file_vr_name") and key==parent_ro.import_file_vr_name:
                 input.put_value = ImportFile(import_value_default)
@@ -51,7 +49,16 @@ class VRHandler():
                 input.pr = input.put_value.main_vr.pr
             if isinstance(input.put_value, DynamicMain) and input.put_value.lookup_vr.vr is not None and input.put_value.lookup_vr.pr is None:
                 input.put_value.lookup_vr.pr = Input.set_source_pr(parent_ro, input.put_value.lookup_vr.vr)    
-                input.lookup_pr = input.put_value.lookup_vr.pr        
+                input.lookup_pr = input.put_value.lookup_vr.pr   
+
+            if input.parent_ro is None or input.vr_name_in_code is None:
+                if input.parent_ro is None:
+                    input.parent_ro = parent_ro
+                if input.vr_name_in_code is None:
+                    input.vr_name_in_code = key
+                del input.id
+                input.action = action
+                input = Input(**input.__dict__)
 
             standardized[key] = input
                     
