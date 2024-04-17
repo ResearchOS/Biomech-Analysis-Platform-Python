@@ -143,15 +143,17 @@ class Logsheet(PipelineObject):
             output = Output(vr=header[3], pr=self, action=action)
 
         str_headers = []        
+        action.exec = False
         for header in headers:
             # Update the Variable object with the name if it is not already set, and the level.
             if isinstance(header[3], Variable):
                 vr = header[3]                
             else:
                 vr = Variable(id = header[3], action = action)
-            kwarg_dict = {"name": header[0]}
-            vr.__setattr__(None, None, action=action, kwargs_dict=kwarg_dict)
+            kwarg_dict = {"name": header[0]}            
+            vr.__setattr__(None, None, action=action, kwargs_dict=kwarg_dict, exec=False)
             str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, vr.id))
+        action.exec = True
         return json.dumps(str_headers)
 
     def from_json_headers(self, json_var: str, action: Action) -> list:

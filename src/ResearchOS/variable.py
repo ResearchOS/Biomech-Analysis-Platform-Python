@@ -21,7 +21,8 @@ class Variable(ResearchObject):
     def __init__(self, hard_coded_value: Any = all_default_attrs["hard_coded_value"], 
                 **kwargs):
         if self._initialized:
-            return
-        self._dataobject_attr = None # Purposefully not included in all_default_attrs.
+            return        
         self.hard_coded_value = hard_coded_value
+        if hard_coded_value != all_default_attrs["hard_coded_value"]:
+            kwargs["hard_coded_value"] = hard_coded_value
         super().__init__(**kwargs)
