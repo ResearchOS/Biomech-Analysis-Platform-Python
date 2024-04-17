@@ -24,16 +24,16 @@ class InletOrOutlet():
         if id in cls.instances.keys():
             return cls.instances[id]
 
-    def __init__(self, parent_ro: "ResearchObject", vr_name_in_code: str, action: "Action" = None):
+    def __init__(self, parent_ro: "ResearchObject", vr_name_in_code: str, action: "Action" = None, id: int = None):
         """Initializes the Inlet or Outlet object."""
-        if hasattr(self, "id"):
+        if hasattr(self, "id") and self.id is not None:
             logger.info(f"Already initialized InletOrOutlet with id {self.id}")
             return
         self.parent_ro = parent_ro
         self.vr_name_in_code = vr_name_in_code
         self.action = action
         self.puts = []
-        self.id = None
+        self.id = id
         self.create_inlet_or_outlet()
 
     @staticmethod
@@ -80,6 +80,13 @@ class InletOrOutlet():
             return_conn = True
             action = Action(name = f"create_inlet_or_outlet")
 
+        # ID is provided, so load the object.
+        if self.id is not None:
+            obj = InletOrOutlet.load(self.id, action=action)
+            self.__dict__.update(obj.__dict__)
+            InletOrOutlet.instances[self.id] = self
+            return
+        # ID not provided. Determine whether loading (based on attrs) or saving.
         sqlquery_raw = f"SELECT id FROM inlets_outlets WHERE is_inlet = ? AND pl_object_id = ? AND vr_name_in_code = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, ["is_inlet", "pl_object_id", "vr_name_in_code"], single=True, user = True, computer = False)
         params = (self.is_inlet, self.parent_ro.id, self.vr_name_in_code)

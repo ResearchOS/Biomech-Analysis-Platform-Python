@@ -13,6 +13,8 @@ from ResearchOS.Bridges.input import Input
 from ResearchOS.Bridges.output import Output
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.Bridges.input_types import ImportFile, DynamicMain
+from ResearchOS.Bridges.port import Port
 
 class VRHandler():
     
@@ -24,47 +26,30 @@ class VRHandler():
             action = Action(name = "Set_Inputs")
             return_conn = True
         # 1. Create/load all of the Inlets
-        inlets_dict = {key: Inlet(parent_ro, key, action) for key in all_inputs.keys()}        
+        inlets_dict = {key: Inlet(parent_ro, key, action) for key in all_inputs.keys()} 
+
+        import_value_default = "import_file_vr_name"       
 
         # 2. Create/load all of the Inputs        
-        for key, input in all_inputs.items():
-            inlet = inlets_dict[key]
+        for key, dict_input in all_inputs.items():
+            inlet = inlets_dict[key]            
 
-            if isinstance(input, Input):
-                pass
-            elif isinstance(input, Variable): 
-                input = Input(vr=input, action=action, let=inlet)
+            if isinstance(dict_input, Variable): 
+                input = Input(vr=dict_input, action=action)
             else:
-                input = Input(value=input, action=action, let=inlet)
+                input = Input(value=dict_input, action=action)
+            # 1. import file vr name        
+            if hasattr(parent_ro, "import_file_vr_name") and inlet.vr_name_in_code==parent_ro.import_file_vr_name:
+                input.put_value = ImportFile(import_value_default)
 
+            if isinstance(input.put_value, DynamicMain) and input.put_value.main_vr.pr is None:
+                input.put_value.main_vr.pr = Input.set_source_pr(parent_ro, input.put_value.main_vr.vr)
+            if isinstance(input.put_value, DynamicMain) and input.put_value.lookup_vr.vr is not None and input.put_value.lookup_vr.pr is None:
+                input.put_value.lookup_vr.pr = Input.set_source_pr(parent_ro, input.put_value.lookup_vr.vr)            
+
+            do_insert = Port.__init__(input)
             inlet.add_put(input, action=action, do_insert=do_insert)
-
-            # found_input = False
-            # for tmp_input in inputs:
-            #     if found_input:
-            #         continue
-            #     if isinstance(input, Input):
-            #         pass
-            #     elif isinstance(input, Variable): 
-            #         if tmp_input.vr == input:
-            #             found_input = True
-            #             input = tmp_input  
-            #         else:     
-            #             pass                                                        
-            #             # input = Input(vr=input, action=action, let=inlet)
-            #     else:
-            #         if tmp_input.value == input:
-            #             found_input = True
-            #             input = tmp_input                        
-            #         # input = Input(value=input, action=action, let=inlet) # Directly hard-coded value. May be a DataObject attribute.            
-            # if not found_input:
-            #     pass
-
-            # do_insert = True
-            # if found_input:
-            #     do_insert = input.id not in put_ids
-            
-        
+                    
         if return_conn:
             action.commit = True
             action.execute()
@@ -81,25 +66,16 @@ class VRHandler():
         # 1. Create/load all of the Outlets
         outlets_dict = {key: Outlet(parent_ro, key, action) for key in all_outputs.keys()}
 
-        # See which outputs are already associated with the outlets
-        sqlquery_raw = "SELECT put_id FROM lets_puts WHERE let_id IN ({})".format(", ".join(["?" for _ in outlets_dict]))
-        params = tuple([outlet.id for outlet in outlets_dict.values()])
-        sqlquery = sql_order_result(action, sqlquery_raw, ["put_id", "let_id"], single = True, user = True, computer = False)
-        result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        put_ids = [row[0] for row in result]
-
         # 2. Create/load all of the Outputs
         for key, output in all_outputs.items():
             outlet = outlets_dict[key]
 
-            if isinstance(output, Output):
-                pass
-            elif isinstance(output, Variable):
+            if isinstance(output, Variable):
                 output = Output(vr=output, pr=parent_ro, action=action)
             else:
                 output = Output(value=output, action=action) # Directly hard-coded value. May be a DataObject attribute.
 
-            do_insert = output.id not in put_ids
+            do_insert = Port.__init__(output)
             outlet.add_put(output, action=action, do_insert=do_insert)
         
         if return_conn:

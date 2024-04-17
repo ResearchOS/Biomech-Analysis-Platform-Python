@@ -7,8 +7,9 @@ class Inlet(InletOrOutlet):
     is_inlet: bool = True
     attr_name: str = "input"
 
-    def __init__(self, parent_ro, vr_name_in_code, action: Action = None):
+    # Only included here to be explicit.
+    def __init__(self, parent_ro, vr_name_in_code, action: Action = None, id: int = None):
         """Initializes the Inlet object."""        
-        super().__init__(parent_ro, vr_name_in_code, action)            
+        super().__init__(parent_ro, vr_name_in_code, action, id)            
 
         

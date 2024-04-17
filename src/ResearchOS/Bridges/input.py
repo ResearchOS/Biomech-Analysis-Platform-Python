@@ -8,11 +8,11 @@ if TYPE_CHECKING:
     from ResearchOS.action import Action
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.logsheet import Logsheet
-    from ResearchOS.Bridges.inlet_or_outlet import InletOrOutlet
+    from ResearchOS.research_object import ResearchObject
     source_type = Union[Process, Logsheet]
 
 from ResearchOS.Bridges.port import Port
-from ResearchOS.Bridges.output import Output
+# from ResearchOS.Bridges.output import Output
 import ResearchOS.Bridges.input_types as it
 
 class Input(Port):
@@ -27,17 +27,11 @@ class Input(Port):
                  lookup_pr: "source_type" = None,
                  value: Any = None,
                  show: bool = False,
-                 src: "Output" = None,
-                 action: "Action" = None,
-                 let: "InletOrOutlet" = None):
+                 action: "Action" = None):
         """Initializes the Input object. "vr" and "pr" together make up the main source of the input. "lookup_vr" and "lookup_pr" together make up the lookup source of the input.
         "value" is the hard-coded value. If specified, supercedes the main source."""
         
-        # 1. import file vr name
-        import_value_default = "import_file_vr_name"
-        if let is not None and hasattr(let, "parent_ro") and let.vr_name_in_code==let.parent_ro.import_file_vr_name:
-            input = it.ImportFile(import_value_default)
-        elif isinstance(value, dict):
+        if isinstance(value, dict):
             key = list(value.keys())[0]
             if key.__class__ == type:
                 input = it.DataObjAttr(key, value[key])
@@ -46,17 +40,16 @@ class Input(Port):
         elif value is not None:
             # 2. hard-coded value.
             input = it.HardCoded(value)
+        elif vr is not None and vr.hard_coded_value is not None:
+            input = it.HardCoded(vr.hard_coded_value)
         elif vr is not None:
             # 3. dynamic value.
             input = it.DynamicMain(it.Dynamic(vr=vr, pr=pr), it.Dynamic(vr=lookup_vr, pr=lookup_pr), show=show)
         else:
-            input = self
+            input = it.NoneVR()
 
         self.put_value = input
         self.action = action
-        self.let = let
-
-        super().__init__()
 
     def set_source_pr(parent_ro: "ResearchObject", vr: "Variable"):
         """Set the source process or logsheet."""

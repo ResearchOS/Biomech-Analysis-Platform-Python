@@ -8,6 +8,15 @@ if TYPE_CHECKING:
 from dataclasses import dataclass
 
 @dataclass
+class NoneVR():
+    vr = None
+    pr = None
+
+    def __post_init__(self):
+        self.sqlquery_raw_select = "SELECT id FROM inputs_outputs WHERE vr_id IS NULL AND pr_id IS NULL AND value IS NULL"
+        self.params = ()
+
+@dataclass
 class Dynamic():
     vr: "Variable" = None
     pr: Union["Process", "Logsheet"] = None
@@ -19,15 +28,19 @@ class DynamicMain():
     show: bool = False
     
     def __post_init__(self):
-        from ResearchOS.Bridges.input import Input
-        if self.lookup_vr.vr:
+        pr_id = None
+        lookup_pr_id = None
+        if self.main_vr.pr:
+            pr_id = self.main_vr.pr.id
+        if self.lookup_vr and self.lookup_vr.pr:
+            lookup_pr_id = self.lookup_vr.pr.id
+
+        if lookup_pr_id:
             sqlquery_raw_select = f"SELECT id FROM inputs_outputs WHERE vr_id = ? AND pr_id = ? AND lookup_vr_id = ? AND lookup_pr_id = ?"
-            params = (self.main_vr.vr.id, self.main_vr.pr.id, self.lookup_vr.vr.id, self.lookup_vr.pr.id)
+            params = (self.main_vr.vr.id, pr_id, self.lookup_vr.vr.id, lookup_pr_id)
         else:
-            sqlquery_raw_select = f"SELECT id FROM inputs_outputs WHERE vr_id = ? AND pr_id = ?"
-            if not self.main_vr.pr:                                            
-                self.main_vr.pr = Input.set_source_pr(self.main_vr.vr)                
-            params = (self.main_vr.vr.id, self.main_vr.pr.id)
+            sqlquery_raw_select = f"SELECT id FROM inputs_outputs WHERE vr_id = ? AND pr_id = ?"               
+            params = (self.main_vr.vr.id, pr_id)
         self.params = params
         self.sqlquery_raw_select = sqlquery_raw_select
 
