@@ -130,7 +130,7 @@ class ResearchObjectHandler:
         for key in kwargs:
 
             # 2. Skip the attribute if the value has not changed.
-            if key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
+            if not hasattr(research_object, "_is_init") and key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
                 continue
 
             # 3. Save simple & complex attributes.

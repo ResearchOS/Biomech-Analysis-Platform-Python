@@ -22,7 +22,5 @@ class Variable(ResearchObject):
                 **kwargs):
         if self._initialized:
             return        
-        self.hard_coded_value = hard_coded_value
-        if hard_coded_value != all_default_attrs["hard_coded_value"]:
-            kwargs["hard_coded_value"] = hard_coded_value
+        self.hard_coded_value = hard_coded_value        
         super().__init__(**kwargs)
