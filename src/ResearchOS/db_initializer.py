@@ -194,18 +194,21 @@ class DBInitializer():
                         )""")
         
         # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
-        # The "edge_id" is typically a VR ID, but perhaps not always.
+
+        # source_object_id TEXT NOT NULL,
+        # target_object_id TEXT NOT NULL,    
+        # source_vr_name_in_code TEXT NOT NULL,                    
+        # target_vr_name_in_code TEXT NOT NULL,
         cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
+                        edge_id INTEGER NOT NULL,
                         action_id_num INTEGER NOT NULL,
-                        source_object_id TEXT NOT NULL,
-                        target_object_id TEXT NOT NULL,
-                        edge_id TEXT NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        input_id INTEGER NOT NULL,
+                        output_id INTEGER NOT NULL,
+                        is_active INTEGER NOT NULL DEFAULT 1,                        
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (edge_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (source_object_id, target_object_id, edge_id)
+                        FOREIGN KEY (input_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
+                        FOREIGN KEY (output_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id_num, edge_id, input_id, output_id, is_active)
                         )""")
         
         # Users_Computers table. Maps all users to their computers.
@@ -229,20 +232,21 @@ class DBInitializer():
                         )""")
         
         # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
+
+        # source_object_id TEXT NOT NULL,
+        # target_object_id TEXT NOT NULL,    
+        # source_vr_name_in_code TEXT NOT NULL,                    
+        # target_vr_name_in_code TEXT NOT NULL,
         cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
                         edge_id INTEGER NOT NULL,
                         action_id_num INTEGER NOT NULL,
-                        source_object_id TEXT NOT NULL,
-                        target_object_id TEXT NOT NULL,    
-                        source_vr_name_in_code TEXT NOT NULL,                    
-                        target_vr_name_in_code TEXT NOT NULL,
                         input_id INTEGER NOT NULL,
                         output_id INTEGER NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        is_active INTEGER NOT NULL DEFAULT 1,                        
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id_num, edge_id, source_object_id, target_object_id, is_active)
+                        FOREIGN KEY (input_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
+                        FOREIGN KEY (output_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id_num, edge_id, input_id, output_id, is_active)
                         )""")
         
         # Inputs & outputs table. Lists all inputs & outputs.
@@ -255,12 +259,15 @@ class DBInitializer():
                         lookup_vr_id TEXT,
                         lookup_pr_id TEXT,
                         value TEXT,
+                        ro_id TEXT NOT NULL,
+                        vr_name_in_code TEXT NOT NULL,
                         show INTEGER NOT NULL DEFAULT 0,
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (lookup_vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (lookup_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        FOREIGN KEY (ro_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         PRIMARY KEY (id, is_input, action_id_num, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value)
                         )""")
         

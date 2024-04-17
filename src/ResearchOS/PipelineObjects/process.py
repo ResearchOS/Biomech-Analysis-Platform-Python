@@ -1,4 +1,5 @@
 from typing import Any, Callable
+import json
 
 import networkx as nx
 
@@ -7,6 +8,7 @@ from ResearchOS.action import Action
 from ResearchOS.process_runner import ProcessRunner
 from ResearchOS.vr_handler import VRHandler
 from ResearchOS.build_pl import make_all_edges
+from ResearchOS.sql.sql_runner import sql_order_result
 
 all_default_attrs = {}
 # For import
@@ -92,21 +94,58 @@ class Process(PipelineObject):
             raise ValueError("Variable name must be a string.")
         if not str(vr_name).isidentifier():
             raise ValueError("Variable name must be a valid variable name.")
-        # if vr_name not in self.inputs:
-        #     raise ValueError("Variable name must be one of the input variable names in code.")                
+        
+    def save_inputs(self, inputs: dict, action: Action) -> None:
+        """Saving the input variables. is done in the input class."""
+        pass
+        
+    def load_inputs(self, action: Action) -> dict:
+        """Load the input variables."""
+        from ResearchOS.Bridges.input import Input
+        from ResearchOS.variable import Variable
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
+        sqlquery_raw = "SELECT id, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, ro_id, vr_name_in_code, show FROM inputs_outputs WHERE is_input = 1 AND ro_id = ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["id", "ro_id"], single = True, user = True, computer = False)
+        params = (self.id,)
+        result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        inputs = {}
+        for row in result:
+            input = Input(id=row[0], action=action)            
+            inputs[input.vr_name_in_code] = input
+        return inputs
+
+    def save_outputs(self, outputs: dict, action: Action) -> None:
+        """Saving the output variables. is done in the output class."""
+        pass
+
+    def load_outputs(self, action: Action) -> dict:
+        """Load the output variables."""
+        from ResearchOS.Bridges.output import Output
+        sqlquery_raw = "SELECT id, vr_name_in_code FROM inputs_outputs WHERE is_input = 0 AND ro_id = ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["id", "ro_id"], single = True, user = True, computer = False)
+        params = (self.id,)
+        result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        outputs = {}
+        for row in result:
+            output_id = row[0]
+            output = Output(id = output_id, action=action)
+            outputs[output.vr_name_in_code] = output
+        return outputs
     
     def set_inputs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict.
         Edges are created here."""
         standardized_kwargs = VRHandler.standardize_inputs(self, kwargs)
-        self.__setattr__("inputs", standardized_kwargs)
+        # self.__setattr__("inputs", standardized_kwargs)
+        self.__dict__["inputs"] = standardized_kwargs
         make_all_edges(self)
 
     def set_outputs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict.
         Edges are NOT created here."""
         standardized_kwargs = VRHandler.standardize_outputs(self, kwargs)
-        self.__setattr__("outputs", standardized_kwargs)        
+        # self.__setattr__("outputs", standardized_kwargs)  
+        self.__dict__["outputs"] = standardized_kwargs      
 
     def run(self, force_redo: bool = False, action: Action = None) -> None:
         """Execute the attached method.

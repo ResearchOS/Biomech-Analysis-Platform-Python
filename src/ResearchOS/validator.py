@@ -53,13 +53,7 @@ class Validator():
             raise ValueError("Variables must be a dictionary.")
         if not all(isinstance(key, str) and key.isidentifier() for key in inputs.keys()):
             raise ValueError("Variable names in code must be valid variable names.")
-        if not all(isinstance(value, Inlet) for value in inputs.values()):
-            raise ValueError("Values must be Inlets.")
-        for inlet in inputs.values():
-            if not inlet.puts:
-                continue
-            input = inlet.puts[0]
-            input.add_attrs(robj, inlet.vr_name_in_code)
+        for input in inputs.values():
             Validator.validate_input_vr(input.vr, action, robj, None)
             Validator.validate_lookup_vr(input.lookup_vr, action, robj, None)
             Validator.validate_source_pr(input.pr, action, robj, None)
