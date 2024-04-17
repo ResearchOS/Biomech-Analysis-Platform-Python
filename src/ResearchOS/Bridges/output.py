@@ -69,5 +69,6 @@ class Output(Port):
         self.parent_ro = parent_ro
         self._id = id
         self.vr_name_in_code = vr_name_in_code
+        self.return_conn = False # Because I never intend to call Output() directly, without an Action provided.
 
         super().__init__()

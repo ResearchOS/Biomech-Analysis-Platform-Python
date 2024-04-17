@@ -31,7 +31,10 @@ class DynamicMain():
         pr_id = None
         lookup_pr_id = None
         if self.main_vr.pr:
-            pr_id = self.main_vr.pr.id
+            if isinstance(self.main_vr.pr, list):
+                pr_id = [pr.id for pr in self.main_vr.pr]
+            else:
+                pr_id = self.main_vr.pr.id
         if self.lookup_vr and self.lookup_vr.pr:
             lookup_pr_id = self.lookup_vr.pr.id
 

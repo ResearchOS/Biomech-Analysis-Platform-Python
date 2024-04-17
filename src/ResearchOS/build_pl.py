@@ -67,16 +67,23 @@ def make_all_edges(ro: "ResearchObject"):
         for key, input in ro.inputs.items():            
             if not isinstance(input.put_value, DynamicMain):
                 continue
+            if isinstance(input.pr, list):
+                input_pr = input.pr
+            else:
+                input_pr = [input.pr]
+            used_pr = False
             for pr in all_pr_objs:
                 for output in pr.outputs.values():                    
                     if output.vr is None:
-                         continue
-                    if input.vr == output.vr and input.pr == output.pr:
-                        e = Edge(input=input, output=output, action=action, print_edge=True)                        
-            for lg in lg_objs:
-                 lg.validate_headers(lg.headers, action, [])
-                 for h in lg.headers:
-                      if h[3] == input.vr:
+                         continue                    
+                    if input.vr == output.vr and output.pr in input_pr:
+                        used_pr = True
+                        e = Edge(input=input, output=output, action=action, print_edge=True)
+            if not used_pr:
+                lg = lg_objs[0]
+                lg.validate_headers(lg.headers, action, [])
+                for h in lg.headers:
+                    if h[3] == input.vr:
                         output = Output(vr=input.vr, pr=lg, action=action, show=True, parent_ro=lg, vr_name_in_code=h[0])
                         e = Edge(input=input, output=output, action=action, print_edge=True)  
                         break                      

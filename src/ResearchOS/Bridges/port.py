@@ -69,7 +69,10 @@ class Port():
             self.show = True
         if self.id is not None:
             return
-        self.create_input_or_output()   
+        self.create_input_or_output() 
+        if self.return_conn:
+            self.action.commit = True
+            self.action.execute()  
 
     @staticmethod
     def load(id: int, action: Action = None) -> "Port":
@@ -197,11 +200,13 @@ class Port():
             unique_list.append("lookup_pr_id")
         params.append(value)
         params.append(self.vr_name_in_code)
+        params.append(self.parent_ro.id)
         params = tuple(params)
         unique_list.append("value")
         unique_list.append("vr_name_in_code")
+        unique_list.append("ro_id")
 
-        sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE is_input = ? AND {vr_id_str} AND {pr_id_str} AND {lookup_vr_id_str} AND {lookup_pr_id_str} AND value = ? AND vr_name_in_code = ?"                               
+        sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE is_input = ? AND {vr_id_str} AND {pr_id_str} AND {lookup_vr_id_str} AND {lookup_pr_id_str} AND value = ? AND vr_name_in_code = ? AND ro_id = ?"                               
         sqlquery = sql_order_result(action, sqlquery_raw, unique_list, single=True, user = True, computer = False) 
 
         result = action.conn.execute(sqlquery, params).fetchall()        
