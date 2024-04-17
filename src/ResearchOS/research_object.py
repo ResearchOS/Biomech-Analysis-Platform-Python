@@ -110,7 +110,7 @@ class ResearchObject():
         if "name" in other_kwargs:
             self.name = other_kwargs["name"] # Set the name to the default name.
         elif "name" not in self.__dict__:
-            self.name = default_attrs_dict["name"] # Set the name to the default name.
+            self.name = default_attrs_dict["name"]                
         if "notes" in other_kwargs:
             self.notes = other_kwargs["notes"]
         elif "notes" not in self.__dict__:

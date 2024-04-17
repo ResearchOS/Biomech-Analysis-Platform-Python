@@ -196,21 +196,8 @@ class CodeRunner():
         """Do all of the prep for running a Process/Plot/Stats object."""        
         default_attrs = DefaultAttrs(robj).default_attrs 
         validator = Validator(robj, action)
-        validator.validate(robj.__dict__, default_attrs)
-
-        for inlet in robj.inputs.values():
-            if not inlet.puts:
-                raise ValueError(f"Input VR {inlet} has no inputs.")
-            input = inlet.puts[0]
-            if input is None:
-                raise ValueError(f"Input VR {input} is None.")
-            
-        for outlet in robj.outputs.values():
-            if not outlet.puts:
-                raise ValueError(f"Output VR {outlet} has no outputs.")
-            output = outlet.puts[0]
-            if output is None:
-                raise ValueError(f"Output VR {output} is None.")
+        validate_dict = {key: value for key, value in robj.__dict__.items() if key not in ["inputs", "outputs"]}
+        validator.validate(validate_dict, default_attrs)
 
         self.action = action
         self.pl_obj = robj 
@@ -345,10 +332,7 @@ class CodeRunner():
         pl_obj = self.pl_obj
         node = pl_obj.level(id = node_id, action = self.action)
         self.node = node
-        result = self.check_if_run_node(node_id) # Verify whether this node should be run or skipped.
-        
-        if not result:
-            return
+        inputs = self.get_input_vrs()        
         
         node_info = node.get_node_info()
         run_msg = f"Running {node.name} ({node.id})."
@@ -369,8 +353,7 @@ class CodeRunner():
         """Check whether to run the Process on the given node ID. If False, skip. If True, run.
         """
         self.node_id = node_id
-
-        self.get_input_vrs()
+        
         for input in self.pl_obj.inputs.values():
             if input.vr._value.exit_code != 0:
                 raise ValueError(f"Input VR {input} has exit code {input.vr._value.exit_code}.")
@@ -384,9 +367,11 @@ class CodeRunner():
     def get_input_vrs(self) -> dict:
         """Load the input variables.
         """
+        self.inputs = {}
+        node_lineage = self.node.get_node_lineage()
         for vr_name_in_code, input in self.pl_obj.inputs.items():
-            value = self.node.get(input = input, action=self.action)
-            self.pl_obj.inputs[vr_name_in_code].vr._value = value
+            value = self.node.get(input = input, action=self.action, node_lineage=node_lineage)
+            self.inputs[vr_name_in_code] = value
         
     def check_output_vrs_active(self) -> bool:
         """Check if the output variables are active.

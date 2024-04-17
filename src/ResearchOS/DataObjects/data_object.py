@@ -61,77 +61,33 @@ class DataObject(ResearchObject):
         """
         from ResearchOS.code_runner import CodeRunner
         from ResearchOS.DataObjects.dataset import Dataset
-        vr_value = VRValue()
-        if isinstance(input, Input):
-            vr = input.vr
-            process = input.pr
-        else:
-            vr = input
-        return_conn = False
-        if action is None:
-            return_conn = True
-            conn = SQLiteConnectionPool()
-        else:
-            conn = action.conn         
-        cursor = conn.cursor()
-        if node_lineage is None:
-            node_lineage = self.get_node_lineage()
+        from ResearchOS.Bridges import input_types as it
 
-        # DataObject attribute.
-        dataobject_subclasses = DataObject.__subclasses__()
-        if vr._dataobject_attr is not None and [key for key in vr._dataobject_attr.keys()][0] in dataobject_subclasses:
-            cls = [key for key in vr._dataobject_attr.keys()][0]
-            node = [node for node in node_lineage if isinstance(node, cls)][0]
-            attr = [value for value in vr._dataobject_attr.values()][0]
-            vr_value.value = getattr(node, attr)
-            vr_value.exit_code = 0
-            if return_conn:
-                action.execute()
-            return vr_value
+        if isinstance(input.put_value, it.HardCoded):
+            return input.put_value.value
         
-        # Specified directly as the hard-coded value, not using a Variable. Also is not a DataObject attribute.
-        if not isinstance(vr, Variable):
-            value = convert_var(vr, CodeRunner.matlab_numeric_types)
-            vr_value.value = value
-            vr_value.exit_code = 0
-            if return_conn:
-                action.execute()
-            return vr_value
+        if isinstance(input.put_value, it.HardCodedVR):
+            return input.put_value.vr.hard_coded_value
         
-        # Specified as a Variable, and is hard-coded.
-        if vr.hard_coded_value is not None:
-            vr_value.value = convert_var(vr.hard_coded_value, CodeRunner.matlab_numeric_types)
-            vr_value.exit_code = 0
-            if return_conn:
-                action.execute()
-            return vr_value
-        
-        # Import file VR.              
-        if hasattr(input.parent_ro, "import_file_vr_name") and input.vr_name_in_code == input.parent_ro.import_file_vr_name and input.parent_ro.import_file_vr_name is not None:            
+        if isinstance(input.put_value, it.ImportFile):
             dataset_id = self._get_dataset_id()
             dataset = Dataset(id = dataset_id)
-            # Isolate the parts of the ordered schema that are present in the file schema.
-            file_node_lineage = [node for node in node_lineage if isinstance(node, tuple(dataset.file_schema))]
             data_path = dataset.dataset_path
-            for node in file_node_lineage[1::-1]:
+            for node in node_lineage:
                 data_path = os.path.join(data_path, node.name)
-            file_path = data_path + input.parent_ro.import_file_ext
+            file_path = data_path + input.put_value.ext
             if not os.path.exists(file_path):
-                raise FileNotFoundError(f"{input.parent_ro.import_file_ext} file does not exist for {node.name} ({node.id}).")
-            vr_value.value = file_path
-            vr_value.exit_code = 0
-            if return_conn:
-                action.execute()
-            return vr_value
+                raise FileNotFoundError(f"{input.put_value.ext} file does not exist for {node.name} ({node.id}).")
+            return file_path
         
-        # Lookup VR.
-        if input.lookup_vr is not None:
-            lookup_input = Input(vr=input.lookup_vr, parent_ro=input.parent_ro, pr=input.lookup_pr, vr_name_in_code=input.vr_name_in_code)
-            lookup_vr_value = self.get(lookup_input, action)            
-            process = lookup_vr_value
-            node_lineage = self.get_node_lineage(lookup_input.vr, None, action)
-
-        assert process is not None
+        if isinstance(input.put_value, it.DataObjAttr):
+            cls = [key for key in input.put_value.attr.keys()][0]
+            node = [node for node in node_lineage if isinstance(node, cls)][0]
+            attr = [value for value in input.put_value.attr.values()][0]
+            return getattr(node, attr)
+        
+        if not isinstance(input.put_value, it.DynamicMain):
+            raise ValueError("Input type not recognized.")
         
         self_idx = node_lineage.index(self)
         base_node = node_lineage[self_idx]
