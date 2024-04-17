@@ -11,6 +11,7 @@ from dataclasses import dataclass
 class NoneVR():
     vr = None
     pr = None
+    show = True
 
     def __post_init__(self):
         self.sqlquery_raw_select = "SELECT id FROM inputs_outputs WHERE vr_id IS NULL AND pr_id IS NULL AND value IS NULL"

@@ -35,17 +35,17 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
     if action is None:
         return_conn = False
         action = Action(name="Build_PL")
-    sqlquery_raw = "SELECT source_object_id, target_object_id, edge_id FROM pipelineobjects_graph WHERE is_active = 1"
-    sqlquery = sql_order_result(action, sqlquery_raw, ["source_object_id", "target_object_id", "edge_id"], single = True, user = True, computer = False)
+    sqlquery_raw = "SELECT edge_id, input_id, output_id FROM pipelineobjects_graph WHERE is_active = 1"
+    sqlquery = sql_order_result(action, sqlquery_raw, ["edge_id"], single = True, user = True, computer = False)
     result = action.conn.cursor().execute(sqlquery).fetchall()
     if not result:
          raise ValueError("No connections found.")
-    edges = [Edge.load(id = row[2], action=action) for row in result]
+    edges = [Edge(id = row[0], action=action) for row in result]
 
     G = nx.MultiDiGraph()
     for edge in edges:
-        target_obj = edge.inlet.parent_ro
-        source_obj = edge.outlet.parent_ro
+        target_obj = edge.input.parent_ro
+        source_obj = edge.output.pr
         G.add_edge(source_obj, target_obj, edge=edge)
 
     if return_conn:

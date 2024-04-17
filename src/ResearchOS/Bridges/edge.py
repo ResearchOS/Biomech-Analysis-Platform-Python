@@ -14,9 +14,12 @@ class Edge():
         id = None
         if "id" in kwargs.keys():
             id = kwargs["id"]                    
-        if id in cls.instances.keys():
-            return cls.instances[id]
-        return super().__new__(cls)
+        if id in Edge.instances.keys():
+            return Edge.instances[id]
+        instance = super().__new__(cls)
+        if id is not None:
+            Edge.instances[id] = instance
+        return instance
 
     def __str__(self):
         return f"""{self.output.parent_ro.id} "{self.output.vr_name_in_code}" -> {self.input.parent_ro.id} "{self.input.vr_name_in_code}"."""
@@ -50,11 +53,26 @@ class Edge():
                  output_id: int = None,
                  input: Input = None,
                  output: Output = None):
-        self.id = id
+        
+        if hasattr(self, "id"):
+            return # Already initialized, loaded from Edge.instances
+        
         return_conn = False
         if action is None:
             return_conn = True
             action = Action(name = "create_edge")
+        
+        if id is not None:
+            sqlquery_raw = "SELECT edge_id, input_id, output_id FROM pipelineobjects_graph WHERE edge_id = ?"
+            sqlquery = sql_order_result(action, sqlquery_raw, ["edge_id"], single=True, user = True, computer = False)
+            params = (id,)
+            result = action.conn.execute(sqlquery, params).fetchall()
+            if not result:
+                raise ValueError(f"Edge with id {id} not found in database.")
+            input = Input(id = result[0][1], action = action)
+            output = Output(id = result[0][2], action = action)
+                    
+        self.id = id        
 
         if input is not None:
             self.input = input
@@ -69,8 +87,11 @@ class Edge():
             self.output = Output(id = output_id, action = action)
             self.output_id = output_id
 
+        if self.id is not None:
+            return # Already loaded.
+
         sqlquery_raw = "SELECT edge_id FROM pipelineobjects_graph WHERE input_id = ? AND output_id = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["input_id", "output_id"], single=True, user = True, computer = False)
+        sqlquery = sql_order_result(action, sqlquery_raw, ["edge_id"], single=True, user = True, computer = False)
         params = (self.input_id, self.output_id)
         result = action.conn.execute(sqlquery, params).fetchall()
         if result:
