@@ -140,7 +140,7 @@ class Logsheet(PipelineObject):
         from ResearchOS.Bridges.output import Output
         # Create Outlets and Outputs for the Logsheet        
         for header in headers:    
-            output = Output(vr=header[3], pr=self, action=action)
+            output = Output(vr=header[3], pr=self, action=action, parent_ro=self, vr_name_in_code=header[0])
 
         str_headers = []        
         action.exec = False
