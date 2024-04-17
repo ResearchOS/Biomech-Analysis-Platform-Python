@@ -13,9 +13,7 @@ if TYPE_CHECKING:
 
 from ResearchOS.action import Action
 from ResearchOS.default_attrs import DefaultAttrs
-from ResearchOS.code_inspector import get_returned_variable_names
-from ResearchOS.Bridges.inlet import Inlet
-from ResearchOS.Bridges.outlet import Outlet
+# from ResearchOS.code_inspector import get_returned_variable_names
 
 class Validator():
     def __init__(self, research_object: "ResearchObject", action = Action):

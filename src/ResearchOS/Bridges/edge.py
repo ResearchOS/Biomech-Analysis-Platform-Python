@@ -1,7 +1,5 @@
 import weakref
 
-from ResearchOS.Bridges.inlet import Inlet
-from ResearchOS.Bridges.outlet import Outlet
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.action import Action
 from ResearchOS.idcreator import IDCreator
@@ -38,9 +36,7 @@ class Edge():
         inlet = Inlet.load(inlet_id)
         return Edge(outlet=outlet, inlet=inlet)
     
-    def __init__(self, inlet: Inlet = None, outlet: Outlet = None, action: Action = None, id: int = None, print_edge: bool = False):
-        self.outlet = outlet
-        self.inlet = inlet
+    def __init__(self, action: Action = None, id: int = None, print_edge: bool = False):
         self.id = id
         return_conn = False
         if action is None:

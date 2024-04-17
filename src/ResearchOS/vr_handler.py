@@ -7,8 +7,6 @@ if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
 
 from ResearchOS.variable import Variable
-from ResearchOS.Bridges.inlet import Inlet
-from ResearchOS.Bridges.outlet import Outlet
 from ResearchOS.Bridges.input import Input
 from ResearchOS.Bridges.output import Output
 from ResearchOS.action import Action

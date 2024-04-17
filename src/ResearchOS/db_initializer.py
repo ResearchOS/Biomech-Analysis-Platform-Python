@@ -230,41 +230,19 @@ class DBInitializer():
         
         # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
         cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
+                        edge_id INTEGER NOT NULL,
                         action_id_num INTEGER NOT NULL,
                         source_object_id TEXT NOT NULL,
-                        target_object_id TEXT NOT NULL,
-                        edge_id INTEGER NOT NULL,
+                        target_object_id TEXT NOT NULL,    
+                        source_vr_name_in_code TEXT NOT NULL,                    
+                        target_vr_name_in_code TEXT NOT NULL,
+                        input_id INTEGER NOT NULL,
+                        output_id INTEGER NOT NULL,
                         is_active INTEGER NOT NULL DEFAULT 1,
                         FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         PRIMARY KEY (action_id_num, edge_id, source_object_id, target_object_id, is_active)
-                        )""")
-        
-        # Connections table. Lists all connections between all inlets and outlets.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS connections (
-                        connection_id INTEGER, 
-                        action_id_num INTEGER NOT NULL,
-                        inlet_id INTEGER NOT NULL,
-                        outlet_id INTEGER NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (inlet_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (outlet_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        PRIMARY KEY (connection_id, action_id_num, inlet_id, outlet_id, is_active)
-                        )""")
-        
-        # Inlets & outlets table. Lists all inlets & outlets.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS inlets_outlets (
-                        id INTEGER,
-                        is_inlet INTEGER NOT NULL DEFAULT 1,
-                        action_id_num INTEGER NOT NULL,
-                        vr_name_in_code TEXT NOT NULL,
-                        pl_object_id TEXT NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (pl_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        PRIMARY KEY (id, is_inlet, action_id_num, vr_name_in_code, pl_object_id, is_active)
                         )""")
         
         # Inputs & outputs table. Lists all inputs & outputs.
@@ -284,19 +262,6 @@ class DBInitializer():
                         FOREIGN KEY (lookup_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         PRIMARY KEY (id, is_input, action_id_num, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value)
-                        )""")
-        
-        # lets_puts table. Lists which inlets are connected to which inputs, and which outlets are connected to which outputs.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS lets_puts (
-                        id INTEGER,
-                        action_id_num INTEGER NOT NULL,
-                        let_id INTEGER NOT NULL,
-                        put_id INTEGER NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (let_id) REFERENCES inlets_outlets(id) ON DELETE CASCADE,
-                        FOREIGN KEY (put_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
-                        PRIMARY KEY (action_id_num, id, let_id, put_id, is_active)
                         )""")
         
         # run_history table. Lists all actions that occurred during runs.

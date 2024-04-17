@@ -459,5 +459,5 @@ def init_bridges():
     
 
 if __name__ == "__main__":
-    app(["run"])  
-    # app(["logsheet-read"])  
+    # app(["run"])  
+    app(["logsheet-read"])  
