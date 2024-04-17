@@ -3,6 +3,8 @@ import weakref
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.action import Action
 from ResearchOS.idcreator import IDCreator
+from ResearchOS.Bridges.input import Input
+from ResearchOS.Bridges.output import Output
 
 class Edge():
 
@@ -17,52 +19,69 @@ class Edge():
         return super().__new__(cls)
 
     def __str__(self):
-        return f"""{self.outlet.parent_ro.id} "{self.outlet.vr_name_in_code}" -> {self.inlet.parent_ro.id} "{self.inlet.vr_name_in_code}"."""
+        return f"""{self.output.parent_ro.id} "{self.output.vr_name_in_code}" -> {self.input.parent_ro.id} "{self.input.vr_name_in_code}"."""
     
-    @staticmethod
-    def load(id: int, action: Action = None) -> "Edge":
-        if id in Edge.instances.keys():
-            return Edge.instances[id]        
-        if action is None:            
-            action = Action(name = f"load_edge")
-        sqlquery_raw = "SELECT connection_id, outlet_id, inlet_id FROM connections WHERE connection_id = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["connection_id"], single=True, user = True, computer = False)
-        params = (id,)
-        result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        if not result:
-            raise ValueError(f"Edge with id {id} not found in database.")
-        id, outlet_id, inlet_id = result[0]
-        outlet = Outlet.load(outlet_id)
-        inlet = Inlet.load(inlet_id)
-        return Edge(outlet=outlet, inlet=inlet)
+    # @staticmethod
+    # def load(id: int, action: Action = None) -> "Edge":
+    #     if id in Edge.instances.keys():
+    #         return Edge.instances[id]        
+    #     if action is None:            
+    #         action = Action(name = f"load_edge")
+    #     sqlquery_raw = "SELECT connection_id, outlet_id, inlet_id FROM connections WHERE connection_id = ?"
+    #     sqlquery = sql_order_result(action, sqlquery_raw, ["connection_id"], single=True, user = True, computer = False)
+    #     params = (id,)
+    #     result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    #     if not result:
+    #         raise ValueError(f"Edge with id {id} not found in database.")
+    #     id, outlet_id, inlet_id = result[0]
+    #     outlet = Outlet.load(outlet_id)
+    #     inlet = Inlet.load(inlet_id)
+    #     return Edge(outlet=outlet, inlet=inlet)
     
-    def __init__(self, action: Action = None, id: int = None, print_edge: bool = False):
+
+    #  source_object_id: str = None,
+    #  target_object_id: str = None,
+    #  source_vr_name_in_code: str = None,
+    #  target_vr_name_in_code: str = None,
+    def __init__(self, id: int = None,
+                 action: Action = None, 
+                 print_edge: bool = False,
+                 input_id: int = None,
+                 output_id: int = None,
+                 input: Input = None,
+                 output: Output = None):
         self.id = id
         return_conn = False
         if action is None:
             return_conn = True
             action = Action(name = "create_edge")
 
-        sqlquery_raw = "SELECT connection_id FROM connections WHERE outlet_id = ? AND inlet_id = ? AND is_active = 1"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["outlet_id", "inlet_id"], single=True, user = True, computer = False)
-        params = (outlet.id, inlet.id)
+        if input is not None:
+            self.input = input
+            self.input_id = input.id
+        else:
+            self.input = Input(id = input_id, action = action)
+            self.input_id = input_id
+        if output is not None:
+            self.output = output
+            self.output_id = output.id
+        else:
+            self.output = Output(id = output_id, action = action)
+            self.output_id = output_id
+
+        sqlquery_raw = "SELECT edge_id FROM pipelineobjects_graph WHERE input_id = ? AND output_id = ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["input_id", "output_id"], single=True, user = True, computer = False)
+        params = (self.input_id, self.output_id)
         result = action.conn.execute(sqlquery, params).fetchall()
         if result:
             self.id = result[0][0]
         else:
-            # sqlquery = "INSERT INTO connections (connection_id, outlet_id, inlet_id, action_id_num) VALUES (?, ?, ?, ?)"
             idcreator = IDCreator(action.conn)
-            id = idcreator.create_generic_id("connections", "connection_id")
-            params = (id, outlet.id, inlet.id, action.id_num)
-            # cursor = action.conn.cursor()
-            action.add_sql_query("None", "connection_insert", params)
-            # cursor.execute(sqlquery, params)
+            id = idcreator.create_generic_id("pipelineobjects_graph", "edge_id")
             self.id = id
-
-            # sqlquery = "INSERT INTO pipelineobjects_graph (source_object_id, target_object_id, edge_id, action_id_num) VALUES (?, ?, ?, ?)"
-            params = (outlet.parent_ro.id, inlet.parent_ro.id, self.id, action.id_num)
-            # cursor.execute(sqlquery, params)
-            action.add_sql_query("None", "pipelineobjects_graph_insert", params)
+            params = (id, action.id_num, self.input_id, self.output_id)
+            action.add_sql_query("None", "pipelineobjects_graph_insert", params)                        
+            
             if print_edge:
                 print("Created: ", self)
 

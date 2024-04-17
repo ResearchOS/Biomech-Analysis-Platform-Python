@@ -24,9 +24,12 @@ class Port():
         id = None
         if "id" in kwargs.keys():
             id = kwargs["id"]                    
-        if id in cls.instances.keys():
-            return cls.instances[id]
-        return super().__new__(cls)
+        if id in Port.instances.keys():
+            return Port.instances[id]
+        instance = super().__new__(cls)
+        if id is not None:
+            Port.instances[id] = instance
+        return instance
                     
         
     def __init__(self):
@@ -35,7 +38,8 @@ class Port():
             return
         self.vr = None
         self.pr = None
-        self.id = None
+        self.id = self._id
+        del self._id
         self.value = None
         self.lookup_pr = None
         self.lookup_vr = None
@@ -63,11 +67,12 @@ class Port():
             self.show = put.show
         elif put.__class__ == it.NoneVR:
             self.show = True
-        is_new = self.create_input_or_output()   
-        return is_new 
+        if self.id is not None:
+            return
+        self.create_input_or_output()   
 
     @staticmethod
-    def load(id: int, action: Action = None, let="InletOrOutlet") -> "Port":
+    def load(id: int, action: Action = None) -> "Port":
         """Load a Port from the database."""
         from ResearchOS.Bridges.input import Input
         from ResearchOS.Bridges.output import Output
@@ -76,7 +81,7 @@ class Port():
         from ResearchOS.PipelineObjects.logsheet import Logsheet
         if id in Port.instances.keys():
             return Port.instances[id]
-        sqlquery_raw = "SELECT id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show FROM inputs_outputs WHERE id = ?"
+        sqlquery_raw = "SELECT id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
         return_conn = False
         if action is None:
             return_conn = True
@@ -87,30 +92,35 @@ class Port():
         result = action.conn.execute(sqlquery, params).fetchall()
         if not result:
             raise ValueError(f"Port with id {id} not found in database.")
-        id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show = result[0]
-        if not pr_id:
-            pr_id = json.dumps([])
-        value = json.loads(value)
-        vr = Variable(id=vr_id, action=action) if vr_id is not None else None
-        pr = []
-        for p in json.loads(pr_id):
-            if p is None:
-                pr = None
-                break
-            if p.startswith("PR"):
-                pr.append(Process(id=p, action=action))
-            elif p.startswith("LG"):
-                pr.append(Logsheet(id=p, action=action))
-        if len(pr)==1:
-            pr = pr[0]
-        elif len(pr)==0:
+        id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show, ro_id, vr_name_in_code = result[0]
+        input_id = row[0]
+        vr = Variable(id=row[1]) if row[1] is not None else None
+        if row[2] is None:
             pr = None
-        lookup_vr = Variable(id=lookup_vr_id, action=action) if lookup_vr_id is not None else None
-        lookup_pr = Process(id=lookup_pr_id, action=action) if lookup_pr_id is not None else None
-        is_input = bool(is_input)
-        show = bool(show)
-        port = Input(vr=vr, pr=pr, lookup_vr=lookup_vr, lookup_pr=lookup_pr, value=value, show=show, action=action) if is_input else Output(id=id, vr=vr, pr=pr, show=show, action=action)
-        port.id = id
+        elif row[2].startswith("PR"):
+            pr = Process(id=row[2]) if row[2] is not None else None
+        elif row[2].startswith("LG"):
+            pr = Logsheet(id=row[2]) if row[2] is not None else None
+        lookup_vr = Variable(id=row[3]) if row[3] is not None else None
+        if row[4] is None:
+            lookup_pr = None
+        elif row[4].startswith("PR"):
+            lookup_pr = Process(id=row[4]) if row[4] is not None else None
+        elif row[4].startswith("LG"):
+            lookup_pr = Logsheet(id=row[4]) if row[4] is not None else None
+        value = json.loads(row[5])
+        if row[6].startswith("PR"):
+            parent_ro = Process(id=row[6]) if row[6] is not None else None
+        elif row[6].startswith("LG"):
+            parent_ro = Logsheet(id=row[6]) if row[6] is not None else None
+        vr_name_in_code = row[7]
+        show = bool(row[8])
+        if is_input:
+            port = Input(vr=vr, pr=pr, lookup_vr=lookup_vr, lookup_pr=lookup_pr, value=value, show=show, action=action, parent_ro=ro_id, vr_name_in_code=vr_name_in_code)
+        else:
+            port = Output(vr=vr, pr=pr, lookup_vr=lookup_vr, lookup_pr=lookup_pr, value=value, show=show, action=action, parent_ro=ro_id, vr_name_in_code=vr_name_in_code)
+
+        port.id = id        
 
         if return_conn:
             action.execute()
@@ -118,15 +128,10 @@ class Port():
         return port
 
 
-    def add_attrs(self, parent_ro: "source_type", vr_name_in_code: str) -> None:
-        """Add the attributes about the Process/Logsheet parent object to the Port object.
-        This has to be done in a separate step because the Input or Output is resolved before the "set_inputs/outputs" helper functions."""
-        self.parent_ro = parent_ro
-        self.vr_name_in_code = vr_name_in_code
-
-
     def create_input_or_output(self) -> None:
         """Creates the input or output in the database, and stores the reference to the instance."""
+        from ResearchOS.Bridges.input import Input
+        from ResearchOS.Bridges.output import Output
         return_conn = False
         action = self.action
         if action is None:
@@ -135,9 +140,13 @@ class Port():
 
         # ID is provided, so load the object.
         if self.id is not None:
-            obj = Port.load(self.id, action=action)
+            obj = Port.load(self.id, action)
             self.__dict__.update(obj.__dict__)
             Port.instances[self.id] = self
+            return
+        
+        # This happens when the Input is called directly by the user. Not None when called by internal functions.
+        if self.parent_ro is None or self.vr_name_in_code is None:
             return
 
         lookup_vr_id = None
@@ -187,21 +196,21 @@ class Port():
             params.append(lookup_pr_id)
             unique_list.append("lookup_pr_id")
         params.append(value)
+        params.append(self.vr_name_in_code)
         params = tuple(params)
         unique_list.append("value")
+        unique_list.append("vr_name_in_code")
 
-        sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE is_input = ? AND {vr_id_str} AND {pr_id_str} AND {lookup_vr_id_str} AND {lookup_pr_id_str} AND value = ?"                               
+        sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE is_input = ? AND {vr_id_str} AND {pr_id_str} AND {lookup_vr_id_str} AND {lookup_pr_id_str} AND value = ? AND vr_name_in_code = ?"                               
         sqlquery = sql_order_result(action, sqlquery_raw, unique_list, single=True, user = True, computer = False) 
 
-        result = action.conn.execute(sqlquery, params).fetchall()
-        is_new = True
-        if result:
-            is_new = False
+        result = action.conn.execute(sqlquery, params).fetchall()        
+        if result:            
             self.id = result[0][0]
         if self.id is None:
             idcreator = IDCreator(action.conn)
             self.id = idcreator.create_generic_id("inputs_outputs", "id")
-            params = (self.id, self.is_input, action.id_num, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, int(self.show))                
+            params = (self.id, self.is_input, action.id_num, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, int(self.show), self.parent_ro.id, self.vr_name_in_code)                
             action.add_sql_query(None, "inputs_outputs_insert", params)
 
         Port.instances[self.id] = self
@@ -209,6 +218,4 @@ class Port():
         if return_conn:
             action.commit = True
             action.execute()
-
-        return is_new
         

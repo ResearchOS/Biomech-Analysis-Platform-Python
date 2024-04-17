@@ -22,37 +22,44 @@ class VRHandler():
         return_conn = False
         if action is None:
             action = Action(name = "Set_Inputs")
-            return_conn = True
-        # 1. Create/load all of the Inlets
-        inlets_dict = {key: Inlet(parent_ro, key, action) for key in all_inputs.keys()} 
+            return_conn = True                
 
         import_value_default = "import_file_vr_name"       
 
-        # 2. Create/load all of the Inputs        
-        for key, dict_input in all_inputs.items():
-            inlet = inlets_dict[key]            
+        # 2. Create/load all of the Inputs
+        standardized = {}
+        for key, dict_input in all_inputs.items():          
 
-            if isinstance(dict_input, Variable): 
-                input = Input(vr=dict_input, action=action)
+            if isinstance(dict_input, Variable):
+                input = Input(vr=dict_input, action=action, parent_ro=parent_ro, vr_name_in_code=key)
+            elif not isinstance(dict_input, Input):
+                input = Input(value=dict_input, action=action, parent_ro=parent_ro, vr_name_in_code=key) # Directly hard-coded value. May be a DataObject attribute.
             else:
-                input = Input(value=dict_input, action=action)
+                if input.parent_ro is None or input.parent_ro.id is None:
+                    if not input.parent_ro:
+                        input.parent_ro = parent_ro
+                    if not input.vr_name_in_code:
+                        input.vr_name_in_code = key
+                    del input.id
+                    input = Input(**input.__dict__)
             # 1. import file vr name        
-            if hasattr(parent_ro, "import_file_vr_name") and inlet.vr_name_in_code==parent_ro.import_file_vr_name:
+            if hasattr(parent_ro, "import_file_vr_name") and key==parent_ro.import_file_vr_name:
                 input.put_value = ImportFile(import_value_default)
 
             if isinstance(input.put_value, DynamicMain) and input.put_value.main_vr.pr is None:
                 input.put_value.main_vr.pr = Input.set_source_pr(parent_ro, input.put_value.main_vr.vr)
+                input.pr = input.put_value.main_vr.pr
             if isinstance(input.put_value, DynamicMain) and input.put_value.lookup_vr.vr is not None and input.put_value.lookup_vr.pr is None:
-                input.put_value.lookup_vr.pr = Input.set_source_pr(parent_ro, input.put_value.lookup_vr.vr)            
+                input.put_value.lookup_vr.pr = Input.set_source_pr(parent_ro, input.put_value.lookup_vr.vr)    
+                input.lookup_pr = input.put_value.lookup_vr.pr        
 
-            do_insert = Port.__init__(input)
-            inlet.add_put(input, action=action, do_insert=do_insert)
+            standardized[key] = input
                     
         if return_conn:
             action.commit = True
             action.execute()
-        
-        return inlets_dict
+
+        return standardized
     
     @staticmethod
     def standardize_outputs(parent_ro: "ResearchObject", all_outputs: Union[Output, dict], action: Action = None) -> dict:
@@ -60,27 +67,36 @@ class VRHandler():
         return_conn = False
         if action is None:
             action = Action(name = "Set_Inputs")
-            return_conn = True
-        # 1. Create/load all of the Outlets
-        outlets_dict = {key: Outlet(parent_ro, key, action) for key in all_outputs.keys()}
+            return_conn = True                
 
         # 2. Create/load all of the Outputs
-        for key, output in all_outputs.items():
-            outlet = outlets_dict[key]
+        standardized = {}
+        for key, dict_output in all_outputs.items():
 
-            if isinstance(output, Variable):
-                output = Output(vr=output, pr=parent_ro, action=action)
+            if isinstance(dict_output, Variable):
+                output = Output(vr=dict_output, pr=parent_ro, action=action, parent_ro=parent_ro, vr_name_in_code=key)
             else:
-                output = Output(value=output, action=action) # Directly hard-coded value. May be a DataObject attribute.
+                output = dict_output
+            if output.parent_ro is None or output.vr_name_in_code is None:
+                if output.parent_ro is None:
+                    output.parent_ro = parent_ro
+                if output.vr_name_in_code is None:
+                    output.vr_name_in_code = key
+                del output.id
+                output = Output(**output.__dict__)
 
-            do_insert = Port.__init__(output)
-            outlet.add_put(output, action=action, do_insert=do_insert)
+            if output.parent_ro is None:
+                output.parent_ro = parent_ro
+            if output.vr_name_in_code is None:
+                output.vr_name_in_code = key
+
+            standardized[key] = output
         
         if return_conn:
             action.commit = True
             action.execute()
         
-        return outlets_dict
+        return standardized
     
     @staticmethod
     def deserialize_input_vr(vr: Union[None, dict]) -> Union[None, "Variable"]:

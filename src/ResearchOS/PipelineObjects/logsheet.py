@@ -139,10 +139,8 @@ class Logsheet(PipelineObject):
             ''headers'' as a JSON string using ''json.dumps''"""
         from ResearchOS.Bridges.output import Output
         # Create Outlets and Outputs for the Logsheet        
-        for header in headers:
-            # breakpoint()            
+        for header in headers:    
             output = Output(vr=header[3], pr=self, action=action)
-            # outlet.add_put(output, action=action)
 
         str_headers = []        
         for header in headers:

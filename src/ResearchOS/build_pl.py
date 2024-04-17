@@ -57,31 +57,29 @@ def make_all_edges(ro: "ResearchObject"):
         # For each input, find an Outlet with a matching output.
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet
-        from ResearchOS.Bridges.outlet import Outlet    
-        from ResearchOS.Bridges.output import Output            
+        from ResearchOS.Bridges.input_types import DynamicMain
+        from ResearchOS.Bridges.output import Output
         all_pr_objs = [pr() for pr in ResearchObjectHandler.instances_list if pr() is not None and isinstance(pr(), (Process,))]
         lg_objs = [lg() for lg in ResearchObjectHandler.instances_list if lg() is not None and isinstance(lg(), (Logsheet,))]
         last_idx = all_pr_objs.index(ro)
         all_pr_objs = all_pr_objs[:last_idx]
         action = Action(name="Build_PL")
-        for inlet in ro.inputs.values():
-            input = inlet.puts[0]
-            if input.vr is None:
-                 continue
+        for key, input in ro.inputs.items():            
+            if not isinstance(input.put_value, DynamicMain):
+                continue
             for pr in all_pr_objs:
-                for outlet in pr.outputs.values():
-                    output = outlet.puts[0]
+                for output in pr.outputs.values():                    
                     if output.vr is None:
                          continue
                     if input.vr == output.vr and input.pr == output.pr:
-                        e = Edge(inlet=inlet, outlet=outlet, action=action, print_edge=True)                        
+                        e = Edge(input=input, output=output, action=action, print_edge=True)                        
             for lg in lg_objs:
                  lg.validate_headers(lg.headers, action, [])
                  for h in lg.headers:
                       if h[3] == input.vr:
-                        # output = Output(vr=h[3], pr=lg, action=action)
-                        outlet = Outlet(parent_ro=lg, vr_name_in_code=h[0], action=action)
-                        e = Edge(inlet=inlet, outlet=outlet, action=action, print_edge=True)                        
+                        output = Output(vr=input.vr, pr=lg, action=action, show=True, parent_ro=lg, vr_name_in_code=h[0])
+                        e = Edge(input=input, output=output, action=action, print_edge=True)  
+                        break                      
         
         # Now that all the Edges have been created, commit the Action.
         action.commit = True

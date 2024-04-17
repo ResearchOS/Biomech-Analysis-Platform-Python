@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING, Union, Any
-import weakref
+import weakref, json
 
 import networkx as nx
 
@@ -12,13 +12,16 @@ if TYPE_CHECKING:
     source_type = Union[Process, Logsheet]
 
 from ResearchOS.Bridges.port import Port
-# from ResearchOS.Bridges.output import Output
+from ResearchOS.sql.sql_runner import sql_order_result
 import ResearchOS.Bridges.input_types as it
 
 class Input(Port):
     """Input port to connect between DiGraphs."""
 
     is_input: bool = True
+
+    def __eq__(self, other: "Input") -> bool:
+        return self.id == other.id
 
     def __init__(self, id: int = None,
                  vr: "Variable" = None, 
@@ -27,29 +30,74 @@ class Input(Port):
                  lookup_pr: "source_type" = None,
                  value: Any = None,
                  show: bool = False,
-                 action: "Action" = None):
+                 action: "Action" = None,
+                 parent_ro: "ResearchObject" = None,
+                 vr_name_in_code: str = None,
+                 **kwargs):
         """Initializes the Input object. "vr" and "pr" together make up the main source of the input. "lookup_vr" and "lookup_pr" together make up the lookup source of the input.
         "value" is the hard-coded value. If specified, supercedes the main source."""
+        from ResearchOS.variable import Variable
+        from ResearchOS.PipelineObjects.process import Process
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
+
+        if hasattr(self, "id"):
+            return # Already initialized, loaded from Port.instances
+
+        if id is not None:
+            # Run the SQL query to load the values.
+            sqlquery_raw = "SELECT id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
+            sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=True, user = True, computer = False)
+            params = (id,)
+            result = action.conn.execute(sqlquery, params).fetchall()
+            if not result:
+                raise ValueError(f"Port with id {id} not found in database.")
+            id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show, ro_id, vr_name_in_code = result[0]
+            if not pr_id:
+                pr_id = json.dumps([])
+            value = json.loads(value)
+            vr = Variable(id=vr_id, action=action) if vr_id is not None else None
+            pr = []
+            for p in json.loads(pr_id):
+                if p is None:
+                    pr = None
+                    break
+                if p.startswith("PR"):
+                    pr.append(Process(id=p, action=action))
+                elif p.startswith("LG"):
+                    pr.append(Logsheet(id=p, action=action))
+            if len(pr)==1:
+                pr = pr[0]
+            elif len(pr)==0:
+                pr = None
+            lookup_vr = Variable(id=lookup_vr_id, action=action) if lookup_vr_id is not None else None
+            lookup_pr = Process(id=lookup_pr_id, action=action) if lookup_pr_id is not None else None
+            is_input = bool(is_input)
+            show = bool(show)
         
-        if isinstance(value, dict):
+        # Now whether loading or saving, all inputs are properly shaped.
+        if isinstance(value, dict) and (vr is None or vr.hard_coded_value is None):
             key = list(value.keys())[0]
             if key.__class__ == type:
                 input = it.DataObjAttr(key, value[key])
             else:
                 input = it.HardCoded(value)
+        elif vr is not None and vr.hard_coded_value is not None:
+            input = it.HardCodedVR(vr=vr, value=vr.hard_coded_value)
         elif value is not None:
             # 2. hard-coded value.
-            input = it.HardCoded(value)
-        elif vr is not None and vr.hard_coded_value is not None:
-            input = it.HardCoded(vr.hard_coded_value)
+            input = it.HardCoded(value)        
         elif vr is not None:
-            # 3. dynamic value.
+            # 3. dynamic value. Also the import_file_vr_name would fit here because it's a VR, but that gets overwritten in the VRHandler.
             input = it.DynamicMain(it.Dynamic(vr=vr, pr=pr), it.Dynamic(vr=lookup_vr, pr=lookup_pr), show=show)
         else:
             input = it.NoneVR()
 
+        self.vr_name_in_code = vr_name_in_code
         self.put_value = input
         self.action = action
+        self.parent_ro = parent_ro
+        self._id = id
+        super().__init__()
 
     def set_source_pr(parent_ro: "ResearchObject", vr: "Variable"):
         """Set the source process or logsheet."""
@@ -66,9 +114,8 @@ class Input(Port):
 
         final_pr = None        
         for pr in prs:
-            outlets = pr.outputs.values()
-            for outlet in outlets:
-                output = outlet.puts[0]
+            outputs = pr.outputs.values()
+            for output in outputs:
                 if output is not None and output.vr == vr:                    
                     final_pr = pr
                     break # Found the proper pr.

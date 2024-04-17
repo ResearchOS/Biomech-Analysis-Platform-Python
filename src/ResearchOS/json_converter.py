@@ -42,53 +42,49 @@ class JSONConverter():
         else:
             return json.loads(input)
         
-    @staticmethod
-    def from_json_inputs(self, inputs: str, action: Action) -> dict:
-        """Convert a JSON string to a dictionary of input variables."""
-        from ResearchOS.Bridges.input import Input
-        from ResearchOS.Bridges.inlet import Inlet
-        serializable_dict = json.loads(inputs)
-        tmp_dict = {}
-        for key in serializable_dict:            
-            inlet = Inlet(self, key, action)                        
-            input = Input.load(id=serializable_dict[key], action=action)
-            inlet.add_put(input, action, do_insert=False)
-            tmp_dict[key] = inlet
-        return tmp_dict
+    # @staticmethod
+    # def from_json_inputs(self, inputs: str, action: Action) -> dict:
+    #     """Convert a JSON string to a dictionary of input variables."""
+    #     from ResearchOS.Bridges.input import Input
+    #     from ResearchOS.Bridges.inlet import Inlet
+    #     serializable_dict = json.loads(inputs)
+    #     tmp_dict = {}
+    #     for key in serializable_dict:                       
+    #         input = Input(id=serializable_dict[key], action=action)
+    #         tmp_dict[key] = input
+    #     return tmp_dict
     
-    @staticmethod
-    def to_json_inputs(self, inputs: dict, action: Action) -> str:
-        """Convert the .inputs attribute of a runnable Pipeline Object to a JSON string.
-        The format is a dictionary with the inlet names in code as keys, and the values are the input ID's."""
-        tmp_dict = {}
-        for key, inlet in inputs.items():
-            tmp_dict[key] = None
-            if len(inlet.puts) > 0:
-                tmp_dict[key] = inlet.puts[0].id                            
-        return json.dumps(tmp_dict)
+    # @staticmethod
+    # def to_json_inputs(self, inputs: dict, action: Action) -> str:
+    #     """Convert the .inputs attribute of a runnable Pipeline Object to a JSON string.
+    #     The format is a dictionary with the inlet names in code as keys, and the values are the input ID's."""
+    #     tmp_dict = {}
+    #     for key, input in inputs.items():
+    #         tmp_dict[key] = input.id                       
+    #     return json.dumps(tmp_dict)
     
-    @staticmethod
-    def from_json_outputs(self, outputs: str, action: Action) -> dict:
-        """Convert a JSON string to a dictionary of output variables."""
-        from ResearchOS.Bridges.output import Output
-        from ResearchOS.Bridges.outlet import Outlet
-        serializable_dict = json.loads(outputs)
-        tmp_dict = {}
-        for key in serializable_dict:
-            tmp_dict[key] = Outlet(self, key, action)
-            tmp_dict[key].add_put(Output.load(id=serializable_dict[key], action=action), action, do_insert=False)
-        return tmp_dict
+    # @staticmethod
+    # def from_json_outputs(self, outputs: str, action: Action) -> dict:
+    #     """Convert a JSON string to a dictionary of output variables."""
+    #     from ResearchOS.Bridges.output import Output
+    #     from ResearchOS.Bridges.outlet import Outlet
+    #     serializable_dict = json.loads(outputs)
+    #     tmp_dict = {}
+    #     for key in serializable_dict:
+    #         tmp_dict[key] = Outlet(self, key, action)
+    #         tmp_dict[key].add_put(Output.load(id=serializable_dict[key], action=action), action, do_insert=False)
+    #     return tmp_dict
     
-    @staticmethod
-    def to_json_outputs(self, outputs: dict, action: Action) -> str:
-        """Convert the .outputs attribute of a runnable Pipeline Object to a JSON string.
-        The format is a dictionary with the outlet names in code as keys, and the values are the output ID's."""
-        tmp_dict = {}
-        for key, outlet in outputs.items():
-            tmp_dict[key] = None
-            if len(outlet.puts) > 0:
-                tmp_dict[key] = outlet.puts[0].id                            
-        return json.dumps(tmp_dict)
+    # @staticmethod
+    # def to_json_outputs(self, outputs: dict, action: Action) -> str:
+    #     """Convert the .outputs attribute of a runnable Pipeline Object to a JSON string.
+    #     The format is a dictionary with the outlet names in code as keys, and the values are the output ID's."""
+    #     tmp_dict = {}
+    #     for key, outlet in outputs.items():
+    #         tmp_dict[key] = None
+    #         if len(outlet.puts) > 0:
+    #             tmp_dict[key] = outlet.puts[0].id                            
+    #     return json.dumps(tmp_dict)
     
     @staticmethod
     def from_json_batch(self, batch: str, action: Action) -> list:
