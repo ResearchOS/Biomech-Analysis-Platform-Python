@@ -25,8 +25,7 @@ class ProcessRunner(CodeRunner):
 
         if not is_batch:
             vr_vals_in = []
-            for input in inputs.values():
-                value = input.vr._value.value
+            for value in inputs.values():
                 if value is None:
                     value = np.nan
                 vr_vals_in.append(value)

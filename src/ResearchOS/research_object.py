@@ -63,15 +63,19 @@ class ResearchObject():
         if not self._initialized:
             self.__dict__[name] = value
             return        
+        
+        if name is None and (len(kwargs_dict)==0 or kwargs_dict is None):            
+            return # Nothing given.
+        
         # Ensure that the criteria to set the attribute are met.
         precheck_attr(name, value)        
             
         # Set the attribute. Create Action when __setattr__ is called as the top level.
         if all_attrs is None:
             all_attrs = DefaultAttrs(self) 
-        default_attrs = all_attrs.default_attrs
-
-        if name not in default_attrs and (len(kwargs_dict)==0 or kwargs_dict is None):
+        default_attrs = all_attrs.default_attrs        
+        
+        if name is not None and name not in default_attrs:
             self.__dict__[name] = value # "Temporary" values that won't persist in the database.
             return
                        
@@ -104,21 +108,18 @@ class ResearchObject():
         action.exec = exec
         action.execute()     
     
-    def __init__(self, action: Action = None, **other_kwargs):
+    def __init__(self, action: Action = None, name: str = None, notes: str = None, **other_kwargs):
         """Initialize the research object.
         On initialization, all attributes should be saved! 
         Unless the object is being loaded, in which case only *changed* attributes should be saved."""
         attrs = DefaultAttrs(self) # Get the default attributes for the class.
         default_attrs_dict = attrs.default_attrs
         # Special step needed for "name" and "notes" because they're default for all Research Objects.
-        if "name" in other_kwargs:
-            self.name = other_kwargs["name"]
-        else:
-            self.name = default_attrs_dict["name"]
-        if "notes" in other_kwargs:
-            self.notes = other_kwargs["notes"]
-        else:
-            self.notes = default_attrs_dict["notes"]        
+        if not self._initialized:
+            self.notes=notes
+            self.name=name 
+            if name == None:
+                self.name = default_attrs_dict["name"]            
 
         prev_loaded = self.__dict__["prev_loaded"]
         del self.__dict__["prev_loaded"] # Remove prev_loaded attribute.      
@@ -142,15 +143,23 @@ class ResearchObject():
             params = (self.id, action.id_num)
             action.add_sql_query(id, query_name, params, group_name = "robj_insert")                                
         
-        loaded_attrs = {}
+        loaded_attrs = {}        
+        incl_name = True
         if prev_exists and not prev_loaded:
             # Load the existing object's attributes from the database.
-            loaded_attrs = ResearchObjectHandler._load_ro(self, attrs, action)            
+            loaded_attrs = ResearchObjectHandler._load_ro(self, attrs, action)
+            incl_name = self.name != self.id and self.name is not None and self.name != loaded_attrs.get("name", None)
+        elif prev_loaded:
+            print('a')
+            pass        
         
         # If creating a new object, save all attributes.
         # If loaded an existing object: save only the changed attributes.
         save_dict = {}
         for attr in self_dict:
+            if attr == "name" and incl_name:
+                save_dict[attr] = self.name
+                continue
             try:
                 # If not default (and prev loaded) and not the loaded value, must have been specified, so save it.
                 if not prev_exists or (self_dict[attr] != default_attrs_dict[attr] and self_dict[attr] != loaded_attrs[attr]):
@@ -158,8 +167,8 @@ class ResearchObject():
             except:
                 pass
                 
-        self._initialized = True
-        self._is_init = True        
+        self._is_init = True
+        self._initialized = True        
         self.__setattr__(None, None, action=action, all_attrs=attrs, kwargs_dict=save_dict, exec=False) # Set the attributes.               
         del self.__dict__["_is_init"]
 

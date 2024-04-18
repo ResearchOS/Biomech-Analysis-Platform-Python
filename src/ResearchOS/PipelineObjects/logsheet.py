@@ -457,7 +457,7 @@ class Logsheet(PipelineObject):
         # Then assign that to the Dataset.
         print('Creating Data Objects graph...')
         addresses = []
-        dobj_names = [[ds.name] + row for row in dobj_names]
+        dobj_names = [[ds.id] + row for row in dobj_names]
         for row in dobj_names:
             for idx in range(1, len(row)):
                 pair = [row[idx-1], row[idx]]
