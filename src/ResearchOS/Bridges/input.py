@@ -78,6 +78,7 @@ class Input(Port):
             lookup_pr = Process(id=lookup_pr_id, action=action) if lookup_pr_id is not None else None
             is_input = bool(is_input)
             show = bool(show)
+            parent_ro = Process(id = ro_id, action = action) if ro_id.startswith("PR") else Logsheet(id = ro_id, action = action)
         
         # Now whether loading or saving, all inputs are properly shaped.
         if isinstance(value, dict) and (vr is None or vr.hard_coded_value is None):
