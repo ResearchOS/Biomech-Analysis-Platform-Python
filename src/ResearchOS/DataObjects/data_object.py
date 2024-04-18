@@ -59,7 +59,6 @@ class DataObject(ResearchObject):
         Returns:
             Any: The value of the VR for this data object.
         """
-        from ResearchOS.research_object_handler import ResearchObjectHandler
         from ResearchOS.DataObjects.dataset import Dataset
         from ResearchOS.Bridges import input_types as it        
 
@@ -109,9 +108,7 @@ class DataObject(ResearchObject):
             lookup_value = self.get(tmp_input, action, tmp_input.pr, node_lineage)
             # Turn the lookup value into a DataObject.
             sqlquery = f"""SELECT dataobject_id, path FROM paths WHERE path LIKE '%{lookup_value}"]';"""
-            # sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "str_value"], single = True, user = True, computer = False)
             cursor = action.conn.cursor()
-            # params = (lookup_value,)
             result = cursor.execute(sqlquery).fetchall()
             if len(result) == 0:
                 raise ValueError(f"The lookup value {lookup_value} does not exist in the database.")
@@ -126,64 +123,77 @@ class DataObject(ResearchObject):
         base_node = node_lineage[self_idx]
         vr = input.vr
         cursor = action.conn.cursor()
-        for node in node_lineage[self_idx:]:
-            sqlquery_raw = "SELECT action_id_num, is_active FROM data_values WHERE path_id = ? AND vr_id = ?"
-            sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)
-                        
-            params = (node.id, vr.id)            
-            result = cursor.execute(sqlquery, params).fetchall()
-            if len(result) > 0:
-                break
-        if len(result) == 0:
-            raise ValueError(f"The VR {vr.name} ({vr.id}) has never been associated with the data object {base_node.name} ({base_node.id}).")
-        is_active = result[0][1]
-        if is_active == 0:
-            raise ValueError(f"The VR {vr.name} is not currently associated with the data object {base_node.name} ({base_node.id}).")
-        
-        # 2. Load the data hash from the database.
         if not isinstance(process, list):
             process = [process]
-        sqlquery_raw = "SELECT data_blob_hash, pr_id, numeric_value, str_value FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id IN ({})".format(", ".join(["?" for _ in process]))
-        params = (node.id, vr.id) + tuple([pr_elem.id for pr_elem in process])
-        sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)        
-        result = cursor.execute(sqlquery, params).fetchall()
-        if len(result) == 0:
-            raise ValueError(f"The VR {vr.name} does not have a value for the data object {base_node.name} ({base_node.id}) from Process {process[0].id}.")
-        if len(result) > 1:
-            raise ValueError(f"The VR {vr.name} has multiple values for the data object {base_node.name} ({base_node.id}) from Process {process[0].id}.")
-        pr_ids = [x[1] for x in result]
-        pr_idx = None
-        for pr_id in pr_ids:
+        found_value = False
+        for pr in process:
+            for node in node_lineage[self_idx:]:
+                sqlquery_raw = "SELECT action_id_num, is_active FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id = ?"
+                sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id", "pr_id"], single = True, user = True, computer = False)
+                            
+                params = (node.id, vr.id, pr.id)            
+                result = cursor.execute(sqlquery, params).fetchall()
+                if len(result) > 0:
+                    break
+            if len(result) == 0:
+                print(f"The VR {vr.name} ({vr.id}) has never been associated with the data object {base_node.name} ({base_node.id}) for PR {pr.id}.")
+                continue
+            is_active = result[0][1]
+            if is_active == 0:
+                print(f"The VR {vr.name} is not currently associated with the data object {base_node.name} ({base_node.id}) for PR {pr.id}.")
+                continue
+            
+            # 2. Load the data hash from the database.            
+            sqlquery_raw = "SELECT data_blob_hash, pr_id, numeric_value, str_value FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id = ?"
+            params = (node.id, vr.id, pr.id)
+            sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id", "pr_id"], single = True, user = True, computer = False)        
+            result = cursor.execute(sqlquery, params).fetchall()
+            if len(result) == 0:
+                print(f"The VR {vr.name} does not have a value for the data object {base_node.name} ({base_node.id}) from Process {pr.id}.")
+                continue
+            if len(result) > 1:
+                print(f"The VR {vr.name} has multiple values for the data object {base_node.name} ({base_node.id}) from Process {pr.id}.")
+                continue
+            pr_ids = [x[1] for x in result]
             pr_idx = None
-            try:
-                pr_idx = pr_ids.index(pr_id)
-            except:
-                pass
-            if pr_idx is not None:
-                break
-        if pr_idx is None:
-            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {base_node.name} ({base_node.id}) from any Process provided.")
-        data_hash = result[pr_idx][0]
+            for pr_id in pr_ids:
+                pr_idx = None
+                try:
+                    pr_idx = pr_ids.index(pr_id)
+                except:
+                    pass
+                if pr_idx is not None:
+                    break
+            if pr_idx is None:
+                print(f"The VR {vr.name} does not have a value set for the data object {base_node.name} ({base_node.id}) from any Process provided.")
+                continue
+            data_hash = result[pr_idx][0]
 
-        # 3. Get the value from the data_values table. 
-        if data_hash is not None:
-            pool_data = SQLiteConnectionPool(name = "data")
-            conn_data = pool_data.get_connection()
-            cursor_data = conn_data.cursor()
-            sqlquery = "SELECT data_blob FROM data_values_blob WHERE data_blob_hash = ?"        
-            params = (data_hash,)
-            pickled_value = cursor_data.execute(sqlquery, params).fetchone()[0]
-            value = pickle.loads(pickled_value)
-            pool_data.return_connection(conn_data)
-        else:
-            numeric_value = result[pr_idx][2]
-            str_value = result[pr_idx][3]
-            if numeric_value is not None:
-                value = numeric_value
-            else: # Omitting criteria here allows for str_value and numeric_value to both be None.
-                value = str_value
-        if return_conn:
-            conn.return_connection(conn)
+            # 3. Get the value from the data_values table. 
+            if data_hash is not None:
+                pool_data = SQLiteConnectionPool(name = "data")
+                conn_data = pool_data.get_connection()
+                cursor_data = conn_data.cursor()
+                sqlquery = "SELECT data_blob FROM data_values_blob WHERE data_blob_hash = ?"        
+                params = (data_hash,)
+                pickled_value = cursor_data.execute(sqlquery, params).fetchone()[0]
+                value = pickle.loads(pickled_value)
+                pool_data.return_connection(conn_data)
+            else:
+                numeric_value = result[pr_idx][2]
+                str_value = result[pr_idx][3]
+                if numeric_value is not None:
+                    value = numeric_value
+                else: # Omitting criteria here allows for str_value and numeric_value to both be None.
+                    value = str_value
+            if return_conn:
+                conn.return_connection(conn)
+
+            found_value = True
+            if value is not None:
+                break # Allow a None value to go through, but gives every opportunity to look for another value first.
+        if not found_value:
+            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {base_node.name} ({base_node.id}) from any Process provided.")        
         return value
     
     def _set_vr_values(self, vr_values: dict, pr_id: str, action: Action = None) -> None:

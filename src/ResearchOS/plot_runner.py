@@ -38,7 +38,7 @@ class PlotRunner(CodeRunner):
         # - the input variables
         # - the plot function name
         # - the file path to save the plot to
-        lineage = self.get_node_lineage(self.node, self.dataset_object_graph)
+        lineage = self.node.get_node_lineage(self.node, self.dataset_object_graph)
         lineage.remove(self.dataset)
         if self.node in lineage:
             lineage.remove(self.node)

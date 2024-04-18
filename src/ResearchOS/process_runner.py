@@ -30,14 +30,13 @@ class ProcessRunner(CodeRunner):
                 if value is None:
                     value = np.nan
                 vr_vals_in.append(value)
-            # vr_vals_in = list(vr_values_in.values())
             if self.num_inputs > len(vr_vals_in): # There's an extra input open.
                 vr_vals_in.append(info)
         else:
             # Convert the vr_values_in to the right format.
             vr_vals_in = []
-            for vr_name in vr_values_in:
-                vr_vals_in.append(vr_values_in[vr_name])
+            for value in inputs.values():
+                vr_vals_in.append(value)
 
         if pr.is_matlab:
             for idx, vr_val in enumerate(vr_vals_in):
@@ -55,8 +54,14 @@ class ProcessRunner(CodeRunner):
         if not isinstance(vr_values_out, tuple):
             vr_values_out = (vr_values_out,)
         # Convert a singular NaN from MATLAB to None.
-        if len(vr_values_out) == 1 and pr.is_matlab and (isinstance(vr_values_out[0], (int, float)) and (math.isnan(vr_values_out[0]) or np.isnan(vr_values_out[0]))):
-            vr_values_out = (None,)
+        if pr.is_matlab:
+            adjusted_vr_values_out = []
+            for vr_value in vr_values_out:
+                if isinstance(vr_value, (int, float)) and (math.isnan(vr_value) or np.isnan(vr_value)):
+                    adjusted_vr_values_out.append(None)
+                else:
+                    adjusted_vr_values_out.append(vr_value)
+            vr_values_out = tuple(adjusted_vr_values_out)
         if len(vr_values_out) != len(pr.outputs):
             raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
             

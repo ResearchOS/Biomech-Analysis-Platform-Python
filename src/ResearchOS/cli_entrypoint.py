@@ -3,6 +3,7 @@ import importlib
 import json
 import time
 import copy
+import pickle
 
 import typer
 from typer.testing import CliRunner
@@ -28,7 +29,7 @@ def add_src_to_path():
     if not os.path.isabs(src_path):
         src_path = os.path.join(os.getcwd(), src_path)
     sys.path.append(src_path)
-    logger.warning(f"Adding {src_path} to the path.")
+    logger.debug(f"Adding {src_path} to the path.")
 
 
 @app.command()
@@ -119,11 +120,15 @@ def db_reset(yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type 'y'
     logger.warning(db_msg)
 
 @app.command()
-def dobjs(path = typer.Option(None, "--path", "-p", help="Path to the data object of interest")):
+def dobjs(path = typer.Argument(help="Path to the data object of interest", default=None)):
     """List all available data objects."""
     import matplotlib.pyplot as plt
-    from netgraph import Graph, InteractiveGraph, EditableGraph
-    if path is not None and not isinstance(path, list):
+    from netgraph import Graph, InteractiveGraph, EditableGraph    
+    from ResearchOS.cli.get_all_paths_of_type import import_objects_of_type
+    from ResearchOS.DataObjects.data_object import DataObject
+    add_src_to_path()
+    import_objects_of_type(DataObject)
+    if path is not None and not isinstance(path, list):        
         path = [path]
     action = Action(name = "list_dobjs")
     cursor = action.conn.cursor()
@@ -151,14 +156,22 @@ def dobjs(path = typer.Option(None, "--path", "-p", help="Path to the data objec
     for i in range(max_num_levels):
         lens[i] = max([row[i] for row in str_lens if len(row)>=i+1])
         
+    subclasses = DataObject.__subclasses__()
+    max_cls_len = max([len(cls.__name__) for cls in subclasses])
+
     for row in result:
         path = json.loads(row[2])
         lens_list = [f"{{:<{lens[i]}}}" for i in range(len(path))]
         lens_str = " ".join(lens_list)
 
         # Prepare the complete format string
-        style_str = "{:<12} {:<15} {:<7} " + lens_str          
-        print(style_str.format(f"Path ID: {row[0]}", f"DataObject ID: {row[1]}", "Path: ", *path))
+        prefix = row[1][0:2]
+        cls = [cls for cls in subclasses if cls.prefix == prefix][0]
+        cls_name = cls.__name__
+
+        style_str = "{:<12} {" + f":<{max_cls_len}" + "} {:<7} "
+        path_str = ", ".join(path)
+        print(style_str.format(f"Path ID: {row[0]}", f"{cls_name} ID: {row[1]}", "Path: " + path_str))
 
 @app.command()
 def logsheet_read():
@@ -479,10 +492,118 @@ def init_bridges():
 
     # 7. Write the file. Organize the rows by packages, then by process name organized topologically.
 
-    
+@app.command()
+def get(node_id: str = typer.Argument(help="Node ID"),
+    vr_id: str = typer.Argument(help="Variable ID", default=None)):
+    """Get the variable value from the database."""
+    from ResearchOS.variable import Variable
+    from ResearchOS.DataObjects.data_object import DataObject
+    from ResearchOS.cli.get_all_paths_of_type import import_objects_of_type    
+    from ResearchOS.sqlite_pool import SQLiteConnectionPool
+    add_src_to_path()
+    import_objects_of_type(Variable)
+    import_objects_of_type(DataObject)
+    action = Action(name = "get_variable")
+    cls = [cls for cls in DataObject.__subclasses__() if cls.prefix == node_id[0:2]][0]
+    node = cls(id = node_id, action = action)
+    if vr_id is None:
+        sqlquery_raw = "SELECT pr_id, vr_id, numeric_value, str_value FROM data_values WHERE is_active = 1 AND path_id = ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["path_id"], single = True, user = True, computer = False)
+        params = (node_id,)
+        result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        if not result:
+            print("No variable found.")
+            return
+        max_pr_len = max(len(row[0]) if row[0] is not None else 0 for row in result)
+        max_vr_len = max(len(row[1]) if row[1] is not None else 0 for row in result)
+        max_numeric_len = max(len(str(row[2])) if row[2] is not None else 0 for row in result)
+        max_str_len = max(len(row[3]) if row[3] is not None else 0 for row in result)
+        max_scalar_len = max([max_numeric_len, max_str_len])
+        for row in result:
+            pr_id = row[0]
+            vr_id = row[1]
+            numeric_value = row[2]
+            str_value = row[3]
+            if numeric_value:
+                print(f"PR ID: {pr_id:<{max_pr_len}} VR ID: {vr_id:<{max_vr_len}} Numeric Value: {numeric_value:<{max_scalar_len}}")
+            elif str_value:                
+                print(f"PR ID: {pr_id:<{max_pr_len}} VR ID: {vr_id:<{max_vr_len}} String Value: {str_value:<{max_scalar_len}}")
+            else:
+                print(f"PR ID: {pr_id:<{max_pr_len}} VR ID: {vr_id:<{max_vr_len}} Hashed.")
+        lineage = node.get_node_lineage()
+        print("ABOVE: the variables in", node_id, "(", ", ".join([n.name for n in reversed(lineage)]), ")")
+        return
+    sqlquery_raw = "SELECT str_value, numeric_value, data_blob_hash FROM data_values WHERE is_active = 1 AND vr_id = ? AND path_id = ?"
+    sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "path_id"], single = True, user = True, computer = False)
+    params = (vr_id, node_id)    
+    result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    if not result:
+        print("No value found.")
+        return
+    if len(result) > 1:
+        raise ValueError("Multiple values found.")
+    data_blob_hash = result[0][2]
+    int_value = result[0][1]
+    if data_blob_hash:
+        # Get the data blob.
+        sqlquery = "SELECT data_blob FROM data_values_blob WHERE data_blob_hash = ?"
+        pool = SQLiteConnectionPool(name = "data")
+        conn = pool.get_connection()
+        params = (data_blob_hash,)
+        result = conn.cursor().execute(sqlquery, params).fetchall()
+        if not result:
+            raise ValueError("Data blob not found.")
+        value = pickle.loads(result[0][0])
+        print(value)
+    elif int_value:
+        value = int_value
+    else:
+        value = result[0][0]
+    print(value)    
+    print(f"ABOVE: the value of {vr_id} in {node_id} ({node.name})")
+    print("Type: ", value.__class__.__name__)
+
+@app.command()
+def vrs(vr_id: str = typer.Argument(help="Variable ID"),
+        dobj_id: str = typer.Argument(help="Data object ID", default=None)):
+    """List all available variable types."""
+    from ResearchOS.variable import Variable
+    from ResearchOS.DataObjects.data_object import DataObject
+    from ResearchOS.cli.get_all_paths_of_type import import_objects_of_type
+    add_src_to_path()    
+    import_objects_of_type(Variable)
+    import_objects_of_type(DataObject)
+    subclasses = DataObject.__subclasses__()
+    action = Action(name = "get_variable")
+    sqlquery_raw = "SELECT path_id, vr_id, pr_id FROM data_values WHERE is_active = 1 AND vr_id = ?"
+    vr_id = vr_id[0:2].upper() + vr_id[2:]
+    params = (vr_id,)
+    sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "pr_id", "path_id"], single = False, user = True, computer = False)
+    result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    if not result:
+        print("No variable found.")
+        return
+    max_path_id_len= max(len(row[0]) for row in result)
+    max_vr_id_len= max(len(row[1]) for row in result)
+    max_pr_id_len= max(len(row[2]) for row in result)
+    ids = []
+    if dobj_id is not None:
+        ids = [row[0] for row in result]
+    if dobj_id in ids:
+        idx = ids.index(dobj_id)
+        cls = [cls for cls in subclasses if cls.prefix == dobj_id[0:2]][0]
+        dobj = cls(id = dobj_id, action = action)
+        get(dobj_id, vr_id)
+        print(f"Path ID: {result[idx][0]:<{max_path_id_len}} VR ID: {result[idx][1]:<{max_vr_id_len}} PR ID: {result[idx][2]:<{max_pr_id_len}}")
+        return
+
+    for row in result:
+        cls = [cls for cls in subclasses if cls.prefix == row[0][0:2]][0]
+        dobj = cls(id = row[0], action = action)
+        print(f"Path ID: {row[0]:<{max_path_id_len}} ( {dobj.name} ), VR ID: {row[1]:<{max_vr_id_len}}, PR ID: {row[2]:<{max_pr_id_len}}")    
 
 if __name__ == "__main__":
     app(["run"])  
-    # app(["show-pl"])
+    # app(["get", "TRE2F1AE_4DF"])
     # app(["db-reset","-y"])
     # app(["logsheet-read"])  

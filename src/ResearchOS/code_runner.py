@@ -295,7 +295,7 @@ class CodeRunner():
             all_keys = list(input_dict.keys())
             if any(isinstance(key, int) for key in all_keys):
                 raise ValueError("Check your batch list, no Variables at this level.")
-            is_var_name_in_code = all_keys == list(self.pl_obj.input_vrs.keys())
+            is_var_name_in_code = all_keys == list(self.pl_obj.inputs.keys())
             leaf_nodes = [n for n in batch_graph.nodes() if batch_graph.out_degree(n) == 0]
             do_recurse = is_var_name_in_code or not all([key in leaf_nodes for key in all_keys])
             if do_recurse and isinstance(input_dict, dict):
@@ -308,11 +308,12 @@ class CodeRunner():
 
         input_dict = {node: copy.deepcopy(batch_dict) for node in self.pl_obj.inputs.keys()}
         for var_name_in_code in input_dict:
-            curr_vr = self.pl_obj.inputs[var_name_in_code]
-            if not isinstance(curr_vr, dict) or ("VR" not in curr_vr.keys() and "slice" not in curr_vr.keys()):
-                input_dict[var_name_in_code] = curr_vr # To make it not be a cell array in MATLAB.
-            else:
-                process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
+            # curr_vr = self.pl_obj.inputs[var_name_in_code]
+            process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
+            # if not isinstance(curr_vr, dict) or ("VR" not in curr_vr.keys() and "slice" not in curr_vr.keys()):
+            #     input_dict[var_name_in_code] = curr_vr # To make it not be a cell array in MATLAB.
+            # else:
+            #     process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
 
         # Run the process on the batch of nodes.
         is_batch = self.pl_obj.batch is not None
