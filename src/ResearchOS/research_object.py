@@ -149,9 +149,8 @@ class ResearchObject():
             # Load the existing object's attributes from the database.
             loaded_attrs = ResearchObjectHandler._load_ro(self, attrs, action)
             incl_name = self.name != self.id and self.name is not None and self.name != loaded_attrs.get("name", None)
-        elif prev_loaded:
-            print('a')
-            pass        
+        elif prev_loaded and name is None:
+            incl_name = False
         
         # If creating a new object, save all attributes.
         # If loaded an existing object: save only the changed attributes.

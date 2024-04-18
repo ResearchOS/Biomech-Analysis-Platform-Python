@@ -1,5 +1,5 @@
 from typing import Any, Callable
-import json
+import time
 
 import networkx as nx
 
@@ -147,14 +147,13 @@ class Process(PipelineObject):
         # self.__setattr__("outputs", standardized_kwargs)  
         self.__dict__["outputs"] = standardized_kwargs      
 
-    def run(self, force_redo: bool = False, action: Action = None) -> None:
+    def run(self, force_redo: bool = False, action: Action = None, return_conn: bool = True) -> None:
         """Execute the attached method.
         kwargs are the input VR's."""
+        start_time = time.time()
         start_msg = f"Running {self.mfunc_name} on {self.level.__name__}s."
         print(start_msg)
-        return_conn = False
         if action is None:
-            return_conn = True
             action = Action(name = start_msg)
         process_runner = ProcessRunner()        
         batches_dict_to_run, all_batches_graph, G, pool = process_runner.prep_for_run(self, action, force_redo)
@@ -173,6 +172,8 @@ class Process(PipelineObject):
 
         action.add_sql_query(None, "run_history_insert", (action.id_num, self.id))
 
-        if return_conn:
-            action.commit = True
-            action.execute()
+        action.commit = True
+        action.exec = True
+        action.execute(return_conn=return_conn)
+
+        print(f"Finished running {self.id} on {self.level.__name__}s in {time.time() - start_time} seconds.")

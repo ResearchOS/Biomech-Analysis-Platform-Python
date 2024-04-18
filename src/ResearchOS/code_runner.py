@@ -334,8 +334,8 @@ class CodeRunner():
         self.node = node
         self.get_input_vrs()        
         
-        node_info = node.get_node_info()
-        run_msg = f"Running {node.name} ({node.id})."
+        node_info = node.get_node_info(action=self.action)
+        run_msg = f"Running {self.pl_obj.id}: {node.name} ({node.id})."
         print(run_msg)
         is_batch = pl_obj.batch is not None
         assert is_batch == False
@@ -346,7 +346,7 @@ class CodeRunner():
         self.action.execute(return_conn = False)        
 
         done_run_time = time.time()
-        done_msg = f"Running {node.name} ({node.id}) took {round(done_run_time - start_run_time, 3)} seconds."
+        done_msg = f"Running {self.pl_obj.id}: {node.name} ({node.id}) took {round(done_run_time - start_run_time, 3)} seconds."
         print(done_msg)
         
     def check_if_run_node(self, node_id: str) -> bool:
@@ -368,7 +368,7 @@ class CodeRunner():
         """Load the input variables.
         """
         self.inputs = {}
-        node_lineage = self.node.get_node_lineage()
+        node_lineage = self.node.get_node_lineage(action=self.action)
         for vr_name_in_code, input in self.pl_obj.inputs.items():
             value = self.node.get(input = input, action=self.action, node_lineage=node_lineage,  process=input.pr)
             self.inputs[vr_name_in_code] = value

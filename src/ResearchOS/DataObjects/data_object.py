@@ -61,7 +61,7 @@ class DataObject(ResearchObject):
         """
         from ResearchOS.code_runner import CodeRunner
         from ResearchOS.DataObjects.dataset import Dataset
-        from ResearchOS.Bridges import input_types as it
+        from ResearchOS.Bridges import input_types as it        
 
         return_conn = False
         if action is None:
@@ -78,18 +78,20 @@ class DataObject(ResearchObject):
             dataset_id = self._get_dataset_id()
             dataset = Dataset(id = dataset_id)
             data_path = dataset.dataset_path
-            for node in node_lineage:
-                data_path = os.path.join(data_path, node.name)
+            for node in reversed(node_lineage):
+                prefix = node.id[0:2]
+                in_file_schema = any([prefix==cls.prefix for cls in dataset.file_schema])
+                if in_file_schema:
+                    data_path = os.path.join(data_path, node.name)
             file_path = data_path + input.parent_ro.import_file_ext
             if not os.path.exists(file_path):
-                # raise FileNotFoundError(f"{input.put_value.ext} file does not exist for {node.name} ({node.id}).")
-                pass
+                raise FileNotFoundError(f"{input.put_value.ext} file does not exist for {node.name} ({node.id}).")                
             return file_path
         
         if isinstance(input.put_value, it.DataObjAttr):
-            cls = [key for key in input.put_value.attr.keys()][0]
-            node = [node for node in node_lineage if isinstance(node, cls)][0]
-            attr = [value for value in input.put_value.attr.values()][0]
+            cls = [key for key in input.put_value.params[0].keys()][0]
+            node = [node for node in node_lineage if node.prefix==cls][0]
+            attr = [value for value in input.put_value.params[0].values()][0]
             return getattr(node, attr)
         
         if not isinstance(input.put_value, it.DynamicMain):
@@ -271,11 +273,11 @@ class DataObject(ResearchObject):
             pool.return_connection(conn)
         return node_lineage_objs[::-1] # Because expecting smallest first.
     
-    def get_node_info(self) -> dict:
+    def get_node_info(self, action: Action) -> dict:
         """Provide the node lineage information to the scientific code. Helpful for conditional debugging in the scientific code."""
         classes = DataObject.__subclasses__()
         cls = [cls for cls in classes if cls.prefix == self.id[0:2]][0]
-        node_lineage = self.get_node_lineage()
+        node_lineage = self.get_node_lineage(action=action)
         info = {}        
         info["lineage"] = {}
         for node in node_lineage:

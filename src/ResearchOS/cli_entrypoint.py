@@ -369,7 +369,7 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     for pl_node in run_nodes_sorted:
         if isinstance(pl_node, Logsheet):
             continue
-        pl_node.run(action=action)
+        pl_node.run(action=action, return_conn=False)
 
 def input_with_timeout(prompt, timeout):
     import threading
