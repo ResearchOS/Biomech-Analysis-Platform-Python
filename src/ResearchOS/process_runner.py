@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+import math
 
 import numpy as np
 
@@ -53,6 +54,9 @@ class ProcessRunner(CodeRunner):
                 
         if not isinstance(vr_values_out, tuple):
             vr_values_out = (vr_values_out,)
+        # Convert a singular NaN from MATLAB to None.
+        if len(vr_values_out) == 1 and pr.is_matlab and (isinstance(vr_values_out[0], (int, float)) and (math.isnan(vr_values_out[0]) or np.isnan(vr_values_out[0]))):
+            vr_values_out = (None,)
         if len(vr_values_out) != len(pr.outputs):
             raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
             

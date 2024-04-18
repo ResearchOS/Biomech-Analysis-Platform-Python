@@ -100,7 +100,7 @@ class ResearchObjectDigraph(MultiDiGraph):
         bridge_edges = []
         for edge_ids in pipeline_source_obj_edge_ids.values():
             # Get the Data Objects that are connected to the PR because they both have an edge with the same VR ID.
-            sqlquery_raw = "SELECT dataobject_id FROM vr_dataobjects WHERE vr_id IN ({}) AND is_active = 1".format(", ".join(["?" for _ in edge_ids]))
+            sqlquery_raw = "SELECT path_id FROM data_values WHERE vr_id IN ({}) AND is_active = 1".format(", ".join(["?" for _ in edge_ids]))
             params = tuple(edge_ids)
             sqlquery = sql_order_result(action, sqlquery_raw, params, ["dataobject_id"], user = True, computer = False)
             cursor = action.conn.cursor()

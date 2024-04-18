@@ -2,6 +2,7 @@ import os, sys
 import importlib
 import json
 import time
+import copy
 
 import typer
 from typer.testing import CliRunner
@@ -134,7 +135,7 @@ def dobjs(path = typer.Option(None, "--path", "-p", help="Path to the data objec
         print("No data objects found.")
         return
     if path is not None:
-        result = [row for row in result if path in row[2]]
+        result = [row for row in result if set(path).issubset(json.loads(row[2]))]
     
     max_num_levels = -1
     str_lens = []
@@ -246,9 +247,8 @@ def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, lo
         os.system(command)
 
 @app.command()
-def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
-        yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type '-y' to run the pipeline without confirmation.")):
-    """Run the runnable pipeline objects."""
+def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None)):
+    """Show the pipeline objects in the graph in topologically sorted order."""
     from ResearchOS.PipelineObjects.logsheet import Logsheet
     from ResearchOS.DataObjects.dataset import Dataset
     from ResearchOS.build_pl import build_pl
@@ -325,7 +325,7 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     action_dates_dict = {r[0]: r[1] for r in action_dates}
     result = [(r + (action_dates_dict[r[0]],)) for r in result]
     result = sorted(result, key = lambda x: x[3]) # Sorted by datetime, descending.
-    first_out_of_date = None
+    first_out_of_date = []
     for anc_node in anc_nodes_sorted:
         if isinstance(anc_node, Logsheet):
             continue # Can't run the pipeline from a Logsheet.
@@ -333,11 +333,16 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         if result[most_recent_idx][2] == "run":
             continue
         else:
-            first_out_of_date = anc_node
-            break
+            # Ensure that there are multiple potential root nodes, to handle the case where maybe multiple nodes of the same generation are out of date.
+            first_out_of_date.append(anc_node)
+            for out_of_date_node in first_out_of_date:
+                if anc_node in nx.descendants(G, out_of_date_node):                    
+                    first_out_of_date.remove(anc_node)
+                    break
 
     if first_out_of_date:
-        print(f"Node {first_out_of_date.id} is out of date. Running the pipeline starting from this node.")        
+        pass
+        # print(f"Node {first_out_of_date.id} is out of date. Running the pipeline starting from this node.")        
     else:
         if not plobj:
             print('All nodes are up to date. Nothing to run.')
@@ -345,16 +350,34 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         print('All previous nodes are up to date. Run starting from specified node.')        
         first_out_of_date = plobj
 
-    run_nodes = list(nx.descendants(G, first_out_of_date))
-    run_nodes.append(first_out_of_date)
+    run_nodes = copy.copy(first_out_of_date)
+    for node in first_out_of_date:
+        run_nodes.extend(list(nx.descendants(G, node)))
 
     run_nodes_graph = G.subgraph(run_nodes)
 
-    run_nodes_sorted = list(nx.topological_sort(run_nodes_graph))
+    up_to_date_nodes = [n for n in G.nodes() if n not in run_nodes]
+    up_to_date_nodes_graph = G.subgraph(up_to_date_nodes)
+    up_to_date_nodes_sorted = list(nx.topological_sort(up_to_date_nodes_graph))
+    print("Up to date nodes:")
+    for idx, pl_node in enumerate(up_to_date_nodes_sorted):
+        print(str(idx) + ":", pl_node.id)
 
-    print('Running the following nodes, in order:')
+    run_nodes_sorted = list(nx.topological_sort(run_nodes_graph))
+    print("Run nodes:")
     for idx, pl_node in enumerate(run_nodes_sorted):
-        print(idx, pl_node.id)
+        print(str(idx) + ":", pl_node.id)
+
+    return run_nodes_sorted, up_to_date_nodes_sorted
+
+@app.command()
+def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
+        yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type '-y' to run the pipeline without confirmation.")):
+    """Run the runnable pipeline objects."""
+    from ResearchOS.PipelineObjects.logsheet import Logsheet    
+    
+    run_nodes_sorted, up_to_date_nodes_sorted = show_pl(plobj_id)
+    action = Action(name = "run_pipeline", type="run")
 
     dur = 0
     result = ""
@@ -460,5 +483,6 @@ def init_bridges():
 
 if __name__ == "__main__":
     app(["run"])  
+    # app(["show-pl"])
     # app(["db-reset","-y"])
     # app(["logsheet-read"])  

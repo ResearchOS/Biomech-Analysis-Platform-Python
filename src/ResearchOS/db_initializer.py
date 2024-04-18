@@ -159,6 +159,7 @@ class DBInitializer():
                         data_blob_hash TEXT,
                         str_value TEXT,
                         numeric_value INTEGER,
+                        is_active INTEGER NOT NULL DEFAULT 1,
                         CHECK (
                             (data_blob_hash IS NOT NULL AND str_value IS NULL AND numeric_value IS NULL) OR
                             (data_blob_hash IS NULL AND NOT (str_value IS NOT NULL AND numeric_value IS NOT NULL))
@@ -179,18 +180,6 @@ class DBInitializer():
                         FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,                        
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
-                        )""")
-        
-        # Variable -> DataObjects table. Lists all variables and which data objects they are associated with.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS vr_dataobjects (
-                        action_id_num INTEGER NOT NULL,
-                        vr_id TEXT NOT NULL,
-                        path_id TEXT NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        PRIMARY KEY (path_id, vr_id, action_id_num)
                         )""")
         
         # PipelineObjects Graph table. Lists all pipeline objects and their relationships.

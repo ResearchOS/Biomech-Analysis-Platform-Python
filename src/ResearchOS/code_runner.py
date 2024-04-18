@@ -332,7 +332,11 @@ class CodeRunner():
         pl_obj = self.pl_obj
         node = pl_obj.level(id = node_id, action = self.action)
         self.node = node
-        self.get_input_vrs()        
+        self.get_input_vrs()
+
+        if hasattr(pl_obj, "import_file_vr_name") and pl_obj.import_file_vr_name is not None and self.inputs[pl_obj.import_file_vr_name] is None:
+            print(f"Skipping {pl_obj.id}: {node.name} ({node.id}) due to missing raw data file...")
+            return
         
         node_info = node.get_node_info(action=self.action)
         run_msg = f"Running {self.pl_obj.id}: {node.name} ({node.id})."
@@ -388,7 +392,7 @@ class CodeRunner():
         run_process = False
 
         # Check that all output VR connections are active.
-        sqlquery_raw = "SELECT is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
+        sqlquery_raw = "SELECT is_active FROM data_values WHERE path_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
         sqlquery = sql_order_result(self.action, sqlquery_raw, ["is_active"], single = True, user = True, computer = False)
         params = ([node.id] + output_vr_ids)
         result = cursor.execute(sqlquery, params).fetchall()            

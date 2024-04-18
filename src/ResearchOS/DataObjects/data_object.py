@@ -4,7 +4,7 @@ import pickle
 import os
 from hashlib import sha256
 import json
-import importlib
+import copy
 
 import numpy as np
 import toml
@@ -30,23 +30,23 @@ computer_specific_attr_names = []
 class DataObject(ResearchObject):
     """The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors."""    
 
-    def __delattr__(self, name: str, action: Action = None) -> None:
-        """Delete an attribute. If it's a builtin attribute, don't delete it.
-        If it's a VR, make sure it's "deleted" from the database."""
-        default_attrs = DefaultAttrs(self).default_attrs
-        if name in default_attrs:
-            raise AttributeError("Cannot delete a builtin attribute.")
-        if name not in self.__dict__:
-            raise AttributeError("No such attribute.")
-        if action is None:
-            action = Action(name = "delete_attribute")
-        vr_id = self.__dict__[name].id        
-        params = (action.id, self.id, vr_id)
-        if action is None:
-            action = Action(name = "delete_attribute")
-        action.add_sql_query(self.id, "vr_to_dobj_insert_inactive", params)
-        action.execute()
-        del self.__dict__[name]
+    # def __delattr__(self, name: str, action: Action = None) -> None:
+    #     """Delete an attribute. If it's a builtin attribute, don't delete it.
+    #     If it's a VR, make sure it's "deleted" from the database."""
+    #     default_attrs = DefaultAttrs(self).default_attrs
+    #     if name in default_attrs:
+    #         raise AttributeError("Cannot delete a builtin attribute.")
+    #     if name not in self.__dict__:
+    #         raise AttributeError("No such attribute.")
+    #     if action is None:
+    #         action = Action(name = "delete_attribute")
+    #     vr_id = self.__dict__[name].id        
+    #     params = (action.id, self.id, vr_id)
+    #     if action is None:
+    #         action = Action(name = "delete_attribute")
+    #     action.add_sql_query(self.id, "vr_to_dobj_insert_inactive", params)
+    #     action.execute()
+    #     del self.__dict__[name]
 
     def get(self, input: Union["Variable", "Input"], action: Action = None, process: "Process" = None, node_lineage: list = None) -> Any:
         """Load the value of a VR from the database for this data object.
@@ -59,7 +59,7 @@ class DataObject(ResearchObject):
         Returns:
             Any: The value of the VR for this data object.
         """
-        from ResearchOS.code_runner import CodeRunner
+        from ResearchOS.research_object_handler import ResearchObjectHandler
         from ResearchOS.DataObjects.dataset import Dataset
         from ResearchOS.Bridges import input_types as it        
 
@@ -84,8 +84,10 @@ class DataObject(ResearchObject):
                 if in_file_schema:
                     data_path = os.path.join(data_path, node.name)
             file_path = data_path + input.parent_ro.import_file_ext
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"{input.put_value.ext} file does not exist for {node.name} ({node.id}).")                
+            if not os.path.exists(file_path):                
+                file_msg = f"File does not exist for {node.name} ({node.id}): {file_path}"
+                print(file_msg)
+                return None             
             return file_path
         
         if isinstance(input.put_value, it.DataObjAttr):
@@ -97,12 +99,35 @@ class DataObject(ResearchObject):
         if not isinstance(input.put_value, it.DynamicMain):
             raise ValueError("Input type not recognized.")
         
-        self_idx = node_lineage.index(self)
+        # Handle lookup VR's.
+        if input.lookup_vr is not None:
+            tmp_input = copy.copy(input)
+            tmp_input.vr = input.lookup_vr
+            tmp_input.pr = input.lookup_pr
+            tmp_input.lookup_vr = None
+            tmp_input.lookup_pr = None
+            lookup_value = self.get(tmp_input, action, tmp_input.pr, node_lineage)
+            # Turn the lookup value into a DataObject.
+            sqlquery = f"""SELECT dataobject_id, path FROM paths WHERE path LIKE '%{lookup_value}"]';"""
+            # sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "str_value"], single = True, user = True, computer = False)
+            cursor = action.conn.cursor()
+            # params = (lookup_value,)
+            result = cursor.execute(sqlquery).fetchall()
+            if len(result) == 0:
+                raise ValueError(f"The lookup value {lookup_value} does not exist in the database.")
+            node_id = result[0][0]
+            cls = [cls for cls in DataObject.__subclasses__() if cls.prefix == node_id[0:2]][0]
+            node = cls(id = node_id, action = action)
+            node_lineage = node.get_node_lineage(action = action)
+            self_idx = node_lineage.index(node)
+        else:        
+            self_idx = node_lineage.index(self)
+
         base_node = node_lineage[self_idx]
         vr = input.vr
         cursor = action.conn.cursor()
         for node in node_lineage[self_idx:]:
-            sqlquery_raw = "SELECT action_id_num, is_active FROM vr_dataobjects WHERE path_id = ? AND vr_id = ?"
+            sqlquery_raw = "SELECT action_id_num, is_active FROM data_values WHERE path_id = ? AND vr_id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)
                         
             params = (node.id, vr.id)            
@@ -214,8 +239,8 @@ class DataObject(ResearchObject):
         for vr in vr_hashes_dict:
             blob_params = (vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["blob"])
             blob_pk = blob_params
-            vr_dobj_params = (action.id_num, self.id, vr.id)
-            vr_dobj_pk = vr_dobj_params
+            # vr_dobj_params = (action.id_num, self.id, vr.id)
+            # vr_dobj_pk = vr_dobj_params
             if isinstance(vr_hashes_dict[vr]["scalar_value"], str):
                 vr_value_params = (action.id_num, vr.id, self.id, vr_hashes_dict[vr]["hash"], pr_id, vr_hashes_dict[vr]["scalar_value"], None)
             else:
@@ -226,8 +251,8 @@ class DataObject(ResearchObject):
                 if not action.is_redundant_params(self.id, "data_value_in_blob_insert", blob_pk, group_name = "robj_vr_attr_insert"):
                     action.add_sql_query(self.id, "data_value_in_blob_insert", blob_params, group_name = "robj_vr_attr_insert")
             # No danger of duplicating primary keys, so no real need to check if they previously existed. But why not?
-            if not action.is_redundant_params(self.id, "vr_to_dobj_insert", vr_dobj_pk, group_name = "robj_vr_attr_insert"):
-                action.add_sql_query(self.id, "vr_to_dobj_insert", vr_dobj_params, group_name = "robj_vr_attr_insert")
+            # if not action.is_redundant_params(self.id, "vr_to_dobj_insert", vr_dobj_pk, group_name = "robj_vr_attr_insert"):
+            #     action.add_sql_query(self.id, "vr_to_dobj_insert", vr_dobj_params, group_name = "robj_vr_attr_insert")
             if not action.is_redundant_params(self.id, "vr_value_for_dobj_insert", vr_value_pk, group_name = "robj_vr_attr_insert"):
                 action.add_sql_query(self.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert")
 

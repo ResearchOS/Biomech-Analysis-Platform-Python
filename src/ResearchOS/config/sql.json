@@ -7,7 +7,6 @@
         "data_values",
         "data_addresses",
         "paths",
-        "vr_dataobjects",
         "pipelineobjects_graph",
         "inputs_outputs",
         "run_history"

@@ -11,17 +11,20 @@ dependencies = [
 ]
 
 # No need to adjust the tool.researchos.paths tables unless you are using code from directories besides these.
+[tool.researchos.paths.root]
+root = "src"
+
 [tool.researchos.paths.research_objects]
-DataObject = "research_objects/data_objects.py"
-Dataset = "research_objects/datasets.py"
-Logsheet = "research_objects/logsheets.py"
-Process = "research_objects/processes.py"
-Variable = "research_objects/variables.py"
-Subset = "research_objects/subsets.py"
-Plot = "research_objects/plots.py"
-Stats = "research_objects/stats.py"
+dataobject = "research_objects/data_objects.py"
+dataset = "research_objects/datasets.py"
+logsheet = "research_objects/logsheets.py"
+process = "research_objects/processes.py"
+variable = "research_objects/variables.py"
+subset = "research_objects/subsets.py"
+plot = "research_objects/plots.py"
+stats = "research_objects/stats.py"
 
 [tool.researchos.paths.code]
-Process = ["process/"]
-Plot = ["plot/"]
-Stats = ["stats/"]
+process = ["process/"]
+plot = ["plot/"]
+stats = ["stats/"]
