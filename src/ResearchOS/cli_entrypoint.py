@@ -356,7 +356,7 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     for idx, pl_node in enumerate(run_nodes_sorted):
         print(idx, pl_node.id)
 
-    dur = 5
+    dur = 0
     result = ""
     if yes_or_no != "y":
         result = input_with_timeout(f"Press Enter to continue, or any other key to cancel. Or auto-start in {dur} seconds.", dur)        
@@ -459,6 +459,6 @@ def init_bridges():
     
 
 if __name__ == "__main__":
-    # app(["run"])  
+    app(["run"])  
     # app(["db-reset","-y"])
-    app(["logsheet-read"])  
+    # app(["logsheet-read"])  

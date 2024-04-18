@@ -213,10 +213,10 @@ class CodeRunner():
         sqlquery = "SELECT dataobject_id, path FROM paths"
         cursor = action.conn.cursor()
         result = cursor.execute(sqlquery).fetchall()        
-        paths = [[ds.name] + json.loads(row[1]) for row in result]
+        paths = [[ds.id] + json.loads(row[1]) for row in result]
         dobj_ids = [row[0] for row in result]
         # Append Dataset into the paths.
-        paths.append([ds.name])
+        paths.append([ds.id])
         dobj_ids.append(ds.id)
 
         self.paths = paths
@@ -332,14 +332,14 @@ class CodeRunner():
         pl_obj = self.pl_obj
         node = pl_obj.level(id = node_id, action = self.action)
         self.node = node
-        inputs = self.get_input_vrs()        
+        self.get_input_vrs()        
         
         node_info = node.get_node_info()
         run_msg = f"Running {node.name} ({node.id})."
         print(run_msg)
         is_batch = pl_obj.batch is not None
         assert is_batch == False
-        self.compute_and_assign_outputs(self.pl_obj.inputs, pl_obj, node_info, is_batch)
+        self.compute_and_assign_outputs(self.inputs, pl_obj, node_info, is_batch)
 
         self.action.commit = True
         self.action.exec = True
@@ -370,7 +370,7 @@ class CodeRunner():
         self.inputs = {}
         node_lineage = self.node.get_node_lineage()
         for vr_name_in_code, input in self.pl_obj.inputs.items():
-            value = self.node.get(input = input, action=self.action, node_lineage=node_lineage)
+            value = self.node.get(input = input, action=self.action, node_lineage=node_lineage,  process=input.pr)
             self.inputs[vr_name_in_code] = value
         
     def check_output_vrs_active(self) -> bool:

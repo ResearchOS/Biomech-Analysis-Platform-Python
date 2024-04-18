@@ -48,7 +48,7 @@ class DataObject(ResearchObject):
         action.execute()
         del self.__dict__[name]
 
-    def get(self, input: Union["Variable", "Input"], action: Action, process: "Process" = None, node_lineage: list = None) -> Any:
+    def get(self, input: Union["Variable", "Input"], action: Action = None, process: "Process" = None, node_lineage: list = None) -> Any:
         """Load the value of a VR from the database for this data object.
 
         Args:
@@ -63,6 +63,11 @@ class DataObject(ResearchObject):
         from ResearchOS.DataObjects.dataset import Dataset
         from ResearchOS.Bridges import input_types as it
 
+        return_conn = False
+        if action is None:
+            return_conn = True
+            action = Action(name = "get_vr_value")
+
         if isinstance(input.put_value, it.HardCoded):
             return input.put_value.value
         
@@ -75,9 +80,10 @@ class DataObject(ResearchObject):
             data_path = dataset.dataset_path
             for node in node_lineage:
                 data_path = os.path.join(data_path, node.name)
-            file_path = data_path + input.put_value.ext
+            file_path = data_path + input.parent_ro.import_file_ext
             if not os.path.exists(file_path):
-                raise FileNotFoundError(f"{input.put_value.ext} file does not exist for {node.name} ({node.id}).")
+                # raise FileNotFoundError(f"{input.put_value.ext} file does not exist for {node.name} ({node.id}).")
+                pass
             return file_path
         
         if isinstance(input.put_value, it.DataObjAttr):
@@ -91,6 +97,8 @@ class DataObject(ResearchObject):
         
         self_idx = node_lineage.index(self)
         base_node = node_lineage[self_idx]
+        vr = input.vr
+        cursor = action.conn.cursor()
         for node in node_lineage[self_idx:]:
             sqlquery_raw = "SELECT action_id_num, is_active FROM vr_dataobjects WHERE path_id = ? AND vr_id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single = True, user = True, computer = False)
@@ -147,11 +155,9 @@ class DataObject(ResearchObject):
                 value = numeric_value
             else: # Omitting criteria here allows for str_value and numeric_value to both be None.
                 value = str_value
-        vr_value.value = value
-        vr_value.exit_code = 0
         if return_conn:
             conn.return_connection(conn)
-        return vr_value
+        return value
     
     def _set_vr_values(self, vr_values: dict, pr_id: str, action: Action = None) -> None:
         """Top level function to set the values of the VR attributes.
@@ -259,7 +265,7 @@ class DataObject(ResearchObject):
         node_lineage_objs = []
         for node_id in node_lineage:
             cls = [cls for cls in subclasses if cls.prefix == node_id[0:2]][0]
-            anc_node = cls(id = node_id)
+            anc_node = cls(id = node_id, action=action)
             node_lineage_objs.append(anc_node)
         if return_conn:
             pool.return_connection(conn)

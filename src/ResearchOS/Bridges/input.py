@@ -86,6 +86,9 @@ class Input(Port):
                 input = it.DataObjAttr(key, value[key])
             else:
                 input = it.HardCoded(value)
+        elif hasattr(parent_ro, "import_file_vr_name") and vr_name_in_code==parent_ro.import_file_vr_name:
+            import_value_default = "import_file_vr_name"   
+            input = it.ImportFile(import_value_default)
         elif vr is not None and vr.hard_coded_value is not None:
             input = it.HardCodedVR(vr=vr, value=vr.hard_coded_value)
         elif value is not None:
