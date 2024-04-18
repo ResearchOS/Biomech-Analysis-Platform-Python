@@ -143,7 +143,7 @@ class CodeRunner():
             # Dict of dicts, where each top-level dict is a batch to run.
             # Get a top level node.
             any_top_level_node = [n for n in batches_dict_to_run][0]
-            leafs = [n for n in all_batches_graph.nodes() if all_batches_graph.out_degree(n) == 0]
+            leafs = [n for n in all_batches_graph.nodes() if all_batches_graph.out_degree(n) == 0 and n in list(nx.descendants(all_batches_graph, any_top_level_node))]
             CodeRunner.depth = nx.shortest_path_length(all_batches_graph, any_top_level_node, leafs[0])
         else:
             batches_dict_to_run = {node: None for node in level_node_ids_sorted}
@@ -279,11 +279,9 @@ class CodeRunner():
             path_idx = [idx for idx, path in enumerate(self.paths) if path[-1] == node][0]
             dobj_id = self.dobj_ids[path_idx]
             self.node = self.lowest_level(id = dobj_id)
-            result = self.check_if_run_node(node)
-            if not result["do_run"]:
-                return
-            for vr_name_in_code, vr_val in result["vr_values_in"].items():
-                batch_graph.nodes[node][vr_name_in_code] = vr_val
+            self.get_input_vrs()
+            for vr_name_in_code, input in self.inputs.items():
+                batch_graph.nodes[node][vr_name_in_code] = input
 
         # Now that all the input VR's have been gotten, change the node to the one to save the output VR's to.
         if batch_id == self.dataset.name:
@@ -308,11 +306,11 @@ class CodeRunner():
             for dataobj_id in all_keys:
                 input_dict[dataobj_id] = batch_graph.nodes[dataobj_id][vr_name_in_code]
 
-        input_dict = {node: copy.deepcopy(batch_dict) for node in self.pl_obj.input_vrs.keys()}
+        input_dict = {node: copy.deepcopy(batch_dict) for node in self.pl_obj.inputs.keys()}
         for var_name_in_code in input_dict:
-            curr_vr = self.pl_obj.input_vrs[var_name_in_code]
+            curr_vr = self.pl_obj.inputs[var_name_in_code]
             if not isinstance(curr_vr, dict) or ("VR" not in curr_vr.keys() and "slice" not in curr_vr.keys()):
-                input_dict[var_name_in_code] = result["vr_values_in"][var_name_in_code] # To make it not be a cell array in MATLAB.
+                input_dict[var_name_in_code] = curr_vr # To make it not be a cell array in MATLAB.
             else:
                 process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
 
