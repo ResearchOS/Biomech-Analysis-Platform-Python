@@ -24,28 +24,7 @@ class Edge():
     def __str__(self):
         return f"""{self.output.parent_ro.id} "{self.output.vr_name_in_code}" -> {self.input.parent_ro.id} "{self.input.vr_name_in_code}"."""
     
-    # @staticmethod
-    # def load(id: int, action: Action = None) -> "Edge":
-    #     if id in Edge.instances.keys():
-    #         return Edge.instances[id]        
-    #     if action is None:            
-    #         action = Action(name = f"load_edge")
-    #     sqlquery_raw = "SELECT connection_id, outlet_id, inlet_id FROM connections WHERE connection_id = ?"
-    #     sqlquery = sql_order_result(action, sqlquery_raw, ["connection_id"], single=True, user = True, computer = False)
-    #     params = (id,)
-    #     result = action.conn.cursor().execute(sqlquery, params).fetchall()
-    #     if not result:
-    #         raise ValueError(f"Edge with id {id} not found in database.")
-    #     id, outlet_id, inlet_id = result[0]
-    #     outlet = Outlet.load(outlet_id)
-    #     inlet = Inlet.load(inlet_id)
-    #     return Edge(outlet=outlet, inlet=inlet)
-    
 
-    #  source_object_id: str = None,
-    #  target_object_id: str = None,
-    #  source_vr_name_in_code: str = None,
-    #  target_vr_name_in_code: str = None,
     def __init__(self, id: int = None,
                  action: Action = None, 
                  print_edge: bool = False,

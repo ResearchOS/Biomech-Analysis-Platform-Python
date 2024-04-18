@@ -95,7 +95,7 @@ class Input(Port):
             # 2. hard-coded value.
             input = it.HardCoded(value)        
         elif vr is not None:
-            # 3. dynamic value. Also the import_file_vr_name would fit here because it's a VR, but that gets overwritten in the VRHandler.
+            # 3. dynamic value. Also the import_file_vr_name would fit here because it's a VR, but that gets overwritten in the VRHandler.            
             input = it.DynamicMain(it.Dynamic(vr=vr, pr=pr), it.Dynamic(vr=lookup_vr, pr=lookup_pr), show=show)
         else:
             input = it.NoneVR()

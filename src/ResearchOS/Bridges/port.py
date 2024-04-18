@@ -74,83 +74,22 @@ class Port():
             self.action.commit = True
             self.action.execute()  
 
-    @staticmethod
-    def load(id: int, action: Action = None) -> "Port":
-        """Load a Port from the database."""
-        from ResearchOS.Bridges.input import Input
-        from ResearchOS.Bridges.output import Output
-        from ResearchOS.variable import Variable
-        from ResearchOS.PipelineObjects.process import Process
-        from ResearchOS.PipelineObjects.logsheet import Logsheet
-        if id in Port.instances.keys():
-            return Port.instances[id]
-        sqlquery_raw = "SELECT id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
-        return_conn = False
-        if action is None:
-            return_conn = True
-            action = Action(name = f"load_port")
-
-        sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=True, user = True, computer = False)
-        params = (id,)
-        result = action.conn.execute(sqlquery, params).fetchall()
-        if not result:
-            raise ValueError(f"Port with id {id} not found in database.")
-        id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show, ro_id, vr_name_in_code = result[0]
-        input_id = row[0]
-        vr = Variable(id=row[1]) if row[1] is not None else None
-        if row[2] is None:
-            pr = None
-        elif row[2].startswith("PR"):
-            pr = Process(id=row[2]) if row[2] is not None else None
-        elif row[2].startswith("LG"):
-            pr = Logsheet(id=row[2]) if row[2] is not None else None
-        lookup_vr = Variable(id=row[3]) if row[3] is not None else None
-        if row[4] is None:
-            lookup_pr = None
-        elif row[4].startswith("PR"):
-            lookup_pr = Process(id=row[4]) if row[4] is not None else None
-        elif row[4].startswith("LG"):
-            lookup_pr = Logsheet(id=row[4]) if row[4] is not None else None
-        value = json.loads(row[5])
-        if row[6].startswith("PR"):
-            parent_ro = Process(id=row[6]) if row[6] is not None else None
-        elif row[6].startswith("LG"):
-            parent_ro = Logsheet(id=row[6]) if row[6] is not None else None
-        vr_name_in_code = row[7]
-        show = bool(row[8])
-        if is_input:
-            port = Input(vr=vr, pr=pr, lookup_vr=lookup_vr, lookup_pr=lookup_pr, value=value, show=show, action=action, parent_ro=ro_id, vr_name_in_code=vr_name_in_code)
-        else:
-            port = Output(vr=vr, pr=pr, lookup_vr=lookup_vr, lookup_pr=lookup_pr, value=value, show=show, action=action, parent_ro=ro_id, vr_name_in_code=vr_name_in_code)
-
-        port.id = id        
-
-        if return_conn:
-            action.execute()
-
-        return port
-
 
     def create_input_or_output(self) -> None:
         """Creates the input or output in the database, and stores the reference to the instance."""
-        from ResearchOS.Bridges.input import Input
-        from ResearchOS.Bridges.output import Output
+        from ResearchOS.Bridges.input_types import DynamicMain
         return_conn = False
         action = self.action
         if action is None:
             return_conn = True
             action = Action(name = f"create_input_or_output")
 
-        # ID is provided, so load the object.
-        if self.id is not None:
-            obj = Port.load(self.id, action)
-            self.__dict__.update(obj.__dict__)
-            Port.instances[self.id] = self
-            return
-        
         # This happens when the Input is called directly by the user. Not None when called by internal functions.
         if self.parent_ro is None or self.vr_name_in_code is None:
             return
+        
+        # if isinstance(self.put_value, DynamicMain) and (not self.pr or (self.lookup_vr is not None and self.lookup_pr is None)):
+        #     raise ValueError("When creating an Input() object, you must specify a source process or logsheet for the variable.")
 
         lookup_vr_id = None
         lookup_pr_id = None
