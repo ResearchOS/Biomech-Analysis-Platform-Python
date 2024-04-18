@@ -129,6 +129,8 @@ class Input(Port):
                 if output is not None and output.vr == vr:                    
                     final_pr = pr
                     break # Found the proper pr.
+            if final_pr:
+                break
 
         if not final_pr:
             for lg in lgs:
