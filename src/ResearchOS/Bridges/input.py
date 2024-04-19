@@ -118,7 +118,10 @@ class Input(Port):
         prs = [pr() for pr in ResearchObjectHandler.instances_list if pr() is not None and isinstance(pr(), (Process,))]
         lgs = [lg() for lg in ResearchObjectHandler.instances_list if lg() is not None and isinstance(lg(), (Logsheet,))]
 
-        last_idx = prs.index(parent_ro)
+        if isinstance(parent_ro, Process):
+            last_idx = prs.index(parent_ro)
+        else:
+            last_idx = len(prs)
         prs = prs[0:last_idx] # Reverse the list to get the most recent PRs first (go backward in time)
         prs.reverse()
 

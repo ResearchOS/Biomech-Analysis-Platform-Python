@@ -361,15 +361,18 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
             print('All nodes are up to date. Nothing to run.')
             return
         print('All previous nodes are up to date. Run starting from specified node.')        
-        first_out_of_date = plobj
+        first_out_of_date = [plobj]
 
-    run_nodes = copy.copy(first_out_of_date)
+    run_nodes = []
+    run_nodes.extend(first_out_of_date)
     for node in first_out_of_date:
         run_nodes.extend(list(nx.descendants(G, node)))
 
     run_nodes_graph = G.subgraph(run_nodes)
 
-    up_to_date_nodes = [n for n in G.nodes() if n not in run_nodes]
+    up_to_date_nodes = []
+    for n in run_nodes:
+        up_to_date_nodes.extend(list(nx.ancestors(G, n)))
     up_to_date_nodes_graph = G.subgraph(up_to_date_nodes)
     up_to_date_nodes_sorted = list(nx.topological_sort(up_to_date_nodes_graph))
     print("Up to date nodes:")
@@ -603,7 +606,7 @@ def vrs(vr_id: str = typer.Argument(help="Variable ID"),
         print(f"Path ID: {row[0]:<{max_path_id_len}} ( {dobj.name} ), VR ID: {row[1]:<{max_vr_id_len}}, PR ID: {row[2]:<{max_pr_id_len}}")    
 
 if __name__ == "__main__":
-    app(["run"])  
+    app(["run", "PL5"])  
     # app(["get", "TRE2F1AE_4DF"])
     # app(["db-reset","-y"])
     # app(["logsheet-read"])  

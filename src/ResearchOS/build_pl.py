@@ -27,9 +27,13 @@ from ResearchOS.sql.sql_runner import sql_order_result
 def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph:
     """Builds the pipeline."""   
     from ResearchOS.PipelineObjects.process import Process
-    from src.research_objects import processes
-    # if import_objs: 
-    #     import_objects_of_type(Process)
+    from ResearchOS.PipelineObjects.plot import Plot
+    from ResearchOS.PipelineObjects.stats import Stats
+    # from src.research_objects import processes
+    if import_objs: 
+        import_objects_of_type(Process)
+        import_objects_of_type(Plot)
+        # import_objects_of_type(Stats)
 
     return_conn = True
     if action is None:
@@ -68,7 +72,10 @@ def make_all_edges(ro: "ResearchObject"):
         from ResearchOS.Bridges.output import Output
         all_pr_objs = [pr() for pr in ResearchObjectHandler.instances_list if pr() is not None and isinstance(pr(), (Process,))]
         lg_objs = [lg() for lg in ResearchObjectHandler.instances_list if lg() is not None and isinstance(lg(), (Logsheet,))]
-        last_idx = all_pr_objs.index(ro)
+        if isinstance(ro, Process):            
+            last_idx = all_pr_objs.index(ro)
+        else:
+            last_idx = len(all_pr_objs)
         all_pr_objs = all_pr_objs[:last_idx]
         action = Action(name="Build_PL")
         for key, input in ro.inputs.items():            

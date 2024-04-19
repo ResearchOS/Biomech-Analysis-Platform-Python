@@ -4,12 +4,14 @@ function [fig] = PlotWrapper(func_name, save_path, varargin)
 
 v = varargin{1};
 
-try
-    fig = feval(func_name, v{:});
-catch
+% Determine whether I need to drop the node_info
+func_handle = str2func(func_name);
+ninputs = nargin(func_handle);
+if ninputs<length(v)
     v(end) = [];
-    fig = feval(func_name, v{:});
 end
+
+fig = feval(func_name, v{:}); % Run again without the node info.
 
 % Save the figure
 saveas(fig, save_path, 'fig');

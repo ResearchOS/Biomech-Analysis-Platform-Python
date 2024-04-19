@@ -75,3 +75,4 @@ Repository = "https://github.com/ResearchOS/ResearchOS"
 
 [project.scripts]
 ros = "ResearchOS.cli_entrypoint:app"
+pl = "ResearchOS.cli_pl_entrypoint:app"

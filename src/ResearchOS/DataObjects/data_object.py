@@ -284,12 +284,14 @@ class DataObject(ResearchObject):
             conn = pool.get_connection()
         else:
             conn = action.conn
-        if dobj_ids is None or paths is None:
-            sqlquery = "SELECT dataobject_id, path FROM paths"
-            cursor = conn.cursor()
-            result = cursor.execute(sqlquery).fetchall()
-            paths = [json.loads(x[1]) for x in result]
-            dobj_ids = [x[0] for x in result]
+        sqlquery = "SELECT dataobject_id, path FROM paths"
+        cursor = conn.cursor()
+        result = cursor.execute(sqlquery).fetchall()
+        paths_from_db = [json.loads(x[1]) for x in result]
+        dobj_ids_from_db = [x[0] for x in result]        
+        if not dobj_ids:
+            dobj_ids = dobj_ids_from_db
+            paths = paths_from_db
         node_id_idx = dobj_ids.index(node_id)
         path = paths[node_id_idx]
         path = path[0:path.index(self.name)+1]
@@ -310,16 +312,15 @@ class DataObject(ResearchObject):
     
     def get_node_info(self, action: Action) -> dict:
         """Provide the node lineage information to the scientific code. Helpful for conditional debugging in the scientific code."""
-        classes = DataObject.__subclasses__()
-        cls = [cls for cls in classes if cls.prefix == self.id[0:2]][0]
+        # classes = DataObject.__subclasses__()
+        # cls = [cls for cls in classes if cls.prefix == self.id[0:2]][0]
         node_lineage = self.get_node_lineage(action=action)
         info = {}        
-        info["lineage"] = {}
         for node in node_lineage:
-            prefix = cls.prefix
-            info["lineage"][prefix] = {}
-            info["lineage"][prefix]["name"] = node.name
-            info["lineage"][prefix]["id"] = node.id
+            prefix = node.prefix
+            info[prefix] = {}
+            info[prefix]["name"] = node.name
+            info[prefix]["id"] = node.id
         return info
 
 def load_data_object_classes() -> None:
