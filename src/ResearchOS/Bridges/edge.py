@@ -22,7 +22,7 @@ class Edge():
         return instance
 
     def __str__(self):
-        return f"""{self.output.parent_ro.id} "{self.output.vr_name_in_code}" -> {self.input.parent_ro.id} "{self.input.vr_name_in_code}" Subset: {self.input.parent_ro.subset.id}"""
+        return f"""{self.output.parent_ro.id}: {self.output.vr_name_in_code} -> {self.input.parent_ro.id}: {self.input.vr_name_in_code} Subset: {self.input.parent_ro.subset.id}"""
     
 
     def __init__(self, id: int = None,

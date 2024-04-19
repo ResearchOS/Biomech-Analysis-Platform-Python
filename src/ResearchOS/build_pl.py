@@ -51,6 +51,8 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
         target_obj = edge.input.parent_ro
         source_obj = edge.output.pr
         G.add_edge(source_obj, target_obj, edge=edge)
+        if edge.input.lookup_vr is not None:
+            G.add_edge(edge.input.lookup_pr, target_obj, edge=edge)
 
     # import matplotlib.pyplot as plt
 
@@ -85,7 +87,6 @@ def make_all_edges(ro: "ResearchObject"):
                 input_pr = input.pr
             else:
                 input_pr = [input.pr]
-            used_pr = False
             for pr in all_pr_objs:
                 for output in pr.outputs.values():                    
                     if output.vr is None:

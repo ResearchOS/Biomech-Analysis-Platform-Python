@@ -14,13 +14,11 @@ if TYPE_CHECKING:
     
 from ResearchOS.variable import Variable    
 from ResearchOS.research_object import ResearchObject
-from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.Bridges.input import Input
 from ResearchOS.var_converter import convert_var
-from ResearchOS.Bridges.vr_value import VRValue
 from ResearchOS.tomlhandler import TOMLHandler
 
 all_default_attrs = {}
@@ -48,7 +46,7 @@ class DataObject(ResearchObject):
     #     action.execute()
     #     del self.__dict__[name]
 
-    def get(self, input: Union["Variable", "Input"], action: Action = None, process: "Process" = None, node_lineage: list = None) -> Any:
+    def get(self, input: Union["Variable", "Input"], action: Action, process: "Process" = None, node_lineage: list = None) -> Any:
         """Load the value of a VR from the database for this data object.
 
         Args:
@@ -60,11 +58,15 @@ class DataObject(ResearchObject):
             Any: The value of the VR for this data object.
         """
         from ResearchOS.DataObjects.dataset import Dataset
-        from ResearchOS.Bridges import input_types as it        
+        from ResearchOS.Bridges import input_types as it
 
-        return_conn = False
+        if isinstance(input, Variable):
+            input = Input(vr=input, pr=process)
+
+        if process is None:
+            process = input.pr
+
         if action is None:
-            return_conn = True
             action = Action(name = "get_vr_value")
 
         if isinstance(input.put_value, it.HardCoded):
@@ -99,37 +101,28 @@ class DataObject(ResearchObject):
             raise ValueError("Input type not recognized.")
         
         # Handle lookup VR's.
-        if input.lookup_vr is not None:
-            tmp_input = copy.copy(input)
-            tmp_input.vr = input.lookup_vr
-            tmp_input.pr = input.lookup_pr
-            tmp_input.lookup_vr = None
-            tmp_input.lookup_pr = None
-            lookup_value = self.get(tmp_input, action, tmp_input.pr, node_lineage)
-            # Turn the lookup value into a DataObject.
-            sqlquery = f"""SELECT dataobject_id, path FROM paths WHERE path LIKE '%{lookup_value}"]';"""
-            cursor = action.conn.cursor()
-            result = cursor.execute(sqlquery).fetchall()
-            if len(result) == 0:
-                raise ValueError(f"The lookup value {lookup_value} does not exist in the database.")
-            node_id = result[0][0]
-            cls = [cls for cls in DataObject.__subclasses__() if cls.prefix == node_id[0:2]][0]
-            node = cls(id = node_id, action = action)
-            node_lineage = node.get_node_lineage(action = action)
-            self_idx = node_lineage.index(node)
+        if input.lookup_vr is not None:            
+            # vr_col_name = "lookup_vr_id"
+            # pr_col_name = "lookup_pr_id"
+            vr_col_name = "vr_id"
+            pr_col_name = "pr_id"
+            process = input.lookup_pr
+            vr = input.lookup_vr
         else:        
-            self_idx = node_lineage.index(self)
-
+            vr_col_name = "vr_id"
+            pr_col_name = "pr_id"
+            vr = input.vr
+        
+        self_idx = node_lineage.index(self)
         base_node = node_lineage[self_idx]
-        vr = input.vr
         cursor = action.conn.cursor()
         if not isinstance(process, list):
             process = [process]
         found_value = False
         for pr in process:
             for node in node_lineage[self_idx:]:
-                sqlquery_raw = "SELECT action_id_num, is_active FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id = ?"
-                sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id", "pr_id"], single = True, user = True, computer = False)
+                sqlquery_raw = f"SELECT action_id_num, is_active FROM data_values WHERE path_id = ? AND {vr_col_name} = ? AND {pr_col_name} = ?"
+                sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", vr_col_name, pr_col_name], single = True, user = True, computer = False)
                             
                 params = (node.id, vr.id, pr.id)            
                 result = cursor.execute(sqlquery, params).fetchall()
@@ -186,8 +179,6 @@ class DataObject(ResearchObject):
                     value = numeric_value
                 else: # Omitting criteria here allows for str_value and numeric_value to both be None.
                     value = str_value
-            if return_conn:
-                conn.return_connection(conn)
 
             found_value = True
             if value is not None:
