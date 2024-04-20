@@ -38,7 +38,7 @@ class Dynamic():
         self.vr = vr
         self.pr = pr  
 
-        if not vr and not pr:
+        if not vr and not pr and not id:
             self.id = None
             return # Empty Dynamic object
         
@@ -47,7 +47,7 @@ class Dynamic():
             action = Action(name = "Dynamic")
             return_conn = True
 
-        if vr is None or pr is None:
+        if (vr is None or pr is None) and id is None:
             raise ValueError("Dynamic VR must have specified a Variable and a Process or Logsheet source.")
         
         self.id = id
@@ -57,7 +57,7 @@ class Dynamic():
                 sqlquery_raw = "SELECT dynamic_vr_id, pr_id FROM dynamic_vrs WHERE vr_id = ?"
                 params = (vr.id,)
             else:
-                sqlquery_raw = "SELECT dynamic_vr_id FROM dynamic_vrs WHERE vr_id = ? AND pr_id IN {}".format("?,"*(len(pr)-1) + "?")
+                sqlquery_raw = "SELECT dynamic_vr_id FROM dynamic_vrs WHERE vr_id = ? AND pr_id = ?"
                 params = (vr.id, pr.id)
             sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single = False, user = True, computer = False)
             result = action.conn.cursor().execute(sqlquery, params).fetchone()
@@ -112,8 +112,8 @@ class DynamicMain():
     show: bool = False
     
     def __post_init__(self):
-        sqlquery_raw_select = f"SELECT io_id FROM inputs_outputs_dynamics WHERE dynamic_vr_id IN ({', '.join(['?' for _ in self.main_vr.pr])})"             
-        params = tuple([pr.id for pr in self.main_vr.pr])
+        sqlquery_raw_select = f"SELECT io_id FROM inputs_outputs_dynamics WHERE dynamic_vr_id = ?"             
+        params = (self.main_vr.pr,)
         self.params = params
         self.sqlquery_raw_select = sqlquery_raw_select
 

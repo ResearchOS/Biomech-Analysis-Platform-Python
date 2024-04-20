@@ -27,27 +27,28 @@ class Output(Port):
                  vr_name_in_code: str = None,
                  **kwargs):
         """Initializes the Output object. "vr" and "pr" together make up the main source of the output."""
-        from ResearchOS.variable import Variable
-        from ResearchOS.PipelineObjects.process import Process
-        from ResearchOS.PipelineObjects.logsheet import Logsheet
 
         if hasattr(self, "id"):
             return
         
         if id is not None:
             # Run the SQL query to load the values.
-            sqlquery_raw = "SELECT id, is_input, main_dynamic_vr_id, lookup_dynamic_vr_id, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
+            sqlquery_raw = "SELECT id, is_input, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=True, user = True, computer = False)
             params = (id,)
             result = action.conn.execute(sqlquery, params).fetchall()
             if not result:
                 raise ValueError(f"Port with id {id} not found in database.")
-            id, is_input, main_dynamic_vr_id, lookup_dynamic_vr_id, value, show, ro_id, vr_name_in_code = result[0]
+            id, is_input, value, show, ro_id, vr_name_in_code = result[0]
             value = json.loads(value)
-            if main_dynamic_vr_id is not None:
-                main_dynamic_vr = Dynamic(id=main_dynamic_vr_id, action=action)
-            vr = main_dynamic_vr.vr if main_dynamic_vr_id is not None else None
-            pr = main_dynamic_vr.pr if main_dynamic_vr_id is not None else None
+            sqlquery_raw = "SELECT dynamic_vr_id FROM inputs_outputs_to_dynamic_vrs WHERE io_id = ?"
+            sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=False, user = True, computer = False)
+            params = (id,)
+            result = action.conn.execute(sqlquery, params).fetchall()
+            if result:
+                main_dynamic_vr = Dynamic(id=result[0][0], action=action)            
+            vr = main_dynamic_vr.vr if result is not None else None
+            pr = main_dynamic_vr.pr if result is not None else None
 
         # Now same parameter values whether loading or creating new.
         if vr is None and pr is None:
