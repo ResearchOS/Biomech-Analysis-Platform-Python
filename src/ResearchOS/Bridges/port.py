@@ -84,7 +84,7 @@ class Port():
         if self.parent_ro is None or self.vr_name_in_code is None:
             return
 
-        dynamic_ids = self.put_value.main_vr.id if (hasattr(self.put_value, "main_vr") and self.put_value.main_vr is not None) else None
+        dynamic_id = self.put_value.main_vr.id if (hasattr(self.put_value, "main_vr") and self.put_value.main_vr is not None) else None
         value = self.value      
             
         # In the future this try-except should be more of a class or function. 
@@ -96,11 +96,9 @@ class Port():
             value = json.dumps(self.value)      
  
         # Dynamic VR.
-        if main_dynamic_id is not None:
-            main_dynamic_id_str = f"{main_dynamic_vr_id} = {', '.join(['?' for _ in dynamic_ids])}"
-            params.append(main_dynamic_id)
-            unique_list.append("main_dynamic_vr_id")
-            sqlquery_raw = f"SELECT io_id FROM inputs_outputs_dynamic WHERE is_active = 1 AND dynamic_vr_id IN {main_dynamic_id_str}"
+        if dynamic_id is not None:
+            params = (self.put_value.main_vr.pr.id,)
+            sqlquery_raw = f"SELECT io_id FROM inputs_outputs_to_dynamic_vrs WHERE is_active = 1 AND dynamic_vr_id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["io_id"], single=True, user = True, computer = False)            
         else: # Hard-coded value.
             sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE is_active = 1 AND value = ? AND vr_name_in_code = ? AND ro_id = ?"

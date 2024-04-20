@@ -51,22 +51,29 @@ class Input(Port):
 
         if id is not None:
             # Run the SQL query to load the values.
-            sqlquery_raw = "SELECT id, is_input, main_dynamic_vr_id, lookup_dynamic_vr_id, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
+            sqlquery_raw = "SELECT id, is_input, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=True, user = True, computer = False)
             params = (id,)
             result = action.conn.execute(sqlquery, params).fetchall()
             if not result:
                 raise ValueError(f"Port with id {id} not found in database.")
-            id, is_input, main_dynamic_vr_id, lookup_dynamic_vr_id, value, show, ro_id, vr_name_in_code = result[0]
+            id, is_input, value, show, ro_id, vr_name_in_code = result[0]
             value = json.loads(value)
-            if main_dynamic_vr_id is not None:
-                main_dynamic_vr = Dynamic(id=main_dynamic_vr_id, action=action)
-            vr = main_dynamic_vr.vr if main_dynamic_vr_id is not None else None
-            pr = main_dynamic_vr.pr if main_dynamic_vr_id is not None else None
-            if lookup_dynamic_vr_id is not None:
-                lookup_dynamic_vr = Dynamic(id=lookup_dynamic_vr_id, action=action)
-            lookup_vr = lookup_dynamic_vr.vr if lookup_dynamic_vr_id is not None else None
-            lookup_pr = lookup_dynamic_vr.pr if lookup_dynamic_vr_id is not None else None
+            sqlquery_raw = "SELECT dynamic_vr_id FROM inputs_outputs_to_dynamic_vrs WHERE io_id = ?"
+            sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=False, user = True, computer = False)
+            params = (id,)
+            result = action.conn.execute(sqlquery, params).fetchall()
+            if result:
+                dynamic_vr_ids = [row[0] for row in result]
+                dynamics = [Dynamic(id=dynamic_vr_id, action=action) for dynamic_vr_id in dynamic_vr_ids]
+            vr = dynamics.vr if result is not None else None
+            pr = [d.pr for d in dynamics] if result is not None else None
+            if len(pr)==1:
+                pr = pr[0]
+            # if lookup_dynamic_vr_id is not None:
+            #     lookup_dynamic_vr = Dynamic(id=lookup_dynamic_vr_id, action=action)
+            # lookup_vr = lookup_dynamic_vr.vr if lookup_dynamic_vr_id is not None else None
+            # lookup_pr = lookup_dynamic_vr.pr if lookup_dynamic_vr_id is not None else None
             is_input = bool(is_input)
             show = bool(show)
             parent_ro = Process(id = ro_id, action = action) if ro_id.startswith("PR") else Logsheet(id = ro_id, action = action)

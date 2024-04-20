@@ -154,7 +154,7 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values (
                         action_id_num INTEGER NOT NULL,
                         path_id INTEGER NOT NULL,
-                        dynamic_vr_id TEXT NOT NULL,
+                        dynamic_vr_id INTEGER NOT NULL,
                         data_blob_hash TEXT,
                         str_value TEXT,
                         numeric_value INTEGER,
@@ -237,8 +237,7 @@ class DBInitializer():
                         is_active INTEGER NOT NULL DEFAULT 1,    
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (io_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
-                        FOREIGN KEY (dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id_num, io_id, dynamic_vr_id)
+                        FOREIGN KEY (dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE
                         )""")
         
         # run_history table. Lists all actions that occurred during runs.
