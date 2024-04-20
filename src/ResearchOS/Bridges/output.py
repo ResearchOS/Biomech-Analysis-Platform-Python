@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 from ResearchOS.Bridges.port import Port
 import ResearchOS.Bridges.input_types as it
 from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.Bridges.input_types import Dynamic
 
 class Output(Port):
     """Output port to connect between DiGraphs."""
@@ -35,32 +36,22 @@ class Output(Port):
         
         if id is not None:
             # Run the SQL query to load the values.
-            sqlquery_raw = "SELECT id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
+            sqlquery_raw = "SELECT id, is_input, main_dynamic_vr_id, lookup_dynamic_vr_id, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=True, user = True, computer = False)
             params = (id,)
             result = action.conn.execute(sqlquery, params).fetchall()
             if not result:
                 raise ValueError(f"Port with id {id} not found in database.")
-            id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show, ro_id, vr_name_in_code = result[0]
-            if not pr_id:
-                pr_id = json.dumps([])
+            id, is_input, main_dynamic_vr_id, lookup_dynamic_vr_id, value, show, ro_id, vr_name_in_code = result[0]
             value = json.loads(value)
-            vr = Variable(id=vr_id, action=action) if vr_id is not None else None
-            pr = []
-            for p in json.loads(pr_id):
-                if p is None:
-                    pr.append(None)
-                else:
-                    if p.startswith("PR"):
-                        pr.append(Process(id=p, action=action))
-                    elif p.startswith("LG"):
-                        pr.append(Logsheet(id=p, action=action))
-            if len(pr)==1:
-                pr = pr[0]
+            if main_dynamic_vr_id is not None:
+                main_dynamic_vr = Dynamic(id=main_dynamic_vr_id, action=action)
+            vr = main_dynamic_vr.vr if main_dynamic_vr_id is not None else None
+            pr = main_dynamic_vr.pr if main_dynamic_vr_id is not None else None
 
         # Now same parameter values whether loading or creating new.
         if vr is None and pr is None:
-            output = it.NoneVR(show = True)
+            output = it.NoneVR()
         else:
             output = it.DynamicMain(it.Dynamic(vr=vr, pr=pr, action=action), show=show)
         

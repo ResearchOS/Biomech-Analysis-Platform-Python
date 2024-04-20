@@ -57,7 +57,7 @@ class Dynamic():
                 sqlquery_raw = "SELECT dynamic_vr_id, pr_id FROM dynamic_vrs WHERE vr_id = ?"
                 params = (vr.id,)
             else:
-                sqlquery_raw = "SELECT dynamic_vr_id FROM dynamic_vrs WHERE vr_id = ? AND pr_id = ?"
+                sqlquery_raw = "SELECT dynamic_vr_id FROM dynamic_vrs WHERE vr_id = ? AND pr_id IN {}".format("?,"*(len(pr)-1) + "?")
                 params = (vr.id, pr.id)
             sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single = False, user = True, computer = False)
             result = action.conn.cursor().execute(sqlquery, params).fetchone()
@@ -102,7 +102,7 @@ class NoneVR():
     show = True
 
     def __post_init__(self):
-        self.sqlquery_raw_select = "SELECT id FROM inputs_outputs WHERE main_dynamic_vr_id IS NULL AND value IS NULL"
+        self.sqlquery_raw_select = "SELECT id FROM inputs_outputs WHERE value IS NULL"
         self.params = ()
 
 @dataclass
@@ -112,22 +112,8 @@ class DynamicMain():
     show: bool = False
     
     def __post_init__(self):
-        pr_id = None
-        lookup_pr_id = None
-        if self.main_vr.pr:
-            if isinstance(self.main_vr.pr, list):
-                pr_id = [pr.id for pr in self.main_vr.pr]
-            else:
-                pr_id = self.main_vr.pr.id
-        if self.lookup_vr and self.lookup_vr.pr:
-            lookup_pr_id = self.lookup_vr.pr.id
-
-        if lookup_pr_id:
-            sqlquery_raw_select = f"SELECT id FROM inputs_outputs WHERE main_dynamic_vr_id = ? AND lookup_dynamic_vr_id = ?"
-            params = (self.main_vr.id, self.lookup_vr.id)
-        else:
-            sqlquery_raw_select = f"SELECT id FROM inputs_outputs WHERE main_dynamic_vr_id = ?"               
-            params = (self.main_vr.id,)
+        sqlquery_raw_select = f"SELECT io_id FROM inputs_outputs_dynamics WHERE dynamic_vr_id IN ({', '.join(['?' for _ in self.main_vr.pr])})"             
+        params = tuple([pr.id for pr in self.main_vr.pr])
         self.params = params
         self.sqlquery_raw_select = sqlquery_raw_select
 

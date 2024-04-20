@@ -22,7 +22,8 @@ class Edge():
         return instance
 
     def __str__(self):
-        return f"""{self.output.parent_ro.id}: {self.output.vr_name_in_code} -> {self.input.parent_ro.id}: {self.input.vr_name_in_code} Subset: {self.input.parent_ro.subset.id}"""
+        subset_id = self.input.parent_ro.subset.id if self.input.parent_ro.subset is not None else None
+        return f"""{self.output.parent_ro.id}: {self.output.vr_name_in_code} -> {self.input.parent_ro.id}: {self.input.vr_name_in_code} Subset: {subset_id}"""
     
 
     def __init__(self, id: int = None,
