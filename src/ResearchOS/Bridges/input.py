@@ -100,7 +100,7 @@ class Input(Port):
             if lookup_pr is not None and not isinstance(lookup_pr, list):
                 lookup_pr = [lookup_pr]
             dynamics = [it.Dynamic(vr=vr, pr=pr, action=action) for pr in pr]
-            lookups = [it.Dynamic(vr=lookup_vr, pr=lookup_pr, action=action) for lookup_pr in lookup_pr]
+            lookups = [it.Dynamic(vr=lookup_vr, pr=lookup_pr, action=action) for lookup_pr in lookup_pr] if lookup_vr is not None else []
             all_dynamics = dynamics + lookups
             input = it.DynamicMain(all_dynamics, None, show=show)
         else:

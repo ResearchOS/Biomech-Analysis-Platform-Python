@@ -102,13 +102,14 @@ class Process(PipelineObject):
     def load_inputs(self, action: Action) -> dict:
         """Load the input variables."""
         from ResearchOS.Bridges.input import Input
-        sqlquery_raw = "SELECT id, main_dynamic_vr_id, lookup_dynamic_vr_id, value, ro_id, vr_name_in_code, show FROM inputs_outputs WHERE is_input = 1 AND ro_id = ?"
+        sqlquery_raw = "SELECT id, value, ro_id, vr_name_in_code, show FROM inputs_outputs WHERE is_input = 1 AND ro_id = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, ["id", "ro_id"], single = True, user = True, computer = False)
         params = (self.id,)
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        input_ids = [row[0] for row in result] if result else []
         inputs = {}
-        for row in result:
-            input = Input(id=row[0], action=action)            
+        for input_id in input_ids:
+            input = Input(id=input_id, action=action)            
             inputs[input.vr_name_in_code] = input
         return inputs
 

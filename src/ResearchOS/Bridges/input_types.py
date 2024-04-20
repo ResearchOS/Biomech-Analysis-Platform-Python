@@ -112,8 +112,9 @@ class DynamicMain():
     show: bool = False
     
     def __post_init__(self):
-        sqlquery_raw_select = f"SELECT io_id FROM inputs_outputs_dynamics WHERE dynamic_vr_id = ?"             
-        params = (self.main_vr.pr,)
+        lookup_pr_ids = tuple([_.id for _ in self.lookup_vr]) if self.lookup_vr else tuple()
+        params = tuple([_.id for _ in self.main_vr]) + lookup_pr_ids
+        sqlquery_raw_select = f"SELECT io_id FROM inputs_outputs_dynamics WHERE dynamic_vr_id IN ({','.join(['?']*len(params))})"                     
         self.params = params
         self.sqlquery_raw_select = sqlquery_raw_select
 

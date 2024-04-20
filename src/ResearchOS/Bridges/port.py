@@ -55,11 +55,11 @@ class Port():
             self.value = {put.cls: put.attr}
             self.show = True
         elif put.__class__ == it.DynamicMain:
-            self.vr = put.main_vr.vr
-            self.pr = put.main_vr.pr
+            self.vr = put.main_vr[0].vr
+            self.pr = [pr for pr in put.main_vr]
             if put.lookup_vr and put.lookup_vr.vr is not None:
-                self.lookup_vr = put.lookup_vr.vr
-                self.lookup_pr = put.lookup_vr.pr
+                self.lookup_vr = put.lookup_vr[0].vr
+                self.lookup_pr = [pr for pr in put.lookup_vr]
             self.show = put.show
         elif put.__class__ == it.NoneVR:
             self.show = True
@@ -101,7 +101,7 @@ class Port():
             sqlquery_raw = f"SELECT io_id FROM inputs_outputs_to_dynamic_vrs WHERE is_active = 1 AND dynamic_vr_id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["io_id"], single=True, user = True, computer = False)            
         else: # Hard-coded value.
-            sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE is_active = 1 AND value = ? AND vr_name_in_code = ? AND ro_id = ?"
+            sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE value = ? AND vr_name_in_code = ? AND ro_id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["value", "vr_name_in_code", "ro_id"], single=True, user = True, computer = False)
             params = (value, self.vr_name_in_code, self.parent_ro.id)
             
