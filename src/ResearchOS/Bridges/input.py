@@ -66,14 +66,16 @@ class Input(Port):
             if result:
                 dynamic_vr_ids = [row[0] for row in result]
                 dynamics = [Dynamic(id=dynamic_vr_id, action=action) for dynamic_vr_id in dynamic_vr_ids]
-            vr = dynamics.vr if result is not None else None
-            pr = [d.pr for d in dynamics] if result is not None else None
-            if len(pr)==1:
+            vr = [d.vr for d in dynamics if not bool(d.is_lookup)] if result else None
+            if vr is not None and len(vr)==1:
+                vr = vr[0]
+            pr = [d.pr for d in dynamics if not bool(d.is_lookup)] if result else None
+            if pr is not None and len(pr)==1:
                 pr = pr[0]
-            # if lookup_dynamic_vr_id is not None:
-            #     lookup_dynamic_vr = Dynamic(id=lookup_dynamic_vr_id, action=action)
-            # lookup_vr = lookup_dynamic_vr.vr if lookup_dynamic_vr_id is not None else None
-            # lookup_pr = lookup_dynamic_vr.pr if lookup_dynamic_vr_id is not None else None
+            lookup_vr = [d.vr for d in dynamics if bool(d.is_lookup)] if result else None
+            if lookup_vr is not None and len(lookup_vr)==1:
+                lookup_vr = lookup_vr[0]
+            lookup_pr = [d.pr for d in dynamics if not bool(d.is_lookup)] if result else None
             is_input = bool(is_input)
             show = bool(show)
             parent_ro = Process(id = ro_id, action = action) if ro_id.startswith("PR") else Logsheet(id = ro_id, action = action)
@@ -99,10 +101,9 @@ class Input(Port):
                 pr = [pr]
             if lookup_pr is not None and not isinstance(lookup_pr, list):
                 lookup_pr = [lookup_pr]
-            dynamics = [it.Dynamic(vr=vr, pr=pr, action=action) for pr in pr]
-            lookups = [it.Dynamic(vr=lookup_vr, pr=lookup_pr, action=action) for lookup_pr in lookup_pr] if lookup_vr is not None else []
-            all_dynamics = dynamics + lookups
-            input = it.DynamicMain(all_dynamics, None, show=show)
+            dynamics = [it.Dynamic(vr=vr, pr=pr, action=action) for pr in pr] if pr else None
+            lookups = [it.Dynamic(vr=lookup_vr, pr=lookup_pr, action=action) for lookup_pr in lookup_pr] if lookup_vr is not None else None
+            input = it.DynamicMain(dynamics, lookups, show=show)
         else:
             input = it.NoneVR()
 

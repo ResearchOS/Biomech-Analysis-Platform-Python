@@ -43,7 +43,7 @@ class Edge():
             action = Action(name = "create_edge")
         
         if id is not None:
-            sqlquery_raw = "SELECT edge_id, input_id, output_id FROM pipelineobjects_graph WHERE edge_id = ?"
+            sqlquery_raw = "SELECT edge_id, source_let_put_id, target_let_put_id FROM pipelineobjects_graph WHERE edge_id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["edge_id"], single=True, user = True, computer = False)
             params = (id,)
             result = action.conn.execute(sqlquery, params).fetchall()
@@ -70,7 +70,7 @@ class Edge():
         if self.id is not None:
             return # Already loaded.
 
-        sqlquery_raw = "SELECT edge_id FROM pipelineobjects_graph WHERE input_id = ? AND output_id = ?"
+        sqlquery_raw = "SELECT edge_id FROM pipelineobjects_graph WHERE source_let_put_id = ? AND target_let_put_id = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, ["edge_id"], single=True, user = True, computer = False)
         params = (self.input_id, self.output_id)
         result = action.conn.execute(sqlquery, params).fetchall()

@@ -46,7 +46,7 @@ class VRHandler():
             if hasattr(parent_ro, "import_file_vr_name") and key==parent_ro.import_file_vr_name:
                 input.put_value = ImportFile(import_value_default)
 
-            if isinstance(input.put_value, DynamicMain) and input.put_value.lookup_vr.vr is not None and input.put_value.lookup_vr.pr is None:
+            if isinstance(input.put_value, DynamicMain) and input.put_value.lookup_vr is not None and input.put_value.lookup_vr.vr is not None and input.put_value.lookup_vr.pr is None:
                 input.put_value.lookup_vr.pr = Input.set_source_pr(parent_ro, input.put_value.lookup_vr.vr)    
                 input.lookup_pr = input.put_value.lookup_vr.pr   
 

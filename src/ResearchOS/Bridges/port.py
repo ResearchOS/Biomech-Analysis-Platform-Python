@@ -55,11 +55,15 @@ class Port():
             self.value = {put.cls: put.attr}
             self.show = True
         elif put.__class__ == it.DynamicMain:
-            self.vr = put.main_vr[0].vr
-            self.pr = [pr for pr in put.main_vr]
+            self.vr = [vr.vr for vr in put.main_vr]
+            if len(self.vr) == 1:
+                self.vr = self.vr[0]
+            self.pr = [pr.pr for pr in put.main_vr]
             if put.lookup_vr and put.lookup_vr.vr is not None:
-                self.lookup_vr = put.lookup_vr[0].vr
-                self.lookup_pr = [pr for pr in put.lookup_vr]
+                self.lookup_vr = [vr.vr for vr in put.lookup_vr]
+                if len(self.lookup_vr) == 1:
+                    self.lookup_vr = self.lookup_vr[0]
+                self.lookup_pr = [pr.pr for pr in put.lookup_vr]
             self.show = put.show
         elif put.__class__ == it.NoneVR:
             self.show = True
@@ -84,7 +88,7 @@ class Port():
         if self.parent_ro is None or self.vr_name_in_code is None:
             return
 
-        dynamic_id = self.put_value.main_vr.id if (hasattr(self.put_value, "main_vr") and self.put_value.main_vr is not None) else None
+        dynamic_id = [_.id for _ in self.put_value.main_vr] if (hasattr(self.put_value, "main_vr") and self.put_value.main_vr is not None) else None
         value = self.value      
             
         # In the future this try-except should be more of a class or function. 
@@ -97,8 +101,8 @@ class Port():
  
         # Dynamic VR.
         if dynamic_id is not None:
-            params = (self.put_value.main_vr.pr.id,)
-            sqlquery_raw = f"SELECT io_id FROM inputs_outputs_to_dynamic_vrs WHERE is_active = 1 AND dynamic_vr_id = ?"
+            params = tuple([_.id for _ in self.put_value.main_vr])
+            sqlquery_raw = f"SELECT io_id FROM inputs_outputs_to_dynamic_vrs WHERE is_active = 1 AND dynamic_vr_id IN ({','.join(['?']*len(params))})"
             sqlquery = sql_order_result(action, sqlquery_raw, ["io_id"], single=True, user = True, computer = False)            
         else: # Hard-coded value.
             sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE value = ? AND vr_name_in_code = ? AND ro_id = ?"
@@ -108,12 +112,17 @@ class Port():
         result = action.conn.execute(sqlquery, params).fetchall()
       
         if result:            
-            self.id = result[0][0]
+            self.id = result[0][0]        
         if self.id is None:
             idcreator = IDCreator(action.conn)
             self.id = idcreator.create_generic_id("inputs_outputs", "id")
             params = (self.id, self.is_input, action.id_num, value, int(self.show), self.parent_ro.id, self.vr_name_in_code)                
             action.add_sql_query(None, "inputs_outputs_insert", params)
+        if dynamic_id is not None:
+            # Associate the dynamic VR with the input_output.
+            for idx, dynamic_vr in enumerate(self.put_value.main_vr):
+                params = (action.id_num, self.id, dynamic_vr.id, idx, 1)
+                action.add_sql_query(None, "inputs_outputs_to_dynamic_vrs_insert", params)
 
         Port.instances[self.id] = self
 
