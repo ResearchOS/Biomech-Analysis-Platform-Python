@@ -4,8 +4,8 @@ from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.action import Action
 from ResearchOS.idcreator import IDCreator
 from ResearchOS.Bridges.input_types import Dynamic
-# from ResearchOS.Bridges.input import Input
-# from ResearchOS.Bridges.output import Output
+from ResearchOS.Bridges.input import Input
+from ResearchOS.Bridges.output import Output
 
 class Edge():
 
@@ -23,17 +23,17 @@ class Edge():
         return instance
 
     def __str__(self):
-        subset_id = self.input.parent_ro.subset.id if self.input.parent_ro.subset is not None else None
-        return f"""{self.output.parent_ro.id}: {self.output.vr_name_in_code} -> {self.input.parent_ro.id}: {self.input.vr_name_in_code} Subset: {subset_id}"""
+        subset_id = self.input_dynamic.parent_ro.subset.id if self.input_dynamic.parent_ro.subset is not None else None
+        return f"""{self.output_dynamic.parent_ro.id}: {self.output_dynamic.vr_name_in_code} -> {self.input_dynamic.parent_ro.id}: {self.input_dynamic.vr_name_in_code} Subset: {subset_id}"""
     
 
     def __init__(self, id: int = None,
-                 action: Action = None, 
-                 print_edge: bool = False,
-                 input_id: int = None,
-                 output_id: int = None,
-                 input: Dynamic = None,
-                 output: Dynamic = None):
+                 action: Action = None,                  
+                 input_dynamic: Dynamic = None,
+                 output_dynamic: Dynamic = None,
+                 inlet: Input = None,
+                 outlet: Output = None,
+                 print_edge: bool = False):
         
         if hasattr(self, "id"):
             return # Already initialized, loaded from Edge.instances
@@ -50,33 +50,43 @@ class Edge():
             result = action.conn.execute(sqlquery, params).fetchall()
             if not result:
                 raise ValueError(f"Edge with id {id} not found in database.")
-            input = Dynamic(id = result[0][1], action = action)
-            output = Dynamic(id = result[0][2], action = action)
+            source_put_let_id, target_put_let_id = result[0][1], result[0][2]
+            sqlquery_raw = "SELECT io_id, dynamic_vr_id, order_num, is_lookup FROM inputs_outputs_to_dynamic_vrs WHERE io_dynamic_id IN (?, ?)"
+            sqlquery = sql_order_result(action, sqlquery_raw, [], single=False, user = True, computer = False)
+            params = (source_put_let_id, target_put_let_id)
+            result = action.conn.execute(sqlquery, params).fetchall()
+            if not result:
+                raise ValueError(f"Edge with id {id} not found in database.")
+            # input_output_ids = [row[0] for row in result]
+            dynamic_vr_ids = [row[1] for row in result]
+            dynamic_vrs = [Dynamic(id=id, action=action) for id in dynamic_vr_ids]            
+            
+            inlet = [i for i in inlets_outlets if i.is_input][0]
+            outlet = [i for i in inlets_outlets if not i.is_input][0]
+            input_dynamic = dynamic_vrs[0] if inlet.is_input else dynamic_vrs[1]
+            output_dynamic = dynamic_vrs[0] if outlet.is_input else dynamic_vrs[1]
 
-        if input.pr != output.pr:
-            raise ValueError("Input and output must have the same Process (or Logsheet).")
+        if input_dynamic.pr != output_dynamic.pr:
+            raise ValueError("Input and output_dynamic must have the same Process (or Logsheet).")
         
-        if input.vr != output.vr:
-            raise ValueError("Input and output must have the same Variable.")
+        if input_dynamic.vr != output_dynamic.vr:
+            raise ValueError("Input and output_dynamic must have the same Variable.")
                     
         self.id = id        
 
-        if input is not None:
-            self.input = input
-            self.source_let_put_id = input.id
-        else:
-            self.input = Dynamic(id = input_id, action = action)
-            self.source_let_put_id = input_id
-        if output is not None:
-            self.output = output
-            self.target_let_put_id = output.id
-        else:
-            self.output = Dynamic(id = output_id, action = action)
-            self.target_let_put_id = output_id
+        if input_dynamic is not None:
+            self.input_dynamic = input_dynamic
+            self.inlet = inlet
+            self.source_let_put_id = input_dynamic.id
+        if output_dynamic is not None:
+            self.output_dynamic = output_dynamic
+            self.outlet = outlet
+            self.target_let_put_id = output_dynamic.id
 
-        self.source_pr = self.output.pr
-        self.target_pr = self.input.pr
-        self.vr = self.input.vr
+        self.source_pr = self.output_dynamic.pr
+        self.target_pr = self.input_dynamic.pr
+        self.vr = self.input_dynamic.vr
+        self.is_lookup = self.input_dynamic.lookup_pr is not None
 
         if self.id is not None:
             return # Already loaded.        

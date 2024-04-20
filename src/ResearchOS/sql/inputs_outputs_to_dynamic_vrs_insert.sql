@@ -1,1 +1,1 @@
-INSERT INTO inputs_outputs_to_dynamic_vrs (action_id_num, io_id, dynamic_vr_id, order_num, is_active) VALUES (?, ?, ?, ?, ?)
+INSERT INTO inputs_outputs_to_dynamic_vrs (action_id_num, io_id, dynamic_vr_id, order_num, is_lookup) VALUES (?, ?, ?, ?, ?)
