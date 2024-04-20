@@ -97,8 +97,8 @@ class Port():
             if not isinstance(pr, list):
                 pr = [pr]
             pr_id = json.dumps([p.id for p in pr])
-        main_dynamic_id = self.put_value.main_vr.id if self.put_value.main_vr is not None else None
-        lookup_dynamic_id = self.put_value.lookup_vr.id if self.put_value.lookup_vr is not None else None
+        main_dynamic_id = self.put_value.main_vr.id if (hasattr(self.put_value, "main_vr") and self.put_value.main_vr is not None) else None
+        lookup_dynamic_id = self.put_value.lookup_vr.id if (hasattr(self.put_value, "lookup_vr") and self.put_value.lookup_vr is not None) else None
         value = self.value      
             
         # In the future this try-except should be more of a class or function. 

@@ -14,6 +14,7 @@ from ResearchOS.Bridges.port import Port
 from ResearchOS.sql.sql_runner import sql_order_result
 import ResearchOS.Bridges.input_types as it
 from ResearchOS.action import Action
+from ResearchOS.Bridges.input_types import Dynamic
 
 class Input(Port):
     """Input port to connect between DiGraphs."""
@@ -50,32 +51,24 @@ class Input(Port):
 
         if id is not None:
             # Run the SQL query to load the values.
-            sqlquery_raw = "SELECT id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
+            sqlquery_raw = "SELECT id, is_input, main_dynamic_vr_id, lookup_dynamic_vr_id, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=True, user = True, computer = False)
             params = (id,)
             result = action.conn.execute(sqlquery, params).fetchall()
             if not result:
                 raise ValueError(f"Port with id {id} not found in database.")
-            id, is_input, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, show, ro_id, vr_name_in_code = result[0]
-            if not pr_id:
+            id, is_input, main_dynamic_vr_id, lookup_dynamic_vr_id, value, show, ro_id, vr_name_in_code = result[0]
+            if not main_dynamic_vr_id:
                 pr_id = json.dumps([])
             value = json.loads(value)
-            vr = Variable(id=vr_id, action=action) if vr_id is not None else None
-            pr = []
-            for p in json.loads(pr_id):
-                if p is None:
-                    pr = None
-                    break
-                if p.startswith("PR"):
-                    pr.append(Process(id=p, action=action))
-                elif p.startswith("LG"):
-                    pr.append(Logsheet(id=p, action=action))
-            if len(pr)==1:
-                pr = pr[0]
-            elif len(pr)==0:
-                pr = None
-            lookup_vr = Variable(id=lookup_vr_id, action=action) if lookup_vr_id is not None else None
-            lookup_pr = Process(id=lookup_pr_id, action=action) if lookup_pr_id is not None else None
+            if main_dynamic_vr_id is not None:
+                main_dynamic_vr = Dynamic(id=main_dynamic_vr_id, action=action)
+            vr = main_dynamic_vr.vr if main_dynamic_vr_id is not None else None
+            pr = main_dynamic_vr.pr if main_dynamic_vr_id is not None else None
+            if lookup_dynamic_vr_id is not None:
+                lookup_dynamic_vr = Dynamic(id=lookup_dynamic_vr_id, action=action)
+            lookup_vr = lookup_dynamic_vr.vr if lookup_dynamic_vr_id is not None else None
+            lookup_pr = lookup_dynamic_vr.pr if lookup_dynamic_vr_id is not None else None
             is_input = bool(is_input)
             show = bool(show)
             parent_ro = Process(id = ro_id, action = action) if ro_id.startswith("PR") else Logsheet(id = ro_id, action = action)
@@ -91,7 +84,7 @@ class Input(Port):
             import_value_default = "import_file_vr_name"   
             input = it.ImportFile(import_value_default)
         elif vr is not None and vr.hard_coded_value is not None:
-            input = it.HardCodedVR(vr=vr, value=vr.hard_coded_value)
+            input = it.HardCoded(value=vr.hard_coded_value)
         elif value is not None:
             # 2. hard-coded value.
             input = it.HardCoded(value)        
@@ -109,7 +102,7 @@ class Input(Port):
         self.return_conn = return_conn
         super().__init__()
 
-    def set_source_pr(parent_ro: "ResearchObject", vr: "Variable"):
+    def set_source_pr(parent_ro: "ResearchObject", vr: "Variable", vr_name_in_code: str = None) -> "source_type":
         """Set the source process or logsheet."""
         from ResearchOS.research_object_handler import ResearchObjectHandler
         from ResearchOS.PipelineObjects.process import Process
@@ -141,6 +134,9 @@ class Input(Port):
                     if h[3] == vr:
                         final_pr = lg
                         break
+
+        if not final_pr and hasattr(parent_ro, "import_file_vr_name") and vr_name_in_code==parent_ro.import_file_vr_name:
+            final_pr = parent_ro
 
         if not final_pr:
             raise ValueError(f"Could not find the source PR for VR {vr}. If this is an import_file_vr, then put that attribute before the 'set_inputs' command.")

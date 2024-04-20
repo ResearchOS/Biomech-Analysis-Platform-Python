@@ -29,9 +29,9 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.plot import Plot
     from ResearchOS.PipelineObjects.stats import Stats
-    # from src.research_objects import processes
+    from src.research_objects import processes
     if import_objs: 
-        import_objects_of_type(Process)
+        # import_objects_of_type(Process)
         import_objects_of_type(Plot)
         # import_objects_of_type(Stats)
 
