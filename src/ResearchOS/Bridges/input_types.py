@@ -1,11 +1,96 @@
 from typing import Union, TYPE_CHECKING, Any
+import weakref
 
 if TYPE_CHECKING:
-    from ResearchOS.variable import Variable
-    from ResearchOS.PipelineObjects.process import Process
-    from ResearchOS.PipelineObjects.logsheet import Logsheet
+    pass
+
+from ResearchOS.variable import Variable
+from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.action import Action
+from ResearchOS.idcreator import IDCreator
 
 from dataclasses import dataclass
+
+class Dynamic():
+
+    instances = weakref.WeakValueDictionary()
+
+    def __new__(cls, *args, **kwargs):
+        id = None
+        if "id" in kwargs.keys():
+            id = kwargs["id"]                    
+        if id in Dynamic.instances.keys():
+            return Dynamic.instances[id]
+        instance = super().__new__(cls)
+        if id is not None:
+            Dynamic.instances[id] = instance
+        return instance
+    
+    def __init__(self, 
+                 id: str = None,
+                 vr: "Variable" = None, 
+                 pr: Union["Process", "Logsheet"] = None,
+                 action: Action = None):
+        from ResearchOS.PipelineObjects.process import Process
+        from ResearchOS.PipelineObjects.logsheet import Logsheet              
+        if hasattr(self, "id"):
+            # if not self.vr:
+            #     self.vr = Variable(id=vr.id, action=action)
+            # if not self.pr:
+            #     if result[2].startswith("PR"):
+            #         self.pr = Process(id=result[2], action=action)
+            #     elif result[2].startswith("LG"):
+            #         self.pr = Logsheet(id=result[2], action=action)
+            return # Loaded already
+        self.vr = vr
+        self.pr = pr  
+        
+        return_conn = False
+        if action is None:
+            action = Action(name = "Dynamic")
+            return_conn = True
+
+        if vr is not None and pr is None:
+            raise ValueError("Dynamic VR must have a process or logsheet source.")
+        
+        self.id = id
+        if id is None:
+            # Load from the database
+            sqlquery_raw = "SELECT dynamic_vr_id FROM dynamic_vrs WHERE vr_id = ? AND pr_id = ?"
+            params = (vr.id, pr.id)
+            sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single = False, user = True, computer = False)
+            result = action.conn.cursor().execute(sqlquery, params).fetchone()
+            if result:
+                self.id = result[0]
+            else:
+                idcreator = IDCreator(action.conn)
+                id = idcreator.create_generic_id("dynamic_vrs", "dynamic_vr_id")
+                self.id = id
+                params = (id, action.id_num, self.vr.id, self.pr.id)
+                action.add_sql_query("None", "dynamic_vrs_insert", params)
+        else:
+            # Check if the ID previously existed.
+            sqlquery = "SELECT dynamic_vr_id, vr_id, pr_id FROM dynamic_vrs WHERE dynamic_vr_id = ?"
+            params = (id,)
+            result = action.conn.cursor().execute(sqlquery, params).fetchone()
+            if not result and (not vr or not pr):
+                raise ValueError(f"Dynamic VR with id {id} not found in database.")
+            self.id = id            
+            if not self.vr:
+                self.vr = Variable(id=result[1], action=action)
+            if not self.pr:
+                if result[2].startswith("PR"):
+                    self.pr = Process(id=result[2], action=action)
+                elif result[2].startswith("LG"):
+                    self.pr = Logsheet(id=result[2], action=action)
+            if not result:
+                params = (id, action.id_num, self.vr.id, self.pr.id)
+                action.add_sql_query("None", "dynamic_vrs_insert", params)
+
+        if return_conn:
+            action.commit = True
+            action.execute()
+    
 
 @dataclass
 class NoneVR():
@@ -14,13 +99,8 @@ class NoneVR():
     show = True
 
     def __post_init__(self):
-        self.sqlquery_raw_select = "SELECT id FROM inputs_outputs WHERE vr_id IS NULL AND pr_id IS NULL AND value IS NULL"
+        self.sqlquery_raw_select = "SELECT id FROM inputs_outputs WHERE main_dynamic_vr_id IS NULL AND value IS NULL"
         self.params = ()
-
-@dataclass
-class Dynamic():
-    vr: "Variable" = None
-    pr: Union["Process", "Logsheet"] = None
 
 @dataclass
 class DynamicMain():    
@@ -40,11 +120,11 @@ class DynamicMain():
             lookup_pr_id = self.lookup_vr.pr.id
 
         if lookup_pr_id:
-            sqlquery_raw_select = f"SELECT id FROM inputs_outputs WHERE vr_id = ? AND pr_id = ? AND lookup_vr_id = ? AND lookup_pr_id = ?"
-            params = (self.main_vr.vr.id, pr_id, self.lookup_vr.vr.id, lookup_pr_id)
+            sqlquery_raw_select = f"SELECT id FROM inputs_outputs WHERE main_dynamic_vr_id = ? AND lookup_dynamic_vr_id = ?"
+            params = (self.main_vr.id, self.lookup_vr.id)
         else:
-            sqlquery_raw_select = f"SELECT id FROM inputs_outputs WHERE vr_id = ? AND pr_id = ?"               
-            params = (self.main_vr.vr.id, pr_id)
+            sqlquery_raw_select = f"SELECT id FROM inputs_outputs WHERE main_dynamic_vr_id = ?"               
+            params = (self.main_vr.id,)
         self.params = params
         self.sqlquery_raw_select = sqlquery_raw_select
 
@@ -57,14 +137,14 @@ class HardCoded():
         self.sqlquery_raw_select = "SELECT id FROM inputs_outputs WHERE value = ?"
         self.params = (self.value,)
 
-@dataclass
-class HardCodedVR():
-    vr: "Variable" = None
-    value: Any = None
+# @dataclass
+# class HardCodedVR():
+#     vr: "Variable" = None
+#     value: Any = None
 
-    def __post_init__(self):
-        self.sqlquery_raw_select = "SELECT id FROM inputs_outputs WHERE vr_id = ? AND value = ?"
-        self.params = (self.vr.id, self.value)
+#     def __post_init__(self):
+#         self.sqlquery_raw_select = "SELECT id FROM inputs_outputs WHERE vr_id = ? AND value = ?"
+#         self.params = (self.vr.id, self.value)
 
 @dataclass
 class ImportFile():

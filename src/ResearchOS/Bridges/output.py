@@ -62,7 +62,7 @@ class Output(Port):
         if vr is None and pr is None:
             output = it.NoneVR(show = True)
         else:
-            output = it.DynamicMain(it.Dynamic(vr=vr, pr=pr), show=show)
+            output = it.DynamicMain(it.Dynamic(vr=vr, pr=pr, action=action), show=show)
         
         self.put_value = output
         self.action = action

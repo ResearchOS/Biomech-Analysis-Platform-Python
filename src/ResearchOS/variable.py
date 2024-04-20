@@ -3,7 +3,6 @@ from typing import Any
 from ResearchOS.research_object import ResearchObject
 
 all_default_attrs = {}
-all_default_attrs["hard_coded_value"] = None
 
 computer_specific_attr_names = []
 
@@ -18,9 +17,8 @@ class Variable(ResearchObject):
         self.slice = slice
         return self
 
-    def __init__(self, hard_coded_value: Any = all_default_attrs["hard_coded_value"], 
+    def __init__(self, 
                 **kwargs):
         if self._initialized:
-            return        
-        self.hard_coded_value = hard_coded_value        
+            return      
         super().__init__(**kwargs)

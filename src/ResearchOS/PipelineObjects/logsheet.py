@@ -17,6 +17,7 @@ from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.DataObjects.data_object import load_data_object_classes
 from ResearchOS.validator import Validator
 from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.Bridges.input_types import Dynamic
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -118,6 +119,16 @@ class Logsheet(PipelineObject):
                 raise ValueError("Fourth element of each header tuple must be a valid pre-existing variable ID OR the variable object itself!")
             # if isinstance(header[3], str) and not (header[3].startswith(Variable.prefix) and ResearchObjectHandler.object_exists(header[3], action)):
             #     raise ValueError("Fourth element of each header tuple (if provided as a str) must be a valid pre-existing variable ID!")
+
+        # Check that there are no duplicate header names or VR ID's.
+        header_names = [header[0] for header in headers]
+        header_vrids = [header[3] for header in headers]
+        if len(header_names) != len(set(header_names)):
+            print("Redundant header names: ", [h for h in header_names if header_names.count(h) > 1])
+            raise ValueError("Header names must be unique!")
+        if len(header_vrids) != len(set(header_vrids)):
+            print("Redundant VR ID's: ", [h for h in header_vrids if header_vrids.count(h) > 1])
+            raise ValueError("VR ID's must be unique!") 
             
         logsheet = self._read_and_clean_logsheet(nrows = 1)
         headers_in_logsheet = logsheet[0]
@@ -400,14 +411,21 @@ class Logsheet(PipelineObject):
                 max_len = len(header)
 
         # Prep to omit the data objects that are unchanged                
-        sqlquery_raw = "SELECT path_id, vr_id, str_value, numeric_value, pr_id FROM data_values WHERE pr_id = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single=True, user=True, computer=True)
-        result = action.conn.cursor().execute(sqlquery, (self.id,)).fetchall()
+        sqlquery_raw = "SELECT path_id, dynamic_vr_id, str_value, numeric_value FROM data_values WHERE dynamic_vr_id IN ({})".format("?, "*(len(vr_obj_list)-1) + "?")
+        sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "dynamic_vr_id"], single=True, user=True, computer=True)
+        dynamic_vrs = [Dynamic(vr = vr, pr = self, action = action) for idx, vr in enumerate(vr_obj_list)]
+        action.exec = True
+        action.commit = True
+        action.execute(return_conn=False)
+        dynamic_vr_ids = [vr.id for vr in dynamic_vrs]
+        result = action.conn.cursor().execute(sqlquery, tuple(dynamic_vr_ids)).fetchall()
+
+        # All in the same order.
         path_ids = [row[0] for row in result]
-        vr_ids = [row[1] for row in result]
+        dynamic_vr_ids = [row[1] for row in result]
+        dynamic_vrs = [Dynamic(id=dynamic_vr_id, action = action) for dynamic_vr_id in dynamic_vr_ids]
         str_values = [row[2] for row in result]
-        numeric_values = [row[3] for row in result]
-        pr_ids = [row[4] for row in result]              
+        numeric_values = [row[3] for row in result]      
         
         # Assign the values to the DataObject instances.
         all_attrs = {}
@@ -417,6 +435,10 @@ class Logsheet(PipelineObject):
             level_dobjs = [dobj for dobj in all_dobjs_ordered if dobj.__class__ == level]
             type_class = column[1]
             vr = column[3]
+            if not dynamic_vrs:
+                dynamic_vr = Dynamic(vr = vr, pr = self, action = action)
+            else:
+                dynamic_vr = [dv for dv in dynamic_vrs if dv.vr == vr][0]
             # Get the index of the column that corresponds to the level of the DataObjects.
             for count, level_type_obj in enumerate(order):
                 if level_type_obj == level:
@@ -438,20 +460,21 @@ class Logsheet(PipelineObject):
                 # Store it to the all_attrs dict.
                 if dobj not in all_attrs:
                     all_attrs[dobj] = {}
-                all_attrs[dobj][vr] = value        
+                all_attrs[dobj][dynamic_vr] = value        
                     
+        print("Assigning Data Object values...")
         modified_dobjs = []        
         for dobj, attrs in all_attrs.items():
             # Create dict for the DataObject with previous values.
             if dobj.id in path_ids:
                 prev_attrs = {}
                 path_idx = [index for index, value in enumerate(path_ids) if value == dobj.id]
-                prev_attrs = {Variable(id = vr_ids[idx], action = action): str_values[idx] if str_values[idx] is not None else numeric_values[idx] for idx in path_idx if pr_ids[idx] == self.id}
+                prev_attrs = {dynamic_vrs[idx]: str_values[idx] if str_values[idx] is not None else numeric_values[idx] for idx in path_idx if dynamic_vrs[idx].pr.id == self.id}
                 # Remove the attributes that are the same as the previous attributes.
-                attrs = {vr: value for vr, value in attrs.items() if vr not in prev_attrs or prev_attrs[vr] != value}
+                attrs = {dynamic_vr: value for dynamic_vr, value in attrs.items() if dynamic_vr not in prev_attrs or prev_attrs[dynamic_vr] != value}
                 if len(attrs) > 0:
                     modified_dobjs.append(dobj)
-            dobj._set_vr_values(attrs, pr_id = self.id, action = action)         
+            dobj._set_vr_values(attrs, pr = self, action = action)         
 
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.
@@ -469,7 +492,7 @@ class Logsheet(PipelineObject):
         action.conn = conn
 
         # Set all the paths to the DataObjects.        
-        print("Saving Data Objects...")        
+        print("Saving Data Objects to dataset...")        
         for idx, row in enumerate(dobj_names):
             if row[1:] not in paths: # Exclude Dataset object.
                 action.add_sql_query(all_dobjs_ordered[idx].id, "path_insert", (action.id_num, all_dobjs_ordered[idx].id, json.dumps(row[1:])))

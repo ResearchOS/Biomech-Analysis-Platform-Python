@@ -154,8 +154,7 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values (
                         action_id_num INTEGER NOT NULL,
                         path_id INTEGER NOT NULL,
-                        vr_id TEXT NOT NULL,
-                        pr_id TEXT NOT NULL,
+                        dynamic_vr_id TEXT NOT NULL,
                         data_blob_hash TEXT,
                         str_value TEXT,
                         numeric_value INTEGER,
@@ -167,9 +166,8 @@ class DBInitializer():
                         FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,                        
-                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id_num, path_id, vr_id, pr_id, data_blob_hash, str_value, numeric_value)
+                        FOREIGN KEY (dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id_num, path_id, dynamic_vr_id, data_blob_hash, str_value, numeric_value)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.
@@ -180,24 +178,6 @@ class DBInitializer():
                         FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,                        
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
-                        )""")
-        
-        # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
-
-        # source_object_id TEXT NOT NULL,
-        # target_object_id TEXT NOT NULL,    
-        # source_vr_name_in_code TEXT NOT NULL,                    
-        # target_vr_name_in_code TEXT NOT NULL,
-        cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
-                        edge_id INTEGER NOT NULL,
-                        action_id_num INTEGER NOT NULL,
-                        input_id INTEGER NOT NULL,
-                        output_id INTEGER NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,                        
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (input_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
-                        FOREIGN KEY (output_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id_num, edge_id, input_id, output_id, is_active)
                         )""")
         
         # Users_Computers table. Maps all users to their computers.
@@ -221,11 +201,6 @@ class DBInitializer():
                         )""")
         
         # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
-
-        # source_object_id TEXT NOT NULL,
-        # target_object_id TEXT NOT NULL,    
-        # source_vr_name_in_code TEXT NOT NULL,                    
-        # target_vr_name_in_code TEXT NOT NULL,
         cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
                         edge_id INTEGER NOT NULL,
                         action_id_num INTEGER NOT NULL,
@@ -243,21 +218,17 @@ class DBInitializer():
                         id INTEGER,
                         is_input INTEGER NOT NULL DEFAULT 1,
                         action_id_num INTEGER NOT NULL,
-                        vr_id TEXT,
-                        pr_id TEXT,
-                        lookup_vr_id TEXT,
-                        lookup_pr_id TEXT,
+                        main_dynamic_vr_id TEXT,
+                        lookup_dynamic_vr_id TEXT,
                         value TEXT,
                         ro_id TEXT NOT NULL,
                         vr_name_in_code TEXT NOT NULL,
                         show INTEGER NOT NULL DEFAULT 0,
-                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (lookup_vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (lookup_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (main_dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE,
+                        FOREIGN KEY (lookup_dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (ro_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (id, is_input, action_id_num, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value)
+                        PRIMARY KEY (id, is_input, action_id_num, main_dynamic_vr_id, lookup_dynamic_vr_id, value)
                         )""")
         
         # run_history table. Lists all actions that occurred during runs.
@@ -267,4 +238,16 @@ class DBInitializer():
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (pl_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         PRIMARY KEY (action_id_num, pl_object_id)
+                        )""")
+        
+        # Dynamic VR's table. Lists all dynamic VR's.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS dynamic_vrs (
+                        dynamic_vr_id INTEGER PRIMARY KEY,
+                        action_id_num INTEGER NOT NULL,
+                        vr_id TEXT NOT NULL,
+                        pr_id TEXT NOT NULL,
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        UNIQUE (vr_id, pr_id)
                         )""")

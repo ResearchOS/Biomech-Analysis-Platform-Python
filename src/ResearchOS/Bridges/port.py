@@ -48,10 +48,6 @@ class Port():
         if put.__class__ == it.HardCoded:
             self.value = put.value
             self.show = True
-        elif put.__class__ == it.HardCodedVR:
-            self.vr = put.vr
-            self.value = put.value
-            self.show = True
         elif put.__class__ == it.ImportFile:
             self.value = put.value
             self.show = True
@@ -101,11 +97,10 @@ class Port():
             if not isinstance(pr, list):
                 pr = [pr]
             pr_id = json.dumps([p.id for p in pr])
-        vr_id = self.vr.id if self.vr is not None else None
-        if self.is_input:            
-            lookup_vr_id = self.lookup_vr.id if self.lookup_vr is not None else None
-            lookup_pr_id = self.lookup_pr.id if self.lookup_pr is not None else None        
-            value = self.value 
+        main_dynamic_id = self.put_value.main_vr.id if self.put_value.main_vr is not None else None
+        lookup_dynamic_id = self.put_value.lookup_vr.id if self.put_value.lookup_vr is not None else None
+        value = self.value      
+            
         # In the future this try-except should be more of a class or function. 
         # Right now it just handles the DataObject attribute case because that's the only non-JSON serializable hard-coded value.
         if isinstance(self.put_value, it.DataObjAttr):
@@ -115,28 +110,18 @@ class Port():
             value = json.dumps(self.value)      
 
         template_notnull = "{} = ?"
-        vr_id_str = "vr_id IS NULL"
-        pr_id_str = "pr_id IS NULL"
-        lookup_vr_id_str = "lookup_vr_id IS NULL"
-        lookup_pr_id_str = "lookup_pr_id IS NULL"
+        main_dynamic_id_str = "main_dynamic_vr_id IS NULL"
+        lookup_dynamic_id_str = "lookup_dynamic_vr_id IS NULL"
         params = [int(self.is_input)]
         unique_list = ["is_input"]
-        if vr_id is not None:
-            vr_id_str = template_notnull.format("vr_id")
-            params.append(vr_id)
-            unique_list.append("vr_id")
-        if pr_id is not None:
-            pr_id_str = template_notnull.format("pr_id")
-            params.append(pr_id)
-            unique_list.append("pr_id")
-        if lookup_vr_id is not None:
-            lookup_vr_id_str = template_notnull.format("lookup_vr_id")
-            params.append(lookup_vr_id)
-            unique_list.append("lookup_vr_id")
-        if lookup_pr_id is not None:
-            lookup_pr_id_str = template_notnull.format("lookup_pr_id")
-            params.append(lookup_pr_id)
-            unique_list.append("lookup_pr_id")
+        if main_dynamic_id is not None:
+            main_dynamic_id_str = template_notnull.format("main_dynamic_vr_id")
+            params.append(main_dynamic_id)
+            unique_list.append("main_dynamic_vr_id")
+        if lookup_dynamic_id is not None:
+            lookup_dynamic_id_str = template_notnull.format("lookup_dynamic_vr_id")
+            params.append(lookup_dynamic_id)
+            unique_list.append("lookup_dynamic_vr_id")
         params.append(value)
         params.append(self.vr_name_in_code)
         params.append(self.parent_ro.id)
@@ -145,7 +130,7 @@ class Port():
         unique_list.append("vr_name_in_code")
         unique_list.append("ro_id")
 
-        sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE is_input = ? AND {vr_id_str} AND {pr_id_str} AND {lookup_vr_id_str} AND {lookup_pr_id_str} AND value = ? AND vr_name_in_code = ? AND ro_id = ?"                               
+        sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE is_input = ? AND {main_dynamic_id_str} AND {lookup_dynamic_id_str} AND value = ? AND vr_name_in_code = ? AND ro_id = ?"                               
         sqlquery = sql_order_result(action, sqlquery_raw, unique_list, single=True, user = True, computer = False) 
 
         result = action.conn.execute(sqlquery, params).fetchall()        
@@ -154,7 +139,7 @@ class Port():
         if self.id is None:
             idcreator = IDCreator(action.conn)
             self.id = idcreator.create_generic_id("inputs_outputs", "id")
-            params = (self.id, self.is_input, action.id_num, vr_id, pr_id, lookup_vr_id, lookup_pr_id, value, int(self.show), self.parent_ro.id, self.vr_name_in_code)                
+            params = (self.id, self.is_input, action.id_num, main_dynamic_id, lookup_dynamic_id, value, int(self.show), self.parent_ro.id, self.vr_name_in_code)                
             action.add_sql_query(None, "inputs_outputs_insert", params)
 
         Port.instances[self.id] = self

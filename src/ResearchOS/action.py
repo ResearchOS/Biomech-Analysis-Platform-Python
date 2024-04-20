@@ -112,13 +112,15 @@ class Action():
         self.dobjs[group_name][query_name][dobj_id].append(params) # Allows for multiple params to be added at once with "executemany"
 
     def is_redundant_params(self, dobj_id: str, query_name: str, primary_key: tuple, group_name: str = "all") -> bool:
-        """Check if the parameters are redundant."""
+        """Check if the parameters are redundant."""        
         if group_name not in self.dobjs:
             return False
         if query_name not in self.dobjs[group_name]:
             return False
         if dobj_id not in self.dobjs[group_name][query_name]:
             return False
+        if not dobj_id:
+            dobj_id = "None"
         if any([primary_key in tup for tup in self.dobjs[group_name][query_name][dobj_id]]):
             return True
         return False
