@@ -30,11 +30,13 @@ class VRHandler():
         standardized = {}
         for key, dict_input in all_inputs.items():          
 
+            pr = None
             if isinstance(dict_input, Variable):
                 if dict_input.hard_coded_value is None:
-                    input = Input(vr=dict_input, action=action) # Don't put DynamicMain in database yet because PR may need to be set.
+                    pr = Input.set_source_pr(parent_ro, dict_input, key)
+                    input = Input(vr=dict_input, pr=pr, action=action) # Don't put DynamicMain in database yet because PR may need to be set.
                 else:
-                    input = Input(vr=dict_input, action=action, parent_ro=parent_ro, vr_name_in_code=key)
+                    input = Input(value=dict_input.hard_coded_value, action=action, parent_ro=parent_ro, vr_name_in_code=key)
             elif not isinstance(dict_input, Input):
                 input = Input(value=dict_input, action=action, parent_ro=parent_ro, vr_name_in_code=key) # Directly hard-coded value. May be a DataObject attribute.
             else:
@@ -44,9 +46,6 @@ class VRHandler():
             if hasattr(parent_ro, "import_file_vr_name") and key==parent_ro.import_file_vr_name:
                 input.put_value = ImportFile(import_value_default)
 
-            if isinstance(input.put_value, DynamicMain) and input.put_value.main_vr.pr is None:
-                input.put_value.main_vr.pr = Input.set_source_pr(parent_ro, input.put_value.main_vr.vr)
-                input.pr = input.put_value.main_vr.pr
             if isinstance(input.put_value, DynamicMain) and input.put_value.lookup_vr.vr is not None and input.put_value.lookup_vr.pr is None:
                 input.put_value.lookup_vr.pr = Input.set_source_pr(parent_ro, input.put_value.lookup_vr.vr)    
                 input.lookup_pr = input.put_value.lookup_vr.pr   

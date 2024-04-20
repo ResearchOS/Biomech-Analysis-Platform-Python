@@ -34,40 +34,43 @@ class Dynamic():
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet              
         if hasattr(self, "id"):
-            # if not self.vr:
-            #     self.vr = Variable(id=vr.id, action=action)
-            # if not self.pr:
-            #     if result[2].startswith("PR"):
-            #         self.pr = Process(id=result[2], action=action)
-            #     elif result[2].startswith("LG"):
-            #         self.pr = Logsheet(id=result[2], action=action)
             return # Loaded already
         self.vr = vr
         self.pr = pr  
+
+        if not vr and not pr:
+            self.id = None
+            return # Empty Dynamic object
         
         return_conn = False
         if action is None:
             action = Action(name = "Dynamic")
             return_conn = True
 
-        if vr is not None and pr is None:
-            raise ValueError("Dynamic VR must have a process or logsheet source.")
+        if vr is None or pr is None:
+            raise ValueError("Dynamic VR must have specified a Variable and a Process or Logsheet source.")
         
         self.id = id
         if id is None:
             # Load from the database
-            sqlquery_raw = "SELECT dynamic_vr_id FROM dynamic_vrs WHERE vr_id = ? AND pr_id = ?"
-            params = (vr.id, pr.id)
+            if not pr:
+                sqlquery_raw = "SELECT dynamic_vr_id, pr_id FROM dynamic_vrs WHERE vr_id = ?"
+                params = (vr.id,)
+            else:
+                sqlquery_raw = "SELECT dynamic_vr_id FROM dynamic_vrs WHERE vr_id = ? AND pr_id = ?"
+                params = (vr.id, pr.id)
             sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single = False, user = True, computer = False)
             result = action.conn.cursor().execute(sqlquery, params).fetchone()
             if result:
                 self.id = result[0]
+                pr = Process(id=result[1], action=action) if not pr else pr
             else:
                 idcreator = IDCreator(action.conn)
-                id = idcreator.create_generic_id("dynamic_vrs", "dynamic_vr_id")
-                self.id = id
-                params = (id, action.id_num, self.vr.id, self.pr.id)
-                action.add_sql_query("None", "dynamic_vrs_insert", params)
+                id = idcreator.create_generic_id("dynamic_vrs", "dynamic_vr_id")                                
+                if self.pr is not None: # In this case don't add this to the database yet. It will just be an un-identified Dynamic object.
+                    self.id = id
+                    params = (id, action.id_num, self.vr.id, self.pr.id)
+                    action.add_sql_query("None", "dynamic_vrs_insert", params)
         else:
             # Check if the ID previously existed.
             sqlquery = "SELECT dynamic_vr_id, vr_id, pr_id FROM dynamic_vrs WHERE dynamic_vr_id = ?"

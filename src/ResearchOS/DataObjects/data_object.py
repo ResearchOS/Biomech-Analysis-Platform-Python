@@ -219,8 +219,6 @@ class DataObject(ResearchObject):
         for vr in vr_hashes_dict:
             blob_params = (vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["blob"])
             blob_pk = blob_params
-            # vr_dobj_params = (action.id_num, self.id, vr.id)
-            # vr_dobj_pk = vr_dobj_params
             dynamic_vr = vr
             if not isinstance(dynamic_vr, Dynamic):
                 dynamic_vr = Dynamic(vr = vr, pr = pr, action = action)
@@ -233,9 +231,6 @@ class DataObject(ResearchObject):
             if not vr in vr_hashes_prev_exist and vr_hashes_dict[vr]["hash"] is not None:
                 if not action.is_redundant_params(self.id, "data_value_in_blob_insert", blob_pk, group_name = "robj_vr_attr_insert"):
                     action.add_sql_query(self.id, "data_value_in_blob_insert", blob_params, group_name = "robj_vr_attr_insert")
-            # No danger of duplicating primary keys, so no real need to check if they previously existed. But why not?
-            # if not action.is_redundant_params(self.id, "vr_to_dobj_insert", vr_dobj_pk, group_name = "robj_vr_attr_insert"):
-            #     action.add_sql_query(self.id, "vr_to_dobj_insert", vr_dobj_params, group_name = "robj_vr_attr_insert")
             if not action.is_redundant_params(self.id, "vr_value_for_dobj_insert", vr_value_pk, group_name = "robj_vr_attr_insert"):
                 action.add_sql_query(self.id, "vr_value_for_dobj_insert", vr_value_params, group_name = "robj_vr_attr_insert")
 
