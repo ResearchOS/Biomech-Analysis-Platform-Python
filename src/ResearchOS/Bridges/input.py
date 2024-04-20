@@ -58,8 +58,6 @@ class Input(Port):
             if not result:
                 raise ValueError(f"Port with id {id} not found in database.")
             id, is_input, main_dynamic_vr_id, lookup_dynamic_vr_id, value, show, ro_id, vr_name_in_code = result[0]
-            if not main_dynamic_vr_id:
-                pr_id = json.dumps([])
             value = json.loads(value)
             if main_dynamic_vr_id is not None:
                 main_dynamic_vr = Dynamic(id=main_dynamic_vr_id, action=action)
@@ -89,8 +87,15 @@ class Input(Port):
             # 2. hard-coded value.
             input = it.HardCoded(value)        
         elif vr is not None:
-            # 3. dynamic value. Also the import_file_vr_name would fit here because it's a VR, but that gets overwritten in the VRHandler.            
-            input = it.DynamicMain(it.Dynamic(vr=vr, pr=pr), it.Dynamic(vr=lookup_vr, pr=lookup_pr), show=show)
+            # 3. dynamic value. Also the import_file_vr_name would fit here because it's a VR, but that gets overwritten in the VRHandler.
+            if not isinstance(pr, list):
+                pr = [pr]
+            if lookup_pr is not None and not isinstance(lookup_pr, list):
+                lookup_pr = [lookup_pr]
+            dynamics = [it.Dynamic(vr=vr, pr=pr, action=action) for pr in pr]
+            lookups = [it.Dynamic(vr=lookup_vr, pr=lookup_pr, action=action) for lookup_pr in lookup_pr]
+            all_dynamics = dynamics + lookups
+            input = it.DynamicMain(all_dynamics, None, show=show)
         else:
             input = it.NoneVR()
 

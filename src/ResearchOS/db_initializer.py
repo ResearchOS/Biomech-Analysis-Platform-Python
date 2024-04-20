@@ -166,7 +166,7 @@ class DBInitializer():
                         FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,                        
-                        FOREIGN KEY (dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE,
+                        FOREIGN KEY (dynamic_vr_id) REFERENCES dynamic_vrs(dynamic_vr_id) ON DELETE CASCADE,
                         PRIMARY KEY (action_id_num, path_id, dynamic_vr_id, data_blob_hash, str_value, numeric_value)
                         )""")
         
@@ -218,17 +218,27 @@ class DBInitializer():
                         id INTEGER,
                         is_input INTEGER NOT NULL DEFAULT 1,
                         action_id_num INTEGER NOT NULL,
-                        main_dynamic_vr_id TEXT,
-                        lookup_dynamic_vr_id TEXT,
                         value TEXT,
                         ro_id TEXT NOT NULL,
                         vr_name_in_code TEXT NOT NULL,
                         show INTEGER NOT NULL DEFAULT 0,
-                        FOREIGN KEY (main_dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE,
-                        FOREIGN KEY (lookup_dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (ro_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (id, is_input, action_id_num, main_dynamic_vr_id, lookup_dynamic_vr_id, value)
+                        PRIMARY KEY (id, is_input, action_id_num, ro_id, vr_name_in_code)
+                        )""")
+        
+        # Inputs_outputs to dynamic_vrs table. Lists all inputs & outputs to dynamic VR's.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS inputs_outputs_to_dynamic_vrs (
+                        io_dynamic_id INTEGER PRIMARY KEY,
+                        action_id_num INTEGER NOT NULL,
+                        io_id INTEGER NOT NULL,
+                        dynamic_vr_id TEXT NOT NULL,
+                        order_num INTEGER NOT NULL,
+                        is_active INTEGER NOT NULL DEFAULT 1,    
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        FOREIGN KEY (io_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
+                        FOREIGN KEY (dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id_num, io_id, dynamic_vr_id)
                         )""")
         
         # run_history table. Lists all actions that occurred during runs.
