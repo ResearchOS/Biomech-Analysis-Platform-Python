@@ -11,10 +11,7 @@ if TYPE_CHECKING:
     source_type = Union[Process, Logsheet]
 
 from ResearchOS.Bridges.port import Port
-from ResearchOS.sql.sql_runner import sql_order_result
-import ResearchOS.Bridges.input_types as it
 from ResearchOS.action import Action
-from ResearchOS.Bridges.input_types import Dynamic
 
 class Input(Port):
     """Input port to connect between DiGraphs."""
@@ -36,83 +33,19 @@ class Input(Port):
                  vr_name_in_code: str = None,
                  **kwargs):
         """Initializes the Input object. "vr" and "pr" together make up the main source of the input. "lookup_vr" and "lookup_pr" together make up the lookup source of the input.
-        "value" is the hard-coded value. If specified, supercedes the main source."""
-        from ResearchOS.variable import Variable
-        from ResearchOS.PipelineObjects.process import Process
-        from ResearchOS.PipelineObjects.logsheet import Logsheet
-
-        return_conn = False
-        if action is None:
-            action = Action(name = "Set_Inputs")
-            return_conn = True
-
-        if hasattr(self, "id"):
-            return # Already initialized, loaded from Port.instances
-
-        if id is not None:
-            # Run the SQL query to load the values.
-            sqlquery_raw = "SELECT id, is_input, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
-            sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=True, user = True, computer = False)
-            params = (id,)
-            result = action.conn.execute(sqlquery, params).fetchall()
-            if not result:
-                raise ValueError(f"Port with id {id} not found in database.")
-            id, is_input, value, show, ro_id, vr_name_in_code = result[0]
-            value = json.loads(value)
-            sqlquery_raw = "SELECT dynamic_vr_id FROM inputs_outputs_to_dynamic_vrs WHERE io_id = ?"
-            sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=False, user = True, computer = False)
-            params = (id,)
-            result = action.conn.execute(sqlquery, params).fetchall()
-            if result:
-                dynamic_vr_ids = [row[0] for row in result]
-                dynamics = [Dynamic(id=dynamic_vr_id, action=action) for dynamic_vr_id in dynamic_vr_ids]
-            vr = [d.vr for d in dynamics if not bool(d.is_lookup)] if result else None
-            if vr is not None and len(vr)==1:
-                vr = vr[0]
-            pr = [d.pr for d in dynamics if not bool(d.is_lookup)] if result else None
-            if pr is not None and len(pr)==1:
-                pr = pr[0]
-            lookup_vr = [d.vr for d in dynamics if bool(d.is_lookup)] if result else None
-            if lookup_vr is not None and len(lookup_vr)==1:
-                lookup_vr = lookup_vr[0]
-            lookup_pr = [d.pr for d in dynamics if not bool(d.is_lookup)] if result else None
-            is_input = bool(is_input)
-            show = bool(show)
-            parent_ro = Process(id = ro_id, action = action) if ro_id.startswith("PR") else Logsheet(id = ro_id, action = action)
-        
-        # Now whether loading or saving, all inputs are properly shaped.
-        if isinstance(value, dict) and (vr is None or vr.hard_coded_value is None):
-            key = list(value.keys())[0]
-            if key.__class__ == type:
-                input = it.DataObjAttr(key, value[key])
-            else:
-                input = it.HardCoded(value)
-        elif hasattr(parent_ro, "import_file_vr_name") and vr_name_in_code==parent_ro.import_file_vr_name:
-            import_value_default = "import_file_vr_name"   
-            input = it.ImportFile(import_value_default)
-        elif vr is not None and vr.hard_coded_value is not None:
-            input = it.HardCoded(value=vr.hard_coded_value)
-        elif value is not None:
-            # 2. hard-coded value.
-            input = it.HardCoded(value)        
-        elif vr is not None:
-            # 3. dynamic value. Also the import_file_vr_name would fit here because it's a VR, but that gets overwritten in the VRHandler.
-            if not isinstance(pr, list):
-                pr = [pr]
-            if lookup_pr is not None and not isinstance(lookup_pr, list):
-                lookup_pr = [lookup_pr]
-            dynamics = [it.Dynamic(vr=vr, pr=pr, action=action) for pr in pr] if pr else None
-            lookups = [it.Dynamic(vr=lookup_vr, pr=lookup_pr, action=action) for lookup_pr in lookup_pr] if lookup_vr is not None else None
-            input = it.DynamicMain(dynamics, lookups, show=show)
-        else:
-            input = it.NoneVR()
-
-        self.vr_name_in_code = vr_name_in_code
-        self.put_value = input
-        self.action = action
-        self.parent_ro = parent_ro
-        self._id = id
-        self.return_conn = return_conn
+        "value" is the hard-coded value. If specified, supercedes the main source."""        
+        self.init_helper(id=id, 
+                         vr=vr, 
+                         pr=pr, 
+                         lookup_vr=lookup_vr, 
+                         lookup_pr=lookup_pr, 
+                         value=value, 
+                         show=show, 
+                         action=action, 
+                         parent_ro=parent_ro, 
+                         vr_name_in_code=vr_name_in_code, 
+                         **kwargs)        
+        self.is_input = True
         super().__init__()
 
     def set_source_pr(parent_ro: "ResearchObject", vr: "Variable", vr_name_in_code: str = None) -> "source_type":
