@@ -151,6 +151,7 @@ class DBInitializer():
         # Data objects data values. Lists all data values for all data objects.
         # dataobject_id is just the lowest level data object ID (the lowest level of the address).
         # Either data blob hash can be null, or scalar_value, but not both or neither.
+        # All dynamic_vr_ids here are for OUTPUTS.
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values (
                         action_id_num INTEGER NOT NULL,
                         path_id INTEGER NOT NULL,
@@ -194,7 +195,6 @@ class DBInitializer():
                         path_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,                        
                         dataobject_id TEXT NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
                         path TEXT NOT NULL,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
@@ -233,8 +233,7 @@ class DBInitializer():
                         action_id_num INTEGER NOT NULL,
                         io_id INTEGER NOT NULL,
                         dynamic_vr_id INTEGER NOT NULL,
-                        order_num INTEGER NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,    
+                        order_num INTEGER NOT NULL,   
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (io_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
                         FOREIGN KEY (dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE
@@ -256,6 +255,7 @@ class DBInitializer():
                         vr_id TEXT NOT NULL,
                         pr_id TEXT NOT NULL,
                         is_lookup INTEGER NOT NULL DEFAULT 0,
+                        is_input INTEGER NOT NULL DEFAULT 1,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
