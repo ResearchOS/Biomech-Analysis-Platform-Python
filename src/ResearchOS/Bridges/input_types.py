@@ -31,6 +31,7 @@ class Dynamic():
                  vr: "Variable" = None, 
                  pr: Union["Process", "Logsheet"] = None,
                  is_lookup: bool = False,
+                 is_input: bool = True,
                  action: Action = None):
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet              
@@ -39,6 +40,7 @@ class Dynamic():
         self.vr = vr
         self.pr = pr  
         self.is_lookup = is_lookup
+        self.is_input = is_input
 
         if not vr and not pr and not id:
             self.id = None
@@ -55,12 +57,12 @@ class Dynamic():
         self.id = id
         if id is None:
             # Load from the database
-            if not pr:
-                sqlquery_raw = "SELECT dynamic_vr_id, pr_id FROM dynamic_vrs WHERE vr_id = ?"
-                params = (vr.id,)
-            else:
-                sqlquery_raw = "SELECT dynamic_vr_id FROM dynamic_vrs WHERE vr_id = ? AND pr_id = ?"
-                params = (vr.id, pr.id)
+            # if not pr:
+            #     sqlquery_raw = "SELECT dynamic_vr_id, pr_id FROM dynamic_vrs WHERE vr_id = ?"
+            #     params = (vr.id,)
+            # else:
+            sqlquery_raw = "SELECT dynamic_vr_id FROM dynamic_vrs WHERE vr_id = ? AND pr_id = ? AND is_input = ? AND is_lookup = ?"
+            params = (vr.id, pr.id, is_input, is_lookup)
             sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single = False, user = True, computer = False)
             result = action.conn.cursor().execute(sqlquery, params).fetchone()
             if result:
@@ -89,6 +91,7 @@ class Dynamic():
                 elif result[2].startswith("LG"):
                     self.pr = Logsheet(id=result[2], action=action)
             self.is_lookup = bool(result[3])
+            self.is_input = bool(result[4])
             if not result:
                 params = (id, action.id_num, self.vr.id, self.pr.id, self.is_lookup)
                 action.add_sql_query("None", "dynamic_vrs_insert", params)

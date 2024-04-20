@@ -3,8 +3,9 @@ import weakref
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.action import Action
 from ResearchOS.idcreator import IDCreator
-from ResearchOS.Bridges.input import Input
-from ResearchOS.Bridges.output import Output
+from ResearchOS.Bridges.input_types import Dynamic
+# from ResearchOS.Bridges.input import Input
+# from ResearchOS.Bridges.output import Output
 
 class Edge():
 
@@ -31,8 +32,8 @@ class Edge():
                  print_edge: bool = False,
                  input_id: int = None,
                  output_id: int = None,
-                 input: Input = None,
-                 output: Output = None):
+                 input: Dynamic = None,
+                 output: Dynamic = None):
         
         if hasattr(self, "id"):
             return # Already initialized, loaded from Edge.instances
@@ -49,30 +50,40 @@ class Edge():
             result = action.conn.execute(sqlquery, params).fetchall()
             if not result:
                 raise ValueError(f"Edge with id {id} not found in database.")
-            input = Input(id = result[0][1], action = action)
-            output = Output(id = result[0][2], action = action)
+            input = Dynamic(id = result[0][1], action = action)
+            output = Dynamic(id = result[0][2], action = action)
+
+        if input.pr != output.pr:
+            raise ValueError("Input and output must have the same Process (or Logsheet).")
+        
+        if input.vr != output.vr:
+            raise ValueError("Input and output must have the same Variable.")
                     
         self.id = id        
 
         if input is not None:
             self.input = input
-            self.input_id = input.id
+            self.source_let_put_id = input.id
         else:
-            self.input = Input(id = input_id, action = action)
-            self.input_id = input_id
+            self.input = Dynamic(id = input_id, action = action)
+            self.source_let_put_id = input_id
         if output is not None:
             self.output = output
-            self.output_id = output.id
+            self.target_let_put_id = output.id
         else:
-            self.output = Output(id = output_id, action = action)
-            self.output_id = output_id
+            self.output = Dynamic(id = output_id, action = action)
+            self.target_let_put_id = output_id
+
+        self.source_pr = self.output.pr
+        self.target_pr = self.input.pr
+        self.vr = self.input.vr
 
         if self.id is not None:
-            return # Already loaded.
+            return # Already loaded.        
 
         sqlquery_raw = "SELECT edge_id FROM pipelineobjects_graph WHERE source_let_put_id = ? AND target_let_put_id = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, ["edge_id"], single=True, user = True, computer = False)
-        params = (self.input_id, self.output_id)
+        params = (self.source_let_put_id, self.target_let_put_id)
         result = action.conn.execute(sqlquery, params).fetchall()
         if result:
             self.id = result[0][0]
