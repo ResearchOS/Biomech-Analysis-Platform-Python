@@ -204,13 +204,13 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
                         edge_id INTEGER NOT NULL,
                         action_id_num INTEGER NOT NULL,
-                        input_id INTEGER NOT NULL,
-                        output_id INTEGER NOT NULL,
+                        source_let_put_id INTEGER NOT NULL,
+                        target_let_put_id INTEGER NOT NULL,
                         is_active INTEGER NOT NULL DEFAULT 1,                        
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (input_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
-                        FOREIGN KEY (output_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id_num, edge_id, input_id, output_id, is_active)
+                        FOREIGN KEY (source_let_put_id) REFERENCES inputs_outputs_to_dynamic_vrs(io_dynamic_id) ON DELETE CASCADE,
+                        FOREIGN KEY (target_let_put_id) REFERENCES inputs_outputs_to_dynamic_vrs(io_dynamic_id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id_num, edge_id, source_let_put_id, target_let_put_id, is_active)
                         )""")
         
         # Inputs & outputs table. Lists all inputs & outputs.
@@ -232,7 +232,7 @@ class DBInitializer():
                         io_dynamic_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
                         io_id INTEGER NOT NULL,
-                        dynamic_vr_id TEXT NOT NULL,
+                        dynamic_vr_id INTEGER NOT NULL,
                         order_num INTEGER NOT NULL,
                         is_active INTEGER NOT NULL DEFAULT 1,    
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
@@ -255,6 +255,7 @@ class DBInitializer():
                         action_id_num INTEGER NOT NULL,
                         vr_id TEXT NOT NULL,
                         pr_id TEXT NOT NULL,
+                        is_lookup INTEGER NOT NULL DEFAULT 0,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,

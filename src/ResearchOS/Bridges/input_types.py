@@ -30,6 +30,7 @@ class Dynamic():
                  id: str = None,
                  vr: "Variable" = None, 
                  pr: Union["Process", "Logsheet"] = None,
+                 is_lookup: bool = False,
                  action: Action = None):
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet              
@@ -37,6 +38,7 @@ class Dynamic():
             return # Loaded already
         self.vr = vr
         self.pr = pr  
+        self.is_lookup = is_lookup
 
         if not vr and not pr and not id:
             self.id = None
@@ -69,11 +71,11 @@ class Dynamic():
                 id = idcreator.create_generic_id("dynamic_vrs", "dynamic_vr_id")                                
                 if self.pr is not None: # In this case don't add this to the database yet. It will just be an un-identified Dynamic object.
                     self.id = id
-                    params = (id, action.id_num, self.vr.id, self.pr.id)
+                    params = (id, action.id_num, self.vr.id, self.pr.id, self.is_lookup)
                     action.add_sql_query("None", "dynamic_vrs_insert", params)
         else:
             # Check if the ID previously existed.
-            sqlquery = "SELECT dynamic_vr_id, vr_id, pr_id FROM dynamic_vrs WHERE dynamic_vr_id = ?"
+            sqlquery = "SELECT dynamic_vr_id, vr_id, pr_id, is_lookup FROM dynamic_vrs WHERE dynamic_vr_id = ?"
             params = (id,)
             result = action.conn.cursor().execute(sqlquery, params).fetchone()
             if not result and (not vr or not pr):
@@ -86,8 +88,9 @@ class Dynamic():
                     self.pr = Process(id=result[2], action=action)
                 elif result[2].startswith("LG"):
                     self.pr = Logsheet(id=result[2], action=action)
+            self.is_lookup = bool(result[3])
             if not result:
-                params = (id, action.id_num, self.vr.id, self.pr.id)
+                params = (id, action.id_num, self.vr.id, self.pr.id, self.is_lookup)
                 action.add_sql_query("None", "dynamic_vrs_insert", params)
 
         if return_conn:
@@ -105,11 +108,14 @@ class NoneVR():
         self.sqlquery_raw_select = "SELECT id FROM inputs_outputs WHERE value IS NULL"
         self.params = ()
 
-@dataclass
 class DynamicMain():    
-    main_vr: Dynamic = None
-    lookup_vr: Dynamic = None
-    show: bool = False
+
+    def __init__(self, main_vr: list, lookup_vr: list = None, show: bool = False):
+        if not isinstance(main_vr, list):
+            main_vr = [main_vr]
+        self.main_vr = main_vr
+        self.lookup_vr = lookup_vr
+        self.show = show        
     
     def __post_init__(self):
         lookup_pr_ids = tuple([_.id for _ in self.lookup_vr]) if self.lookup_vr else tuple()
