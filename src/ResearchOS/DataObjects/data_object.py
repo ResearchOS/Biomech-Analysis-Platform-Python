@@ -11,6 +11,8 @@ import toml
 
 if TYPE_CHECKING:    
     from ResearchOS.PipelineObjects.process import Process
+    from ResearchOS.PipelineObjects.logsheet import Logsheet
+    source_type = Union[Process, Logsheet]
     
 from ResearchOS.variable import Variable    
 from ResearchOS.research_object import ResearchObject
@@ -20,6 +22,7 @@ from ResearchOS.sqlite_pool import SQLiteConnectionPool
 from ResearchOS.Bridges.input import Input
 from ResearchOS.var_converter import convert_var
 from ResearchOS.tomlhandler import TOMLHandler
+from ResearchOS.Bridges.input_types import Dynamic
 
 all_default_attrs = {}
 
@@ -27,24 +30,6 @@ computer_specific_attr_names = []
 
 class DataObject(ResearchObject):
     """The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors."""    
-
-    # def __delattr__(self, name: str, action: Action = None) -> None:
-    #     """Delete an attribute. If it's a builtin attribute, don't delete it.
-    #     If it's a VR, make sure it's "deleted" from the database."""
-    #     default_attrs = DefaultAttrs(self).default_attrs
-    #     if name in default_attrs:
-    #         raise AttributeError("Cannot delete a builtin attribute.")
-    #     if name not in self.__dict__:
-    #         raise AttributeError("No such attribute.")
-    #     if action is None:
-    #         action = Action(name = "delete_attribute")
-    #     vr_id = self.__dict__[name].id        
-    #     params = (action.id, self.id, vr_id)
-    #     if action is None:
-    #         action = Action(name = "delete_attribute")
-    #     action.add_sql_query(self.id, "vr_to_dobj_insert_inactive", params)
-    #     action.execute()
-    #     del self.__dict__[name]
 
     def get(self, input: Union["Variable", "Input"], action: Action, process: "Process" = None, node_lineage: list = None) -> Any:
         """Load the value of a VR from the database for this data object.
@@ -101,16 +86,10 @@ class DataObject(ResearchObject):
             raise ValueError("Input type not recognized.")
         
         # Handle lookup VR's.
-        if input.lookup_vr is not None:            
-            # vr_col_name = "lookup_vr_id"
-            # pr_col_name = "lookup_pr_id"
-            vr_col_name = "vr_id"
-            pr_col_name = "pr_id"
+        if input.lookup_vr is not None:
             process = input.lookup_pr
             vr = input.lookup_vr
-        else:        
-            vr_col_name = "vr_id"
-            pr_col_name = "pr_id"
+        else:
             vr = input.vr
         
         self_idx = node_lineage.index(self)
@@ -121,8 +100,8 @@ class DataObject(ResearchObject):
         found_value = False
         for pr in process:
             for node in node_lineage[self_idx:]:
-                sqlquery_raw = f"SELECT action_id_num, is_active FROM data_values WHERE path_id = ? AND {vr_col_name} = ? AND {pr_col_name} = ?"
-                sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", vr_col_name, pr_col_name], single = True, user = True, computer = False)
+                sqlquery_raw = f"SELECT action_id_num, is_active FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id = ?"
+                sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id", "pr_id"], single = True, user = True, computer = False)
                             
                 params = (node.id, vr.id, pr.id)            
                 result = cursor.execute(sqlquery, params).fetchall()
@@ -187,7 +166,7 @@ class DataObject(ResearchObject):
             raise ValueError(f"The VR {vr.name} does not have a value set for the data object {base_node.name} ({base_node.id}) from any Process provided.")        
         return value
     
-    def _set_vr_values(self, vr_values: dict, pr_id: str, action: Action = None) -> None:
+    def _set_vr_values(self, vr_values: dict, pr: "source_type", action: Action = None) -> None:
         """Top level function to set the values of the VR attributes.
         Called like: self._set_vr_values(research_object, vr_values, pr_id, action)
         vr_values: dict with keys of type Variable and values of the values to set.
@@ -242,10 +221,13 @@ class DataObject(ResearchObject):
             blob_pk = blob_params
             # vr_dobj_params = (action.id_num, self.id, vr.id)
             # vr_dobj_pk = vr_dobj_params
+            dynamic_vr = vr
+            if not isinstance(dynamic_vr, Dynamic):
+                dynamic_vr = Dynamic(vr = vr, pr = pr, action = action)
             if isinstance(vr_hashes_dict[vr]["scalar_value"], str):
-                vr_value_params = (action.id_num, vr.id, self.id, vr_hashes_dict[vr]["hash"], pr_id, vr_hashes_dict[vr]["scalar_value"], None)
+                vr_value_params = (action.id_num, dynamic_vr.id, self.id, vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["scalar_value"], None)
             else:
-                vr_value_params = (action.id_num, vr.id, self.id, vr_hashes_dict[vr]["hash"], pr_id, None, vr_hashes_dict[vr]["scalar_value"])
+                vr_value_params = (action.id_num, dynamic_vr.id, self.id, vr_hashes_dict[vr]["hash"], None, vr_hashes_dict[vr]["scalar_value"])
             vr_value_pk = vr_value_params
             # Don't insert the data_blob if it already exists.
             if not vr in vr_hashes_prev_exist and vr_hashes_dict[vr]["hash"] is not None:
