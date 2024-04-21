@@ -7,8 +7,9 @@ from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.action import Action
 from ResearchOS.process_runner import ProcessRunner
 from ResearchOS.vr_handler import VRHandler
-from ResearchOS.build_pl import make_all_edges
+from ResearchOS.build_pl import make_all_edges, make_all_let_puts
 from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.Bridges.let import Let
 
 all_default_attrs = {}
 # For import
@@ -101,17 +102,16 @@ class Process(PipelineObject):
         
     def load_inputs(self, action: Action) -> dict:
         """Load the input variables."""
-        from ResearchOS.Bridges.input import Input
-        sqlquery_raw = "SELECT id, value, ro_id, vr_name_in_code, show FROM inlets_outlets WHERE is_input = 1 AND ro_id = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["id", "ro_id"], single = True, user = True, computer = False)
+        sqlquery_raw = "SELECT let_id, value, parent_ro_id, vr_name_in_code, show FROM inlets_outlets WHERE is_input = 1 AND parent_ro_id = ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["let_id", "parent_ro_id"], single = True, user = True, computer = False)
         params = (self.id,)
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        input_ids = [row[0] for row in result] if result else []
-        inputs = {}
-        for input_id in input_ids:
-            input = Input(id=input_id, action=action)            
-            inputs[input.vr_name_in_code] = input
-        return inputs
+        inlet_ids = [row[0] for row in result] if result else []
+        inlets = {}
+        for inlet_id in inlet_ids:
+            inlet = Let(id=inlet_id, action=action)            
+            inlets[inlet.vr_name_in_code] = inlet
+        return inlets
 
     def save_outputs(self, outputs: dict, action: Action) -> None:
         """Saving the output variables. is done in the output class."""
@@ -119,32 +119,29 @@ class Process(PipelineObject):
 
     def load_outputs(self, action: Action) -> dict:
         """Load the output variables."""
-        from ResearchOS.Bridges.output import Output
-        sqlquery_raw = "SELECT id, vr_name_in_code FROM inlets_outlets WHERE is_input = 0 AND ro_id = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["id", "ro_id"], single = True, user = True, computer = False)
+        sqlquery_raw = "SELECT let_id, vr_name_in_code FROM inlets_outlets WHERE is_input = 0 AND parent_ro_id = ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["let_id", "parent_ro_id"], single = True, user = True, computer = False)
         params = (self.id,)
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        outputs = {}
+        outlets = {}
         for row in result:
-            output_id = row[0]
-            output = Output(id = output_id, action=action)
-            outputs[output.vr_name_in_code] = output
-        return outputs
+            outlet_id = row[0]
+            outlet = Let(id = outlet_id, action=action)
+            outlets[outlet.vr_name_in_code] = outlet
+        return outlets
     
     def set_inputs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict.
         Edges are created here."""
-        standardized_kwargs = VRHandler.standardize_inputs(self, kwargs)
-        # self.__setattr__("inputs", standardized_kwargs)
+        standardized_kwargs = VRHandler.standardize_lets_puts(self, kwargs, is_input=True)
         self.__dict__["inputs"] = standardized_kwargs
         make_all_edges(self)
 
     def set_outputs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict.
         Edges are NOT created here."""
-        standardized_kwargs = VRHandler.standardize_outputs(self, kwargs)
-        # self.__setattr__("outputs", standardized_kwargs)  
-        self.__dict__["outputs"] = standardized_kwargs      
+        standardized_kwargs = VRHandler.standardize_lets_puts(self, kwargs, is_input=False)
+        self.__dict__["outputs"] = standardized_kwargs
 
     def run(self, force_redo: bool = False, action: Action = None, return_conn: bool = True) -> None:
         """Execute the attached method.

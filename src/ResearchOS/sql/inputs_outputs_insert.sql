@@ -1,1 +1,1 @@
-INSERT INTO inputs_outputs (id, action_id_num, dynamic_id, is_input, order_num, is_lookup) VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO inputs_outputs (put_id, action_id_num, dynamic_vr_id, is_input, order_num, is_lookup) VALUES (?, ?, ?, ?, ?, ?)
