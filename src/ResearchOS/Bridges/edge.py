@@ -1,4 +1,8 @@
 import weakref
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ResearchOS.research_object import ResearchObject
 
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.action import Action
@@ -27,16 +31,24 @@ class Edge():
         return f"""{self.output_dynamic.parent_ro.id}: {self.output_dynamic.vr_name_in_code} -> {self.input_dynamic.parent_ro.id}: {self.input_dynamic.vr_name_in_code} Subset: {subset_id}"""
     
 
+    source_vr_name_in_code: str = None,
+    target_vr_name_in_code: str = None,
+    source_research_object: "ResearchObject" = None,
+    target_research_object: "ResearchObject" = None,
+    source_vr: "Variable" = None,
+    target_vr: "Variable" = None,
+    source_pr: "source_type" = None,
+    target_pr: "source_type" = None,              
+    input_dynamic: Dynamic = None,
+    output_dynamic: Dynamic = None,
     def __init__(self, id: int = None,
-                 action: Action = None,                  
-                 input_dynamic: Dynamic = None,
-                 output_dynamic: Dynamic = None,
-                 inlet: Input = None,
-                 outlet: Output = None,
+                 action: Action = None,        
+                 input: Input = None,
+                 output: Output = None,                 
                  print_edge: bool = False):
         
         if hasattr(self, "id"):
-            return # Already initialized, loaded from Edge.instances
+            return # Already initialized, loaded from Edge.instances                
         
         return_conn = False
         if action is None:
@@ -57,20 +69,49 @@ class Edge():
             result = action.conn.execute(sqlquery, params).fetchall()
             if not result:
                 raise ValueError(f"Edge with id {id} not found in database.")
-            # input_output_ids = [row[0] for row in result]
-            dynamic_vr_ids = [row[1] for row in result]
-            dynamic_vrs = [Dynamic(id=id, action=action) for id in dynamic_vr_ids]            
+            input_output_ids = [row[0] for row in result]
+            try:
+                input = Input(id=input_output_ids[0], action=action)
+            except:
+                input = Input(id=input_output_ids[1], action=action)
+            try:
+                output = Output(id=input_output_ids[0], action=action)
+            except:
+                output = Output(id=input_output_ids[1], action=action)         
             
             inlet = [i for i in inlets_outlets if i.is_input][0]
             outlet = [i for i in inlets_outlets if not i.is_input][0]
             input_dynamic = dynamic_vrs[0] if inlet.is_input else dynamic_vrs[1]
             output_dynamic = dynamic_vrs[0] if outlet.is_input else dynamic_vrs[1]
+        else:
+            # Prep for creating a new edge. Need to build towards input & output let_put_ids, given a few different options.
+            if input_dynamic is not None and inlet is not None:
+                source_vr_name_in_code = None
+                source_research_object = None
+                source_vr = None
+                source_pr = None
+            else:
+                # Get the VR & PR info from the inlet object.
+                input_dynamic = Dynamic(vr = source_vr, pr = source_pr, is_input = True, action = action)
+                inlet = Inlet(ro_id = source_research_object.id, vr_name_in_code = source_vr_name_in_code, action = action)
+            if output_dynamic is not None and outlet is not None:
+                target_vr_name_in_code = None
+                target_research_object = None
+                target_vr = None
+                target_pr = None
+            else:
+                # Get the VR & PR info from the outlet object.
+                output_dynamic = Dynamic(vr = target_vr, pr = target_pr, is_input = False, action = action)
+                outlet = Outlet(ro_id = target_research_object.id, vr_name_in_code = target_vr_name_in_code, action = action)
 
         if input_dynamic.pr != output_dynamic.pr:
             raise ValueError("Input and output_dynamic must have the same Process (or Logsheet).")
         
         if input_dynamic.vr != output_dynamic.vr:
             raise ValueError("Input and output_dynamic must have the same Variable.")
+        
+        if outlet.parent_ro != output_dynamic.pr or inlet.parent_ro != input_dynamic.pr:
+            raise ValueError("Inlet and Outlet must have the same Process (or Logsheet) as the Input & Output Dynamic object.")
                     
         self.id = id        
 
