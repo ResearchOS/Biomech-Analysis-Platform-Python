@@ -8,7 +8,7 @@
         "data_addresses",
         "paths",
         "pipelineobjects_graph",
-        "inputs_outputs",
+        "inlets_outlets",
         "run_history"
     ],
     "intended_tables_data": [

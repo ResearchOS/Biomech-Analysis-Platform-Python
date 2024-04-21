@@ -134,7 +134,7 @@ class DBInitializer():
                         attr_name TEXT NOT NULL
                         )""")
 
-        # Simple attributes table. Lists all "simple" (i.e. json-serializable) attributes that have been associated with research objects.
+        # Simple attributes table. Lists all "simple" (i.e. json-serializable and single-celled) attributes that have been associated with research objects.
         cursor.execute("""CREATE TABLE IF NOT EXISTS simple_attributes (
                         action_row_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
@@ -150,7 +150,6 @@ class DBInitializer():
         
         # Data objects data values. Lists all data values for all data objects.
         # dataobject_id is just the lowest level data object ID (the lowest level of the address).
-        # Either data blob hash can be null, or scalar_value, but not both or neither.
         # All dynamic_vr_ids here are for OUTPUTS.
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values (
                         action_id_num INTEGER NOT NULL,
@@ -159,7 +158,6 @@ class DBInitializer():
                         data_blob_hash TEXT,
                         str_value TEXT,
                         numeric_value INTEGER,
-                        is_active INTEGER NOT NULL DEFAULT 1,
                         CHECK (
                             (data_blob_hash IS NOT NULL AND str_value IS NULL AND numeric_value IS NULL) OR
                             (data_blob_hash IS NULL AND NOT (str_value IS NOT NULL AND numeric_value IS NOT NULL))
@@ -208,27 +206,25 @@ class DBInitializer():
                         target_let_put_id INTEGER NOT NULL,
                         is_active INTEGER NOT NULL DEFAULT 1,                        
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (source_let_put_id) REFERENCES inputs_outputs_to_dynamic_vrs(io_dynamic_id) ON DELETE CASCADE,
-                        FOREIGN KEY (target_let_put_id) REFERENCES inputs_outputs_to_dynamic_vrs(io_dynamic_id) ON DELETE CASCADE,
+                        FOREIGN KEY (source_let_put_id) REFERENCES lets_puts(io_dynamic_id) ON DELETE CASCADE,
+                        FOREIGN KEY (target_let_put_id) REFERENCES lets_puts(io_dynamic_id) ON DELETE CASCADE,
                         PRIMARY KEY (action_id_num, edge_id, source_let_put_id, target_let_put_id, is_active)
                         )""")
         
-        # Inputs & outputs table. Lists all inputs & outputs.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS inputs_outputs (
+        # Inlets_outlets table. Lists all inlets and outlets.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS inlets_outlets (
                         id INTEGER,
                         is_input INTEGER NOT NULL DEFAULT 1,
                         action_id_num INTEGER NOT NULL,
-                        value TEXT,
                         ro_id TEXT NOT NULL,
-                        vr_name_in_code TEXT NOT NULL,
-                        show INTEGER NOT NULL DEFAULT 0,
+                        vr_name_in_code TEXT NOT NULL,                        
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (ro_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         PRIMARY KEY (id, is_input, action_id_num, ro_id, vr_name_in_code)
                         )""")
         
-        # Inputs_outputs to dynamic_vrs table. Lists all inputs & outputs to dynamic VR's.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS inputs_outputs_to_dynamic_vrs (
+        # puts_lets table. Lists all inputs & outputs to inlets & outlets.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS lets_puts (
                         io_dynamic_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
                         io_id INTEGER NOT NULL,
@@ -236,7 +232,7 @@ class DBInitializer():
                         order_num INTEGER NOT NULL,   
                         is_lookup INTEGER NOT NULL DEFAULT 0,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (io_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
+                        FOREIGN KEY (io_id) REFERENCES inlets_outlets(id) ON DELETE CASCADE,
                         FOREIGN KEY (dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE
                         )""")
         
@@ -254,10 +250,25 @@ class DBInitializer():
                         dynamic_vr_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
                         vr_id TEXT NOT NULL,
-                        pr_id TEXT NOT NULL,
+                        pr_id TEXT NOT NULL,                        
                         is_input INTEGER NOT NULL DEFAULT 1,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         UNIQUE (vr_id, pr_id)
                         )""")
+        
+        # Inputs & outputs table. Lists all inputs & outputs. These are just a collection of dynamic VR's.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS inputs_outputs (
+                        put_id INTEGER PRIMARY KEY,
+                        action_id_num INTEGER NOT NULL,
+                        dynamic_vr_id INTEGER,
+                        order_num INTEGER NOT NULL,
+                        is_input INTEGER NOT NULL DEFAULT 1,
+                        is_lookup INTEGER NOT NULL DEFAULT 0,
+                        value TEXT,
+                        show INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (dynamic_vr_id) REFERENCES dynamic_vrs(dynamic_vr_id) ON DELETE CASCADE,                        
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
+                        )""")
+        
