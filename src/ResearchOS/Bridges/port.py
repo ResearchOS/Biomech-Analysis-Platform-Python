@@ -80,16 +80,15 @@ class Port():
 
     def create_input_or_output(self) -> None:
         """Creates the input or output in the database, and stores the reference to the instance."""
-        from ResearchOS.Bridges.input_types import DynamicMain
+        # This happens when the Input is called directly by the user. Not None when called by internal functions.
+        if self.parent_ro is None or self.vr_name_in_code is None:
+            return
+        
         return_conn = False
         action = self.action
         if action is None:
             return_conn = True
-            action = Action(name = f"create_input_or_output")
-
-        # This happens when the Input is called directly by the user. Not None when called by internal functions.
-        if self.parent_ro is None or self.vr_name_in_code is None:
-            return
+            action = Action(name = f"create_input_or_output")        
 
         dynamic_id = [_.id for _ in self.put_value.main_vr] if (hasattr(self.put_value, "main_vr") and self.put_value.main_vr is not None) else None
         value = self.value      
