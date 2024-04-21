@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from ResearchOS.PipelineObjects.logsheet import Logsheet
     source_type = Union[Process, Logsheet]
 
-from ResearchOS.Bridges.Put import Put
+from ResearchOS.Bridges.put import Put
 
 class Output(Put):
     """Output Put to connect between DiGraphs."""
@@ -20,29 +20,15 @@ class Output(Put):
                  vr: "Variable" = None,
                  pr: "source_type" = None,
                  show: bool = False,
-                 action: "Action" = None,
-                 parent_ro: "ResearchObject" = None,
-                 vr_name_in_code: str = None,
-                 value: Any = None,
-                 lookup_vr: "Variable" = None,
-                 lookup_pr: "source_type" = None,    
-                 **kwargs):
+                 action: "Action" = None):
         """Initializes the Output object. "vr" and "pr" together make up the main source of the output."""
-
-        none_list = [value, lookup_vr, lookup_pr]
-        if not all([x is None for x in none_list]):
-            raise ValueError("Provided one of these illegal kwargs to outputs: ", none_list)
-
-        self.init_helper(id=id, 
-                         vr=vr, 
-                         pr=pr, 
-                         lookup_vr=lookup_vr, 
-                         lookup_pr=lookup_pr, 
-                         value=value, 
-                         show=show, 
-                         action=action, 
-                         parent_ro=parent_ro, 
-                         vr_name_in_code=vr_name_in_code, 
-                         **kwargs)        
         self.is_input = False
-        super().__init__()
+        if id is None:
+            self.clean_for_put(vr = vr, pr = pr, show = show, action = action)
+        super().__init__(id=id, 
+                         action=action, 
+                         dynamic_vr_id=self.dynamic_vr_id, 
+                         is_input=self.is_input, 
+                         order_num=self.order_num,
+                         is_lookup=self.is_lookup,
+                         value=self.value)

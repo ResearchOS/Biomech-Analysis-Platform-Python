@@ -1,13 +1,11 @@
 from typing import Union, TYPE_CHECKING, Any
-# import weakref
 
 if TYPE_CHECKING:
-    pass
+    from ResearchOS.PipelineObjects.process import Process
+    from ResearchOS.PipelineObjects.logsheet import Logsheet   
 
 from ResearchOS.variable import Variable
-# from ResearchOS.sql.sql_runner import sql_order_result
-from ResearchOS.action import Action
-# from ResearchOS.idcreator import IDCreator
+from ResearchOS.action import Action 
 
 from dataclasses import dataclass
 from ResearchOS.Bridges.pipeline_parts import PipelineParts
@@ -19,19 +17,26 @@ class Dynamic(PipelineParts):
     id_col = "dynamic_vr_id"
     col_names = ["vr_id", "pr_id"]
     insert_query_name = "dynamic_vrs_insert"
-
     
     def __init__(self, 
                  id: str = None,
                  vr_id: "Variable" = None, 
                  pr_id: Union["Process", "Logsheet"] = None,
-                 action: Action = None):
-        # from ResearchOS.PipelineObjects.process import Process
-        # from ResearchOS.PipelineObjects.logsheet import Logsheet      
+                 order_num: int = None,
+                 is_lookup: bool = False,
+                 action: Action = None):           
 
         self.vr_id = vr_id
         self.pr_id = pr_id
+        self.order_num = order_num
+        self.is_lookup = is_lookup
         super().__init__(id = id, action = action)
+
+    def load_from_db(self, vr_id: str, pr_id: str, action: Action = None):
+        from ResearchOS.PipelineObjects.process import Process
+        from ResearchOS.PipelineObjects.logsheet import Logsheet 
+        self.vr = Variable(id = vr_id, action=action)
+        self.pr = Process(id = pr_id, action=action) if pr_id.startswith("PR") else Logsheet(id = pr_id, action=action)
     
 
 @dataclass

@@ -5,30 +5,38 @@ from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.action import Action
 from ResearchOS.idcreator import IDCreator
 
-class PipelineParts():
+class MetaPipelineParts(type):
+    def __call__(cls, *args, **kwargs):
+        obj, found_in_cache = cls.__new__(cls, *args, **kwargs)
+        if not found_in_cache:
+            obj.__init__(*args, **kwargs)
+        return obj
+
+class PipelineParts(metaclass=MetaPipelineParts):
 
     instances = {}
-    instances.Let = weakref.WeakValueDictionary()
-    instances.Put = weakref.WeakValueDictionary()
-    instances.Edge = weakref.WeakValueDictionary()
-    instances.LetPut = weakref.WeakValueDictionary()    
+    instances["Let"] = weakref.WeakValueDictionary()
+    instances["Put"] = weakref.WeakValueDictionary()
+    instances["Edge"] = weakref.WeakValueDictionary()
+    instances["LetPut"] = weakref.WeakValueDictionary()
+    instances["Dynamic"] = weakref.WeakValueDictionary()
 
     def __new__(cls, *args, **kwargs):
         
         id = None
         if "id" in kwargs.keys():
             id = kwargs["id"]
-        cls_weakref_dict = getattr(PipelineParts.instances, cls.__name__)
+        cls_weakref_dict = PipelineParts.instances[cls.cls_name]
         if id in cls_weakref_dict.keys():
-            return cls_weakref_dict[id]
+            return cls_weakref_dict[id], True
         instance = super().__new__(cls)
         if id is not None:
             cls_weakref_dict[id] = instance
-        return instance
+        return instance, False
     
     def __init__(self, id: int = None, action: Action = None):
-        if hasattr(self, "id") and self.id is not None:
-            return # Loaded from cache.
+        # if hasattr(self, "id") and self.id is not None:
+        #     return # Loaded from cache.
         self.id = id
 
         return_conn = False
@@ -60,23 +68,28 @@ class PipelineParts():
             result = action.conn.execute(sqlquery, params).fetchall()
             if result:
                 id = result[0][0]
+                create_new = False
             else:
                 # 2. If not found, create a new object in the database.
+                create_new = True
                 idcreator = IDCreator(action.conn)
                 id = idcreator.create_generic_id(self.table_name, self.id_col)
-            params = []
+            self.id = id
+            input_args = []
             for col in self.col_names:
-                params.append(getattr(self, col))
-            params = tuple([id] + [action.action_id_num] + params)
-            if not hasattr(self, "params"):
-                input_args = list(params)
-            else:
+                col_val = getattr(self, col)
+                if len(col_val) == 0:
+                    col_val = None
+                input_args.append(col_val)
+            params = tuple([id] + [action.id_num] + input_args)
+            if hasattr(self, "params"):
+                print("IS THIS RIGHT?????")
                 input_args = self.params
-            if not self.id:
+            if create_new:
                 action.add_sql_query(None, self.insert_query_name, params)
                 
         # Saves and loads object to/from the database.
-        self.load_from_db(*input_args)
+        self.load_from_db(*input_args, action = action)
         # 4. Store the object in the cache.  
         PipelineParts.instances[self.cls_name][self.id] = self            
 
