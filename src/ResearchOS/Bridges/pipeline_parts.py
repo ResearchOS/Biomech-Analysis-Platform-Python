@@ -56,11 +56,13 @@ class PipelineParts(metaclass=MetaPipelineParts):
             result = action.conn.execute(sqlquery, params).fetchall()
             if not result:
                 raise ValueError(f"{self.cls_name} with id {self.id} not found in database.")
-            input_args = result
+            if hasattr(self, "input_args"):
+                input_args = self.input_args
+            else:
+                input_args = [r for r in result[0]]
         else:
             # 1. Search for the object in the database based on matching attributes.            
-            sqlquery_raw = f"SELECT {self.id_col} FROM {self.table_name} WHERE {self.where_str}"
-            sqlquery = sql_order_result(action, sqlquery_raw, self.col_names, single=False, user = True, computer = False)
+            sqlquery = f"SELECT {self.id_col} FROM {self.table_name} WHERE {self.where_str}"
             if not hasattr(self, "params"):
                 params = tuple([getattr(self, col) for col in self.col_names])
             else:
@@ -74,17 +76,16 @@ class PipelineParts(metaclass=MetaPipelineParts):
                 create_new = True
                 idcreator = IDCreator(action.conn)
                 id = idcreator.create_generic_id(self.table_name, self.id_col)
-            self.id = id
-            input_args = []
-            for col in self.col_names:
-                col_val = getattr(self, col)
-                if len(col_val) == 0:
-                    col_val = None
-                input_args.append(col_val)
-            params = tuple([id] + [action.id_num] + input_args)
-            if hasattr(self, "params"):
-                print("IS THIS RIGHT?????")
-                input_args = self.params
+            self.id = id            
+            if hasattr(self, "input_args"):
+                input_args = self.input_args
+            else:
+                input_args = []
+                for col in self.col_names:
+                    tmp = getattr(self, col)
+                    col_val = None if (tmp is None or len(tmp) == 0) else tmp
+                    input_args.append(col_val)
+                params = tuple([id] + [action.id_num] + input_args)
             if create_new:
                 action.add_sql_query(None, self.insert_query_name, params)
                 
@@ -98,5 +99,5 @@ class PipelineParts(metaclass=MetaPipelineParts):
             action.execute()
 
     @abstractmethod
-    def load_from_db(self, result):
+    def load_from_db(self):
         pass
