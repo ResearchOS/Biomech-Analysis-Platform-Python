@@ -445,7 +445,7 @@ def init_bridges():
     G = build_pl()
 
     # 2. Get the most up-to-date inputs and outputs where show = True.
-    sqlquery_raw = "SELECT id FROM inputs_outputs WHERE show = ?"
+    sqlquery_raw = "SELECT id FROM inlets_outlets WHERE show = ?"
     action = Action(name = "init_bridges")
     params = (1,)
     sqlquery = sql_order_result(action, sqlquery_raw, ["show"], single = False, user = True, computer = False)

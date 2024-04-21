@@ -102,7 +102,7 @@ class Process(PipelineObject):
     def load_inputs(self, action: Action) -> dict:
         """Load the input variables."""
         from ResearchOS.Bridges.input import Input
-        sqlquery_raw = "SELECT id, value, ro_id, vr_name_in_code, show FROM inputs_outputs WHERE is_input = 1 AND ro_id = ?"
+        sqlquery_raw = "SELECT id, value, ro_id, vr_name_in_code, show FROM inlets_outlets WHERE is_input = 1 AND ro_id = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, ["id", "ro_id"], single = True, user = True, computer = False)
         params = (self.id,)
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
@@ -120,7 +120,7 @@ class Process(PipelineObject):
     def load_outputs(self, action: Action) -> dict:
         """Load the output variables."""
         from ResearchOS.Bridges.output import Output
-        sqlquery_raw = "SELECT id, vr_name_in_code FROM inputs_outputs WHERE is_input = 0 AND ro_id = ?"
+        sqlquery_raw = "SELECT id, vr_name_in_code FROM inlets_outlets WHERE is_input = 0 AND ro_id = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, ["id", "ro_id"], single = True, user = True, computer = False)
         params = (self.id,)
         result = action.conn.cursor().execute(sqlquery, params).fetchall()

@@ -15,29 +15,135 @@ from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.action import Action
 import ResearchOS.Bridges.input_types as it
 from ResearchOS.Bridges.input_types import Dynamic
+from ResearchOS.Bridges.pipeline_parts import PipelineParts
 
 logger = logging.getLogger("ResearchOS")
 
-class Port():
-    """Base class for the various port mechanisms to connect between DiGraphs."""
+class Put(PipelineParts):
+    """Base class for the various Put mechanisms to connect between DiGraphs."""
 
-    instances = weakref.WeakValueDictionary()
+    cls_name = "Put"
+    table_name = "inputs_outputs"
+    id_col = "put_id"
+    col_names = ["dynamic_vr_id", "is_input", "order_num", "is_lookup", "value"]
+    insert_query_name = "pipelineobjects_graph_insert"
 
-    def __new__(cls, *args, **kwargs):
-        id = None
-        if "id" in kwargs.keys():
-            id = kwargs["id"]                    
-        if id in Port.instances.keys():
-            return Port.instances[id]
-        instance = super().__new__(cls)
-        if id is not None:
-            Port.instances[id] = instance
-        return instance
-                    
+    def __init__(self, id: int = None,
+                 dynamic_vr_id: list = [],
+                 is_input: list = [],
+                 order_num: list = [],
+                 is_lookup: list = [],
+                 value: list = [],
+                 action: Action = None):
+        self.dynamic_vr_id = dynamic_vr_id
+        self.is_input = is_input
+        self.order_num = order_num
+        self.is_lookup = is_lookup
+        self.value = value
+        where_str = ""
+        params = []
+        for idx in enumerate(dynamic_vr_id):
+            curr_str = "(dynamic_vr_id = ? AND is_input = ? AND order_num = ? AND is_lookup = ?)"
+            if idx == 0:
+                where_str += curr_str
+            else:
+                where_str += " OR " + curr_str
+            params += [dynamic_vr_id[idx], int(is_input[idx]), order_num[idx], int(is_lookup[idx])]
+        self.params = params
+        self.where_str = where_str
+        super().__init__(id = id, action = action)
+
+    def load_from_db(self, dynamic_vr_id: list = [],
+                     is_input: list = [],
+                     order_num: list = [],
+                     is_lookup: list = [],
+                     value: list = []):
+        """Load the dynamic_vr object from the database."""
+        if not isinstance(dynamic_vr_id, list):
+            dynamic_vr_id = [dynamic_vr_id]
+        if not isinstance(is_input, list):
+            is_input = [is_input]
+        if not isinstance(order_num, list):
+            order_num = [order_num]
+        if not isinstance(is_lookup, list):
+            is_lookup = [is_lookup]
+        if not isinstance(value, list):
+            value = [value]
+
+        dynamic_vrs = [Dynamic(id = dynamic_vr_id[idx], action = self.action) for idx in range(len(dynamic_vr_id))]
+        self.dynamic_vrs = dynamic_vrs
+        self.is_input = is_input
+        self.order_num = order_num
+        self.is_lookup = is_lookup
+        self.value = value
+
+    def set_source_pr(parent_ro: "ResearchObject", vr: "Variable", vr_name_in_code: str = None) -> "source_type":
+        """Set the source process or logsheet."""
+        from ResearchOS.research_object_handler import ResearchObjectHandler
+        from ResearchOS.PipelineObjects.process import Process
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
         
+        prs = [pr() for pr in ResearchObjectHandler.instances_list if pr() is not None and isinstance(pr(), (Process,))]
+        lgs = [lg() for lg in ResearchObjectHandler.instances_list if lg() is not None and isinstance(lg(), (Logsheet,))]
+
+        if isinstance(parent_ro, Process):
+            last_idx = prs.index(parent_ro)
+        else:
+            last_idx = len(prs)
+        prs = prs[0:last_idx] # Reverse the list to get the most recent PRs first (go backward in time)
+        prs.reverse()
+
+        final_pr = None        
+        for pr in prs:
+            outputs = pr.outputs.values()
+            for output in outputs:
+                if output is not None and output.vr == vr:                    
+                    final_pr = pr
+                    break # Found the proper pr.
+            if final_pr:
+                break
+
+        if not final_pr:
+            for lg in lgs:
+                for h in lg.headers:
+                    if h[3] == vr:
+                        final_pr = lg
+                        break
+
+        if not final_pr and hasattr(parent_ro, "import_file_vr_name") and vr_name_in_code==parent_ro.import_file_vr_name:
+            final_pr = parent_ro
+
+        if not final_pr:
+            raise ValueError(f"Could not find the source PR for VR {vr}. If this is an import_file_vr, then put that attribute before the 'set_inputs' command.")
+
+        return final_pr
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     def __init__(self):
         if hasattr(self, "id") and self.id is not None:
-            logger.info(f"Already initialized Port with id {self.id}")
+            logger.info(f"Already initialized Put with id {self.id}")
             return
         self.vr = None
         self.pr = None
@@ -104,10 +210,10 @@ class Port():
         # Dynamic VR.
         if dynamic_id is not None:
             params = tuple([_.id for _ in self.put_value.main_vr])
-            sqlquery_raw = f"SELECT io_id FROM inputs_outputs_to_dynamic_vrs WHERE dynamic_vr_id IN ({','.join(['?']*len(params))})"
+            sqlquery_raw = f"SELECT io_id FROM lets_puts WHERE dynamic_vr_id IN ({','.join(['?']*len(params))})"
             sqlquery = sql_order_result(action, sqlquery_raw, ["io_id"], single=True, user = True, computer = False)            
         else: # Hard-coded value.
-            sqlquery_raw = f"SELECT id FROM inputs_outputs WHERE value = ? AND vr_name_in_code = ? AND ro_id = ? AND is_input = 1" # Specifying is_input=1 in case the "value" is NULL.
+            sqlquery_raw = f"SELECT id FROM inlets_outlets WHERE value = ? AND vr_name_in_code = ? AND ro_id = ? AND is_input = 1" # Specifying is_input=1 in case the "value" is NULL.
             sqlquery = sql_order_result(action, sqlquery_raw, ["value", "vr_name_in_code", "ro_id"], single=True, user = True, computer = False)
             params = (value, self.vr_name_in_code, self.parent_ro.id)
             
@@ -117,17 +223,17 @@ class Port():
             self.id = result[0][0]        
         if self.id is None:
             idcreator = IDCreator(action.conn)
-            self.id = idcreator.create_generic_id("inputs_outputs", "id")
+            self.id = idcreator.create_generic_id("inlets_outlets", "id")
             params = (self.id, self.is_input, action.id_num, value, int(self.show), self.parent_ro.id, self.vr_name_in_code)                
-            action.add_sql_query(None, "inputs_outputs_insert", params)
+            action.add_sql_query(None, "inlets_outlets_insert", params)
         if dynamic_id is not None:
             # Associate the dynamic VR with the input_output.
             for idx, dynamic_vr in enumerate(self.put_value.main_vr):
                 is_lookup = self.put_value.lookup_vr is not None
                 params = (action.id_num, self.id, dynamic_vr.id, idx, int(is_lookup))
-                action.add_sql_query(None, "inputs_outputs_to_dynamic_vrs_insert", params)
+                action.add_sql_query(None, "lets_puts_insert", params)
 
-        Port.instances[self.id] = self
+        Put.instances[self.id] = self
 
         if return_conn:
             action.commit = True
@@ -151,19 +257,19 @@ class Port():
             return_conn = True
 
         if hasattr(self, "id"):
-            return # Already initialized, loaded from Port.instances
+            return # Already initialized, loaded from Put.instances
 
         if id is not None:
             # Run the SQL query to load the values.
-            sqlquery_raw = "SELECT id, is_input, value, show, ro_id, vr_name_in_code FROM inputs_outputs WHERE id = ?"
+            sqlquery_raw = "SELECT id, is_input, value, show, ro_id, vr_name_in_code FROM inlets_outlets WHERE id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=True, user = True, computer = False)
             params = (id,)
             result = action.conn.execute(sqlquery, params).fetchall()
             if not result:
-                raise ValueError(f"Port with id {id} not found in database.")
+                raise ValueError(f"Put with id {id} not found in database.")
             id, is_input, value, show, ro_id, vr_name_in_code = result[0]
             value = json.loads(value)
-            sqlquery_raw = "SELECT dynamic_vr_id FROM inputs_outputs_to_dynamic_vrs WHERE io_id = ?"
+            sqlquery_raw = "SELECT dynamic_vr_id FROM lets_puts WHERE io_id = ?"
             sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=False, user = True, computer = False)
             params = (id,)
             result = action.conn.execute(sqlquery, params).fetchall()

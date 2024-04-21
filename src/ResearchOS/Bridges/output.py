@@ -9,10 +9,10 @@ if TYPE_CHECKING:
     from ResearchOS.PipelineObjects.logsheet import Logsheet
     source_type = Union[Process, Logsheet]
 
-from ResearchOS.Bridges.port import Port
+from ResearchOS.Bridges.Put import Put
 
-class Output(Port):
-    """Output port to connect between DiGraphs."""
+class Output(Put):
+    """Output Put to connect between DiGraphs."""
 
     is_input: bool = False
 
