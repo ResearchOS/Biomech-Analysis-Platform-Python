@@ -24,8 +24,14 @@ class Dynamic(PipelineParts):
                  pr_id: Union["Process", "Logsheet"] = None,
                  order_num: int = None,
                  is_lookup: bool = False,
+                 vr: Variable = None,
+                 pr: Union["Process", "Logsheet"] = None,
                  action: Action = None):           
 
+        if vr:
+            vr_id = vr.id
+        if pr:
+            pr_id = pr.id
         self.vr_id = vr_id
         self.pr_id = pr_id
         self.order_num = order_num

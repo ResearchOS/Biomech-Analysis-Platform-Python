@@ -200,15 +200,14 @@ class DBInitializer():
         
         # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
         cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
-                        edge_id INTEGER NOT NULL,
+                        edge_id INTEGER NOT NULL PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
                         source_let_put_id INTEGER NOT NULL,
                         target_let_put_id INTEGER NOT NULL,
                         is_active INTEGER NOT NULL DEFAULT 1,                        
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (source_let_put_id) REFERENCES lets_puts(io_dynamic_id) ON DELETE CASCADE,
-                        FOREIGN KEY (target_let_put_id) REFERENCES lets_puts(io_dynamic_id) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id_num, edge_id, source_let_put_id, target_let_put_id, is_active)
+                        FOREIGN KEY (target_let_put_id) REFERENCES lets_puts(io_dynamic_id) ON DELETE CASCADE
                         )""")
         
         # Inlets_outlets table. Lists all inlets and outlets.

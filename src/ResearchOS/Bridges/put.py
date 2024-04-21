@@ -53,6 +53,7 @@ class Put(PipelineParts):
                 where_str += " OR " + curr_str
             params += [dynamic_vr_id[idx], int(is_input[idx]), order_num[idx], int(is_lookup[idx])]
         self.params = tuple(params)
+        self.input_args = [dynamic_vr_id, is_input, order_num, is_lookup, value]
         self.where_str = where_str
         super().__init__(id = id, action = action)
 
@@ -60,7 +61,8 @@ class Put(PipelineParts):
                      is_input: list = [],
                      order_num: list = [],
                      is_lookup: list = [],
-                     value: list = []):
+                     value: list = [],
+                     action: Action = None):
         """Load the dynamic_vr object from the database."""
         if not isinstance(dynamic_vr_id, list):
             dynamic_vr_id = [dynamic_vr_id]
@@ -70,10 +72,8 @@ class Put(PipelineParts):
             order_num = [order_num]
         if not isinstance(is_lookup, list):
             is_lookup = [is_lookup]
-        if not isinstance(value, list):
-            value = [value]
 
-        dynamic_vrs = [Dynamic(id = dynamic_vr_id[idx], action = self.action) for idx in range(len(dynamic_vr_id))]
+        dynamic_vrs = [Dynamic(id = dynamic_vr_id[idx], action = action) for idx in range(len(dynamic_vr_id))]
         self.dynamic_vrs = dynamic_vrs
         self.is_input = is_input
         self.order_num = order_num
@@ -129,6 +129,7 @@ class Put(PipelineParts):
                       show: bool = False,
                       action: Action = None) -> None:
         """Clean the input for the Put object."""
+        from ResearchOS.DataObjects.data_object import DataObject
         self.vr = vr
         self.pr = pr
         self.lookup_vr = lookup_vr
@@ -154,6 +155,11 @@ class Put(PipelineParts):
         elif vr is not None:
             if not isinstance(pr, list):
                 pr = [pr]
+            # prs = []
+            # for pr in pr:
+            #     if pr is not None and not isinstance(pr, (Process, Logsheet)):
+            #         pr = self.set_source_pr(parent_ro, vr, vr_name_in_code)
+            #     prs.append(pr)
             if lookup_pr is not None and not isinstance(lookup_pr, list):
                 lookup_pr = [lookup_pr]
             dynamic_vrs = [Dynamic(vr_id=vr.id, pr_id=pr.id, action=action, order_num=idx) for idx, pr in enumerate(pr)] if pr else []
@@ -164,6 +170,10 @@ class Put(PipelineParts):
         self.order_num = [vr.order_num for vr in all_vrs]
         self.is_lookup = [vr.is_lookup for vr in all_vrs]
         self.value = value
+
+        action.commit = True
+        action.execute(return_conn=False)
+        action.commit = False
         
     
     
