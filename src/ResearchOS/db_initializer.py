@@ -206,33 +206,34 @@ class DBInitializer():
                         target_let_put_id INTEGER NOT NULL,
                         is_active INTEGER NOT NULL DEFAULT 1,                        
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (source_let_put_id) REFERENCES lets_puts(io_dynamic_id) ON DELETE CASCADE,
-                        FOREIGN KEY (target_let_put_id) REFERENCES lets_puts(io_dynamic_id) ON DELETE CASCADE
+                        FOREIGN KEY (source_let_put_id) REFERENCES lets_puts(let_put_id) ON DELETE CASCADE,
+                        FOREIGN KEY (target_let_put_id) REFERENCES lets_puts(let_put_id) ON DELETE CASCADE
                         )""")
         
         # Inlets_outlets table. Lists all inlets and outlets.
         cursor.execute("""CREATE TABLE IF NOT EXISTS inlets_outlets (
-                        id INTEGER,
+                        let_id INTEGER PRIMARY KEY,
                         is_input INTEGER NOT NULL DEFAULT 1,
                         action_id_num INTEGER NOT NULL,
-                        ro_id TEXT NOT NULL,
-                        vr_name_in_code TEXT NOT NULL,                        
+                        parent_ro_id TEXT NOT NULL,
+                        vr_name_in_code TEXT NOT NULL,  
+                        value TEXT,
+                        show INTEGER NOT NULL DEFAULT 0,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (ro_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (id, is_input, action_id_num, ro_id, vr_name_in_code)
+                        FOREIGN KEY (parent_ro_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         )""")
         
         # puts_lets table. Lists all inputs & outputs to inlets & outlets.
         cursor.execute("""CREATE TABLE IF NOT EXISTS lets_puts (
-                        io_dynamic_id INTEGER PRIMARY KEY,
+                        let_put_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
-                        io_id INTEGER NOT NULL,
-                        dynamic_vr_id INTEGER NOT NULL,
+                        put_id INTEGER NOT NULL,
+                        let_id INTEGER NOT NULL,
                         order_num INTEGER NOT NULL,   
                         is_lookup INTEGER NOT NULL DEFAULT 0,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (io_id) REFERENCES inlets_outlets(id) ON DELETE CASCADE,
-                        FOREIGN KEY (dynamic_vr_id) REFERENCES dynamics_vrs(dynamic_vr_id) ON DELETE CASCADE
+                        FOREIGN KEY (put_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
+                        FOREIGN KEY (let_id) REFERENCES inlets_outlets(let_id) ON DELETE CASCADE
                         )""")
         
         # run_history table. Lists all actions that occurred during runs.
@@ -248,9 +249,8 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS dynamic_vrs (
                         dynamic_vr_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
-                        vr_id TEXT NOT NULL,
-                        pr_id TEXT NOT NULL,                        
-                        is_input INTEGER NOT NULL DEFAULT 1,
+                        vr_id TEXT,
+                        pr_id TEXT,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
@@ -262,11 +262,9 @@ class DBInitializer():
                         put_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
                         dynamic_vr_id INTEGER,
-                        order_num INTEGER NOT NULL,
+                        order_num INTEGER,
                         is_input INTEGER NOT NULL DEFAULT 1,
                         is_lookup INTEGER NOT NULL DEFAULT 0,
-                        value TEXT,
-                        show INTEGER NOT NULL DEFAULT 0,
                         FOREIGN KEY (dynamic_vr_id) REFERENCES dynamic_vrs(dynamic_vr_id) ON DELETE CASCADE,                        
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")

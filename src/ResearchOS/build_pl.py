@@ -10,6 +10,8 @@ from ResearchOS.cli.get_all_paths_of_type import import_objects_of_type
 from ResearchOS.Bridges.edge import Edge
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.Bridges.let import Let
+from ResearchOS.Bridges.letput import LetPut
 
 # 1. When running a Process's "set_inputs" or "set_outputs" the user will expect to have the inputs & outputs connected to the proper places after each run.
 # However, when "building" the pipeline, doing that for each Process would be inefficient.
@@ -66,11 +68,20 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
         action.execute()
     return G
 
+def make_all_let_puts(ro: "ResearchObject", is_input):
+    """Connect Input/Output to Inlet/Outlet."""
+    if is_input:
+        lets = ro.inputs
+    else:
+        lets = ro.outputs
+    for let in lets.values():
+        for put in let.put:
+            let_put = LetPut(let=let, put=put, action=ro.action)
+
 def make_all_edges(ro: "ResearchObject"):
         # For each input, find an Outlet with a matching output.
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet
-        from ResearchOS.Bridges.input_types import DynamicMain
         from ResearchOS.Bridges.output import Output
         all_pr_objs = [pr() for pr in ResearchObjectHandler.instances_list if pr() is not None and isinstance(pr(), (Process,))]
         lg_objs = [lg() for lg in ResearchObjectHandler.instances_list if lg() is not None and isinstance(lg(), (Logsheet,))]
@@ -82,26 +93,26 @@ def make_all_edges(ro: "ResearchObject"):
         action = Action(name="Build_PL")
         lg = lg_objs[0]
         for key, input in ro.inputs.items():            
-            if not isinstance(input.put_value, DynamicMain):
-                continue
-            lookup_vrs = [v for v in input.put_value.lookup_vr] if input.put_value.lookup_vr is not None else []
-            main_dynamic_vrs = [v for v in input.put_value.main_vr]
-            all_dynamic_vrs = main_dynamic_vrs + lookup_vrs
+            if not input.dynamic_vrs:
+                continue                 
+            all_dynamic_vrs = input.dynamic_vrs
+            dynamic_vr_prs = [v.pr for v in all_dynamic_vrs]
             for pr in all_pr_objs:
                 for dynamic_vr in all_dynamic_vrs:                
                     for output in pr.outputs.values():                    
                         if output.vr is None:
                             continue                    
                         if input.vr == output.vr and output.pr in input.pr:
-                            used_pr = True
-                            e = Edge(input=input, output=output, action=action, print_edge=True)
+                            e = Edge(input=input, output=output, action=action)
             
-            if lg in input.pr:
+            if lg in dynamic_vr_prs:
                 lg.validate_headers(lg.headers, action, [])
                 for h in lg.headers:
                     if h[3] == input.vr:
-                        output = Output(vr=input.vr, pr=lg, action=action, show=True, parent_ro=lg, vr_name_in_code=h[0])
-                        e = Edge(input=input, output=output, action=action, print_edge=True)  
+                        outlet = Let(is_input=False, vr_name_in_code=h[0], parent_ro=lg, action=action)
+                        output = Output(vr=input.vr, pr=lg, action=action)
+                        let_put = LetPut(let=outlet, put=output, action=action)
+                        e = Edge(input=input, output=output, action=action)  
                         break                      
         
         # Now that all the Edges have been created, commit the Action.

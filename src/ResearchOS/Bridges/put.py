@@ -25,8 +25,8 @@ class Put(PipelineParts):
     cls_name = "Put"
     table_name = "inputs_outputs"
     id_col = "put_id"
-    col_names = ["dynamic_vr_id", "is_input", "order_num", "is_lookup", "value"]
-    insert_query_name = "pipelineobjects_graph_insert"
+    col_names = ["dynamic_vr_id", "is_input", "order_num", "is_lookup"]
+    insert_query_name = "inputs_outputs_insert"
 
     def __eq__(self, other: "Put") -> bool:
         return self.id == other.id
@@ -36,24 +36,38 @@ class Put(PipelineParts):
                  is_input: list = [],
                  order_num: list = [],
                  is_lookup: list = [],
-                 value: list = [],
+                 dynamic_vrs: list = None,
                  action: Action = None):
+        """Initializes the Put object."""
+        if dynamic_vrs:
+            dynamic_vr_id = []
+            is_input = []
+            order_num = []
+            is_lookup = []
+            for dynamic_vr in dynamic_vrs:
+                is_lookup.append(dynamic_vr.is_lookup)
+                dynamic_vr_id.append(dynamic_vr.id)
+                is_input.append(dynamic_vr.is_input)
+                order_num.append(dynamic_vr.order_num)
+        self.dynamic_vrs = dynamic_vrs
         self.dynamic_vr_id = dynamic_vr_id
         self.is_input = is_input
         self.order_num = order_num
         self.is_lookup = is_lookup
-        self.value = value
         where_str = ""
         params = []
-        for idx in range(len(dynamic_vr_id)):
+        for idx in range(max(len(dynamic_vr_id), 1)):
             curr_str = "(dynamic_vr_id = ? AND is_input = ? AND order_num = ? AND is_lookup = ?)"
             if idx == 0:
                 where_str += curr_str
             else:
                 where_str += " OR " + curr_str
-            params += [dynamic_vr_id[idx], int(is_input[idx]), order_num[idx], int(is_lookup[idx])]
+            if dynamic_vr_id:
+                params += [dynamic_vr_id[idx], int(is_input[idx]), order_num[idx], int(is_lookup[idx])]
+        if not params:
+            params = [None, None, None, None]
         self.params = tuple(params)
-        self.input_args = [dynamic_vr_id, is_input, order_num, is_lookup, value]
+        self.input_args = [dynamic_vr_id, is_input, order_num, is_lookup]
         self.where_str = where_str
         super().__init__(id = id, action = action)
 
@@ -61,7 +75,6 @@ class Put(PipelineParts):
                      is_input: list = [],
                      order_num: list = [],
                      is_lookup: list = [],
-                     value: list = [],
                      action: Action = None):
         """Load the dynamic_vr object from the database."""
         if not isinstance(dynamic_vr_id, list):
@@ -78,7 +91,6 @@ class Put(PipelineParts):
         self.is_input = is_input
         self.order_num = order_num
         self.is_lookup = is_lookup
-        self.value = value
 
     def set_source_pr(parent_ro: "ResearchObject", vr: "Variable", vr_name_in_code: str = None) -> "source_type":
         """Set the source process or logsheet."""
@@ -126,23 +138,16 @@ class Put(PipelineParts):
                       lookup_vr: "Variable" = None, 
                       lookup_pr: "source_type" = None, 
                       value: Any = None, 
-                      show: bool = False,
+                      show: bool = None,
                       action: Action = None) -> None:
         """Clean the input for the Put object."""
-        from ResearchOS.DataObjects.data_object import DataObject
-        self.vr = vr
-        self.pr = pr
-        self.lookup_vr = lookup_vr
-        self.lookup_pr = lookup_pr
-        self.value = value
-        self.show = show
-        
-        # TODO: The Import File VR
+        from ResearchOS.DataObjects.data_object import DataObject                       
 
         # DataObject attributes
         value = None
         dynamic_vrs = []
         lookup_vrs = []
+        all_vrs = []
         if isinstance(value, dict):
             key = [key for key in self.value.keys()][0]
             if key in DataObject.__subclasses__():
@@ -153,16 +158,11 @@ class Put(PipelineParts):
         elif value is not None:
             value = json.dumps(value) # Hard-coded value.
         elif vr is not None:
-            if not isinstance(pr, list):
-                pr = [pr]
-            # prs = []
-            # for pr in pr:
-            #     if pr is not None and not isinstance(pr, (Process, Logsheet)):
-            #         pr = self.set_source_pr(parent_ro, vr, vr_name_in_code)
-            #     prs.append(pr)
+            if pr is not None and not isinstance(pr, list):
+                pr = [pr]            
             if lookup_pr is not None and not isinstance(lookup_pr, list):
                 lookup_pr = [lookup_pr]
-            dynamic_vrs = [Dynamic(vr_id=vr.id, pr_id=pr.id, action=action, order_num=idx) for idx, pr in enumerate(pr)] if pr else []
+            dynamic_vrs = [Dynamic(vr_id=vr.id, pr_id=pr.id, action=action, order_num=idx) for idx, pr in enumerate(pr)] if pr is not None else []
             lookup_vrs = [Dynamic(vr_id=lookup_vr.id, pr_id=lookup_pr.id, action=action, is_lookup = True, order_num=idx) for idx, lookup_pr in enumerate(lookup_pr)] if lookup_vr is not None else []
             all_vrs = dynamic_vrs + lookup_vrs
         self.dynamic_vr_id = [_.id for _ in all_vrs]
@@ -267,8 +267,8 @@ class Put(PipelineParts):
     #     # Dynamic VR.
     #     if dynamic_id is not None:
     #         params = tuple([_.id for _ in self.put_value.main_vr])
-    #         sqlquery_raw = f"SELECT io_id FROM lets_puts WHERE dynamic_vr_id IN ({','.join(['?']*len(params))})"
-    #         sqlquery = sql_order_result(action, sqlquery_raw, ["io_id"], single=True, user = True, computer = False)            
+    #         sqlquery_raw = f"SELECT put_id FROM lets_puts WHERE dynamic_vr_id IN ({','.join(['?']*len(params))})"
+    #         sqlquery = sql_order_result(action, sqlquery_raw, ["put_id"], single=True, user = True, computer = False)            
     #     else: # Hard-coded value.
     #         sqlquery_raw = f"SELECT id FROM inlets_outlets WHERE value = ? AND vr_name_in_code = ? AND ro_id = ? AND is_input = 1" # Specifying is_input=1 in case the "value" is NULL.
     #         sqlquery = sql_order_result(action, sqlquery_raw, ["value", "vr_name_in_code", "ro_id"], single=True, user = True, computer = False)
@@ -326,7 +326,7 @@ class Put(PipelineParts):
     #             raise ValueError(f"Put with id {id} not found in database.")
     #         id, is_input, value, show, ro_id, vr_name_in_code = result[0]
     #         value = json.loads(value)
-    #         sqlquery_raw = "SELECT dynamic_vr_id FROM lets_puts WHERE io_id = ?"
+    #         sqlquery_raw = "SELECT dynamic_vr_id FROM lets_puts WHERE put_id = ?"
     #         sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single=False, user = True, computer = False)
     #         params = (id,)
     #         result = action.conn.execute(sqlquery, params).fetchall()

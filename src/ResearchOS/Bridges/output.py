@@ -4,12 +4,12 @@ import json
 if TYPE_CHECKING:
     from ResearchOS.variable import Variable
     from ResearchOS.action import Action
-    from ResearchOS.research_object import ResearchObject
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.logsheet import Logsheet
     source_type = Union[Process, Logsheet]
 
 from ResearchOS.Bridges.put import Put
+from ResearchOS.Bridges.input_types import Dynamic
 
 class Output(Put):
     """Output Put to connect between DiGraphs."""
@@ -23,12 +23,18 @@ class Output(Put):
                  action: "Action" = None):
         """Initializes the Output object. "vr" and "pr" together make up the main source of the output."""
         self.is_input = False
+
+        self.vr = vr
+        self.pr = pr
+        self.show = show 
         if id is None:
             self.clean_for_put(vr = vr, pr = pr, show = show, action = action)
+        
+        # Make sure the dynamic VR is created.
+        dynamic_vrs = []
+        if not isinstance(pr, list):
+            pr = [pr]
+        dynamic_vrs = [Dynamic(vr = vr, pr = pr, order_num = i, action = action, is_input=False) for i, pr in enumerate(pr)]
         super().__init__(id=id, 
                          action=action, 
-                         dynamic_vr_id=self.dynamic_vr_id, 
-                         is_input=self.is_input, 
-                         order_num=self.order_num,
-                         is_lookup=self.is_lookup,
-                         value=self.value)
+                         dynamic_vrs=dynamic_vrs)

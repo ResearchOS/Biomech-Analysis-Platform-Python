@@ -65,7 +65,7 @@ class Edge(PipelineParts):
     #         if not result:
     #             raise ValueError(f"Edge with id {id} not found in database.")
     #         source_put_let_id, target_put_let_id = result[0][1], result[0][2]
-    #         sqlquery_raw = "SELECT io_id, dynamic_vr_id, order_num, is_lookup FROM lets_puts WHERE io_dynamic_id IN (?, ?)"
+    #         sqlquery_raw = "SELECT put_id, dynamic_vr_id, order_num, is_lookup FROM lets_puts WHERE let_put_id IN (?, ?)"
     #         sqlquery = sql_order_result(action, sqlquery_raw, [], single=False, user = True, computer = False)
     #         params = (source_put_let_id, target_put_let_id)
     #         result = action.conn.execute(sqlquery, params).fetchall()

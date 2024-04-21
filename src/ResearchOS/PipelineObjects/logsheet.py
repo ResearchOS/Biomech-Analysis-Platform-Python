@@ -18,6 +18,7 @@ from ResearchOS.DataObjects.data_object import load_data_object_classes
 from ResearchOS.validator import Validator
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.Bridges.input_types import Dynamic
+from ResearchOS.Bridges.let import Let
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -150,7 +151,8 @@ class Logsheet(PipelineObject):
             ''headers'' as a JSON string using ''json.dumps''"""
         from ResearchOS.Bridges.output import Output
         # Create Outlets and Outputs for the Logsheet        
-        for header in headers:    
+        for header in headers:
+            outlet = Let(is_input=False, action=action, parent_ro=self, vr_name_in_code=header[0], show=False)
             output = Output(vr=header[3], pr=self, action=action, show = False)
 
         str_headers = []        
