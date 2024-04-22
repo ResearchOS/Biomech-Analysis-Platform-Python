@@ -31,6 +31,11 @@ class Dynamic(PipelineParts):
         """Initializes the Dynamic object."""
         super().__init__(id = id, action = action)
 
+        # Helpful but not saved
+        self.order_num = order_num
+        self.is_lookup = is_lookup
+        self.is_input = is_input
+
         if id:
             self.load_from_db2(id, action)            
             # Make sure that the objects are created.
@@ -49,10 +54,7 @@ class Dynamic(PipelineParts):
             self.assign_id(attrs, action)
             self.save(attrs, action)
 
-        # Helpful but not saved
-        self.order_num = order_num
-        self.is_lookup = is_lookup
-        self.is_input = is_input
+        
 
 
 
@@ -74,7 +76,7 @@ class Dynamic(PipelineParts):
 
     def init_from_attrs(self, vr_id: str, pr_id: str, action: Action = None):
         from ResearchOS.PipelineObjects.process import Process
-        from ResearchOS.PipelineObjects.logsheet import Logsheet 
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
         self.vr = Variable(id = vr_id, action=action) if vr_id is not None else None
         self.pr = None
         if pr_id is not None:
