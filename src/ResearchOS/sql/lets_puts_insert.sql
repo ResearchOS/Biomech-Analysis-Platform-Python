@@ -1,1 +1,1 @@
-INSERT INTO lets_puts (id, action_id_num, put_id, let_id) VALUES (?, ?, ?)
+INSERT INTO lets_puts (id, action_id_num, put_id, let_id) VALUES (?, ?, ?, ?)

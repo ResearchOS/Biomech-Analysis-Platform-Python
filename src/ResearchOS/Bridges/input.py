@@ -34,8 +34,7 @@ class Input(Put):
         self.value = value
         self.show = show 
         # Convert this input to those suitable for a Put object:
-        if id is not None:
-            self.clean_for_put(vr=vr, pr=pr, lookup_vr=lookup_vr, lookup_pr=lookup_pr, value=value, show=show, action=action)
+        self.clean_for_put(vr=vr, pr=pr, lookup_vr=lookup_vr, lookup_pr=lookup_pr, value=value, show=show, action=action)
         
         # Make sure the main PR is properly initialized.
         main_vrs = []
@@ -57,6 +56,8 @@ class Input(Put):
                 lookup_vrs = [Dynamic(vr=lookup_vr, pr=lookup_pr, order_num=idx, is_lookup=True, action=action) for idx, lookup_pr in enumerate(lookup_pr)]
         else:
             do_init = False
+                
         if do_init:
             dynamic_vrs=main_vrs+lookup_vrs
+            self.dynamic_vrs = dynamic_vrs
             super().__init__(id=id, action=action, dynamic_vrs=dynamic_vrs)

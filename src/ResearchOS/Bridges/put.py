@@ -27,15 +27,13 @@ class Put(PipelineParts):
     id_col = "put_id"
     col_names = ["dynamic_vr_id", "is_input", "order_num", "is_lookup"]
     insert_query_name = "inputs_outputs_insert"
-
-    def __eq__(self, other: "Put") -> bool:
-        return self.id == other.id
+    init_attr_names = ["dynamic_vrs", "is_input", "order_num", "is_lookup"]
 
     def __init__(self, id: int = None,
-                 dynamic_vr_id: list = [],
-                 is_input: list = [],
-                 order_num: list = [],
-                 is_lookup: list = [],
+                 dynamic_vr_id: list = [None],
+                 is_input: list = [True],
+                 order_num: list = [0],
+                 is_lookup: list = [False],
                  dynamic_vrs: list = None,
                  action: Action = None):
         """Initializes the Put object."""
@@ -171,9 +169,12 @@ class Put(PipelineParts):
         self.is_lookup = [vr.is_lookup for vr in all_vrs]
         self.value = value
 
-        action.commit = True
-        action.execute(return_conn=False)
-        action.commit = False
+        self.dynamic_vrs = dynamic_vrs
+        self.lookup_vrs = lookup_vrs
+
+        # action.commit = True
+        # action.execute(return_conn=False)
+        # action.commit = False
         
     
     

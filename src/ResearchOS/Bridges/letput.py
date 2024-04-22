@@ -12,6 +12,7 @@ class LetPut(PipelineParts):
     id_col = "let_put_id"
     col_names = ["put_id", "let_id"]
     insert_query_name = "lets_puts_insert"
+    init_attr_names = ["put", "let"]
 
     def __init__(self, id: int = None, 
                  put: Put = None, 

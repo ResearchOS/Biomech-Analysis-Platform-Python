@@ -27,14 +27,13 @@ class Output(Put):
         self.vr = vr
         self.pr = pr
         self.show = show 
-        if id is None:
-            self.clean_for_put(vr = vr, pr = pr, show = show, action = action)
+        self.clean_for_put(vr = vr, pr = pr, show = show, action = action)
         
         # Make sure the dynamic VR is created.
         dynamic_vrs = []
         if not isinstance(pr, list):
             pr = [pr]
-        dynamic_vrs = [Dynamic(vr = vr, pr = pr, order_num = i, action = action, is_input=False) for i, pr in enumerate(pr)]
+        dynamic_vrs = self.dynamic_vrs
         super().__init__(id=id, 
                          action=action, 
                          dynamic_vrs=dynamic_vrs)
