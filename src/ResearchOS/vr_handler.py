@@ -55,18 +55,11 @@ class VRHandler():
 
             let = Let(is_input=is_input, parent_ro=parent_ro, vr_name_in_code=key, action=action, value=json.dumps(value), show=put.show)
 
-            force_init = False
-            if is_input:
-                for idx, dynamic_vr in enumerate(put.dynamic_vrs):
-                    if dynamic_vr is None and dict_put.hard_coded_value is None:
-                        force_init = True
-                        pr = put_cls.set_source_pr(parent_ro, dict_put, key)
-                        dynamic_vr = dynamic_vr.__class__(vr=dict_put, pr=pr, is_input=is_input, action=action)
-                        put.dynamic_vrs[idx] = dynamic_vr
-            
-            # if hasattr(put, "action"):
-            #     del put.action
-            # put = put_cls(**put.__dict__, force_init=force_init, action=action)
+            for idx, dynamic_vr in enumerate(put.dynamic_vrs):
+                if dynamic_vr is None and dict_put.hard_coded_value is None:
+                    pr = put_cls.set_source_pr(parent_ro, dict_put, key)
+                    dynamic_vr = dynamic_vr.__class__(vr=dict_put, pr=pr, is_input=is_input, action=action)
+                    put.dynamic_vrs[idx] = dynamic_vr
 
             standardized[let] = put
             let_put = LetPut(let=let, put=put, action=action)

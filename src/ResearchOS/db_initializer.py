@@ -227,10 +227,13 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS lets_puts (
                         let_put_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
-                        put_id INTEGER NOT NULL,
+                        dynamic_vr_id INTEGER NOT NULL,
                         let_id INTEGER NOT NULL,
+                        order_num INTEGER,
+                        is_input INTEGER NOT NULL DEFAULT 1,
+                        is_lookup INTEGER NOT NULL DEFAULT 0,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (put_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
+                        FOREIGN KEY (put_id) REFERENCES dynamic_vrs(dynamic_vr_id) ON DELETE CASCADE,
                         FOREIGN KEY (let_id) REFERENCES inlets_outlets(let_id) ON DELETE CASCADE
                         )""")
         
@@ -255,15 +258,12 @@ class DBInitializer():
                         UNIQUE (vr_id, pr_id)
                         )""")
         
-        # Inputs & outputs table. Lists all inputs & outputs. These are just a collection of dynamic VR's.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS inputs_outputs (
-                        put_id INTEGER PRIMARY KEY,
-                        action_id_num INTEGER NOT NULL,
-                        dynamic_vr_id INTEGER,
-                        order_num INTEGER,
-                        is_input INTEGER NOT NULL DEFAULT 1,
-                        is_lookup INTEGER NOT NULL DEFAULT 0,
-                        FOREIGN KEY (dynamic_vr_id) REFERENCES dynamic_vrs(dynamic_vr_id) ON DELETE CASCADE,                        
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
-                        )""")
+        # # Inputs & outputs table. Lists all inputs & outputs. These are just a collection of dynamic VR's.
+        # cursor.execute("""CREATE TABLE IF NOT EXISTS inputs_outputs (
+        #                 put_id INTEGER PRIMARY KEY,
+        #                 action_id_num INTEGER NOT NULL,
+        #                 dynamic_vr_id INTEGER,                        
+        #                 FOREIGN KEY (dynamic_vr_id) REFERENCES dynamic_vrs(dynamic_vr_id) ON DELETE CASCADE,                        
+        #                 FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
+        #                 )""")
         
