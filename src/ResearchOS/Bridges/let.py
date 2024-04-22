@@ -16,6 +16,7 @@ class Let(PipelineParts):
     col_names = ["is_input", "parent_ro_id", "vr_name_in_code", "value", "show"]
     insert_query_name = "inlets_outlets_insert"
     init_attr_names = ["is_input", "parent_ro", "vr_name_in_code", "value", "show"]
+    allowable_none_cols = ["value"]
 
     def __init__(self, id: int = None,
                  is_input: bool = False,

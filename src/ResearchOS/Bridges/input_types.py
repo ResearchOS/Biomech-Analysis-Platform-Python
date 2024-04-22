@@ -7,7 +7,6 @@ if TYPE_CHECKING:
 from ResearchOS.variable import Variable
 from ResearchOS.action import Action 
 
-from dataclasses import dataclass
 from ResearchOS.Bridges.pipeline_parts import PipelineParts
 
 class Dynamic(PipelineParts):
@@ -17,13 +16,13 @@ class Dynamic(PipelineParts):
     id_col = "dynamic_vr_id"
     col_names = ["vr_id", "pr_id"]
     insert_query_name = "dynamic_vrs_insert"
-    init_attr_names = ["vr", "pr", "order_num", "is_lookup", "is_input"]
+    init_attr_names = ["vr", "pr"]
     
     def __init__(self, 
                  id: str = None,
                  vr_id: "Variable" = None, 
                  pr_id: Union["Process", "Logsheet"] = None,
-                 order_num: int = None,
+                 order_num: int = 0,
                  is_lookup: bool = False,
                  vr: Variable = None,
                  pr: Union["Process", "Logsheet"] = None,

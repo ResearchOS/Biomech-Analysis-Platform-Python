@@ -93,17 +93,9 @@ class IDCreator():
         instance_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
         abstract_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}$"
         subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
-        # Check for a valid prefix.
-        # self.pool.return_connection(self.conn)
-        # self.pool.return_connection(self.conn)
         if not any(id.startswith(cls.prefix) for cls in subclasses if hasattr(cls, "prefix")):
             return False
         return True
-        # if not isinstance(id, str):
-        #     raise ValueError("id must be a str!")
-        # if re.match(instance_pattern, id) or re.match(abstract_pattern, id):
-        #     return True
-        # return False  
 
     def create_generic_id(self, table_name: str, id_name: str) -> str:
         """Create a generic ID for the given table."""
@@ -117,4 +109,5 @@ class IDCreator():
             rows = cursor.fetchall()
             if len(rows) == 0:
                 is_unique = True
+            # Check in the action add_sql_query.            
         return id
