@@ -90,7 +90,9 @@ def make_all_edges(ro: "ResearchObject"):
             all_dynamic_vrs = input.dynamic_vrs
             dynamic_vr_prs = [v.pr for v in all_dynamic_vrs if v is not None]
             for pr in all_pr_objs:
-                for dynamic_vr in all_dynamic_vrs:                
+                for dynamic_vr in all_dynamic_vrs: 
+                    if not dynamic_vr.vr:
+                        continue               
                     for output in pr.outputs.values():  
                         for output_dynamic_vr in output.dynamic_vrs:                  
                             if output_dynamic_vr.vr is None:
