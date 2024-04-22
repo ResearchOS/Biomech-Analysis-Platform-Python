@@ -247,8 +247,8 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS dynamic_vrs (
                         dynamic_vr_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
-                        vr_id TEXT,
-                        pr_id TEXT,
+                        vr_id TEXT NOT NULL,
+                        pr_id TEXT NOT NULL,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,

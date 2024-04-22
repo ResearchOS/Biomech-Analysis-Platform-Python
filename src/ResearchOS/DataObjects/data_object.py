@@ -223,9 +223,9 @@ class DataObject(ResearchObject):
             if not isinstance(dynamic_vr, Dynamic):
                 dynamic_vr = Dynamic(vr = vr, pr = pr, action = action)
             if isinstance(vr_hashes_dict[vr]["scalar_value"], str):
-                vr_value_params = (action.id_num, dynamic_vr.id, self.id, vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["scalar_value"], None)
+                vr_value_params = (dynamic_vr.id, action.id_num, self.id, vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["scalar_value"], None)
             else:
-                vr_value_params = (action.id_num, dynamic_vr.id, self.id, vr_hashes_dict[vr]["hash"], None, vr_hashes_dict[vr]["scalar_value"])
+                vr_value_params = (dynamic_vr.id, action.id_num, self.id, vr_hashes_dict[vr]["hash"], None, vr_hashes_dict[vr]["scalar_value"])
             vr_value_pk = vr_value_params
             # Don't insert the data_blob if it already exists.
             if not vr in vr_hashes_prev_exist and vr_hashes_dict[vr]["hash"] is not None:

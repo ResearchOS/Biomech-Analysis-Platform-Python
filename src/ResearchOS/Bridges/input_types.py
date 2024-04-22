@@ -27,27 +27,63 @@ class Dynamic(PipelineParts):
                  vr: Variable = None,
                  pr: Union["Process", "Logsheet"] = None,
                  is_input: bool = True,
-                 action: Action = None):           
+                 action: Action = None):
+        """Initializes the Dynamic object."""
+        super().__init__(id = id, action = action)
 
-        if vr:
-            vr_id = vr.id
-        if pr:
-            pr_id = pr.id
-        if vr_id and not vr:
-            vr = Variable(id = vr_id, action = action)
-        if pr_id and not pr:
-            pr = Process(id = pr_id, action = action) if pr_id.startswith("PR") else Logsheet(id = pr_id, action = action)
-        self.vr_id = vr_id
-        self.pr_id = pr_id
+        if id:
+            self.load_from_db2(id, action)            
+            # Make sure that the objects are created.
+            # self.vr = Variable(id = self.vr_id, action = action)
+            # self.pr = Process(id = self.pr_id, action = action) if self.pr_id.startswith("PR") else Logsheet(id = self.pr_id, action = action)
+            return
+        
+        attrs = {}
+        vr_id = vr.id if vr else vr_id
+        pr_id = pr.id if pr else pr_id
+        attrs["vr_id"] = vr_id
+        attrs["pr_id"] = pr_id
+        self.init_from_attrs(**attrs, action=action)        
+        if not self.id:
+            self.get_id_if_present(attrs, action)
+            self.assign_id(attrs, action)
+            self.save(attrs, action)
+
+        # Helpful but not saved
         self.order_num = order_num
         self.is_lookup = is_lookup
         self.is_input = is_input
-        super().__init__(id = id, action = action)
 
-    def load_from_db(self, vr_id: str, pr_id: str, action: Action = None):
+
+
+        # if vr:
+        #     vr_id = vr.id
+        # if pr:
+        #     pr_id = pr.id
+        # if vr_id and not vr:
+        #     vr = Variable(id = vr_id, action = action)
+        # if pr_id and not pr:
+        #     pr = Process(id = pr_id, action = action) if pr_id.startswith("PR") else Logsheet(id = pr_id, action = action)
+        # self.vr_id = vr_id
+        # self.pr_id = pr_id
+        # # Not to be saved in the database with this object.
+        # self.order_num = order_num
+        # self.is_lookup = is_lookup
+        # self.is_input = is_input
+        # super().__init__(id = id, action = action)
+
+    def init_from_attrs(self, vr_id: str, pr_id: str, action: Action = None):
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet 
         self.vr = Variable(id = vr_id, action=action) if vr_id is not None else None
         self.pr = None
         if pr_id is not None:
             self.pr = Process(id = pr_id, action=action) if pr_id.startswith("PR") else Logsheet(id = pr_id, action=action)
+
+    # def load_from_db(self, vr_id: str, pr_id: str, action: Action = None):
+    #     from ResearchOS.PipelineObjects.process import Process
+    #     from ResearchOS.PipelineObjects.logsheet import Logsheet 
+    #     self.vr = Variable(id = vr_id, action=action) if vr_id is not None else None
+    #     self.pr = None
+    #     if pr_id is not None:
+    #         self.pr = Process(id = pr_id, action=action) if pr_id.startswith("PR") else Logsheet(id = pr_id, action=action)
