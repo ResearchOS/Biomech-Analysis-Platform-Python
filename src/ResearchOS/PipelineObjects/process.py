@@ -1,5 +1,6 @@
 from typing import Any, Callable
 import time
+import json
 
 import networkx as nx
 
@@ -9,7 +10,6 @@ from ResearchOS.process_runner import ProcessRunner
 from ResearchOS.vr_handler import VRHandler
 from ResearchOS.build_pl import make_all_edges
 from ResearchOS.sql.sql_runner import sql_order_result
-from ResearchOS.Bridges.let import Let
 
 all_default_attrs = {}
 # For import
@@ -99,19 +99,45 @@ class Process(PipelineObject):
     def save_inputs(self, inputs: dict, action: Action) -> None:
         """Saving the input variables. is done in the input class."""
         pass
-        
-    def load_inputs(self, action: Action) -> dict:
-        """Load the input variables."""
-        sqlquery_raw = "SELECT let_id, value, parent_ro_id, vr_name_in_code, show FROM inlets_outlets WHERE is_input = 1 AND parent_ro_id = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["let_id", "parent_ro_id"], single = True, user = True, computer = False)
+
+    def load_puts(self, action: Action, is_input: bool) -> dict:
+        sqlquery_raw = "SELECT vr_name_in_code, source_pr_id, vr_id, hard_coded_value, order_num, is_lookup, show FROM pipeline WHERE parent_ro_id = ? AND is_active = 1"
+        operator = "IS NOT"
+        if not is_input:
+            operator = "IS"
+        sqlquery_raw += " AND source_pr_id " + operator + " pipeline.parent_ro_id" # Need to include the "pipeline." prefix because of the way sql_order_result works.
+        sqlquery = sql_order_result(action, sqlquery_raw, ["source_pr_id", "vr_name_in_code"], single = True, user = True, computer = False)
         params = (self.id,)
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        inlet_ids = [row[0] for row in result] if result else []
-        inlets = {}
-        for inlet_id in inlet_ids:
-            inlet = Let(id=inlet_id, action=action)            
-            inlets[inlet.vr_name_in_code] = inlet
-        return inlets
+        vr_names = [row[0] for row in result] if result else []
+        inputs = VRHandler.empty_vr_dict(vr_names)
+        for row in result:
+            vr_name = row[0]
+            source_pr_id = row[1]
+            vr_id = row[2]
+            hard_coded_value = json.loads(row[3]) if row[3] else None
+            order_num = row[4]
+            is_lookup = bool(row[5])
+            show = row[6]
+            inputs[vr_name]["show"] = show
+            if not is_lookup:
+                inputs[vr_name]["main"]["vr"] = vr_id if vr_id else hard_coded_value
+                if source_pr_id:
+                    while len(inputs[vr_name]["main"]["pr"]) <= order_num:
+                        inputs[vr_name]["main"]["pr"].append(None)                
+                    inputs[vr_name]["main"]["pr"][order_num] = source_pr_id                
+            else:
+                inputs[vr_name]["lookup"]["vr"] = vr_id
+                if source_pr_id:
+                    while len(inputs[vr_name]["lookup"]["pr"]) <= order_num:
+                        inputs[vr_name]["lookup"]["pr"].append(None)
+                    inputs[vr_name]["lookup"]["pr"][order_num] = source_pr_id if source_pr_id else []
+                
+        return inputs
+        
+    def load_inputs(self, action: Action) -> dict:
+        """Load the input variables."""        
+        return self.load_puts(action, True)
 
     def save_outputs(self, outputs: dict, action: Action) -> None:
         """Saving the output variables. is done in the output class."""
@@ -119,21 +145,13 @@ class Process(PipelineObject):
 
     def load_outputs(self, action: Action) -> dict:
         """Load the output variables."""
-        sqlquery_raw = "SELECT let_id, vr_name_in_code FROM inlets_outlets WHERE is_input = 0 AND parent_ro_id = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["let_id", "parent_ro_id"], single = True, user = True, computer = False)
-        params = (self.id,)
-        result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        outlets = {}
-        for row in result:
-            outlet_id = row[0]
-            outlet = Let(id = outlet_id, action=action)
-            outlets[outlet.vr_name_in_code] = outlet
-        return outlets
+        return self.load_puts(action, False)
+
     
     def set_inputs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict.
         Edges are created here."""
-        standardized_kwargs = VRHandler.standardize_lets_puts(self, kwargs, is_input=True)
+        standardized_kwargs = VRHandler.standardize_lets_puts(self, kwargs)
         self.__dict__["inputs"] = standardized_kwargs
         make_all_edges(self)
 
