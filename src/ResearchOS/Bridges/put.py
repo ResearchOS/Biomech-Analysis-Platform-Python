@@ -34,62 +34,113 @@ class Put(PipelineParts):
                  dynamic_vrs: list = [None],
                  action: Action = None):
         """Initializes the Put object."""
-        if dynamic_vrs and all([d is not None for d in dynamic_vrs]):
-            dynamic_vr_id = []
-            is_input = []
-            order_num = []
-            is_lookup = []
-        for dynamic_vr in dynamic_vrs:
-            if not dynamic_vr:
-                continue
-            is_lookup.append(dynamic_vr.is_lookup)
-            dynamic_vr_id.append(dynamic_vr.id)
-            is_input.append(dynamic_vr.is_input)
-            order_num.append(dynamic_vr.order_num)
-        # Use defaults if any of the dynamic_vr_id is None.
-        if any([d is None for d in dynamic_vr_id]) and not all([d is None for d in dynamic_vr_id]):
-            raise ValueError(f"Why?")
-        self.dynamic_vrs = dynamic_vrs
-        self.dynamic_vr_id = dynamic_vr_id
-        self.is_input = is_input
-        self.order_num = order_num
-        self.is_lookup = is_lookup
-        where_str = ""
-        params = []
-        for idx in range(max(len(dynamic_vr_id), 1)):
-            curr_str = "(dynamic_vr_id = ? AND is_input = ? AND order_num = ? AND is_lookup = ?)"
-            if idx == 0:
-                where_str += curr_str
-            else:
-                where_str += " OR " + curr_str
-            if dynamic_vr_id:
-                params += [dynamic_vr_id[idx], int(is_input[idx]), order_num[idx], int(is_lookup[idx])]
-        if params:
-            self.params = tuple(params)
-            self.input_args = [dynamic_vr_id, is_input, order_num, is_lookup]
-        self.where_str = where_str
         super().__init__(id = id, action = action)
 
-    def load_from_db(self, dynamic_vr_id: list = [],
-                     is_input: list = [],
-                     order_num: list = [],
-                     is_lookup: list = [],
-                     action: Action = None):
-        """Load the dynamic_vr object from the database."""
-        if not isinstance(dynamic_vr_id, list):
-            dynamic_vr_id = [dynamic_vr_id]
-        if not isinstance(is_input, list):
-            is_input = [is_input]
-        if not isinstance(order_num, list):
-            order_num = [order_num]
-        if not isinstance(is_lookup, list):
-            is_lookup = [is_lookup]
+        if id:
+            self.load_from_db2(id, action)
+            # Make sure that the objects are created.
+            self.dynamic_vrs = [Dynamic(id = d, action = action) for d in self.dynamic_vr_id]
+            self.is_input = [d.is_input for d in self.dynamic_vrs]
+            self.order_num = [d.order_num for d in self.dynamic_vrs]
+            self.is_lookup = [d.is_lookup for d in self.dynamic_vrs]            
+            return
+        
+        attrs = {}
+        dynamic_vr_id = [d.id for d in dynamic_vrs] if dynamic_vrs else dynamic_vr_id
+        is_input = [d.is_input for d in dynamic_vrs] if dynamic_vrs else is_input
+        order_num = [d.order_num for d in dynamic_vrs] if dynamic_vrs else order_num
+        is_lookup = [d.is_lookup for d in dynamic_vrs] if dynamic_vrs else is_lookup
+        attrs["dynamic_vr_id"] = dynamic_vr_id
+        attrs["is_input"] = is_input
+        attrs["order_num"] = order_num
+        attrs["is_lookup"] = is_lookup
+        self.init_from_attrs(**attrs, action=action)
+        self.get_id_if_present(attrs, action)
+        if not self.id:
+            self.assign_id(attrs, action)
+            self.save(attrs, action)
 
-        dynamic_vrs = [Dynamic(id = dynamic_vr_id[idx], action = action) for idx in range(len(dynamic_vr_id))]
-        self.dynamic_vrs = dynamic_vrs
-        self.is_input = [d.is_input for d in dynamic_vrs]
-        self.order_num = [d.order_num for d in dynamic_vrs]
-        self.is_lookup = [d.is_lookup for d in dynamic_vrs]
+
+
+
+
+
+
+
+
+
+    #     if dynamic_vrs and all([d is not None for d in dynamic_vrs]):
+    #         dynamic_vr_id = []
+    #         is_input = []
+    #         order_num = []
+    #         is_lookup = []
+    #     for dynamic_vr in dynamic_vrs:
+    #         if not dynamic_vr:
+    #             continue
+    #         is_lookup.append(dynamic_vr.is_lookup)
+    #         dynamic_vr_id.append(dynamic_vr.id)
+    #         is_input.append(dynamic_vr.is_input)
+    #         order_num.append(dynamic_vr.order_num)
+    #     # Use defaults if any of the dynamic_vr_id is None.
+    #     if any([d is None for d in dynamic_vr_id]) and not all([d is None for d in dynamic_vr_id]):
+    #         raise ValueError(f"Why?")
+    #     self.dynamic_vrs = dynamic_vrs
+    #     self.dynamic_vr_id = dynamic_vr_id
+    #     self.is_input = is_input
+    #     self.order_num = order_num
+    #     self.is_lookup = is_lookup
+    #     where_str = ""
+    #     params = []
+    #     for idx in range(max(len(dynamic_vr_id), 1)):
+    #         curr_str = "(dynamic_vr_id = ? AND is_input = ? AND order_num = ? AND is_lookup = ?)"
+    #         if idx == 0:
+    #             where_str += curr_str
+    #         else:
+    #             where_str += " OR " + curr_str
+    #         if dynamic_vr_id:
+    #             params += [dynamic_vr_id[idx], int(is_input[idx]), order_num[idx], int(is_lookup[idx])]
+    #     if params:
+    #         self.params = tuple(params)
+    #         self.input_args = [dynamic_vr_id, is_input, order_num, is_lookup]
+    #     self.where_str = where_str
+    #     super().__init__(id = id, action = action)
+
+    # def load_from_db(self, dynamic_vr_id: list = [],
+    #                  is_input: list = [],
+    #                  order_num: list = [],
+    #                  is_lookup: list = [],
+    #                  action: Action = None):
+    #     """Load the dynamic_vr object from the database."""
+    #     if not isinstance(dynamic_vr_id, list):
+    #         dynamic_vr_id = [dynamic_vr_id]
+    #     if not isinstance(is_input, list):
+    #         is_input = [is_input]
+    #     if not isinstance(order_num, list):
+    #         order_num = [order_num]
+    #     if not isinstance(is_lookup, list):
+    #         is_lookup = [is_lookup]
+
+    #     dynamic_vrs = [Dynamic(id = dynamic_vr_id[idx], action = action) for idx in range(len(dynamic_vr_id))]
+    #     self.dynamic_vrs = dynamic_vrs
+    #     self.is_input = [d.is_input for d in dynamic_vrs]
+    #     self.order_num = [d.order_num for d in dynamic_vrs]
+    #     self.is_lookup = [d.is_lookup for d in dynamic_vrs]
+
+    def init_from_attrs(self, dynamic_vr_id: list, is_input: list, order_num: list, is_lookup: list, action: Action = None):
+        """Initialize the object from the attributes."""
+        # if not isinstance(dynamic_vr_id, list):
+        #     dynamic_vr_id = [dynamic_vr_id]
+        # if not isinstance(is_input, list):
+        #     is_input = [is_input]
+        # if not isinstance(order_num, list):
+        #     order_num = [order_num]
+        # if not isinstance(is_lookup, list):
+        #     is_lookup = [is_lookup]
+
+        self.dynamic_vrs = [Dynamic(id = dynamic_vr_id[idx], action = action) for idx in range(len(dynamic_vr_id))]
+        # self.is_input = [d.is_input for d in self.dynamic_vrs]
+        # self.order_num = [d.order_num for d in self.dynamic_vrs]
+        # self.is_lookup = [d.is_lookup for d in self.dynamic_vrs]
 
     def set_source_pr(parent_ro: "ResearchObject", vr: "Variable", vr_name_in_code: str = None) -> "source_type":
         """Set the source process or logsheet."""

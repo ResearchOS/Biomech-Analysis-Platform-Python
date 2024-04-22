@@ -1,1 +1,0 @@
-INSERT INTO connections (connection_id, outlet_id, inlet_id, action_id_num) VALUES (?, ?, ?, ?)

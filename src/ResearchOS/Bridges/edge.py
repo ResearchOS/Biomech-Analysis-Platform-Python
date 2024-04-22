@@ -15,9 +15,23 @@ class Edge(PipelineParts):
                     source_let_put_id: str = None,
                     target_let_put_id: str = None,
                     action: Action = None):
-        self.source_let_put_id = source_let_put_id
-        self.target_let_put_id = target_let_put_id
-        super().__init__(id = id, action = action)    
+        super().__init__(id = id, action = action)
+
+        if id:
+            self.load_from_db2(id, action)
+            self.source_let_put = LetPut(id = self.source_let_put_id, action = action)
+            self.target_let_put = LetPut(id = self.target_let_put_id, action = action)
+            return
+
+        attrs = {}
+        attrs["source_let_put_id"] = source_let_put_id
+        attrs["target_let_put_id"] = target_let_put_id
+        self.init_from_attrs(**attrs, action=action)
+        self.get_id_if_present(action)
+        if not self.id:
+            self.assign_id(attrs, action)
+            self.save(attrs, action)
+            
         
 
     def __str__(self):
@@ -25,9 +39,16 @@ class Edge(PipelineParts):
         return f"""{self.output_dynamic.parent_ro.id}: {self.output_dynamic.vr_name_in_code} -> {self.input_dynamic.parent_ro.id}: {self.input_dynamic.vr_name_in_code} Subset: {subset_id}"""
     
 
-    def load_from_db(self, source_let_put_id: str, target_let_put_id: str, action: Action = None):
-        """Load the let_put objects from the database."""
-        source_let_put = LetPut(id = source_let_put_id, action = action) if (hasattr(self, "source_let_put") and self.source_let_put is not None) else None
-        target_let_put = LetPut(id = target_let_put_id, action = action) if (hasattr(self, "target_let_put") and self.target_let_put is not None) else None
-        self.source_let_put = source_let_put
-        self.target_let_put = target_let_put
+    # def load_from_db(self, source_let_put_id: str, target_let_put_id: str, action: Action = None):
+    #     """Load the let_put objects from the database."""
+    #     source_let_put = LetPut(id = source_let_put_id, action = action) if (hasattr(self, "source_let_put") and self.source_let_put is not None) else None
+    #     target_let_put = LetPut(id = target_let_put_id, action = action) if (hasattr(self, "target_let_put") and self.target_let_put is not None) else None
+    #     self.source_let_put = source_let_put
+    #     self.target_let_put = target_let_put
+
+    def init_from_attrs(self, source_let_put_id: str, target_let_put_id: str, action: Action):
+        """Initializes the object from the attributes."""
+        self.source_let_put_id = source_let_put_id
+        self.target_let_put_id = target_let_put_id
+        self.source_let_put = LetPut(id = self.source_let_put_id, action = action)
+        self.target_let_put = LetPut(id = self.target_let_put_id, action = action)

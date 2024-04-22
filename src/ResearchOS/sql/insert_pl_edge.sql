@@ -1,1 +1,0 @@
-INSERT INTO pipelineobjects_graph (edge_id, action_id_num, source_object_id, target_object_id) VALUES (?, ?, ?, ?)

@@ -23,28 +23,30 @@ class Output(Put):
                  action: "Action" = None):
         """Initializes the Output object. "vr" and "pr" together make up the main source of the output."""
         self.is_input = False
+        dynamic_vr = [Dynamic(vr=vr, pr=pr, is_input=False, action=action)]
+        super().__init__(id = id, action = action, dynamic_vrs=dynamic_vr)        
 
-        self.vr = vr
-        self.pr = pr
-        self.show = show 
-        self.clean_for_put(vr = vr, pr = pr, show = show, action = action)
+        # self.vr = vr
+        # self.pr = pr
+        # self.show = show 
+        # self.clean_for_put(vr = vr, pr = pr, show = show, action = action)
         
-        # Make sure the dynamic VR is created.
-        dynamic_vrs = []
-        if not isinstance(pr, list):
-            pr = [pr]
-        dynamic_vrs = self.dynamic_vrs
-        if not dynamic_vrs:
-            dynamic_vr_ids = [None]
-        else:
-            dynamic_vr_ids = [d.id if d is not None else None for d in dynamic_vrs]
-        is_input = [False]
-        order_num = [0]
-        is_lookup = [False]     
-        super().__init__(id=id, 
-                         action=action, 
-                         dynamic_vrs=dynamic_vrs,
-                         is_input=is_input,
-                         order_num=order_num,
-                         is_lookup=is_lookup,
-                         dynamic_vr_id=dynamic_vr_ids)
+        # # Make sure the dynamic VR is created.
+        # dynamic_vrs = []
+        # if not isinstance(pr, list):
+        #     pr = [pr]
+        # dynamic_vrs = self.dynamic_vrs
+        # if not dynamic_vrs:
+        #     dynamic_vr_ids = [None]
+        # else:
+        #     dynamic_vr_ids = [d.id if d is not None else None for d in dynamic_vrs]
+        # is_input = [False]
+        # order_num = [0]
+        # is_lookup = [False]     
+        # super().__init__(id=id, 
+        #                  action=action, 
+        #                  dynamic_vrs=dynamic_vrs,
+        #                  is_input=is_input,
+        #                  order_num=order_num,
+        #                  is_lookup=is_lookup,
+        #                  dynamic_vr_id=dynamic_vr_ids)
