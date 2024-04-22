@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Union
+import json
 
 if TYPE_CHECKING:
     from ResearchOS.PipelineObjects.process import Process
@@ -52,20 +53,20 @@ class VRHandler():
             else:
                 value = put.value
 
-            let = Let(is_input=is_input, parent_ro=parent_ro, vr_name_in_code=key, action=action, value=value, show=put.show)
+            let = Let(is_input=is_input, parent_ro=parent_ro, vr_name_in_code=key, action=action, value=json.dumps(value), show=put.show)
 
             force_init = False
             if is_input:
-                if put.vr is not None and put.pr is None:
-                    force_init = True
-                    put.pr = put_cls.set_source_pr(parent_ro, put.vr, key)
-                if put.lookup_vr is not None and put.lookup_pr is None:
-                    force_init = True
-                    put.lookup_pr = put_cls.set_source_pr(parent_ro, put.lookup_vr)
+                for idx, dynamic_vr in enumerate(put.dynamic_vrs):
+                    if dynamic_vr is None and dict_put.hard_coded_value is None:
+                        force_init = True
+                        pr = put_cls.set_source_pr(parent_ro, dict_put, key)
+                        dynamic_vr = dynamic_vr.__class__(vr=dict_put, pr=pr, is_input=is_input, action=action)
+                        put.dynamic_vrs[idx] = dynamic_vr
             
-            if hasattr(put, "action"):
-                del put.action
-            put = put_cls(**put.__dict__, force_init=force_init, action=action)
+            # if hasattr(put, "action"):
+            #     del put.action
+            # put = put_cls(**put.__dict__, force_init=force_init, action=action)
 
             standardized[let] = put
             let_put = LetPut(let=let, put=put, action=action)

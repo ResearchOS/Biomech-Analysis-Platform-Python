@@ -26,10 +26,19 @@ class Input(Put):
         """Initializes the Input object. "vr" and "pr" together make up the main source of the input. "lookup_vr" and "lookup_pr" together make up the lookup source of the input.
         "value" is the hard-coded value. If specified, supercedes the main source.""" 
         self.is_input = True
+        self.value = value
+        self.show = show
+        main_dynamic_vr = [Dynamic(vr=vr, pr=pr, action=action) for pr in pr] if pr is not None else None
+        lookup_dynamic_vr = [Dynamic(vr=lookup_vr, pr=lookup_pr, is_lookup=True, action=action) for lookup_pr in lookup_pr] if lookup_pr is not None else None
+        if main_dynamic_vr is None:
+            main_dynamic_vr = []
+        if lookup_dynamic_vr is None:
+            lookup_dynamic_vr = []        
+        dynamic_vrs = main_dynamic_vr + lookup_dynamic_vr
+        if not dynamic_vrs:
+            dynamic_vrs = None        
         super().__init__(id=id, action=action,
-                         vr=vr, pr=pr,
-                         lookup_pr=lookup_pr, lookup_vr=lookup_vr,
-                         value=value, show=show)
+                         dynamic_vrs=dynamic_vrs)
         # self.vr = vr
         # self.pr = pr
         # self.lookup_vr = lookup_vr

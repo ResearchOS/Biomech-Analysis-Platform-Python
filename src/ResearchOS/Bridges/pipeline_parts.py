@@ -139,7 +139,10 @@ class PipelineParts(metaclass=MetaPipelineParts):
         params = (id,)
         result = action.conn.execute(sqlquery, params).fetchall()
         if not result:
-            query_params = action.dobjs["all"][self.insert_query_name]["None"]
+            try:
+                query_params = action.dobjs["all"][self.insert_query_name]["None"]
+            except KeyError:
+                return
             ids = [param[0] for param in query_params]            
             if id not in ids:
                 raise ValueError(f"Object not found in the database: {self.cls_name} {id}") 
@@ -209,11 +212,12 @@ class PipelineParts(metaclass=MetaPipelineParts):
         else:
             for idx in range(len(self.dynamic_vrs)):
                 dynamic_vr = self.dynamic_vrs[idx]
-                is_input = dynamic_vr.is_input
-                order_num = dynamic_vr.order_num
-                is_lookup = dynamic_vr.is_lookup
-                params = (self.id, action.id_num, dynamic_vr.id, is_input, order_num, is_lookup)
-                if not action.is_redundant_params(None, self.insert_query_name, params):
+                dynamic_vr_id = dynamic_vr.id if dynamic_vr is not None else None
+                is_input = dynamic_vr.is_input if dynamic_vr is not None else None
+                order_num = dynamic_vr.order_num if dynamic_vr is not None else None
+                is_lookup = dynamic_vr.is_lookup if dynamic_vr is not None else None
+                params = (self.id, action.id_num, dynamic_vr_id, is_input, order_num, is_lookup)
+                if dynamic_vr_id and not action.is_redundant_params(None, self.insert_query_name, params):
                     action.add_sql_query(None, self.insert_query_name, params)
 
     def needs_saving(self):
