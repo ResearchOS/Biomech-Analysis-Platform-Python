@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING, Union
-import json
+import copy
 
 if TYPE_CHECKING:
     from ResearchOS.PipelineObjects.process import Process
@@ -9,17 +9,14 @@ if TYPE_CHECKING:
 
 from ResearchOS.variable import Variable
 from ResearchOS.Bridges.input import Input
-from ResearchOS.Bridges.output import Output
 from ResearchOS.action import Action
-from ResearchOS.Bridges.letput import LetPut
-from ResearchOS.Bridges.let import Let
 
 class VRHandler():
 
     def empty_vr_dict(keys: list) -> dict:
         """Return a dictionary with the keys as None."""
         sub_dict = {"show": False, "main": {"vr": None, "pr": []}, "lookup": {"vr": None, "pr": []}}
-        final_dict = {key: sub_dict for key in keys}
+        final_dict = {key: copy.deepcopy(sub_dict) for key in keys}
         return final_dict
 
     @staticmethod
@@ -30,6 +27,10 @@ class VRHandler():
             if isinstance(put, Variable):
                 if put.hard_coded_value is None:
                     final_dict[vr_name]["main"]["vr"] = put.id
+                    # Get the source_pr unless this is an import file VR.
+                    if not (hasattr(parent_ro, "import_file_vr_name") and vr_name==parent_ro.import_file_vr_name):
+                        pr = Input.set_source_pr(parent_ro, put, vr_name)
+                        final_dict[vr_name]["main"]["pr"].append(pr.id)
                 else:
                     final_dict[vr_name]["main"]["vr"] = put.hard_coded_value
             elif isinstance(put, Input):
@@ -39,59 +40,59 @@ class VRHandler():
 
         return final_dict
     
-    @staticmethod
-    def standardize_lets_puts(parent_ro: "ResearchObject", all_puts: Union[Input, dict], action: Action = None, is_input: bool = False) -> dict:
-        """Standardize the inputs to be of type Input."""        
-        return_conn = False
-        if action is None:
-            action = Action(name = "Set_Inputs")
-            return_conn = True                
+    # @staticmethod
+    # def standardize_lets_puts(parent_ro: "ResearchObject", all_puts: Union[Input, dict], action: Action = None, is_input: bool = False) -> dict:
+    #     """Standardize the inputs to be of type Input."""        
+    #     return_conn = False
+    #     if action is None:
+    #         action = Action(name = "Set_Inputs")
+    #         return_conn = True                
 
-        import_value_default = '"import_file_vr_name"' # So that it can be JSON loaded?
+    #     import_value_default = '"import_file_vr_name"' # So that it can be JSON loaded?
 
-        if is_input:
-            put_cls = Input
-        else:
-            put_cls = Output
+    #     if is_input:
+    #         put_cls = Input
+    #     else:
+    #         put_cls = Output
 
-        # 2. Create/load all of the Inputs
-        standardized = {}
-        for key, dict_put in all_puts.items():            
+    #     # 2. Create/load all of the Inputs
+    #     standardized = {}
+    #     for key, dict_put in all_puts.items():            
 
-            pr = None
-            if isinstance(dict_put, Variable):
-                # No PR provided.
-                if dict_put.hard_coded_value is None:
-                    put = put_cls(vr=dict_put, pr=pr, action=action) # Don't put DynamicMain in database yet because PR may need to be set.
-                else:
-                    put = put_cls(value=dict_put.hard_coded_value, action=action)
-            elif not isinstance(dict_put, put_cls):
-                put = put_cls(value=dict_put, action=action) # Directly hard-coded value. May be a DataObject attribute.
-            else:
-                put = dict_put            
+    #         pr = None
+    #         if isinstance(dict_put, Variable):
+    #             # No PR provided.
+    #             if dict_put.hard_coded_value is None:
+    #                 put = put_cls(vr=dict_put, pr=pr, action=action) # Don't put DynamicMain in database yet because PR may need to be set.
+    #             else:
+    #                 put = put_cls(value=dict_put.hard_coded_value, action=action)
+    #         elif not isinstance(dict_put, put_cls):
+    #             put = put_cls(value=dict_put, action=action) # Directly hard-coded value. May be a DataObject attribute.
+    #         else:
+    #             put = dict_put            
 
-            # 1. import file vr name        
-            if hasattr(parent_ro, "import_file_vr_name") and key==parent_ro.import_file_vr_name:
-                value = import_value_default
-            else:
-                value = put.value
+    #         # 1. import file vr name        
+    #         if hasattr(parent_ro, "import_file_vr_name") and key==parent_ro.import_file_vr_name:
+    #             value = import_value_default
+    #         else:
+    #             value = put.value
 
-            let = Let(is_input=is_input, parent_ro=parent_ro, vr_name_in_code=key, action=action, value=json.dumps(value), show=put.show)
+    #         let = Let(is_input=is_input, parent_ro=parent_ro, vr_name_in_code=key, action=action, value=json.dumps(value), show=put.show)
 
-            for idx, dynamic_vr in enumerate(put.dynamic_vrs):
-                if dynamic_vr is None and dict_put.hard_coded_value is None:
-                    pr = put_cls.set_source_pr(parent_ro, dict_put, key)
-                    dynamic_vr = dynamic_vr.__class__(vr=dict_put, pr=pr, is_input=is_input, action=action)
-                    put.dynamic_vrs[idx] = dynamic_vr
+    #         for idx, dynamic_vr in enumerate(put.dynamic_vrs):
+    #             if dynamic_vr is None and dict_put.hard_coded_value is None:
+    #                 pr = put_cls.set_source_pr(parent_ro, dict_put, key)
+    #                 dynamic_vr = dynamic_vr.__class__(vr=dict_put, pr=pr, is_input=is_input, action=action)
+    #                 put.dynamic_vrs[idx] = dynamic_vr
 
-            standardized[let] = put
-            let_put = LetPut(let=let, put=put, action=action)
+    #         standardized[let] = put
+    #         let_put = LetPut(let=let, put=put, action=action)
                     
-        if return_conn:
-            action.commit = True
-            action.execute()
+    #     if return_conn:
+    #         action.commit = True
+    #         action.execute()
 
-        return standardized
+    #     return standardized
     
     # @staticmethod
     # def standardize_outputs(parent_ro: "ResearchObject", all_outputs: Union[Output, dict], action: Action = None) -> dict:

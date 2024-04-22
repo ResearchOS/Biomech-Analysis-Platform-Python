@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+import json
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
@@ -113,49 +114,68 @@ def make_all_edges_from_dict(parent_ro: "ResearchObject", edges_dict: dict, acti
 
 
 
-def make_all_edges(ro: "ResearchObject"):
+def make_all_edges(ro: "ResearchObject", action: Action = None):
         # For each input, find an Outlet with a matching output.
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet
-        from ResearchOS.Bridges.output import Output
-        all_pr_objs = [pr() for pr in ResearchObjectHandler.instances_list if pr() is not None and isinstance(pr(), (Process,))]
-        lg_objs = [lg() for lg in ResearchObjectHandler.instances_list if lg() is not None and isinstance(lg(), (Logsheet,))]
-        if isinstance(ro, Process):            
-            last_idx = all_pr_objs.index(ro)
-        else:
-            last_idx = len(all_pr_objs)
-        all_pr_objs = all_pr_objs[:last_idx]
-        action = Action(name="Build_PL")
-        lg = lg_objs[0]
-        for key, input in ro.inputs.items():            
-            if not input.dynamic_vrs:
-                continue
-            inlet = Let(is_input=True, vr_name_in_code=key, parent_ro=ro, action=action)
-            inlet_input = LetPut(let=inlet, put=input, action=action)
-            all_dynamic_vrs = input.dynamic_vrs
-            dynamic_vr_prs = [v.pr for v in all_dynamic_vrs if v is not None]
-            for pr in all_pr_objs:
-                for dynamic_vr in all_dynamic_vrs: 
-                    if not dynamic_vr.vr:
-                        continue               
-                    for output in pr.outputs.values():  
-                        for output_dynamic_vr in output.dynamic_vrs:                  
-                            if output_dynamic_vr.vr is None:
-                                continue                    
-                            if dynamic_vr.vr == output_dynamic_vr.vr and output.pr in input.pr:
-                                e = Edge(input=input, output=output, action=action)
-            
-            if lg in dynamic_vr_prs:
-                lg.validate_headers(lg.headers, action, [])
-                for h in lg.headers:
-                    if h[3] == input.vr:
-                        outlet = Let(is_input=False, vr_name_in_code=h[0], parent_ro=lg, action=action)
-                        output = Output(vr=input.vr, pr=lg, action=action)
-                        outlet_output = LetPut(let=outlet, put=output, action=action)
-                        e = Edge(source_let_put_id=inlet_input, target_let_put_id=outlet_output, action=action)  
-                        break                      
+        return_conn = False
+        if action is None:
+            action = Action(name="Build_PL")
+            return_conn = True
+
+        params_list = []
+        for key, input in ro.inputs.items():
+            show = input["show"]
+            main_vr = input["main"]["vr"]
+            value = main_vr if not (isinstance(main_vr, Variable) or isinstance(main_vr, str) and main_vr.startswith("VR")) else None
+            vr_id = None
+            if not value:
+                vr_id = main_vr.id if isinstance(main_vr, Variable) else main_vr
+            pr_ids = input["main"]["pr"] if vr_id else []
+            if pr_ids and not isinstance(pr_ids, list):
+                pr_ids = [pr_ids]
+            lookup_vr_id = input["lookup"]["vr"]
+            lookup_vr_id = lookup_vr_id.id if isinstance(lookup_vr_id, Variable) else lookup_vr_id
+            lookup_pr_ids = input["lookup"]["pr"] if lookup_vr_id else []
+            # Hard-coded value.
+            if value:
+                params = (action.id_num, ro.id, key, None, None, json.dumps(value), 0, int(False), int(show), int(True))
+                if not action.is_redundant_params(None, "pipeline_insert", params):
+                    params_list.append(params)
+            elif vr_id:
+                # Import file VR name.
+                if hasattr(ro, "import_file_vr_name") and key == ro.import_file_vr_name:
+                    params = (action.id_num, ro.id, key, None, None, None, 0, int(False), int(show), int(True))
+                    if not action.is_redundant_params(None, "pipeline_insert", params):
+                        params_list.append(params)                
+            for order_num, pr in enumerate(pr_ids):
+                params = (action.id_num, ro.id, key, pr, vr_id, value, order_num, int(False), int(show), int(True))
+                if not action.is_redundant_params(None, "pipeline_insert", params):
+                    params_list.append(params)
+            for order_num, pr in enumerate(lookup_pr_ids):
+                params = (action.id_num, ro.id, key, pr, lookup_vr_id, None, order_num, int(True), int(show), int(True))
+                if not action.is_redundant_params(None, "pipeline_insert", params):
+                    params_list.append(params)
+
+        # Check for redundancy in the database.
+        sql_params = [param[1:] for param in params_list] # Remove the action_id_num from the params.
+        params_str = "(parent_ro_id IS ? AND vr_name_in_code IS ? AND source_pr_id IS ? AND vr_id IS ? AND hard_coded_value IS ? AND order_num IS ? AND is_lookup IS ? AND show IS ? AND is_active IS ?)"
+        sqlquery = "SELECT parent_ro_id, vr_name_in_code, source_pr_id, vr_id, hard_coded_value, order_num, is_lookup, show, is_active FROM pipeline WHERE {}".format(" OR ".join([params_str for params in sql_params]))
+        all_params = []
+        for param in sql_params:
+            all_params.extend(param)
+        result = action.conn.cursor().execute(sqlquery, all_params).fetchall()        
+        remove_params = []
+        for param in params_list:
+            if param[1:] in result:
+                remove_params.append(param)
+
+        for param in remove_params:
+            params_list.remove(param)
+
+        for params in params_list:
+            action.add_sql_query(None, "pipeline_insert", params)
         
-        # Now that all the Edges have been created, commit the Action.
         action.commit = True
         action.execute()
 
