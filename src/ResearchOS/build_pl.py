@@ -7,11 +7,9 @@ import networkx as nx
 
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.cli.get_all_paths_of_type import import_objects_of_type
-from ResearchOS.Bridges.edge import Edge
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
-from ResearchOS.Bridges.let import Let
-from ResearchOS.Bridges.letput import LetPut
+from ResearchOS.variable import Variable
 
 # 1. When running a Process's "set_inputs" or "set_outputs" the user will expect to have the inputs & outputs connected to the proper places after each run.
 # However, when "building" the pipeline, doing that for each Process would be inefficient.
@@ -67,6 +65,53 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
         action.commit = True
         action.execute()
     return G
+
+def make_all_edges_from_dict(parent_ro: "ResearchObject", edges_dict: dict, action: Action = None):
+    """Creates all the Edges from the given dictionary."""
+    return_conn = False
+    if action is None:
+        return_conn = True
+        action = Action(name="Build_PL")
+    parent_ro_id = parent_ro.id        
+    # For each VR name in the dictionary.
+    for vr_name, vr_dict in edges_dict.items():        
+        show = vr_dict["show"]
+        main_vr = vr_dict["main"]["vr"]
+        value = main_vr if not (isinstance(main_vr, Variable) or isinstance(main_vr, str) and main_vr.startswith("VR")) else None
+        vr_id = None
+        if not value:
+            vr_id = main_vr.id if isinstance(main_vr, Variable) else main_vr
+        pr_ids = vr_dict["main"]["pr"] if vr_id else []
+        if pr_ids and not isinstance(pr_ids, list):
+            pr_ids = [pr_ids]        
+        lookup_vr_id = vr_dict["lookup"]["vr"]
+        lookup_vr_id = lookup_vr_id.id if isinstance(lookup_vr_id, Variable) else lookup_vr_id
+
+        lookup_pr_ids = vr_dict["lookup"]["pr"] if lookup_vr_id else []
+        if lookup_pr_ids and not isinstance(lookup_pr_ids, list):
+            lookup_pr_ids = [lookup_pr_ids]
+        # For each PR in the pr_ids.
+        order_num = -1
+        for pr_id in pr_ids:
+            order_num += 1
+            params = (action.id_num, parent_ro_id, vr_name, pr_id, vr_id, value, order_num, False, show, 1)
+            if not action.is_redundant_params(None, "pipeline_insert", params):
+                action.add_sql_query(None, "pipeline_insert", params)        
+        order_num = -1
+        for lookup_pr_id in lookup_pr_ids:
+            order_num += 1
+            params = (action.id_num, parent_ro_id, vr_name, lookup_pr_id, lookup_vr_id, None, order_num, True, show, 1)
+            if not action.is_redundant_params(None, "pipeline_insert", params):
+                action.add_sql_query(None, "pipeline_insert", params)
+
+    if return_conn:
+        action.commit = True
+        action.execute()
+
+        
+
+
+
 
 def make_all_edges(ro: "ResearchObject"):
         # For each input, find an Outlet with a matching output.

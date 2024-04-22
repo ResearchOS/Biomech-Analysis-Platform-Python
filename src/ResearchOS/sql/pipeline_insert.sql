@@ -1,0 +1,1 @@
+INSERT INTO pipeline (action_id_num, parent_ro_id, vr_name_in_code, source_pr_id, vr_id, hard_coded_value, order_num, is_lookup, show, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
