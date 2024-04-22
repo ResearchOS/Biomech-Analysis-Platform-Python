@@ -415,10 +415,7 @@ class Logsheet(PipelineObject):
         # Prep to omit the data objects that are unchanged                
         sqlquery_raw = "SELECT path_id, dynamic_vr_id, str_value, numeric_value FROM data_values WHERE dynamic_vr_id IN ({})".format("?, "*(len(vr_obj_list)-1) + "?")
         sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "dynamic_vr_id"], single=True, user=True, computer=True)
-        dynamic_vrs = [Dynamic(vr = vr, pr = self, action = action) for idx, vr in enumerate(vr_obj_list)]
-        action.exec = True
-        action.commit = True
-        action.execute(return_conn=False)
+        dynamic_vrs = [Dynamic(vr = vr, pr = self, action = action) for vr in vr_obj_list]
         dynamic_vr_ids = [vr.id for vr in dynamic_vrs]
         result = action.conn.cursor().execute(sqlquery, tuple(dynamic_vr_ids)).fetchall()
 

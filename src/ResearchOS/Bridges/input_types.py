@@ -17,6 +17,7 @@ class Dynamic(PipelineParts):
     id_col = "dynamic_vr_id"
     col_names = ["vr_id", "pr_id"]
     insert_query_name = "dynamic_vrs_insert"
+    init_attr_names = ["vr", "pr", "order_num", "is_lookup", "is_input"]
     
     def __init__(self, 
                  id: str = None,

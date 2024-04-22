@@ -68,16 +68,6 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
         action.execute()
     return G
 
-def make_all_let_puts(ro: "ResearchObject", is_input):
-    """Connect Input/Output to Inlet/Outlet."""
-    if is_input:
-        lets = ro.inputs
-    else:
-        lets = ro.outputs
-    for let in lets.values():
-        for put in let.put:
-            let_put = LetPut(let=let, put=put, action=ro.action)
-
 def make_all_edges(ro: "ResearchObject"):
         # For each input, find an Outlet with a matching output.
         from ResearchOS.PipelineObjects.process import Process

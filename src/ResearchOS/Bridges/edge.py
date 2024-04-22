@@ -19,6 +19,7 @@ class Edge(PipelineParts):
     id_col = "edge_id"
     col_names = ["source_let_put_id", "target_let_put_id"]
     insert_query_name = "pipelineobjects_graph_insert"
+    init_attr_names = ["source_let_put_id", "target_let_put_id"]
 
     def __init__(self, id: int = None,
                     action: Action = None,
