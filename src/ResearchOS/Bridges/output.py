@@ -16,7 +16,7 @@ class Output(Put):
 
     is_input: bool = False
 
-    def __init__(self, id: int = None,
+    def __init__(self,
                  vr: "Variable" = None,
                  pr: "source_type" = None,
                  show: bool = False,
@@ -25,7 +25,8 @@ class Output(Put):
         self.is_input = False
         self.show = show
         dynamic_vr = [Dynamic(vr=vr, pr=pr, is_input=False, action=action)]
-        super().__init__(id = id, action = action, dynamic_vrs=dynamic_vr)        
+        self.dynamic_vrs = dynamic_vr
+        # super().__init__(id = id, action = action, dynamic_vrs=dynamic_vr)        
 
         # self.vr = vr
         # self.pr = pr
