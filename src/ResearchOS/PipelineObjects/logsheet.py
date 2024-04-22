@@ -150,12 +150,16 @@ class Logsheet(PipelineObject):
             
         Returns:
             ''headers'' as a JSON string using ''json.dumps''"""
-        from ResearchOS.Bridges.output import Output
-        # Create Outlets and Outputs for the Logsheet        
+        from ResearchOS.build_pl import make_all_edges_from_dict
+        from ResearchOS.vr_handler import VRHandler
+        # Create Outlets and Outputs for the Logsheet
+        header_names = [header[0] for header in headers]
+        final_dict = VRHandler.empty_vr_dict(header_names)
         for header in headers:
-            outlet = Let(is_input=False, action=action, parent_ro=self, vr_name_in_code=header[0], show=False)
-            output = Output(vr=header[3], pr=self, action=action, show = False)
-            let_put = LetPut(let=outlet, put=output, action=action)
+            vr = header[3]
+            vr_name = header[0]
+            final_dict[vr_name]["main"] = {"vr": vr.id, "pr": self.id}
+        make_all_edges_from_dict(self, final_dict, action)
 
         str_headers = []       
         for header in headers:
@@ -413,16 +417,14 @@ class Logsheet(PipelineObject):
                 max_len = len(header)
 
         # Prep to omit the data objects that are unchanged                
-        sqlquery_raw = "SELECT path_id, dynamic_vr_id, str_value, numeric_value FROM data_values WHERE dynamic_vr_id IN ({})".format("?, "*(len(vr_obj_list)-1) + "?")
-        sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "dynamic_vr_id"], single=True, user=True, computer=True)
-        dynamic_vrs_orig = [Dynamic(vr = vr, pr = self, action = action) for vr in vr_obj_list]
-        dynamic_vr_ids = [vr.id for vr in dynamic_vrs_orig]
-        result = action.conn.cursor().execute(sqlquery, tuple(dynamic_vr_ids)).fetchall()
+        sqlquery_raw = "SELECT path_id, vr_id, str_value, numeric_value FROM data_values WHERE pr_id = ? AND vr_id IN ({})".format("?, "*(len(vr_obj_list)-1) + "?")
+        sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single=True, user=True, computer=True)
+        params = (self.id,) + tuple(vr_list)
+        result = action.conn.cursor().execute(sqlquery, params).fetchall()
 
         # All in the same order.
         path_ids = [row[0] for row in result]
-        dynamic_vr_ids = [row[1] for row in result]
-        dynamic_vrs = [Dynamic(id=dynamic_vr_id, action = action) for dynamic_vr_id in dynamic_vr_ids]
+        vr_ids = [row[1] for row in result]
         str_values = [row[2] for row in result]
         numeric_values = [row[3] for row in result]      
         
@@ -434,10 +436,6 @@ class Logsheet(PipelineObject):
             level_dobjs = [dobj for dobj in all_dobjs_ordered if dobj.__class__ == level]
             type_class = column[1]
             vr = column[3]
-            if not dynamic_vrs:
-                dynamic_vr = Dynamic(vr = vr, pr = self, action = action)
-            else:
-                dynamic_vr = [dv for dv in dynamic_vrs if dv.vr == vr][0]
             # Get the index of the column that corresponds to the level of the DataObjects.
             for count, level_type_obj in enumerate(order):
                 if level_type_obj == level:
@@ -459,7 +457,7 @@ class Logsheet(PipelineObject):
                 # Store it to the all_attrs dict.
                 if dobj not in all_attrs:
                     all_attrs[dobj] = {}
-                all_attrs[dobj][dynamic_vr] = value        
+                all_attrs[dobj][vr] = value        
                     
         print("Assigning Data Object values...")
         modified_dobjs = []        

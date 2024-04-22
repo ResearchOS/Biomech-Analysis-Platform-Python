@@ -172,6 +172,8 @@ class DataObject(ResearchObject):
         vr_values: dict with keys of type Variable and values of the values to set.
         pr_id: str, the process id."""
         from ResearchOS.code_runner import CodeRunner
+        from ResearchOS.PipelineObjects.process import Process
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
         if not vr_values:
             return
         commit = False
@@ -216,16 +218,19 @@ class DataObject(ResearchObject):
                     break    
 
         # 2. Insert the values into the proper tables.
+        pr_id = pr
+        if isinstance(pr, (Process, Logsheet)):
+            pr_id = pr.id
         for vr in vr_hashes_dict:
             blob_params = (vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["blob"])
             blob_pk = blob_params
-            dynamic_vr = vr
-            if not isinstance(dynamic_vr, Dynamic):
-                dynamic_vr = Dynamic(vr = vr, pr = pr, action = action)
+            vr_id = vr
+            if isinstance(vr, Variable):
+                vr_id = vr.id
             if isinstance(vr_hashes_dict[vr]["scalar_value"], str):
-                vr_value_params = (dynamic_vr.id, action.id_num, self.id, vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["scalar_value"], None)
+                vr_value_params = (action.id_num, self.id, pr_id, vr_id, vr_hashes_dict[vr]["hash"], vr_hashes_dict[vr]["scalar_value"], None)
             else:
-                vr_value_params = (dynamic_vr.id, action.id_num, self.id, vr_hashes_dict[vr]["hash"], None, vr_hashes_dict[vr]["scalar_value"])
+                vr_value_params = (action.id_num, self.id, pr_id, vr_id, vr_hashes_dict[vr]["hash"], None, vr_hashes_dict[vr]["scalar_value"])
             vr_value_pk = vr_value_params
             # Don't insert the data_blob if it already exists.
             if not vr in vr_hashes_prev_exist and vr_hashes_dict[vr]["hash"] is not None:

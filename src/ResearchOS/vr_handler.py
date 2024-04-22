@@ -15,6 +15,29 @@ from ResearchOS.Bridges.letput import LetPut
 from ResearchOS.Bridges.let import Let
 
 class VRHandler():
+
+    def empty_vr_dict(keys: list) -> dict:
+        """Return a dictionary with the keys as None."""
+        sub_dict = {"show": False, "main": {"vr": None, "pr": []}, "lookup": {"vr": None, "pr": []}}
+        final_dict = {key: sub_dict for key in keys}
+        return final_dict
+
+    @staticmethod
+    def standardize_lets_puts(parent_ro: "ResearchObject", all_puts: Union[Input, dict], action: Action = None) -> dict:
+        """Create the dictionary that is the equivalent of someone passing in a dictionary directly."""
+        final_dict = VRHandler.empty_vr_dict(all_puts.keys())
+        for vr_name, put in all_puts.items():
+            if isinstance(put, Variable):
+                if put.hard_coded_value is None:
+                    final_dict[vr_name]["main"]["vr"] = put.id
+                else:
+                    final_dict[vr_name]["main"]["vr"] = put.hard_coded_value
+            elif isinstance(put, Input):
+                final_dict[vr_name] = put.__dict__
+            else:
+                final_dict[vr_name]["main"]["vr"] = put
+
+        return final_dict
     
     @staticmethod
     def standardize_lets_puts(parent_ro: "ResearchObject", all_puts: Union[Input, dict], action: Action = None, is_input: bool = False) -> dict:
