@@ -154,7 +154,8 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values (
                         action_id_num INTEGER NOT NULL,
                         path_id INTEGER NOT NULL,
-                        dynamic_vr_id INTEGER NOT NULL,
+                        pr_id TEXT NOT NULL,
+                        vr_id TEXT NOT NULL,
                         data_blob_hash TEXT,
                         str_value TEXT,
                         numeric_value INTEGER,
@@ -164,9 +165,10 @@ class DBInitializer():
                         ),
                         FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,                        
-                        FOREIGN KEY (dynamic_vr_id) REFERENCES dynamic_vrs(dynamic_vr_id) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id_num, path_id, dynamic_vr_id, data_blob_hash, str_value, numeric_value)
+                        FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,                  
+                        FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id_num, path_id, pr_id, vr_id, data_blob_hash, str_value, numeric_value)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.
@@ -198,43 +200,23 @@ class DBInitializer():
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")
         
-        # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
+        # Pipeline graph. Lists all pipeline objects and their relationships.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS pipeline (
                         edge_id INTEGER NOT NULL PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
-                        source_let_put_id INTEGER NOT NULL,
-                        target_let_put_id INTEGER NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,                        
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (source_let_put_id) REFERENCES lets_puts(let_put_id) ON DELETE CASCADE,
-                        FOREIGN KEY (target_let_put_id) REFERENCES lets_puts(let_put_id) ON DELETE CASCADE
-                        )""")
-        
-        # Inlets_outlets table. Lists all inlets and outlets.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS inlets_outlets (
-                        let_id INTEGER PRIMARY KEY,
-                        is_input INTEGER NOT NULL DEFAULT 1,
-                        action_id_num INTEGER NOT NULL,
                         parent_ro_id TEXT NOT NULL,
-                        vr_name_in_code TEXT NOT NULL,  
-                        value TEXT,
-                        show INTEGER NOT NULL DEFAULT 0,
+                        vr_name_in_code TEXT NOT NULL,
+                        source_pr_id TEXT,
+                        vr_id TEXT,
+                        hard_coded_value TEXT,
+                        order_num INTEGER NOT NULL DEFAULT 0,
+                        is_lookup INTEGER NOT NULL DEFAULT 0,                       
+                        is_active INTEGER NOT NULL DEFAULT 1,
+                        show INTEGER NOT NULL DEFAULT 0,                    
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (parent_ro_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
-                        )""")
-        
-        # puts_lets table. Lists all inputs & outputs to inlets & outlets.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS lets_puts (
-                        let_put_id INTEGER PRIMARY KEY,
-                        action_id_num INTEGER NOT NULL,
-                        dynamic_vr_id INTEGER NOT NULL,
-                        let_id INTEGER NOT NULL,
-                        order_num INTEGER,
-                        is_input INTEGER NOT NULL DEFAULT 1,
-                        is_lookup INTEGER NOT NULL DEFAULT 0,
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (put_id) REFERENCES dynamic_vrs(dynamic_vr_id) ON DELETE CASCADE,
-                        FOREIGN KEY (let_id) REFERENCES inlets_outlets(let_id) ON DELETE CASCADE
+                        FOREIGN KEY (parent_ro_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (source_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         )""")
         
         # run_history table. Lists all actions that occurred during runs.
@@ -245,25 +227,4 @@ class DBInitializer():
                         FOREIGN KEY (pl_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         PRIMARY KEY (action_id_num, pl_object_id)
                         )""")
-        
-        # Dynamic VR's table. Lists all dynamic VR's.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS dynamic_vrs (
-                        dynamic_vr_id INTEGER PRIMARY KEY,
-                        action_id_num INTEGER NOT NULL,
-                        vr_id TEXT NOT NULL,
-                        pr_id TEXT NOT NULL,
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        UNIQUE (vr_id, pr_id)
-                        )""")
-        
-        # # Inputs & outputs table. Lists all inputs & outputs. These are just a collection of dynamic VR's.
-        # cursor.execute("""CREATE TABLE IF NOT EXISTS inputs_outputs (
-        #                 put_id INTEGER PRIMARY KEY,
-        #                 action_id_num INTEGER NOT NULL,
-        #                 dynamic_vr_id INTEGER,                        
-        #                 FOREIGN KEY (dynamic_vr_id) REFERENCES dynamic_vrs(dynamic_vr_id) ON DELETE CASCADE,                        
-        #                 FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
-        #                 )""")
         
