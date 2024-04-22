@@ -466,9 +466,9 @@ class Logsheet(PipelineObject):
             if dobj.id in path_ids:
                 prev_attrs = {}
                 path_idx = [index for index, value in enumerate(path_ids) if value == dobj.id]
-                prev_attrs = {dynamic_vrs[idx]: str_values[idx] if str_values[idx] is not None else numeric_values[idx] for idx in path_idx if dynamic_vrs[idx].pr.id == self.id}
+                prev_attrs = {Variable(id=vr_ids[idx]): str_values[idx] if str_values[idx] is not None else numeric_values[idx] for idx in path_idx}
                 # Remove the attributes that are the same as the previous attributes.
-                attrs = {dynamic_vr: value for dynamic_vr, value in attrs.items() if dynamic_vr not in prev_attrs or prev_attrs[dynamic_vr] != value}
+                attrs = {vr: value for vr, value in attrs.items() if vr not in prev_attrs or prev_attrs[vr] != value}
                 if len(attrs) > 0:
                     modified_dobjs.append(dobj)
             dobj._set_vr_values(attrs, pr = self, action = action)         
