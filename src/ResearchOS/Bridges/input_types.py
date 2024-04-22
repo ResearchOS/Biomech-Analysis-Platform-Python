@@ -34,6 +34,10 @@ class Dynamic(PipelineParts):
             vr_id = vr.id
         if pr:
             pr_id = pr.id
+        if vr_id and not vr:
+            vr = Variable(id = vr_id, action = action)
+        if pr_id and not pr:
+            pr = Process(id = pr_id, action = action) if pr_id.startswith("PR") else Logsheet(id = pr_id, action = action)
         self.vr_id = vr_id
         self.pr_id = pr_id
         self.order_num = order_num
