@@ -52,6 +52,7 @@ class PipelineParts(metaclass=MetaPipelineParts):
         
         # Check whether the object already exists in the database.        
         prev_exists = False
+        load_from_db = False
         if self.id is not None:        
             # The check against the "is_redundant_params" cache allows loading objects at all levels of the cache without hitting the database.           
             col_names_str = ", ".join(self.col_names)     
@@ -60,6 +61,10 @@ class PipelineParts(metaclass=MetaPipelineParts):
             params = (self.id,)
             result = action.conn.execute(sqlquery, params).fetchall()
             if result:
+                load_from_db = True
+                for idx, col_name in enumerate(self.col_names):
+                    value = result[0][idx] if col_name != "value" else json.loads(result[0][idx])
+                    setattr(self, col_name, value)
                 prev_exists = True
             else:
                 # Make the params for the is_redundant_params cache.
@@ -69,12 +74,14 @@ class PipelineParts(metaclass=MetaPipelineParts):
                     # If it's redundant means it should already exist but right now only does in the actions cache.                        
                     prev_exists = True
         else:
+            load_from_db = True
             # 1. Search for the object in the database based on matching attributes.       
             sqlquery = f"SELECT {self.id_col} FROM {self.table_name} WHERE {self.where_str}"
             if not hasattr(self, "params"):
                 params = tuple([getattr(self, col) if col != "value" else json.dumps(getattr(self, col)) for col in self.col_names])
             else:
                 params = self.params
+            params = tuple([p.id if hasattr(p, "id") else p for p in params])
             result = action.conn.execute(sqlquery, params).fetchall()
             if result:
                 prev_exists = True
@@ -86,12 +93,8 @@ class PipelineParts(metaclass=MetaPipelineParts):
         
         self.id = id # Do this whether prev_exists or not. id guaranteed to be set at this point. 
         PipelineParts.instances[self.cls_name][self.id] = self 
+        
 
-        load_from_db = False
-        allowable_none_cols = self.allowable_none_cols
-        for attr_name in self.init_attr_names:
-            if hasattr(self, attr_name) and getattr(self, attr_name) in [None, []] and attr_name not in allowable_none_cols:
-                load_from_db = True # Indicates that the object needs to load parts from the database still.
         
         if prev_exists and not load_from_db:
             return # Nothing else to do if all of the attributes are already present?
@@ -105,10 +108,16 @@ class PipelineParts(metaclass=MetaPipelineParts):
                 row = [input_args[i][idx] for i in range(len(input_args))]
                 params.append(tuple([id] + [action.id_num] + row))
         else:
-            input_args = [getattr(self, col) if col != "value" else json.dumps(getattr(self, col)) for col in self.col_names]
-            params = [tuple([id] + [action.id_num] + [a if a != [] else None for a in input_args])] # One set of params.
+            input_args = [getattr(self, col) for col in self.col_names]
+            start_params = [id] + [action.id_num] + [a if a != [] else None for a in input_args]
+            value_idx = self.col_names.index("value") if "value" in self.col_names else None
+            if value_idx:
+                value_idx += 2 # The first two values are id and action_id.
+                start_params[value_idx] = json.dumps(start_params[value_idx])
+            params = [tuple(start_params)] # One set of params.
         for param in params:
-            if not action.is_redundant_params(None, self.insert_query_name, param):
+            param = tuple([p.id if hasattr(p, "id") else p for p in param])
+            if not prev_exists and not action.is_redundant_params(None, self.insert_query_name, param):
                 action.add_sql_query(None, self.insert_query_name, param)
             else:
                 print('a')

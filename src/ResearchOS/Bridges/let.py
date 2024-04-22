@@ -15,7 +15,7 @@ class Let(PipelineParts):
     id_col = "let_id"
     col_names = ["is_input", "parent_ro_id", "vr_name_in_code", "value", "show"]
     insert_query_name = "inlets_outlets_insert"
-    init_attr_names = ["is_input", "parent_ro", "vr_name_in_code", "value", "show"]
+    init_attr_names = ["parent_ro"]
     allowable_none_cols = ["value"]
 
     def __init__(self, id: int = None,
@@ -41,11 +41,10 @@ class Let(PipelineParts):
         from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
         subclasses = ResearchObjectHandler._get_subclasses(PipelineObject)
         parent_ro = None
-        if parent_ro_id is not None:
-            cls = [cls for cls in subclasses if cls.prefix == parent_ro_id[0:2]][0]
-            parent_ro = cls(id = parent_ro_id, action = self.action)
+        cls = [cls for cls in subclasses if cls.prefix == parent_ro_id[0:2]][0]
+        parent_ro = cls(id = parent_ro_id, action = self.action)
         self.is_input = is_input
         self.parent_ro = parent_ro
         self.vr_name_in_code = vr_name_in_code
         self.show = show
-        self.value = json.loads(value)
+        self.value = json.loads(value) if value is not None else None

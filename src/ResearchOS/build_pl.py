@@ -84,16 +84,19 @@ def make_all_edges(ro: "ResearchObject"):
         lg = lg_objs[0]
         for key, input in ro.inputs.items():            
             if not input.dynamic_vrs:
-                continue                 
+                continue
+            inlet = Let(is_input=True, vr_name_in_code=key, parent_ro=ro, action=action)
+            inlet_input = LetPut(let=inlet, put=input, action=action)
             all_dynamic_vrs = input.dynamic_vrs
-            dynamic_vr_prs = [v.pr for v in all_dynamic_vrs]
+            dynamic_vr_prs = [v.pr for v in all_dynamic_vrs if v is not None]
             for pr in all_pr_objs:
                 for dynamic_vr in all_dynamic_vrs:                
-                    for output in pr.outputs.values():                    
-                        if output.vr is None:
-                            continue                    
-                        if input.vr == output.vr and output.pr in input.pr:
-                            e = Edge(input=input, output=output, action=action)
+                    for output in pr.outputs.values():  
+                        for output_dynamic_vr in output.dynamic_vrs:                  
+                            if output_dynamic_vr.vr is None:
+                                continue                    
+                            if dynamic_vr.vr == output_dynamic_vr.vr and output.pr in input.pr:
+                                e = Edge(input=input, output=output, action=action)
             
             if lg in dynamic_vr_prs:
                 lg.validate_headers(lg.headers, action, [])
@@ -101,8 +104,8 @@ def make_all_edges(ro: "ResearchObject"):
                     if h[3] == input.vr:
                         outlet = Let(is_input=False, vr_name_in_code=h[0], parent_ro=lg, action=action)
                         output = Output(vr=input.vr, pr=lg, action=action)
-                        let_put = LetPut(let=outlet, put=output, action=action)
-                        e = Edge(input=input, output=output, action=action)  
+                        outlet_output = LetPut(let=outlet, put=output, action=action)
+                        e = Edge(source_let_put_id=inlet_input, target_let_put_id=outlet_output, action=action)  
                         break                      
         
         # Now that all the Edges have been created, commit the Action.
