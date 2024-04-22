@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Union, Any
 import json
-import weakref
 import logging
 
 if TYPE_CHECKING:
@@ -10,10 +9,7 @@ if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
     source_type = Union[Process, Logsheet]
 
-from ResearchOS.idcreator import IDCreator
-from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.action import Action
-import ResearchOS.Bridges.input_types as it
 from ResearchOS.Bridges.input_types import Dynamic
 from ResearchOS.Bridges.pipeline_parts import PipelineParts
 
@@ -28,25 +24,31 @@ class Put(PipelineParts):
     col_names = ["dynamic_vr_id", "is_input", "order_num", "is_lookup"]
     insert_query_name = "inputs_outputs_insert"
     init_attr_names = ["dynamic_vrs", "is_input", "order_num", "is_lookup"]
+    allowable_none_cols = ["dynamic_vr_id"]
 
     def __init__(self, id: int = None,
                  dynamic_vr_id: list = [None],
                  is_input: list = [True],
                  order_num: list = [0],
                  is_lookup: list = [False],
-                 dynamic_vrs: list = None,
+                 dynamic_vrs: list = [None],
                  action: Action = None):
         """Initializes the Put object."""
-        if dynamic_vrs:
+        if all([d is not None for d in dynamic_vrs]):
             dynamic_vr_id = []
             is_input = []
             order_num = []
             is_lookup = []
-            for dynamic_vr in dynamic_vrs:
-                is_lookup.append(dynamic_vr.is_lookup)
-                dynamic_vr_id.append(dynamic_vr.id)
-                is_input.append(dynamic_vr.is_input)
-                order_num.append(dynamic_vr.order_num)
+        for dynamic_vr in dynamic_vrs:
+            if not dynamic_vr:
+                continue
+            is_lookup.append(dynamic_vr.is_lookup)
+            dynamic_vr_id.append(dynamic_vr.id)
+            is_input.append(dynamic_vr.is_input)
+            order_num.append(dynamic_vr.order_num)
+        # Use defaults if any of the dynamic_vr_id is None.
+        if any([d is None for d in dynamic_vr_id]) and not all([d is None for d in dynamic_vr_id]):
+            raise ValueError(f"Why?")
         self.dynamic_vrs = dynamic_vrs
         self.dynamic_vr_id = dynamic_vr_id
         self.is_input = is_input
@@ -54,7 +56,7 @@ class Put(PipelineParts):
         self.is_lookup = is_lookup
         where_str = ""
         params = []
-        for idx in range(max(len(dynamic_vr_id), 1)):
+        for idx in range(len(dynamic_vr_id)):
             curr_str = "(dynamic_vr_id = ? AND is_input = ? AND order_num = ? AND is_lookup = ?)"
             if idx == 0:
                 where_str += curr_str
@@ -63,7 +65,7 @@ class Put(PipelineParts):
             if dynamic_vr_id:
                 params += [dynamic_vr_id[idx], int(is_input[idx]), order_num[idx], int(is_lookup[idx])]
         if not params:
-            params = [None, None, None, None]
+            params = [dynamic_vr_id, is_input, order_num, is_lookup]
         self.params = tuple(params)
         self.input_args = [dynamic_vr_id, is_input, order_num, is_lookup]
         self.where_str = where_str
@@ -171,7 +173,3 @@ class Put(PipelineParts):
 
         self.dynamic_vrs = dynamic_vrs
         self.lookup_vrs = lookup_vrs
-
-        # action.commit = True
-        # action.execute(return_conn=False)
-        # action.commit = False

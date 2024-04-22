@@ -34,6 +34,14 @@ class Output(Put):
         if not isinstance(pr, list):
             pr = [pr]
         dynamic_vrs = self.dynamic_vrs
+        dynamic_vr_ids = [d.id for d in dynamic_vrs]
+        is_input = [False]
+        order_num = [0]
+        is_lookup = [False]     
         super().__init__(id=id, 
                          action=action, 
-                         dynamic_vrs=dynamic_vrs)
+                         dynamic_vrs=dynamic_vrs,
+                         is_input=is_input,
+                         order_num=order_num,
+                         is_lookup=is_lookup,
+                         dynamic_vr_id=dynamic_vr_ids)

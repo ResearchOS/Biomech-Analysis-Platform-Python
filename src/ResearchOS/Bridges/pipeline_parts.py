@@ -22,6 +22,7 @@ class PipelineParts(metaclass=MetaPipelineParts):
     instances["Edge"] = weakref.WeakValueDictionary()
     instances["LetPut"] = weakref.WeakValueDictionary()
     instances["Dynamic"] = weakref.WeakValueDictionary()
+    allowable_none_cols = []
 
     def __new__(cls, *args, **kwargs):
         
@@ -87,13 +88,13 @@ class PipelineParts(metaclass=MetaPipelineParts):
         PipelineParts.instances[self.cls_name][self.id] = self 
 
         load_from_db = False
-        allowable_none_cols = ["value", "dynamic_vr_id", "vr_id", "pr_id","parent_ro_id"]
+        allowable_none_cols = self.allowable_none_cols
         for attr_name in self.init_attr_names:
             if hasattr(self, attr_name) and getattr(self, attr_name) in [None, []] and attr_name not in allowable_none_cols:
                 load_from_db = True # Indicates that the object needs to load parts from the database still.
         
         if prev_exists and not load_from_db:
-            return # What else is there to do if all of the attributes are already present?
+            return # Nothing else to do if all of the attributes are already present?
         
         if hasattr(self, "input_args"):
             input_args = self.input_args
@@ -111,8 +112,9 @@ class PipelineParts(metaclass=MetaPipelineParts):
                 action.add_sql_query(None, self.insert_query_name, param)
             else:
                 print('a')
-                                
-        self.load_from_db(*input_args, action = action)                   
+
+        if load_from_db:                                
+            self.load_from_db(*input_args, action = action)
 
         if return_conn:
             action.commit = True

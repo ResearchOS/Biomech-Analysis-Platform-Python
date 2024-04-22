@@ -19,6 +19,7 @@ from ResearchOS.validator import Validator
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.Bridges.input_types import Dynamic
 from ResearchOS.Bridges.let import Let
+from ResearchOS.Bridges.letput import LetPut
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -154,9 +155,9 @@ class Logsheet(PipelineObject):
         for header in headers:
             outlet = Let(is_input=False, action=action, parent_ro=self, vr_name_in_code=header[0], show=False)
             output = Output(vr=header[3], pr=self, action=action, show = False)
+            let_put = LetPut(let=outlet, put=output, action=action)
 
-        str_headers = []        
-        action.exec = False
+        str_headers = []       
         for header in headers:
             # Update the Variable object with the name if it is not already set, and the level.
             if isinstance(header[3], Variable):
@@ -166,7 +167,6 @@ class Logsheet(PipelineObject):
             kwarg_dict = {"name": header[0]}            
             vr.__setattr__(None, None, action=action, kwargs_dict=kwarg_dict, exec=False)
             str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, vr.id))
-        action.exec = True
         return json.dumps(str_headers)
 
     def from_json_headers(self, json_var: str, action: Action) -> list:
@@ -415,8 +415,8 @@ class Logsheet(PipelineObject):
         # Prep to omit the data objects that are unchanged                
         sqlquery_raw = "SELECT path_id, dynamic_vr_id, str_value, numeric_value FROM data_values WHERE dynamic_vr_id IN ({})".format("?, "*(len(vr_obj_list)-1) + "?")
         sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "dynamic_vr_id"], single=True, user=True, computer=True)
-        dynamic_vrs = [Dynamic(vr = vr, pr = self, action = action) for vr in vr_obj_list]
-        dynamic_vr_ids = [vr.id for vr in dynamic_vrs]
+        dynamic_vrs_orig = [Dynamic(vr = vr, pr = self, action = action) for vr in vr_obj_list]
+        dynamic_vr_ids = [vr.id for vr in dynamic_vrs_orig]
         result = action.conn.cursor().execute(sqlquery, tuple(dynamic_vr_ids)).fetchall()
 
         # All in the same order.

@@ -229,8 +229,6 @@ class DBInitializer():
                         action_id_num INTEGER NOT NULL,
                         put_id INTEGER NOT NULL,
                         let_id INTEGER NOT NULL,
-                        order_num INTEGER NOT NULL,   
-                        is_lookup INTEGER NOT NULL DEFAULT 0,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
                         FOREIGN KEY (put_id) REFERENCES inputs_outputs(id) ON DELETE CASCADE,
                         FOREIGN KEY (let_id) REFERENCES inlets_outlets(let_id) ON DELETE CASCADE
