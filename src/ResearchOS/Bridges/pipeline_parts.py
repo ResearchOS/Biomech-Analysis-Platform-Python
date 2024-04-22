@@ -41,6 +41,8 @@ class PipelineParts(metaclass=MetaPipelineParts):
         """If id is not None, loads the object from the database. Otherwise, creates a new object in the database."""
         self.id = id
 
+        print(f"PipelineParts: {self.cls_name} {self.id}, Action: {action.id_num}")
+
         return_conn = False
         if action is None:
             return_conn = True
@@ -119,8 +121,6 @@ class PipelineParts(metaclass=MetaPipelineParts):
             param = tuple([p.id if hasattr(p, "id") else p for p in param])
             if not prev_exists and not action.is_redundant_params(None, self.insert_query_name, param):
                 action.add_sql_query(None, self.insert_query_name, param)
-            else:
-                print('a')
 
         if load_from_db:                                
             self.load_from_db(*input_args, action = action)
