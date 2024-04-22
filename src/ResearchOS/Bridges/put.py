@@ -137,7 +137,7 @@ class Put(PipelineParts):
         # if not isinstance(is_lookup, list):
         #     is_lookup = [is_lookup]
 
-        self.dynamic_vrs = [Dynamic(id = dynamic_vr_id[idx], action = action) for idx in range(len(dynamic_vr_id))]
+        self.dynamic_vrs = [Dynamic(id = dynamic_vr_id[idx], action = action) if dynamic_vr_id[idx] else None for idx in range(len(dynamic_vr_id))]
         # self.is_input = [d.is_input for d in self.dynamic_vrs]
         # self.order_num = [d.order_num for d in self.dynamic_vrs]
         # self.is_lookup = [d.is_lookup for d in self.dynamic_vrs]

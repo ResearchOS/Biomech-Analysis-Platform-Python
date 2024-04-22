@@ -23,6 +23,7 @@ class Output(Put):
                  action: "Action" = None):
         """Initializes the Output object. "vr" and "pr" together make up the main source of the output."""
         self.is_input = False
+        self.show = show
         dynamic_vr = [Dynamic(vr=vr, pr=pr, is_input=False, action=action)]
         super().__init__(id = id, action = action, dynamic_vrs=dynamic_vr)        
 
