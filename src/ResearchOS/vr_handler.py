@@ -23,7 +23,7 @@ class VRHandler():
             action = Action(name = "Set_Inputs")
             return_conn = True                
 
-        import_value_default = "import_file_vr_name"
+        import_value_default = '"import_file_vr_name"' # So that it can be JSON loaded?
 
         if is_input:
             put_cls = Input
@@ -38,36 +38,37 @@ class VRHandler():
             if isinstance(dict_put, Variable):
                 # No PR provided.
                 if dict_put.hard_coded_value is None:
-                    input = put_cls(vr=dict_put, pr=pr, action=action) # Don't put DynamicMain in database yet because PR may need to be set.
+                    put = put_cls(vr=dict_put, pr=pr, action=action) # Don't put DynamicMain in database yet because PR may need to be set.
                 else:
-                    input = put_cls(value=dict_put.hard_coded_value, action=action)
+                    put = put_cls(value=dict_put.hard_coded_value, action=action)
             elif not isinstance(dict_put, put_cls):
-                input = put_cls(value=dict_put, action=action) # Directly hard-coded value. May be a DataObject attribute.
+                put = put_cls(value=dict_put, action=action) # Directly hard-coded value. May be a DataObject attribute.
             else:
-                input = dict_put            
+                put = dict_put            
 
             # 1. import file vr name        
             if hasattr(parent_ro, "import_file_vr_name") and key==parent_ro.import_file_vr_name:
                 value = import_value_default
             else:
-                value = input.value
+                value = put.value
 
-            inlet = Let(is_input=is_input, parent_ro=parent_ro, vr_name_in_code=key, action=action, value=value, show=input.show)
+            let = Let(is_input=is_input, parent_ro=parent_ro, vr_name_in_code=key, action=action, value=value, show=put.show)
 
             force_init = False
-            if input.vr is not None and input.pr is None:
-                force_init = True
-                input.pr = put_cls.set_source_pr(parent_ro, input.vr, key)
-            if input.lookup_vr is not None and input.lookup_pr is None:
-                force_init = True
-                input.lookup_pr = put_cls.set_source_pr(parent_ro, input.lookup_vr)
+            if is_input:
+                if put.vr is not None and put.pr is None:
+                    force_init = True
+                    put.pr = put_cls.set_source_pr(parent_ro, put.vr, key)
+                if put.lookup_vr is not None and put.lookup_pr is None:
+                    force_init = True
+                    put.lookup_pr = put_cls.set_source_pr(parent_ro, put.lookup_vr)
             
-            if hasattr(input, "action"):
-                del input.action
-            input = put_cls(**input.__dict__, force_init=force_init, action=action)
+            if hasattr(put, "action"):
+                del put.action
+            put = put_cls(**put.__dict__, force_init=force_init, action=action)
 
-            standardized[inlet] = input
-            let_put = LetPut(let=inlet, put=input, action=action)
+            standardized[let] = put
+            let_put = LetPut(let=let, put=put, action=action)
                     
         if return_conn:
             action.commit = True

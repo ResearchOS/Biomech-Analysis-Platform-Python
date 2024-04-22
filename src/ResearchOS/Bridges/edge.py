@@ -12,9 +12,9 @@ class Edge(PipelineParts):
     init_attr_names = ["source_let_put_id", "target_let_put_id"]
 
     def __init__(self, id: int = None,
-                    action: Action = None,
                     source_let_put_id: str = None,
-                    target_let_put_id: str = None):
+                    target_let_put_id: str = None,
+                    action: Action = None):
         self.source_let_put_id = source_let_put_id
         self.target_let_put_id = target_let_put_id
         super().__init__(id = id, action = action)    
@@ -25,9 +25,9 @@ class Edge(PipelineParts):
         return f"""{self.output_dynamic.parent_ro.id}: {self.output_dynamic.vr_name_in_code} -> {self.input_dynamic.parent_ro.id}: {self.input_dynamic.vr_name_in_code} Subset: {subset_id}"""
     
 
-    def load_from_db(self, source_let_put_id: str, target_let_put_id: str):
+    def load_from_db(self, source_let_put_id: str, target_let_put_id: str, action: Action = None):
         """Load the let_put objects from the database."""
-        source_let_put = LetPut(id = source_let_put_id, action = self.action)
-        target_let_put = LetPut(id = target_let_put_id, action = self.action)
+        source_let_put = LetPut(id = source_let_put_id, action = action) if (hasattr(self, "source_let_put") and self.source_let_put is not None) else None
+        target_let_put = LetPut(id = target_let_put_id, action = action) if (hasattr(self, "target_let_put") and self.target_let_put is not None) else None
         self.source_let_put = source_let_put
         self.target_let_put = target_let_put

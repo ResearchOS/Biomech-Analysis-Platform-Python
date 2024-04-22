@@ -33,8 +33,8 @@ class LetPut(PipelineParts):
 
     def load_from_db(self, let_id: str, put_id: str, action: Action):
         """Load the let_put objects from the database."""
-        put = Put(id = put_id, action = action)
-        let = Let(id = let_id, action = action)
+        put = Put(id = put_id, action = action) if self.put is None else self.put
+        let = Let(id = let_id, action = action) if self.let is None else self.let
         self.put = put
         self.let = let
         

@@ -34,7 +34,10 @@ class Output(Put):
         if not isinstance(pr, list):
             pr = [pr]
         dynamic_vrs = self.dynamic_vrs
-        dynamic_vr_ids = [d.id for d in dynamic_vrs]
+        if not dynamic_vrs:
+            dynamic_vr_ids = [None]
+        else:
+            dynamic_vr_ids = [d.id if d is not None else None for d in dynamic_vrs]
         is_input = [False]
         order_num = [0]
         is_lookup = [False]     

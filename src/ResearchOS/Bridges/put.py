@@ -34,7 +34,7 @@ class Put(PipelineParts):
                  dynamic_vrs: list = [None],
                  action: Action = None):
         """Initializes the Put object."""
-        if all([d is not None for d in dynamic_vrs]):
+        if dynamic_vrs and all([d is not None for d in dynamic_vrs]):
             dynamic_vr_id = []
             is_input = []
             order_num = []
@@ -56,7 +56,7 @@ class Put(PipelineParts):
         self.is_lookup = is_lookup
         where_str = ""
         params = []
-        for idx in range(len(dynamic_vr_id)):
+        for idx in range(max(len(dynamic_vr_id), 1)):
             curr_str = "(dynamic_vr_id = ? AND is_input = ? AND order_num = ? AND is_lookup = ?)"
             if idx == 0:
                 where_str += curr_str
@@ -64,10 +64,9 @@ class Put(PipelineParts):
                 where_str += " OR " + curr_str
             if dynamic_vr_id:
                 params += [dynamic_vr_id[idx], int(is_input[idx]), order_num[idx], int(is_lookup[idx])]
-        if not params:
-            params = [dynamic_vr_id, is_input, order_num, is_lookup]
-        self.params = tuple(params)
-        self.input_args = [dynamic_vr_id, is_input, order_num, is_lookup]
+        if params:
+            self.params = tuple(params)
+            self.input_args = [dynamic_vr_id, is_input, order_num, is_lookup]
         self.where_str = where_str
         super().__init__(id = id, action = action)
 
@@ -88,9 +87,9 @@ class Put(PipelineParts):
 
         dynamic_vrs = [Dynamic(id = dynamic_vr_id[idx], action = action) for idx in range(len(dynamic_vr_id))]
         self.dynamic_vrs = dynamic_vrs
-        self.is_input = is_input
-        self.order_num = order_num
-        self.is_lookup = is_lookup
+        self.is_input = [d.is_input for d in dynamic_vrs]
+        self.order_num = [d.order_num for d in dynamic_vrs]
+        self.is_lookup = [d.is_lookup for d in dynamic_vrs]
 
     def set_source_pr(parent_ro: "ResearchObject", vr: "Variable", vr_name_in_code: str = None) -> "source_type":
         """Set the source process or logsheet."""
