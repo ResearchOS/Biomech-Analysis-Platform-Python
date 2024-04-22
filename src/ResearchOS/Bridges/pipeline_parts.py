@@ -139,18 +139,21 @@ class PipelineParts(metaclass=MetaPipelineParts):
         params = (id,)
         result = action.conn.execute(sqlquery, params).fetchall()
         if not result:
-            query_params = action.dobjs["all"][self.insert_query_name]["None"]            
-            for param in query_params:
-                if param[0] != id:
-                    raise ValueError(f"Object not found in the database: {self.cls_name} {id}") 
-            if len(query_params) == 1:
+            query_params = action.dobjs["all"][self.insert_query_name]["None"]
+            ids = [param[0] for param in query_params]            
+            if id not in ids:
+                raise ValueError(f"Object not found in the database: {self.cls_name} {id}") 
+            if not isinstance(self, Put):
                 attrs = {col_name: query_params[0][idx + 2] for idx, col_name in enumerate(self.col_names)}
+                self.init_from_attrs(**attrs, action = action)
             else:
                 attrs = {col_name: [] for col_name in self.col_names}
                 for row in query_params:
+                    if row[0] != id:
+                        continue
                     for idx, col_name in enumerate(self.col_names):
                         value = row[idx + 2]
-                        getattr(attrs[col_name], append)(value)   
+                        attrs[col_name].append(value)   
                 self.init_from_attrs(**attrs, action = action)
             return
         do_append = False
@@ -176,14 +179,22 @@ class PipelineParts(metaclass=MetaPipelineParts):
     def get_id_if_present(self, attrs: dict, action: Action):
         """Determines whether the object needs to be saved in the database."""
         if self.id is not None:
-            return self.id
-        params = tuple([attrs[col] if col != "value" else json.dumps(attrs[col]) for col in self.col_names])
-        where_str = " AND ".join([f"{col} = ?" if col is not None else f"{col} IS NULL" for col in self.col_names])
+            return self.id        
+        where_str = " AND ".join([f"{col} = ?" if col is not None else f"{col} IS NULL" for col in self.col_names])  
         sqlquery = f"SELECT {self.id_col} FROM {self.table_name} WHERE {where_str}"
-        result = action.conn.execute(sqlquery, params).fetchall()
-        if not result:
-            return None
+        if not "dynamic_vr_id" in attrs:            
+            params = tuple([attrs[col] if col != "value" else json.dumps(attrs[col]) for col in self.col_names])  
+            result = action.conn.execute(sqlquery, params).fetchall()
+            if not result:
+                return None
+            else:
+                return result[0][0]
         else:
+            for idx in range(len(attrs["dynamic_vr_id"])):                
+                params = tuple([attrs[col][idx] if col != "value" else json.dumps(attrs[col][idx]) for col in self.col_names])
+                result = action.conn.execute(sqlquery, params).fetchall()
+                if not result:
+                    return None
             return result[0][0]
     
     def save(self, attrs: dict, action: Action):
@@ -197,11 +208,11 @@ class PipelineParts(metaclass=MetaPipelineParts):
                 action.add_sql_query(None, self.insert_query_name, params)
         else:
             for idx in range(len(self.dynamic_vrs)):
-                dynamic_vr_id = self.dynamic_vr_id[idx]
-                is_input = self.is_input[idx]
-                order_num = self.order_num[idx]
-                is_lookup = self.is_lookup[idx]
-                params = (self.id, action.id_num, dynamic_vr_id, is_input, order_num, is_lookup)
+                dynamic_vr = self.dynamic_vrs[idx]
+                is_input = dynamic_vr.is_input
+                order_num = dynamic_vr.order_num
+                is_lookup = dynamic_vr.is_lookup
+                params = (self.id, action.id_num, dynamic_vr.id, is_input, order_num, is_lookup)
                 if not action.is_redundant_params(None, self.insert_query_name, params):
                     action.add_sql_query(None, self.insert_query_name, params)
 
