@@ -41,7 +41,7 @@ class VRHandler():
                 if put.main["vr"] and not put.main["pr"]:
                     pr = Input.set_source_pr(parent_ro, put.main["vr"], vr_name)
                     final_dict[vr_name]["main"]["pr"] = [pr.id]
-                if put.main["lookup_vr"] and not put.main["lookup_pr"]:
+                if put.lookup["vr"] and not put.lookup["pr"]:
                     lookup_pr = Input.set_source_pr(parent_ro, put.lookup["vr"], vr_name)
                     final_dict[vr_name]["lookup"]["pr"] = [lookup_pr.id]
             else: # Hard-coded value.
