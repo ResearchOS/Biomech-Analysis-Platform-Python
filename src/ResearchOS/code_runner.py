@@ -60,13 +60,15 @@ class CodeRunner():
         CodeRunner.matlab_double_type = matlab_double_type
 
     @staticmethod
-    def get_lowest_level(robj: "ResearchObject", schema_ordered: list) -> Optional[str]:
+    def get_lowest_level(robj: "ResearchObject", schema_ordered: list, action: Action) -> Optional[str]:
         """Get the lowest level for this batch."""
+        from ResearchOS.PipelineObjects.process import Process
         lowest_level_idx = -1
         lowest_level = schema_ordered[-1]
         for input in robj.inputs.values():
             try:
-                level = input.pr.level                
+                pr = input["main"]["pr"][0]
+                level = Process(id=pr, action=action).level                
             except: # For Logsheet, defer to current PR level.
                 level = robj.level
             level_idx = schema_ordered.index(level)
@@ -145,12 +147,12 @@ class CodeRunner():
 
             # Dict of dicts, where each top-level dict is a batch to run.
             # Get a top level node.
-            any_top_level_node = [n for n in batches_dict_to_run][0]
-            leafs = [n for n in all_batches_graph.nodes() if all_batches_graph.out_degree(n) == 0 and n in list(nx.descendants(all_batches_graph, any_top_level_node))]
-            CodeRunner.depth = nx.shortest_path_length(all_batches_graph, any_top_level_node, leafs[0])
+            # any_top_level_node = [n for n in batches_dict_to_run][0]
+            # leafs = [n for n in all_batches_graph.nodes() if all_batches_graph.out_degree(n) == 0]
+            # CodeRunner.depth = nx.shortest_path_length(all_batches_graph, any_top_level_node, leafs[0])
         else:
             batches_dict_to_run = {node: None for node in level_node_ids_sorted}
-            CodeRunner.depth = 0
+            # CodeRunner.depth = 0
             all_batches_graph = None
         CodeRunner.lowest_level = lowest_level
         if robj.batch == []:
@@ -258,7 +260,7 @@ class CodeRunner():
         # Get the lowest level for this batch.
         schema_ordered = [n for n in nx.topological_sort(schema_graph)]
         self.schema_order = schema_ordered
-        lowest_level = CodeRunner.get_lowest_level(robj, schema_ordered)
+        lowest_level = CodeRunner.get_lowest_level(robj, schema_ordered, action=action)
 
         level_node_ids_sorted, paths, dobj_ids = CodeRunner.get_level_nodes_sorted(robj, action, paths, dobj_ids, subset_graph)
             
@@ -274,6 +276,8 @@ class CodeRunner():
         if self.pl_obj.batch is None:
             self.run_node(batch_id)
             return
+        
+        start_time = time.time()
         
         lowest_nodes = [node for node in batch_graph.nodes() if batch_graph.out_degree(node) == 0]
 
@@ -293,6 +297,8 @@ class CodeRunner():
             batch_node_idx = [idx for idx, node in enumerate(self.paths) if node[-1] == batch_id][0]
             batch_node = self.dobj_ids[batch_node_idx]
         self.node = self.highest_level(id = batch_node)
+
+        print(f"Running {self.pl_obj} on batch {self.node}.")
                 
         def process_dict(self, batch_graph, input_dict, G, vr_name_in_code: str = None):
             all_keys = list(input_dict.keys())
@@ -324,7 +330,9 @@ class CodeRunner():
 
         self.action.commit = True
         self.action.exec = True
-        self.action.execute(return_conn = False)         
+        self.action.execute(return_conn = False)    
+
+        print(f"Running {self.pl_obj} on batch {self.node} took {round(time.time() - start_time, 3)} seconds.")     
 
     def run_node(self, node_id: str) -> None:
         """Run the process on the given node ID.
@@ -341,7 +349,7 @@ class CodeRunner():
             return
         
         node_info = node.get_node_info(action=self.action)
-        run_msg = f"Running {self.pl_obj}."
+        run_msg = f"Running {self.pl_obj} ({node})."
         print(run_msg)
         is_batch = pl_obj.batch is not None
         assert is_batch == False
@@ -352,7 +360,7 @@ class CodeRunner():
         self.action.execute(return_conn = False)        
 
         done_run_time = time.time()
-        done_msg = f"Running {self.pl_obj} took {round(done_run_time - start_run_time, 3)} seconds."
+        done_msg = f"Running {self.pl_obj} ({node}) took {round(done_run_time - start_run_time, 3)} seconds."
         print(done_msg)
         
     def check_if_run_node(self, node_id: str) -> bool:
