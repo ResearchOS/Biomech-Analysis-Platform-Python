@@ -163,14 +163,14 @@ class Process(PipelineObject):
         Edges are created here."""
         standardized_kwargs = VRHandler.standardize_lets_puts(self, kwargs, is_input=True)
         self.__dict__["inputs"] = standardized_kwargs
-        make_all_edges(self, puts=self.inputs)
+        make_all_edges(self, puts=self.inputs, is_input=True)
 
     def set_outputs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict.
         Edges are NOT created here."""
         standardized_kwargs = VRHandler.standardize_lets_puts(self, kwargs, is_input=False)
         self.__dict__["outputs"] = standardized_kwargs
-        make_all_edges(self, puts=self.outputs)
+        make_all_edges(self, puts=self.outputs, is_input=False)
 
     def run(self, force_redo: bool = False, action: Action = None, return_conn: bool = True) -> None:
         """Execute the attached method.

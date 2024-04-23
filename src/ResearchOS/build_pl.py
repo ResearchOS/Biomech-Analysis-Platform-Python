@@ -114,10 +114,7 @@ def make_all_edges_from_dict(parent_ro: "ResearchObject", edges_dict: dict, acti
 
 
 
-def make_all_edges(ro: "ResearchObject", action: Action = None, puts: dict = None):
-        # For each input, find an Outlet with a matching output.
-        from ResearchOS.PipelineObjects.process import Process
-        from ResearchOS.PipelineObjects.logsheet import Logsheet
+def make_all_edges(ro: "ResearchObject", action: Action = None, puts: dict = None, is_input: bool = True):
         return_conn = False
         if action is None:
             action = Action(name="Build_PL")
@@ -157,7 +154,23 @@ def make_all_edges(ro: "ResearchObject", action: Action = None, puts: dict = Non
                 if not action.is_redundant_params(None, "pipeline_insert", params):
                     params_list.append(params)
 
-        # Check for redundancy in the database.
+        # Check if there are any edges that have been removed. These would be vr_name_in_code's for this parent_ro_id that are not in the puts.
+        sqlquery_raw = "SELECT vr_name_in_code FROM pipeline WHERE parent_ro_id = ? AND is_active = 1 AND"
+        if is_input:
+            operator = "IS NOT"
+        else:
+            operator = "IS"
+        sqlquery_raw += " source_pr_id " + operator + " pipeline.parent_ro_id" # Need to include the "pipeline." prefix because of the way sql_order_result works.
+        sqlquery = sql_order_result(action, sqlquery_raw, ["vr_name_in_code"], single = True, user = True, computer = False)
+        params = (ro.id,)
+        result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        vr_names = [row[0] for row in result] if result else []
+        for vr_name in vr_names:
+            if vr_name not in puts.keys():                
+                params = (action.id_num, ro.id, vr_name, None, None, None, 0, int(False), int(False), int(False)) # Some default settings.
+                action.add_sql_query(None, "pipeline_insert", params)
+
+        # Check for redundancy in the database before writing.
         sql_params = [param[1:] for param in params_list] # Remove the action_id_num from the params.
         params_str = "(parent_ro_id IS ? AND vr_name_in_code IS ? AND source_pr_id IS ? AND vr_id IS ? AND hard_coded_value IS ? AND order_num IS ? AND is_lookup IS ? AND show IS ? AND is_active IS ?)"
         sqlquery = "SELECT parent_ro_id, vr_name_in_code, source_pr_id, vr_id, hard_coded_value, order_num, is_lookup, show, is_active FROM pipeline WHERE {}".format(" OR ".join([params_str for params in sql_params]))
@@ -174,7 +187,7 @@ def make_all_edges(ro: "ResearchObject", action: Action = None, puts: dict = Non
             params_list.remove(param)
 
         for params in params_list:
-            action.add_sql_query(None, "pipeline_insert", params)
+            action.add_sql_query(None, "pipeline_insert", params)        
         
         action.commit = True
         action.execute()
