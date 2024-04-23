@@ -270,7 +270,7 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
     print('Importing Dataset objects...')
     import_objects_of_type(Dataset)
     print('Importing Logsheet objects...')
-    from src.research_objects import logsheets as lg
+    # from src.research_objects import logsheets as lg
     lgs = import_objects_of_type(Logsheet)
     lg = lgs[0]
     # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.          

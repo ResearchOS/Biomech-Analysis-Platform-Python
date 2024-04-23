@@ -1,9 +1,10 @@
+from typing import Union
 import json, copy
 
+from ResearchOS.variable import Variable
 from ResearchOS.research_object import ResearchObject
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
-from ResearchOS.vr_handler import VRHandler
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.build_pl import make_all_edges
 from ResearchOS.Bridges.input import Input
@@ -27,7 +28,7 @@ class PipelineObject(ResearchObject):
         params = (self.id,)
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
         vr_names = [row[0] for row in result] if result else []
-        inputs = VRHandler.empty_vr_dict(vr_names)
+        inputs = empty_vr_dict(vr_names)
         subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
         for row in result:
             vr_name = row[0]
@@ -59,29 +60,31 @@ class PipelineObject(ResearchObject):
                 
         return inputs
     
-    def save_puts(parent_ro: "ResearchObject", all_puts: Union[Input, dict], action: Action = None, is_input: bool = True) -> dict:
+    def save_puts(self, all_puts: Union[Input, dict], action: Action = None, is_input: bool = True) -> dict:
         """Create the dictionary that is the equivalent of someone passing in a dictionary directly."""
-        final_dict = VRHandler.empty_vr_dict(all_puts.keys())
+        from ResearchOS.build_pl import build_pl
+        G = build_pl(import_objs=False, action=action)
+        final_dict = empty_vr_dict(all_puts.keys())
         for vr_name, put in all_puts.items():
             if isinstance(put, Variable):
                 if put.hard_coded_value is None:
                     final_dict[vr_name]["main"]["vr"] = put.id
                     # Get the source_pr unless this is an import file VR.
-                    if not (hasattr(parent_ro, "import_file_vr_name") and vr_name==parent_ro.import_file_vr_name):
+                    if not (hasattr(self, "import_file_vr_name") and vr_name==self.import_file_vr_name):
                         if is_input:
-                            pr = Input.set_source_pr(parent_ro, put, vr_name)
+                            pr = Input.set_source_pr(self, put, vr_name, G)
                         else:
-                            pr = parent_ro
-                        final_dict[vr_name]["main"]["pr"].append(pr.id)
+                            pr = self
+                        final_dict[vr_name]["main"]["pr"].append(pr.id if pr else None)
                 else:
                     final_dict[vr_name]["main"]["vr"] = put.hard_coded_value
             elif isinstance(put, Input):
                 final_dict[vr_name] = put.__dict__
                 if put.main["vr"] and not put.main["pr"]:
-                    pr = Input.set_source_pr(parent_ro, put.main["vr"], vr_name)
+                    pr = Input.set_source_pr(self, put.main["vr"], vr_name)
                     final_dict[vr_name]["main"]["pr"] = [pr.id]
                 if put.lookup["vr"] and not put.lookup["pr"]:
-                    lookup_pr = Input.set_source_pr(parent_ro, put.lookup["vr"], vr_name)
+                    lookup_pr = Input.set_source_pr(self, put.lookup["vr"], vr_name)
                     final_dict[vr_name]["lookup"]["pr"] = [lookup_pr.id]
             else: # Hard-coded value.
                 if isinstance(put, dict):
@@ -113,14 +116,14 @@ class PipelineObject(ResearchObject):
     def set_inputs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict.
         Edges are created here."""
-        standardized_kwargs = self.save_puts(self, kwargs, is_input=True)
+        standardized_kwargs = self.save_puts(kwargs, is_input=True)
         self.__dict__["inputs"] = standardized_kwargs
         make_all_edges(self, puts=self.inputs, is_input=True)
 
     def set_outputs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict.
         Edges are NOT created here."""
-        standardized_kwargs = self.save_puts(self, kwargs, is_input=False)
+        standardized_kwargs = self.save_puts(kwargs, is_input=False)
         self.__dict__["outputs"] = standardized_kwargs
         make_all_edges(self, puts=self.outputs, is_input=False)
 

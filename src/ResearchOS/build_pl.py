@@ -26,7 +26,7 @@ from ResearchOS.variable import Variable
 # Edges are created in SQL when the Processes' settings are created, using currently available Processes in memory.
 
 def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph:
-    """Builds the pipeline."""   
+    """Builds the pipeline from the objects in the code."""   
     from ResearchOS.research_object import ResearchObject
     from ResearchOS.default_attrs import DefaultAttrs
     from ResearchOS.PipelineObjects.process import Process
@@ -34,6 +34,9 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
     from ResearchOS.PipelineObjects.stats import Stats
     from src.research_objects import plots
     return_conn = True
+    if action is None:
+        return_conn = False
+        action = Action(name="Build_PL")
     if import_objs: 
         prs, pr_mods = import_objects_of_type(Process)
         pls, pl_mods = import_objects_of_type(Plot)
@@ -42,9 +45,9 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
             return_conn = False
             action = Action(name="Build_PL")
         
-        def set_names(objs, mods, ttype):
+        def set_names(objs, mods, ttype, action):
             if not objs or not mods:
-                print("No objects found.")
+                print(f"No objects found of type {ttype.__name__}.")
                 return
             default_attrs = DefaultAttrs(objs[0]).default_attrs if prs else {}
             for mod in mods:
@@ -54,9 +57,9 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
                         continue
                     if obj.name==obj.id or obj.name==default_attrs["name"]:
                         obj.__setattr__("name", obj_name, action=action, exec=False)
-        set_names(prs, pr_mods, Process)
-        set_names(pls, pl_mods, Plot)
-        set_names(sts, st_mods, Stats)
+        set_names(prs, pr_mods, Process, action=action)
+        set_names(pls, pl_mods, Plot, action=action)
+        set_names(sts, st_mods, Stats, action=action)
     
     sqlquery_raw = "SELECT parent_ro_id, vr_name_in_code, source_pr_id, vr_id FROM pipeline WHERE is_active = 1 AND source_pr_id IS NOT pipeline.parent_ro_id AND source_pr_id IS NOT NULL"
     sqlquery = sql_order_result(action, sqlquery_raw, ["edge_id"], single = True, user = True, computer = False)
@@ -77,66 +80,22 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
         source_pr = source_pr_cls(id = source_pr_id)
         vr = Variable(id = vr_id)
         G.add_edge(source_pr, parent_ro, vr_name_in_code = vr_name_in_code, vr = vr)
+        if not nx.is_directed_acyclic_graph(G):
+            raise ValueError("The pipeline is not a directed acyclic graph.")
 
-    # import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 
-    # pos = nx.spring_layout(G)
-    # nx.draw(G, pos, with_labels=True, node_size=700)
-    # edge_labels = nx.get_edge_attributes(G, 'vr_name_in_code')
-    # nx.draw_networkx_edge_labels(nx.DiGraph(G), pos, edge_labels=edge_labels)
+    pos = nx.spring_layout(G)
+    nx.draw(G, pos, with_labels=True, node_size=700)
+    edge_labels = nx.get_edge_attributes(G, 'vr_name_in_code')
+    nx.draw_networkx_edge_labels(nx.DiGraph(G), pos, edge_labels=edge_labels)
 
-    # plt.show()
+    plt.show()
 
     if return_conn:
         action.commit = True
         action.execute()
     return G
-
-def make_all_edges_from_dict(parent_ro: "ResearchObject", edges_dict: dict, action: Action = None):
-    """Creates all the Edges from the given dictionary."""
-    return_conn = False
-    if action is None:
-        return_conn = True
-        action = Action(name="Build_PL")
-    parent_ro_id = parent_ro.id        
-    # For each VR name in the dictionary.
-    for vr_name, vr_dict in edges_dict.items():        
-        show = vr_dict["show"]
-        main_vr = vr_dict["main"]["vr"]
-        value = main_vr if not (isinstance(main_vr, Variable) or isinstance(main_vr, str) and main_vr.startswith("VR")) else None
-        vr_id = None
-        if not value:
-            vr_id = main_vr.id if isinstance(main_vr, Variable) else main_vr
-        pr_ids = vr_dict["main"]["pr"] if vr_id else []
-        if pr_ids and not isinstance(pr_ids, list):
-            pr_ids = [pr_ids]        
-        lookup_vr_id = vr_dict["lookup"]["vr"]
-        lookup_vr_id = lookup_vr_id.id if isinstance(lookup_vr_id, Variable) else lookup_vr_id
-
-        lookup_pr_ids = vr_dict["lookup"]["pr"] if lookup_vr_id else []
-        if lookup_pr_ids and not isinstance(lookup_pr_ids, list):
-            lookup_pr_ids = [lookup_pr_ids]
-        # For each PR in the pr_ids.
-        order_num = -1
-        for pr_id in pr_ids:
-            order_num += 1
-            params = (action.id_num, parent_ro_id, vr_name, pr_id, vr_id, value, order_num, False, show, 1)
-            if not action.is_redundant_params(None, "pipeline_insert", params):
-                action.add_sql_query(None, "pipeline_insert", params)        
-        order_num = -1
-        for lookup_pr_id in lookup_pr_ids:
-            order_num += 1
-            params = (action.id_num, parent_ro_id, vr_name, lookup_pr_id, lookup_vr_id, None, order_num, True, show, 1)
-            if not action.is_redundant_params(None, "pipeline_insert", params):
-                action.add_sql_query(None, "pipeline_insert", params)
-
-    if return_conn:
-        action.commit = True
-        action.execute()
-
-        
-
-
 
 
 def make_all_edges(ro: "ResearchObject", action: Action = None, puts: dict = None, is_input: bool = True):

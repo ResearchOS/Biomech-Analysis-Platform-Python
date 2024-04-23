@@ -4,8 +4,6 @@ import networkx as nx
 
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.action import Action
-from ResearchOS.stats_runner import StatsRunner
-from ResearchOS.vr_handler import VRHandler
 
 all_default_attrs = {}
 # For MATLAB
