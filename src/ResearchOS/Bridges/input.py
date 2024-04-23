@@ -44,7 +44,7 @@ class Input():
         self.lookup["pr"] = lookup_pr_id
 
     @staticmethod
-    def set_source_pr(parent_ro: "ResearchObject", vr: "Variable", vr_name_in_code: str = None, G: nx.MultiDiGraph = None) -> "source_type":
+    def set_source_pr(parent_ro: "ResearchObject", vr: "Variable", G: nx.MultiDiGraph = None) -> "source_type":
         """Set the source process or logsheet."""
         from ResearchOS.research_object_handler import ResearchObjectHandler
         from ResearchOS.PipelineObjects.process import Process
@@ -52,7 +52,7 @@ class Input():
 
         nodes_sorted = list(reversed(list(nx.topological_sort(G)))) # Latest first.
         if parent_ro in nodes_sorted:
-            nodes_sorted.remove(parent_ro)
+            raise ValueError(f"Parent RO {parent_ro} is already in the graph.")
 
         for node in nodes_sorted:
             if isinstance(node, Logsheet):
@@ -60,7 +60,6 @@ class Input():
                     vr = vr.id if isinstance(vr, Variable) else vr
                     if h[3].id == vr:
                         try:
-                            G.add_edge(node, parent_ro, vr_name_in_code=vr_name_in_code, tmp=True)
                             return node
                         except:
                             pass                        
@@ -70,47 +69,6 @@ class Input():
                 output_lookup_vr = output["lookup"]["vr"]
                 if output_main_vr == vr.id or output_lookup_vr == vr.id:
                     try:
-                        G.add_edge(node, parent_ro, vr_name_in_code=vr_name_in_code, tmp=True)
                         return node
                     except:
                         pass
-
-        
-        # prs = [pr() for pr in ResearchObjectHandler.instances_list if pr() is not None and isinstance(pr(), (Process,))]
-        # lgs = [lg() for lg in ResearchObjectHandler.instances_list if lg() is not None and isinstance(lg(), (Logsheet,))]
-
-        # if isinstance(parent_ro, Process):
-        #     last_idx = prs.index(parent_ro)
-        # else:
-        #     last_idx = len(prs)
-        # prs = prs[0:last_idx] # Reverse the list to get the most recent PRs first (go backward in time)
-        # prs.reverse()
-
-        # final_pr = None        
-        # for pr in prs:
-        #     outputs = pr.outputs
-        #     for vr_name, output_vr in outputs.items():
-        #         output_main_vr = output_vr["main"]["vr"]
-        #         vr_id = vr.id if isinstance(vr, Variable) else vr
-        #         if output_main_vr is not None and output_main_vr == vr_id:                    
-        #             final_pr = pr
-        #             break # Found the proper pr.
-        #         output_lookup_vr = output_vr["lookup"]["vr"]
-        #         if output_lookup_vr is not None and output_lookup_vr == vr_id:
-        #             final_pr = pr
-        #             break
-        #     if final_pr:
-        #         break
-
-        # if not final_pr:
-        #     for lg in lgs:
-        #         for h in lg.headers:
-        #             vr = vr.id if isinstance(vr, Variable) else vr
-        #             if h[3].id == vr:
-        #                 final_pr = lg
-        #                 break
-
-        # if not final_pr and not (hasattr(parent_ro, "import_file_vr_name") and vr_name_in_code==parent_ro.import_file_vr_name):            
-        #     raise ValueError(f"Could not find the source PR for VR {vr}. If this is an import_file_vr, then put that attribute before the 'set_inputs' command.")
-
-        # return final_pr

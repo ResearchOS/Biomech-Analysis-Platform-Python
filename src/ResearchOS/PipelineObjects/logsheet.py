@@ -150,7 +150,7 @@ class Logsheet(PipelineObject):
             
         Returns:
             ''headers'' as a JSON string using ''json.dumps''"""
-        from ResearchOS.build_pl import make_all_edges
+        from ResearchOS.Digraph.pipeline_digraph import make_all_edges
         from ResearchOS.PipelineObjects.pipeline_object import empty_vr_dict
         from ResearchOS.Digraph.pipeline_digraph import PipelineDiGraph
         # Create Outputs for the Logsheet
@@ -161,12 +161,12 @@ class Logsheet(PipelineObject):
             vr = header[3]
             vr_name = header[0]
             final_dict[vr_name]["main"] = {"vr": vr.id, "pr": self.id}
-            G.add_edge(self, None, vr=vr, action=action)
+            G.add_edge(self, None, vr=vr, action=action, is_input=False)
             
-        if headers:
-            self.__dict__["headers"] = headers
-            make_all_edges(self, action, final_dict, False)
-            del self.__dict__["headers"]
+        # if headers:
+        #     self.__dict__["headers"] = headers
+        #     make_all_edges(self, action, final_dict, False)
+        #     del self.__dict__["headers"]
 
         str_headers = []       
         for header in headers:

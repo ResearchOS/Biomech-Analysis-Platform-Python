@@ -6,7 +6,7 @@ from ResearchOS.research_object import ResearchObject
 from ResearchOS.action import Action
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.sql.sql_runner import sql_order_result
-from ResearchOS.build_pl import make_all_edges
+from ResearchOS.Digraph.pipeline_digraph import make_all_edges
 from ResearchOS.Bridges.input import Input
 
 all_default_attrs = {}
@@ -16,17 +16,9 @@ computer_specific_attr_names = []
 class PipelineObject(ResearchObject):
     """Parent class of all pipeline objects: Projects, Analyses, Logsheets, Process Groups, Processes, Variables, SpecifyTrials, Views"""
 
-    def load_puts(self, action: Action, is_input: bool) -> dict:
-        """Load the input or output variables."""
+    def make_puts_dict_from_db_result(self, result: list) -> dict:
+        """Given the results of a query on the pipeline table for one ResearchObject, return a dictionary of the inputs or outputs."""
         from ResearchOS.research_object import ResearchObject
-        sqlquery_raw = "SELECT vr_name_in_code, source_pr_id, vr_id, hard_coded_value, order_num, is_lookup, show FROM pipeline WHERE parent_ro_id = ? AND is_active = 1"
-        operator = "IS NOT"
-        if not is_input:
-            operator = "IS"
-        sqlquery_raw += " AND source_pr_id " + operator + " pipeline.parent_ro_id" # Need to include the "pipeline." prefix because of the way sql_order_result works.
-        sqlquery = sql_order_result(action, sqlquery_raw, ["source_pr_id", "vr_name_in_code"], single = True, user = True, computer = False)
-        params = (self.id,)
-        result = action.conn.cursor().execute(sqlquery, params).fetchall()
         vr_names = [row[0] for row in result] if result else []
         inputs = empty_vr_dict(vr_names)
         subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
@@ -57,10 +49,25 @@ class PipelineObject(ResearchObject):
                     while len(inputs[vr_name]["lookup"]["pr"]) <= order_num:
                         inputs[vr_name]["lookup"]["pr"].append(None)
                     inputs[vr_name]["lookup"]["pr"][order_num] = source_pr_id if source_pr_id else []
-                
         return inputs
+
+    def make_puts_dict_from_db(self, action: Action, is_input: bool) -> dict:
+        """Load the input or output variables."""        
+        # If is input, then source is null and target is not null. 
+        # If is output, then source is not null and target is null.
+        sqlquery_raw = "SELECT vr_name_in_code, source_pr_id, vr_id, hard_coded_value, order_num, is_lookup, show FROM pipeline WHERE parent_ro_id = ? AND is_active = 1"
+        operator = "IS NOT"
+        col_name = "target_pr_id"
+        if not is_input:
+            operator = "IS"
+            col_name = "source_pr_id"
+        sqlquery_raw += " AND source_pr_id " + operator + " NULL"
+        sqlquery = sql_order_result(action, sqlquery_raw, [col_name, "vr_name_in_code"], single = True, user = True, computer = False)
+        params = (self.id,)
+        result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        return self.make_puts_dict_from_db_result(result)
     
-    def save_puts(self, all_puts: Union[Input, dict], action: Action = None, is_input: bool = True) -> dict:
+    def make_puts_dict_from_inputs(self, all_puts: Union[Input, dict], action: Action = None, is_input: bool = True) -> dict:
         """Create the dictionary that is the equivalent of someone passing in a dictionary directly."""
         from ResearchOS.Digraph.pipeline_digraph import PipelineDiGraph
         G = PipelineDiGraph(action=action)
@@ -103,7 +110,7 @@ class PipelineObject(ResearchObject):
         
     def load_inputs(self, action: Action) -> dict:
         """Load the input variables."""        
-        return self.load_puts(action, True)
+        return self.make_puts_dict_from_db(action, True)
 
     def save_outputs(self, outputs: dict, action: Action) -> None:
         """Saving the output variables. is done in the output class."""
@@ -111,13 +118,13 @@ class PipelineObject(ResearchObject):
 
     def load_outputs(self, action: Action) -> dict:
         """Load the output variables."""
-        return self.load_puts(action, False)
+        return self.make_puts_dict_from_db(action, False)
     
     def set_inputs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict.
         Edges are created here."""
         action = Action(name="Set Inputs")
-        standardized_kwargs = self.save_puts(kwargs, is_input=True, action=action)
+        standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=True, action=action)
         self.__dict__["inputs"] = standardized_kwargs
         make_all_edges(self, puts=self.inputs, is_input=True, action=action)
         action.commit = True
@@ -127,7 +134,7 @@ class PipelineObject(ResearchObject):
         """Convenience function to set the output variables with named variables rather than a dict.
         Edges are NOT created here."""
         action = Action(name="Set Outputs")
-        standardized_kwargs = self.save_puts(kwargs, is_input=False, action=action)
+        standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=False, action=action)
         self.__dict__["outputs"] = standardized_kwargs
         make_all_edges(self, puts=self.outputs, is_input=False, action=action)
         action.commit = True
