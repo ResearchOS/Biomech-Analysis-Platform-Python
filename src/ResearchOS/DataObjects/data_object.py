@@ -74,7 +74,7 @@ class DataObject(ResearchObject):
             return vr # Hard-coded value.
         
         if isinstance(vr, Variable) and vr.hard_coded_value is not None:
-            return vr.hard_coded_value
+            return vr.hard_coded_value        
         
         # This is either hard-coded, or it's the import file VR.
         if parent_ro and hasattr(parent_ro, "import_file_vr_name") and vr_name_in_code == parent_ro.import_file_vr_name:
@@ -95,6 +95,9 @@ class DataObject(ResearchObject):
         
         if not isinstance(vr, Variable):
             return vr # Hard-coded value, no VR.
+        
+        if not process:
+            raise ValueError("No process provided to get the value of the VR. AFAIK this only happens when the dynamically generated VR is not yet assigned to a prior Process.")
         
         self_idx = node_lineage.index(self)
         base_node = node_lineage[self_idx]
