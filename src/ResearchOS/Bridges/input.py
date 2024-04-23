@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING, Union, Any
 
-if TYPE_CHECKING:
-    from ResearchOS.variable import Variable    
+if TYPE_CHECKING:      
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.logsheet import Logsheet
     source_type = Union[Process, Logsheet]
 
+from ResearchOS.variable import Variable  
 
 class Input():
     """Input Put to connect between DiGraphs.""" 
@@ -19,23 +19,27 @@ class Input():
                  show: bool = False):
         """Initializes the Input object. "vr" and "pr" together make up the main source of the input. "lookup_vr" and "lookup_pr" together make up the lookup source of the input.
         "value" is the hard-coded value. If specified, supercedes the main source."""
+        from ResearchOS.PipelineObjects.process import Process
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
         # Turn them into lists if not None.
         pr = [pr] if pr and not isinstance(pr, list) else pr
         lookup_pr = [lookup_pr] if lookup_pr and not isinstance(lookup_pr, list) else lookup_pr     
 
         # Ensure that they are ID's (or None) not objects.
         vr_id = vr.id if isinstance(vr, Variable) else vr
-        pr_id = [p.id if isinstance(p, source_type) else p for p in pr]
+        pr_id = [p.id if isinstance(p, (Logsheet, Process)) else p for p in pr] if pr else []
         lookup_vr_id = lookup_vr.id if isinstance(lookup_vr, Variable) else lookup_vr
-        lookup_pr_id = [p.id if isinstance(p, source_type) else p for p in lookup_pr]
+        lookup_pr_id = [p.id if isinstance(p, (Logsheet, Process)) else p for p in lookup_pr] if lookup_pr else []
 
         # Store the values.
         self.value = value
         self.show = show
-        self.main.vr = vr_id
-        self.main.pr = pr_id
-        self.lookup.vr = lookup_vr_id
-        self.lookup.pr = lookup_pr_id
+        self.main = {}
+        self.lookup = {}
+        self.main["vr"] = vr_id
+        self.main["pr"] = pr_id
+        self.lookup["vr"] = lookup_vr_id
+        self.lookup["pr"] = lookup_pr_id
 
     @staticmethod
     def set_source_pr(parent_ro: "ResearchObject", vr: "Variable", vr_name_in_code: str = None) -> "source_type":
@@ -56,9 +60,10 @@ class Input():
 
         final_pr = None        
         for pr in prs:
-            outputs = pr.outputs.values()
-            for output in outputs:
-                if output is not None and output.vr == vr:                    
+            outputs = pr.outputs
+            for vr_name, output_vr in outputs.items():
+                output_main_vr = output_vr["main"]["vr"]
+                if output_main_vr is not None and output_main_vr == vr.id:                    
                     final_pr = pr
                     break # Found the proper pr.
             if final_pr:
