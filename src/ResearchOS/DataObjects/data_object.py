@@ -62,14 +62,18 @@ class DataObject(ResearchObject):
         ] if lookup_pr else []
 
         if isinstance(vr, dict):
-            cls = [key for key in vr.keys()][0]
+            subclasses = DataObject.__subclasses__()
+            prefix = [key for key in vr.keys()][0]
+            cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix == prefix]
+            if cls:
+                cls = cls[0]
             attr = [value for value in vr.values()][0]
-            if isinstance(cls, type) and hasattr(cls, "prefix") and len(cls.prefix) == 2:
+            if cls:
                 node = [node for node in node_lineage if node.prefix==cls.prefix][0]
                 return getattr(node, attr)
             return vr # Hard-coded value.
         
-        if vr.hard_coded_value is not None:
+        if isinstance(vr, Variable) and vr.hard_coded_value is not None:
             return vr.hard_coded_value
         
         # This is either hard-coded, or it's the import file VR.
@@ -88,6 +92,9 @@ class DataObject(ResearchObject):
                 print(file_msg)
                 return None             
             return file_path
+        
+        if not isinstance(vr, Variable):
+            return vr # Hard-coded value, no VR.
         
         self_idx = node_lineage.index(self)
         base_node = node_lineage[self_idx]

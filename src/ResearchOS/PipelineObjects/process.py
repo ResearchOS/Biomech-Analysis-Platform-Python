@@ -193,7 +193,7 @@ class Process(PipelineObject):
             ProcessRunner.matlab_eng.rmpath(self.mfolder)
             
         for vr_name, output in self.outputs.items():
-            print(f"Saved VR {vr_name} (VR: {output.vr.id}).")
+            print(f"Saved VR {vr_name} (VR: {output['main']['vr']}).")
 
         action.add_sql_query(None, "run_history_insert", (action.id_num, self.id))
 
