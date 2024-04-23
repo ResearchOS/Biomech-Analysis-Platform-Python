@@ -20,7 +20,7 @@ class VRHandler():
         return final_dict
 
     @staticmethod
-    def standardize_lets_puts(parent_ro: "ResearchObject", all_puts: Union[Input, dict], action: Action = None) -> dict:
+    def standardize_lets_puts(parent_ro: "ResearchObject", all_puts: Union[Input, dict], action: Action = None, is_input: bool = True) -> dict:
         """Create the dictionary that is the equivalent of someone passing in a dictionary directly."""
         final_dict = VRHandler.empty_vr_dict(all_puts.keys())
         for vr_name, put in all_puts.items():
@@ -29,14 +29,23 @@ class VRHandler():
                     final_dict[vr_name]["main"]["vr"] = put.id
                     # Get the source_pr unless this is an import file VR.
                     if not (hasattr(parent_ro, "import_file_vr_name") and vr_name==parent_ro.import_file_vr_name):
-                        pr = Input.set_source_pr(parent_ro, put, vr_name)
+                        if is_input:
+                            pr = Input.set_source_pr(parent_ro, put, vr_name)
+                        else:
+                            pr = parent_ro
                         final_dict[vr_name]["main"]["pr"].append(pr.id)
                 else:
                     final_dict[vr_name]["main"]["vr"] = put.hard_coded_value
             elif isinstance(put, Input):
                 final_dict[vr_name] = put.__dict__
-            else:
-                final_dict[vr_name]["main"]["vr"] = put
+            else: # Hard-coded value.
+                if isinstance(put, dict):
+                    cls = [key for key in put.keys()][0]
+                    attr_name = [value for value in put.values()][0]
+                    if isinstance(cls, type) and hasattr(cls, "prefix") and len(cls.prefix) == 2:
+                        final_dict[vr_name]["main"]["vr"] = {cls.prefix: attr_name}
+                else:
+                    final_dict[vr_name]["main"]["vr"] = put
 
         return final_dict
     

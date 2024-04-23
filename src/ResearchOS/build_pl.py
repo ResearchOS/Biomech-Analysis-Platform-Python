@@ -114,7 +114,7 @@ def make_all_edges_from_dict(parent_ro: "ResearchObject", edges_dict: dict, acti
 
 
 
-def make_all_edges(ro: "ResearchObject", action: Action = None):
+def make_all_edges(ro: "ResearchObject", action: Action = None, puts: dict = None):
         # For each input, find an Outlet with a matching output.
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet
@@ -124,7 +124,7 @@ def make_all_edges(ro: "ResearchObject", action: Action = None):
             return_conn = True
 
         params_list = []
-        for key, input in ro.inputs.items():
+        for key, input in puts.items():
             show = input["show"]
             main_vr = input["main"]["vr"]
             value = main_vr if not (isinstance(main_vr, Variable) or isinstance(main_vr, str) and main_vr.startswith("VR")) else None
