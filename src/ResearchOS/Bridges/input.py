@@ -63,16 +63,22 @@ class Input():
             outputs = pr.outputs
             for vr_name, output_vr in outputs.items():
                 output_main_vr = output_vr["main"]["vr"]
-                if output_main_vr is not None and output_main_vr == vr.id:                    
+                vr_id = vr.id if isinstance(vr, Variable) else vr
+                if output_main_vr is not None and output_main_vr == vr_id:                    
                     final_pr = pr
                     break # Found the proper pr.
+                output_lookup_vr = output_vr["lookup"]["vr"]
+                if output_lookup_vr is not None and output_lookup_vr == vr_id:
+                    final_pr = pr
+                    break
             if final_pr:
                 break
 
         if not final_pr:
             for lg in lgs:
                 for h in lg.headers:
-                    if h[3] == vr:
+                    vr = vr.id if isinstance(vr, Variable) else vr
+                    if h[3].id == vr:
                         final_pr = lg
                         break
 
