@@ -35,6 +35,6 @@ def import_objects_of_type(ttype: type, toml_path: str = None) -> list:
         if isinstance(obj, ttype):
             objs_list.append(obj)
 
-    return objs_list
+    return objs_list, [mod]
 
     
