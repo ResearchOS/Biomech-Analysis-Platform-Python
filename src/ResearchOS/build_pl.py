@@ -32,23 +32,31 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.plot import Plot
     from ResearchOS.PipelineObjects.stats import Stats
-    # from src.research_objects import processes
+    from src.research_objects import plots
     return_conn = True
     if import_objs: 
         prs, pr_mods = import_objects_of_type(Process)
+        pls, pl_mods = import_objects_of_type(Plot)
+        sts, st_mods = import_objects_of_type(Stats)
         if action is None:
             return_conn = False
             action = Action(name="Build_PL")
-        default_attrs = DefaultAttrs(prs[0]).default_attrs if prs else {}
-        for pr_mod in pr_mods:
-            for pr_name in dir(pr_mod):
-                pr = getattr(pr_mod, pr_name)
-                if not isinstance(pr, Process):
-                    continue
-                if pr.name==pr.id or pr.name==default_attrs["name"]:
-                    pr.__setattr__("name", pr_name, action=action, exec=False)
-        # import_objects_of_type(Plot)
-        # import_objects_of_type(Stats)
+        
+        def set_names(objs, mods, ttype):
+            if not objs or not mods:
+                print("No objects found.")
+                return
+            default_attrs = DefaultAttrs(objs[0]).default_attrs if prs else {}
+            for mod in mods:
+                for obj_name in dir(mod):
+                    obj = getattr(mod, obj_name)
+                    if not isinstance(obj, ttype):
+                        continue
+                    if obj.name==obj.id or obj.name==default_attrs["name"]:
+                        obj.__setattr__("name", obj_name, action=action, exec=False)
+        set_names(prs, pr_mods, Process)
+        set_names(pls, pl_mods, Plot)
+        set_names(sts, st_mods, Stats)
     
     sqlquery_raw = "SELECT parent_ro_id, vr_name_in_code, source_pr_id, vr_id FROM pipeline WHERE is_active = 1 AND source_pr_id IS NOT pipeline.parent_ro_id AND source_pr_id IS NOT NULL"
     sqlquery = sql_order_result(action, sqlquery_raw, ["edge_id"], single = True, user = True, computer = False)

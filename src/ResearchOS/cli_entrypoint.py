@@ -408,9 +408,11 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     #     print('Pipeline run cancelled.')
     #     return
             
-    for pl_node in run_nodes_sorted:
+    for idx, pl_node in enumerate(run_nodes_sorted):
         if isinstance(pl_node, Logsheet):
             continue
+        if idx > 0:
+            show_pl(pl_node.id)
         pl_node.run(action=action, return_conn=False)
 
 def input_with_timeout(prompt, timeout):
