@@ -33,7 +33,11 @@ class ResearchObject():
         return False
     
     def __repr__(self):
-        return f"{self.id}"
+        if self.id != self.name:
+            print_str = f"{self.name} {self.id}"
+        else:
+            print_str = f"{self.id}"
+        return print_str
      
     def __new__(cls, **kwargs):
         """Create a new research object in memory. If the object already exists in memory with this ID, return the existing object."""

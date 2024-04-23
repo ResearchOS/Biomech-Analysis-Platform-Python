@@ -373,7 +373,9 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
 
     up_to_date_nodes = []
     for n in run_nodes:
-        up_to_date_nodes.extend(list(nx.ancestors(G, n)))
+        anc_nodes = list(nx.ancestors(G, n))        
+        up_to_date_nodes.extend([node for node in anc_nodes if node not in run_nodes])
+    up_to_date_nodes = list(set(up_to_date_nodes))
     up_to_date_nodes_graph = G.subgraph(up_to_date_nodes)
     up_to_date_nodes_sorted = list(nx.topological_sort(up_to_date_nodes_graph))
     print("Up to date nodes:")
@@ -383,7 +385,7 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
     run_nodes_sorted = list(nx.topological_sort(run_nodes_graph))
     print("Run nodes:")
     for idx, pl_node in enumerate(run_nodes_sorted):
-        print(str(idx) + ":", pl_node.id)
+        print(str(idx) + ":", pl_node)
 
     return run_nodes_sorted, up_to_date_nodes_sorted
 

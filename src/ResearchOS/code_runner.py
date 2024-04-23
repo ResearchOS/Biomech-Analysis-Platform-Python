@@ -376,7 +376,14 @@ class CodeRunner():
         self.inputs = {}
         node_lineage = self.node.get_node_lineage(action=self.action)
         for vr_name_in_code, input in self.pl_obj.inputs.items():
-            value = self.node.get(input = input, action=self.action, node_lineage=node_lineage,  process=input.pr)
+            value = self.node.get(vr = input["main"]["vr"],
+                                  node_lineage=node_lineage,  
+                                  process=input["main"]["pr"], 
+                                  lookup_vr = input["lookup"]["vr"],
+                                  lookup_pr = input["lookup"]["pr"],
+                                  vr_name_in_code=vr_name_in_code,
+                                  action=self.action, 
+                                  parent_ro=self.pl_obj)
             self.inputs[vr_name_in_code] = value
         
     def check_output_vrs_active(self) -> bool:

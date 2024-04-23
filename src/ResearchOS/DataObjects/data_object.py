@@ -19,10 +19,8 @@ from ResearchOS.research_object import ResearchObject
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.sqlite_pool import SQLiteConnectionPool
-from ResearchOS.Bridges.input import Input
 from ResearchOS.var_converter import convert_var
 from ResearchOS.tomlhandler import TOMLHandler
-from ResearchOS.Bridges.input_types import Dynamic
 
 all_default_attrs = {}
 
@@ -31,7 +29,7 @@ computer_specific_attr_names = []
 class DataObject(ResearchObject):
     """The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors."""    
 
-    def get(self, input: Union["Variable", "Input"], action: Action, process: "Process" = None, node_lineage: list = None) -> Any:
+    def get(self, vr: "Variable", action: Action, process: "Process" = [], node_lineage: list = None, lookup_vr: "Variable" = None, lookup_pr: list = [], vr_name_in_code: str = None, parent_ro: "ResearchObject" = None) -> Any:
         """Load the value of a VR from the database for this data object.
 
         Args:
@@ -42,25 +40,40 @@ class DataObject(ResearchObject):
         Returns:
             Any: The value of the VR for this data object.
         """
+        from ResearchOS.PipelineObjects.process import Process
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
         from ResearchOS.DataObjects.dataset import Dataset
-        from ResearchOS.Bridges import input_types as it
-
-        if isinstance(input, Variable):
-            input = Input(vr=input, pr=process)
-
-        if process is None:
-            process = input.pr
 
         if action is None:
             action = Action(name = "get_vr_value")
+        
+        vr = Variable(id = vr) if (isinstance(vr, str) and vr.startswith(Variable.prefix)) else vr        
+        process = [Process(id=pr) if isinstance(pr, str) and pr.startswith(Process.prefix)
+            else Logsheet(id=pr) if isinstance(pr, str) and pr.startswith(Logsheet.prefix)
+            else pr  # Pass other types or unmatched strings unchanged.
+            for pr in process
+        ] if process else []
 
-        if isinstance(input.put_value, it.HardCoded):
-            return input.put_value.value
+        lookup_vr = Variable(id = lookup_vr) if (isinstance(lookup_vr, str) and lookup_vr.startswith(Variable.prefix)) else lookup_vr
+        lookup_pr = [Process(id=lookup_pr) if isinstance(lookup_pr, str) and lookup_pr.startswith(Process.prefix)
+            else Logsheet(id=lookup_pr) if isinstance(lookup_pr, str) and lookup_pr.startswith(Logsheet.prefix)
+            else lookup_pr  # Pass other types or unmatched strings unchanged.
+            for lookup_pr in lookup_pr
+        ] if lookup_pr else []
+
+        if isinstance(vr, dict):
+            cls = [key for key in vr.keys()][0]
+            attr = [value for value in vr.values()][0]
+            if isinstance(cls, type) and hasattr(cls, "prefix") and len(cls.prefix) == 2:
+                node = [node for node in node_lineage if node.prefix==cls.prefix][0]
+                return getattr(node, attr)
+            return vr # Hard-coded value.
         
-        if isinstance(input.put_value, it.HardCodedVR):
-            return input.put_value.vr.hard_coded_value
+        if vr.hard_coded_value is not None:
+            return vr.hard_coded_value
         
-        if isinstance(input.put_value, it.ImportFile):
+        # This is either hard-coded, or it's the import file VR.
+        if parent_ro and hasattr(parent_ro, "import_file_vr_name") and vr_name_in_code == parent_ro.import_file_vr_name:
             dataset_id = self._get_dataset_id()
             dataset = Dataset(id = dataset_id)
             data_path = dataset.dataset_path
@@ -69,28 +82,12 @@ class DataObject(ResearchObject):
                 in_file_schema = any([prefix==cls.prefix for cls in dataset.file_schema])
                 if in_file_schema:
                     data_path = os.path.join(data_path, node.name)
-            file_path = data_path + input.parent_ro.import_file_ext
+            file_path = data_path + parent_ro.import_file_ext
             if not os.path.exists(file_path):                
                 file_msg = f"File does not exist for {node.name} ({node.id}): {file_path}"
                 print(file_msg)
                 return None             
             return file_path
-        
-        if isinstance(input.put_value, it.DataObjAttr):
-            cls = [key for key in input.put_value.params[0].keys()][0]
-            node = [node for node in node_lineage if node.prefix==cls][0]
-            attr = [value for value in input.put_value.params[0].values()][0]
-            return getattr(node, attr)
-        
-        if not isinstance(input.put_value, it.DynamicMain):
-            raise ValueError("Input type not recognized.")
-        
-        # Handle lookup VR's.
-        if input.lookup_vr is not None:
-            process = input.lookup_pr
-            vr = input.lookup_vr
-        else:
-            vr = input.vr
         
         self_idx = node_lineage.index(self)
         base_node = node_lineage[self_idx]
@@ -98,9 +95,30 @@ class DataObject(ResearchObject):
         if not isinstance(process, list):
             process = [process]
         found_value = False
+        subclasses = DataObject.__subclasses__()
+        for pr in lookup_pr:
+            for node in node_lineage[self_idx:]:
+                sqlquery_raw = f"SELECT path_id FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id = ?"
+                sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id", "pr_id"], single = True, user = True, computer = False)
+                            
+                params = (node.id, vr.id, pr.id)            
+                result = cursor.execute(sqlquery, params).fetchall()
+                lookup_node = result[0][0] if len(result) > 0 else None
+                if lookup_node:
+                    cls = [cls for cls in subclasses if cls.prefix == lookup_node[0:2]][0]
+                    try:
+                        lookup_node = cls(id = lookup_node)
+                    except:
+                        raise ValueError(f"Could not find the node {lookup_node} in the database.")
+                    node_lineage = lookup_node.get_node_lineage(action = action)
+                    self_idx = node_lineage.index(self)
+                    break
+            if lookup_node:
+                node = lookup_node                
+                break
         for pr in process:
             for node in node_lineage[self_idx:]:
-                sqlquery_raw = f"SELECT action_id_num, is_active FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id = ?"
+                sqlquery_raw = f"SELECT action_id_num FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id = ?"
                 sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id", "pr_id"], single = True, user = True, computer = False)
                             
                 params = (node.id, vr.id, pr.id)            
@@ -110,10 +128,10 @@ class DataObject(ResearchObject):
             if len(result) == 0:
                 print(f"The VR {vr.name} ({vr.id}) has never been associated with the data object {base_node.name} ({base_node.id}) for PR {pr.id}.")
                 continue
-            is_active = result[0][1]
-            if is_active == 0:
-                print(f"The VR {vr.name} is not currently associated with the data object {base_node.name} ({base_node.id}) for PR {pr.id}.")
-                continue
+            is_active = result[0][0]
+            # if is_active == 0:
+            #     print(f"The VR {vr.name} is not currently associated with the data object {base_node.name} ({base_node.id}) for PR {pr.id}.")
+            #     continue
             
             # 2. Load the data hash from the database.            
             sqlquery_raw = "SELECT data_blob_hash, pr_id, numeric_value, str_value FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id = ?"

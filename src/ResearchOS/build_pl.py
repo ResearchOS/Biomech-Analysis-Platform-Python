@@ -27,38 +27,55 @@ from ResearchOS.variable import Variable
 
 def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph:
     """Builds the pipeline."""   
+    from ResearchOS.research_object import ResearchObject
+    from ResearchOS.default_attrs import DefaultAttrs
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.plot import Plot
     from ResearchOS.PipelineObjects.stats import Stats
     # from src.research_objects import processes
-    if import_objs: 
-        import_objects_of_type(Process)
-        # import_objects_of_type(Plot)
-        # import_objects_of_type(Stats)
-
     return_conn = True
     if action is None:
         return_conn = False
         action = Action(name="Build_PL")
-    sqlquery_raw = "SELECT edge_id, input_id, output_id FROM pipelineobjects_graph WHERE is_active = 1"
+    if import_objs: 
+        prs, pr_mods = import_objects_of_type(Process)
+        default_attrs = DefaultAttrs(prs[0]).default_attrs if prs else {}
+        for pr_mod in pr_mods:
+            for pr_name in dir(pr_mod):
+                pr = getattr(pr_mod, pr_name)
+                if not isinstance(pr, Process):
+                    continue
+                if pr.name==pr.id or pr.name==default_attrs["name"]:
+                    pr.__setattr__("name", pr_name, action=action)
+        # import_objects_of_type(Plot)
+        # import_objects_of_type(Stats)
+    
+    sqlquery_raw = "SELECT parent_ro_id, vr_name_in_code, source_pr_id, vr_id FROM pipeline WHERE is_active = 1 AND source_pr_id IS NOT pipeline.parent_ro_id AND source_pr_id IS NOT NULL"
     sqlquery = sql_order_result(action, sqlquery_raw, ["edge_id"], single = True, user = True, computer = False)
     result = action.conn.cursor().execute(sqlquery).fetchall()
     if not result:
          raise ValueError("No connections found.")
-    edges = [Edge(id = row[0], action=action) for row in result]
 
     G = nx.MultiDiGraph()
-    for edge in edges:
-        target_obj = edge.input.parent_ro
-        source_obj = edge.output.pr
-        G.add_edge(source_obj, target_obj, edge=edge)
-        if edge.input.lookup_vr is not None:
-            G.add_edge(edge.input.lookup_pr, target_obj, edge=edge)
+    subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
+    for row in result:
+        parent_ro_id = row[0]
+        vr_name_in_code = row[1]
+        source_pr_id = row[2]
+        vr_id = row[3]
+        parent_ro_cls = [cls for cls in subclasses if hasattr(cls, "prefix") and parent_ro_id.startswith(cls.prefix)][0]
+        source_pr_cls = [cls for cls in subclasses if hasattr(cls, "prefix") and source_pr_id.startswith(cls.prefix)][0]
+        parent_ro = parent_ro_cls(id = parent_ro_id)
+        source_pr = source_pr_cls(id = source_pr_id)
+        vr = Variable(id = vr_id)
+        G.add_edge(source_pr, parent_ro, vr_name_in_code = vr_name_in_code, vr = vr)
 
     # import matplotlib.pyplot as plt
 
     # pos = nx.spring_layout(G)
     # nx.draw(G, pos, with_labels=True, node_size=700)
+    # edge_labels = nx.get_edge_attributes(G, 'vr_name_in_code')
+    # nx.draw_networkx_edge_labels(nx.DiGraph(G), pos, edge_labels=edge_labels)
 
     # plt.show()
 
