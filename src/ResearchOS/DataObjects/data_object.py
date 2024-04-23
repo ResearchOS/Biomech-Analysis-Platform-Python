@@ -105,20 +105,24 @@ class DataObject(ResearchObject):
         subclasses = DataObject.__subclasses__()
         for pr in lookup_pr:
             for node in node_lineage[self_idx:]:
-                sqlquery_raw = f"SELECT path_id FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id = ?"
+                sqlquery_raw = f"SELECT str_value FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id = ?"
                 sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id", "pr_id"], single = True, user = True, computer = False)
                             
-                params = (node.id, vr.id, pr.id)            
+                params = (node.id, lookup_vr.id, pr.id)            
                 result = cursor.execute(sqlquery, params).fetchall()
-                lookup_node = result[0][0] if len(result) > 0 else None
-                if lookup_node:
-                    cls = [cls for cls in subclasses if cls.prefix == lookup_node[0:2]][0]
+                lookup_node_name = result[0][0] if len(result) > 0 else None
+
+                if lookup_node_name:
+                    sqlquery = """SELECT dataobject_id FROM paths WHERE path LIKE '%"{}"]'""".format(lookup_node_name)
+                    result = cursor.execute(sqlquery).fetchall()
+                    dobj_id = result[0][0] if len(result) > 0 else None
+                    cls = [cls for cls in subclasses if cls.prefix == dobj_id[0:2]][0]
                     try:
-                        lookup_node = cls(id = lookup_node, action=action)
+                        lookup_node = cls(id = dobj_id, action=action)
                     except:
                         raise ValueError(f"Could not find the node {lookup_node} in the database.")
                     node_lineage = lookup_node.get_node_lineage(action = action)
-                    self_idx = node_lineage.index(self)
+                    self_idx = node_lineage.index(lookup_node)
                     break
             if lookup_node:
                 node = lookup_node                
@@ -133,7 +137,7 @@ class DataObject(ResearchObject):
                 if len(result) > 0:
                     break
             if len(result) == 0:
-                print(f"The VR {vr.name} ({vr.id}) has never been associated with the data object {base_node.name} ({base_node.id}) for PR {pr.id}.")
+                # print(f"The VR {vr.name} ({vr.id}) has never been associated with the data object {base_node.name} ({base_node.id}) for PR {pr.id}.")
                 continue
             is_active = result[0][0]
             # if is_active == 0:

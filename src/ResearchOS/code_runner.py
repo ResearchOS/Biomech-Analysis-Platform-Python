@@ -337,11 +337,11 @@ class CodeRunner():
         self.get_input_vrs()
 
         if hasattr(pl_obj, "import_file_vr_name") and pl_obj.import_file_vr_name is not None and self.inputs[pl_obj.import_file_vr_name] is None:
-            print(f"Skipping {pl_obj.id}: {node.name} ({node.id}) due to missing raw data file...")
+            print(f"Skipping {pl_obj} due to missing raw data file...")
             return
         
         node_info = node.get_node_info(action=self.action)
-        run_msg = f"Running {self.pl_obj.id}: {node.name} ({node.id})."
+        run_msg = f"Running {self.pl_obj}."
         print(run_msg)
         is_batch = pl_obj.batch is not None
         assert is_batch == False
@@ -352,7 +352,7 @@ class CodeRunner():
         self.action.execute(return_conn = False)        
 
         done_run_time = time.time()
-        done_msg = f"Running {self.pl_obj.id}: {node.name} ({node.id}) took {round(done_run_time - start_run_time, 3)} seconds."
+        done_msg = f"Running {self.pl_obj} took {round(done_run_time - start_run_time, 3)} seconds."
         print(done_msg)
         
     def check_if_run_node(self, node_id: str) -> bool:
