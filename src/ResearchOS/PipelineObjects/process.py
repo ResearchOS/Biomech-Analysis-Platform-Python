@@ -10,6 +10,7 @@ from ResearchOS.process_runner import ProcessRunner
 from ResearchOS.vr_handler import VRHandler
 from ResearchOS.build_pl import make_all_edges
 from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.research_object_handler import ResearchObjectHandler
 
 all_default_attrs = {}
 # For import
@@ -101,6 +102,8 @@ class Process(PipelineObject):
         pass
 
     def load_puts(self, action: Action, is_input: bool) -> dict:
+        """Load the input or output variables."""
+        from ResearchOS.research_object import ResearchObject
         sqlquery_raw = "SELECT vr_name_in_code, source_pr_id, vr_id, hard_coded_value, order_num, is_lookup, show FROM pipeline WHERE parent_ro_id = ? AND is_active = 1"
         operator = "IS NOT"
         if not is_input:
@@ -111,11 +114,18 @@ class Process(PipelineObject):
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
         vr_names = [row[0] for row in result] if result else []
         inputs = VRHandler.empty_vr_dict(vr_names)
+        subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
         for row in result:
             vr_name = row[0]
             source_pr_id = row[1]
             vr_id = row[2]
             hard_coded_value = json.loads(row[3]) if row[3] else None
+            if isinstance(hard_coded_value, dict):
+                prefix = [key for key in hard_coded_value.keys()][0]
+                attr_name = [value for value in hard_coded_value.values()][0]
+                cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix == prefix]
+                if cls:
+                    hard_coded_value = {cls[0]: attr_name}
             order_num = row[4]
             is_lookup = bool(row[5])
             show = row[6]
@@ -151,15 +161,16 @@ class Process(PipelineObject):
     def set_inputs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict.
         Edges are created here."""
-        standardized_kwargs = VRHandler.standardize_lets_puts(self, kwargs)
+        standardized_kwargs = VRHandler.standardize_lets_puts(self, kwargs, is_input=True)
         self.__dict__["inputs"] = standardized_kwargs
-        make_all_edges(self)
+        make_all_edges(self, puts=self.inputs)
 
     def set_outputs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict.
         Edges are NOT created here."""
         standardized_kwargs = VRHandler.standardize_lets_puts(self, kwargs, is_input=False)
         self.__dict__["outputs"] = standardized_kwargs
+        make_all_edges(self, puts=self.outputs)
 
     def run(self, force_redo: bool = False, action: Action = None, return_conn: bool = True) -> None:
         """Execute the attached method.
