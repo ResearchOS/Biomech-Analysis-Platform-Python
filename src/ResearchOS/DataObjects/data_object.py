@@ -47,16 +47,16 @@ class DataObject(ResearchObject):
         if action is None:
             action = Action(name = "get_vr_value")
         
-        vr = Variable(id = vr) if (isinstance(vr, str) and vr.startswith(Variable.prefix)) else vr        
-        process = [Process(id=pr) if isinstance(pr, str) and pr.startswith(Process.prefix)
-            else Logsheet(id=pr) if isinstance(pr, str) and pr.startswith(Logsheet.prefix)
+        vr = Variable(id = vr, action=action) if (isinstance(vr, str) and vr.startswith(Variable.prefix)) else vr        
+        process = [Process(id=pr, action=action) if isinstance(pr, str) and pr.startswith(Process.prefix)
+            else Logsheet(id=pr, action=action) if isinstance(pr, str) and pr.startswith(Logsheet.prefix)
             else pr  # Pass other types or unmatched strings unchanged.
             for pr in process
         ] if process else []
 
-        lookup_vr = Variable(id = lookup_vr) if (isinstance(lookup_vr, str) and lookup_vr.startswith(Variable.prefix)) else lookup_vr
-        lookup_pr = [Process(id=lookup_pr) if isinstance(lookup_pr, str) and lookup_pr.startswith(Process.prefix)
-            else Logsheet(id=lookup_pr) if isinstance(lookup_pr, str) and lookup_pr.startswith(Logsheet.prefix)
+        lookup_vr = Variable(id = lookup_vr, action=action) if (isinstance(lookup_vr, str) and lookup_vr.startswith(Variable.prefix)) else lookup_vr
+        lookup_pr = [Process(id=lookup_pr, action=action) if isinstance(lookup_pr, str) and lookup_pr.startswith(Process.prefix)
+            else Logsheet(id=lookup_pr, action=action) if isinstance(lookup_pr, str) and lookup_pr.startswith(Logsheet.prefix)
             else lookup_pr  # Pass other types or unmatched strings unchanged.
             for lookup_pr in lookup_pr
         ] if lookup_pr else []
@@ -75,7 +75,7 @@ class DataObject(ResearchObject):
         # This is either hard-coded, or it's the import file VR.
         if parent_ro and hasattr(parent_ro, "import_file_vr_name") and vr_name_in_code == parent_ro.import_file_vr_name:
             dataset_id = self._get_dataset_id()
-            dataset = Dataset(id = dataset_id)
+            dataset = Dataset(id = dataset_id, action=action)
             data_path = dataset.dataset_path
             for node in reversed(node_lineage):
                 prefix = node.id[0:2]
@@ -107,7 +107,7 @@ class DataObject(ResearchObject):
                 if lookup_node:
                     cls = [cls for cls in subclasses if cls.prefix == lookup_node[0:2]][0]
                     try:
-                        lookup_node = cls(id = lookup_node)
+                        lookup_node = cls(id = lookup_node, action=action)
                     except:
                         raise ValueError(f"Could not find the node {lookup_node} in the database.")
                     node_lineage = lookup_node.get_node_lineage(action = action)

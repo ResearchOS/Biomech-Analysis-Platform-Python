@@ -564,12 +564,12 @@ class CodeRunner():
         idx = -1 # For MATLAB. Requires that the args are in the proper order.
         kwargs_dict = {}
         output_var_names_in_code = [vr for vr in pr.outputs.keys()]
-        for vr_name, vr in pr.outputs.items():
+        for vr_name, input in pr.outputs.items():
             if not pr.is_matlab:
                 idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out and the order in the output_vrs dict are probably different.
             else:
                 idx += 1
             # Search through the variable to look for any matlab numeric types and convert them to numpy arrays.
-            kwargs_dict[vr.vr] = vr_values_out[idx] # Convert any matlab.double to numpy arrays. (This is a recursive function.)
+            kwargs_dict[input["main"]["vr"]] = vr_values_out[idx] # Convert any matlab.double to numpy arrays. (This is a recursive function.)
 
-        self.node._set_vr_values(kwargs_dict, pr_id = self.pl_obj.id, action = self.action)
+        self.node._set_vr_values(kwargs_dict, pr = self.pl_obj, action = self.action)

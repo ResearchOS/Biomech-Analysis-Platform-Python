@@ -34,11 +34,11 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
     from ResearchOS.PipelineObjects.stats import Stats
     # from src.research_objects import processes
     return_conn = True
-    if action is None:
-        return_conn = False
-        action = Action(name="Build_PL")
     if import_objs: 
         prs, pr_mods = import_objects_of_type(Process)
+        if action is None:
+            return_conn = False
+            action = Action(name="Build_PL")
         default_attrs = DefaultAttrs(prs[0]).default_attrs if prs else {}
         for pr_mod in pr_mods:
             for pr_name in dir(pr_mod):
@@ -46,7 +46,7 @@ def build_pl(import_objs: bool = True, action: Action = None) -> nx.MultiDiGraph
                 if not isinstance(pr, Process):
                     continue
                 if pr.name==pr.id or pr.name==default_attrs["name"]:
-                    pr.__setattr__("name", pr_name, action=action)
+                    pr.__setattr__("name", pr_name, action=action, exec=False)
         # import_objects_of_type(Plot)
         # import_objects_of_type(Stats)
     

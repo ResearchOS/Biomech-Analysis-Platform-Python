@@ -398,15 +398,15 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
     run_nodes_sorted, up_to_date_nodes_sorted = show_pl(plobj_id)
     action = Action(name = "run_pipeline", type="run")
 
-    dur = 0
-    result = ""
-    if yes_or_no != "y":
-        result = input_with_timeout(f"Press Enter to continue, or any other key to cancel. Or auto-start in {dur} seconds.", dur)        
-    if result == "":
-        pass # No user input, or hit enter.
-    else:
-        print('Pipeline run cancelled.')
-        return
+    # dur = 0
+    # result = ""
+    # if yes_or_no != "y":
+    #     result = input_with_timeout(f"Press Enter to continue, or any other key to cancel. Or auto-start in {dur} seconds.", dur)        
+    # if result == "":
+    #     pass # No user input, or hit enter.
+    # else:
+    #     print('Pipeline run cancelled.')
+    #     return
             
     for pl_node in run_nodes_sorted:
         if isinstance(pl_node, Logsheet):
