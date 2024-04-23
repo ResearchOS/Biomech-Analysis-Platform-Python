@@ -17,6 +17,7 @@ from ResearchOS.db_initializer import DBInitializer
 from ResearchOS.action import Action, logger
 from ResearchOS.tomlhandler import TOMLHandler
 from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.Digraph.pipeline_digraph import PipelineDiGraph, import_pl_objs
 
 app = typer.Typer()
 
@@ -264,7 +265,6 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
     """Show the pipeline objects in the graph in topologically sorted order."""
     from ResearchOS.PipelineObjects.logsheet import Logsheet
     from ResearchOS.DataObjects.dataset import Dataset
-    from ResearchOS.build_pl import build_pl
     from ResearchOS.build_pl import import_objects_of_type
     add_src_to_path()
     print('Importing Dataset objects...')
@@ -274,7 +274,7 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
     lgs = import_objects_of_type(Logsheet)
     lg = lgs[0]
     # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.          
-    G = build_pl()
+    G = PipelineDiGraph()
     action = Action(name = "run_pipeline", type="run")
     try:
         pass
@@ -304,7 +304,7 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
     anc_nodes_sorted = list(nx.topological_sort(anc_graph))
     if not anc_nodes_sorted:
         print('Nothing to run! Aborting...')
-        return
+        return [], []
         
     # Get the date last edited for each pipeline object, and see if it was settings or run action.
     sqlquery_raw = "SELECT action_id_num, pl_object_id FROM run_history WHERE pl_object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
@@ -393,8 +393,9 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
 def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type '-y' to run the pipeline without confirmation.")):
     """Run the runnable pipeline objects."""
-    from ResearchOS.PipelineObjects.logsheet import Logsheet    
-    
+    from ResearchOS.PipelineObjects.logsheet import Logsheet
+    add_src_to_path()
+    import_pl_objs()
     run_nodes_sorted, up_to_date_nodes_sorted = show_pl(plobj_id)
     action = Action(name = "run_pipeline", type="run")
 
@@ -611,7 +612,7 @@ def vrs(vr_id: str = typer.Argument(help="Variable ID"),
         print(f"Path ID: {row[0]:<{max_path_id_len}} ( {dobj.name} ), VR ID: {row[1]:<{max_vr_id_len}}, PR ID: {row[2]:<{max_pr_id_len}}")    
 
 if __name__ == "__main__":
-    app(["run"])  
+    # app(["run"])  
     # app(["get", "TRE2F1AE_4DF"])
     # app(["db-reset","-y"])
-    # app(["logsheet-read"])  
+    app(["logsheet-read"])  

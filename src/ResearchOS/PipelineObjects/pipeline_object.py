@@ -62,8 +62,8 @@ class PipelineObject(ResearchObject):
     
     def save_puts(self, all_puts: Union[Input, dict], action: Action = None, is_input: bool = True) -> dict:
         """Create the dictionary that is the equivalent of someone passing in a dictionary directly."""
-        from ResearchOS.build_pl import build_pl
-        G = build_pl(import_objs=False, action=action)
+        from ResearchOS.Digraph.pipeline_digraph import PipelineDiGraph
+        G = PipelineDiGraph(action=action)
         final_dict = empty_vr_dict(all_puts.keys())
         for vr_name, put in all_puts.items():
             if isinstance(put, Variable):
@@ -81,10 +81,10 @@ class PipelineObject(ResearchObject):
             elif isinstance(put, Input):
                 final_dict[vr_name] = put.__dict__
                 if put.main["vr"] and not put.main["pr"]:
-                    pr = Input.set_source_pr(self, put.main["vr"], vr_name)
+                    pr = Input.set_source_pr(self, put.main["vr"], vr_name, G)
                     final_dict[vr_name]["main"]["pr"] = [pr.id]
                 if put.lookup["vr"] and not put.lookup["pr"]:
-                    lookup_pr = Input.set_source_pr(self, put.lookup["vr"], vr_name)
+                    lookup_pr = Input.set_source_pr(self, put.lookup["vr"], vr_name, G)
                     final_dict[vr_name]["lookup"]["pr"] = [lookup_pr.id]
             else: # Hard-coded value.
                 if isinstance(put, dict):
@@ -116,16 +116,22 @@ class PipelineObject(ResearchObject):
     def set_inputs(self, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict.
         Edges are created here."""
-        standardized_kwargs = self.save_puts(kwargs, is_input=True)
+        action = Action(name="Set Inputs")
+        standardized_kwargs = self.save_puts(kwargs, is_input=True, action=action)
         self.__dict__["inputs"] = standardized_kwargs
-        make_all_edges(self, puts=self.inputs, is_input=True)
+        make_all_edges(self, puts=self.inputs, is_input=True, action=action)
+        action.commit = True
+        action.execute()
 
     def set_outputs(self, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict.
         Edges are NOT created here."""
-        standardized_kwargs = self.save_puts(kwargs, is_input=False)
+        action = Action(name="Set Outputs")
+        standardized_kwargs = self.save_puts(kwargs, is_input=False, action=action)
         self.__dict__["outputs"] = standardized_kwargs
-        make_all_edges(self, puts=self.outputs, is_input=False)
+        make_all_edges(self, puts=self.outputs, is_input=False, action=action)
+        action.commit = True
+        action.execute()
 
 def empty_vr_dict(keys: list) -> dict:
     """Return a dictionary with the keys as None."""

@@ -59,13 +59,21 @@ class Input():
                 for h in node.headers:
                     vr = vr.id if isinstance(vr, Variable) else vr
                     if h[3].id == vr:
-                        return node
+                        try:
+                            G.add_edge(node, parent_ro, vr_name_in_code=vr_name_in_code, tmp=True)
+                            return node
+                        except:
+                            pass                        
                 continue
             for output in node.outputs.values():
                 output_main_vr = output["main"]["vr"]
                 output_lookup_vr = output["lookup"]["vr"]
                 if output_main_vr == vr.id or output_lookup_vr == vr.id:
-                    return node                        
+                    try:
+                        G.add_edge(node, parent_ro, vr_name_in_code=vr_name_in_code, tmp=True)
+                        return node
+                    except:
+                        pass
 
         
         # prs = [pr() for pr in ResearchObjectHandler.instances_list if pr() is not None and isinstance(pr(), (Process,))]
