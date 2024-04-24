@@ -45,10 +45,10 @@ class PipelineDiGraph(nx.MultiDiGraph, metaclass=PipelineDiGraphMeta):
                  value: Any = None,
                  **attr):
         """Add a node to the Pipeline DiGraph.
-        By providing a vr_name_in_code, the Output VR is set for the node."""
-        # if self.has_node(node_for_adding):
-        #     return
+        By providing a vr_name_in_code, the Output VR is set for the node."""        
         super().add_node(node_for_adding, **attr)
+        if not vr_name_in_code:            
+            return
 
         # Add to the database.
         show = True
@@ -160,14 +160,14 @@ class PipelineDiGraph(nx.MultiDiGraph, metaclass=PipelineDiGraphMeta):
             if source_pr_id:
                 source_pr_cls = [cls for cls in subclasses if hasattr(cls, "prefix") and source_pr_id.startswith(cls.prefix)][0]            
                 source_pr = source_pr_cls(id = source_pr_id, action=action)
-            vr = Variable(id = vr_id, action=action)
+            vr = Variable(id = vr_id, action=action) if vr_id else None
             if source_pr and target_pr:            
-                super().add_edge(source_pr, target_pr, vr = vr)     
+                self.add_edge(source_pr, target_pr, vr = vr)     
             else:
                 if source_pr:
-                    super().add_node(source_pr, is_input=False)
+                    self.add_node(source_pr, is_input=False)
                 if target_pr:
-                    super().add_node(target_pr, is_input=True)
+                    self.add_node(target_pr, is_input=True)
 
         PipelineDiGraph.G = self
 
