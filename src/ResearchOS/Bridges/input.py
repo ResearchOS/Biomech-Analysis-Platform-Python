@@ -50,7 +50,12 @@ class Input():
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet
 
-        nodes_sorted = list(reversed(list(nx.topological_sort(G)))) # Latest first.
+        try:
+            anc_nodes = list(nx.ancestors(G, parent_ro))
+        except:
+            anc_nodes = [n for n in G.nodes]
+        subgraph = G.subgraph(anc_nodes)
+        nodes_sorted = list(reversed(list(nx.topological_sort(subgraph)))) # Latest first.
         if parent_ro in nodes_sorted:
             nodes_sorted.remove(parent_ro)
 
