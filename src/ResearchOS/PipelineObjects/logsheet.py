@@ -150,18 +150,10 @@ class Logsheet(PipelineObject):
             
         Returns:
             ''headers'' as a JSON string using ''json.dumps''"""
-        from ResearchOS.Digraph.pipeline_digraph import write_puts_dict_to_db
-        from ResearchOS.PipelineObjects.pipeline_object import empty_vr_dict
-        from ResearchOS.Digraph.pipeline_digraph import PipelineDiGraph
-        # Create Outputs for the Logsheet
-        G = PipelineDiGraph(action=action)
+        # Create Outputs for the Logsheet        
         header_names = [header[0] for header in headers]
-        final_dict = empty_vr_dict(header_names)
-        for header in headers:
-            vr = header[3]
-            vr_name = header[0]
-            final_dict[vr_name]["main"] = {"vr": vr.id, "pr": self.id}
-            G.add_node(self, vr_name_in_code = vr_name, vr=vr, action=action)
+        inputs_dict = {header[0]: header[3] for header in header_names}
+        self.set_outputs(**inputs_dict, action=action)
 
         str_headers = []       
         for header in headers:

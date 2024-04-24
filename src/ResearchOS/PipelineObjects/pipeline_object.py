@@ -81,25 +81,33 @@ class PipelineObject(ResearchObject):
                     inputs[vr_name]["lookup"]["pr"][order_num] = source_pr_id if source_pr_id else []
         return inputs   
     
-    def set_inputs(self, **kwargs) -> None:
+    def set_inputs(self, action: Action = None, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict.
         Edges are created here."""
-        action = Action(name="Set Inputs")
+        return_conn = False
+        if not action:
+            action = Action(name="Set Inputs")
+            return_conn = True
         standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=True, action=action)
         self.__dict__["inputs"] = standardized_kwargs
-        write_puts_dict_to_db(self, puts=self.inputs, is_input=True, action=action)
-        action.commit = True
-        action.execute()
+        write_puts_dict_to_db(self, puts=standardized_kwargs, is_input=True, action=action)
+        if return_conn:
+            action.commit = True
+            action.execute()
 
-    def set_outputs(self, **kwargs) -> None:
+    def set_outputs(self, action: Action = None, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict.
         Edges are NOT created here."""
-        action = Action(name="Set Outputs")
+        return_conn = False
+        if not action:     
+            return_conn = True       
+            action = Action(name="Set Outputs")
         standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=False, action=action)
         self.__dict__["outputs"] = standardized_kwargs
-        write_puts_dict_to_db(self, puts=self.outputs, is_input=False, action=action)
-        action.commit = True
-        action.execute()
+        write_puts_dict_to_db(self, puts=standardized_kwargs, is_input=False, action=action)
+        if return_conn:
+            action.commit = True
+            action.execute()
 
     def make_puts_dict_from_inputs(self, all_puts: Union[Input, dict], action: Action = None, is_input: bool = True) -> dict:
         """Create the dictionary that is the equivalent of someone passing in a dictionary directly."""
