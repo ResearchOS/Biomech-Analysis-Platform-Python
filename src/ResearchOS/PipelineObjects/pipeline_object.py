@@ -26,57 +26,53 @@ class PipelineObject(ResearchObject):
         
     def load_inputs(self, action: Action) -> dict:
         """Load the input variables."""        
-        return self.make_puts_dict_from_db(action)
+        return self.make_puts_dict_from_db(action, is_input=True)
 
     def load_outputs(self, action: Action) -> dict:
         """Load the output variables."""
-        return self.make_puts_dict_from_db(action)
+        return self.make_puts_dict_from_db(action, is_input=False)
     
-    def make_puts_dict_from_db(self, action: Action) -> dict:
+    def make_puts_dict_from_db(self, action: Action, is_input: bool) -> dict:
         """Load the input or output variables."""        
-        sqlquery_raw = f"SELECT pr_id, vr_name_in_code, vr_id, hard_coded_value, is_input, order_num, is_lookup, show, is_active) FROM nodes WHERE is_active = 1 AND pr_id = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["pr_id", "vr_name_in_code"], single = True, user = True, computer = False)
-        params = (self.id,)
+        # (row_id, action_id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show, is_active)
+        sqlquery_raw = f"SELECT ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show FROM nodes WHERE is_active = 1 AND ro_id = ? AND is_input = ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["vr_name_in_code"], single = True, user = True, computer = False)
+        params = (self.id, int(is_input))
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
         return self.make_puts_dict_from_db_result(result)
     
     def make_puts_dict_from_db_result(self, result: list) -> dict:
         """Given the results of a query on the pipeline table for one ResearchObject, return a dictionary of the inputs or outputs.
+        (row_id, action_id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show, is_active)
         If output, the dict contains only {vr_name: VR} filled in, the rest is left empty.
         If input, the dict contains {vr_name: {"main": {"vr": VR, "pr": [PR]}, "lookup": {"vr": VR, "pr": [PR]}, "show": bool}} filled in."""
         from ResearchOS.research_object import ResearchObject
-        vr_names = [row[0] for row in result] if result else []
-        inputs = empty_vr_dict(vr_names)
+        vr_names = [row[1] for row in result] if result else []
+        puts = empty_vr_dict(vr_names)
         subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
         for row in result:
-            vr_name = row[0]
-            source_pr_id = row[1]
+            # ro_id = row[0]
+            vr_name = row[1]
             vr_id = row[2]
-            hard_coded_value = json.loads(row[3]) if row[3] else None
+            pr_ids = json.loads(row[3])
+            lookup_vr_id = row[4]
+            lookup_pr_ids = json.loads(row[5])
+            hard_coded_value = json.loads(row[6]) if row[6] else None
+            # is_input = bool(row[7])
+            show = row[8]                        
             if isinstance(hard_coded_value, dict):
                 prefix = [key for key in hard_coded_value.keys()][0]
                 attr_name = [value for value in hard_coded_value.values()][0]
                 cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix == prefix]
                 if cls:
                     hard_coded_value = {cls[0]: attr_name}
-            order_num = row[4]
-            is_lookup = bool(row[5])
-            show = row[6]
-            inputs[vr_name]["show"] = show
-            if not is_lookup:
-                inputs[vr_name]["main"]["vr"] = vr_id if vr_id else hard_coded_value
-                if not source_pr_id:
-                    continue # Output only needs this.
-                while len(inputs[vr_name]["main"]["pr"]) <= order_num:
-                    inputs[vr_name]["main"]["pr"].append(None)                
-                inputs[vr_name]["main"]["pr"][order_num] = source_pr_id                                    
-            else:
-                # Always an input here.
-                inputs[vr_name]["lookup"]["vr"] = vr_id
-                while len(inputs[vr_name]["lookup"]["pr"]) <= order_num:
-                    inputs[vr_name]["lookup"]["pr"].append(None)
-                inputs[vr_name]["lookup"]["pr"][order_num] = source_pr_id
-        return inputs   
+
+            puts[vr_name]["show"] = show
+            puts[vr_name]["main"]["vr"] = vr_id if vr_id else hard_coded_value
+            puts[vr_name]["main"]["pr"] = pr_ids  
+            puts[vr_name]["lookup"]["vr"] = lookup_vr_id
+            puts[vr_name]["lookup"]["pr"] = lookup_pr_ids
+        return puts   
     
     def set_inputs(self, action: Action = None, **kwargs) -> None:
         """Convenience function to set the input variables with named variables rather than a dict.
@@ -113,7 +109,7 @@ class PipelineObject(ResearchObject):
     def make_puts_dict_from_inputs(self, all_puts: Union[Input, dict], action: Action = None, is_input: bool = True) -> dict:
         """Create the dictionary that is the equivalent of someone passing in a dictionary directly."""
         from ResearchOS.Digraph.pipeline_digraph import PipelineDiGraph
-        G = PipelineDiGraph(action=action)
+        G = PipelineDiGraph(action=action).G
         final_dict = empty_vr_dict(all_puts.keys())
         for vr_name, put in all_puts.items():
             if isinstance(put, Variable):

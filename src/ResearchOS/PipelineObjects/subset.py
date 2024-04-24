@@ -148,7 +148,7 @@ class Subset(PipelineObject):
                 value = numeric_value
             vr_values[vr_id][dataobject_id] = value
 
-        dataset_node = [n for n in G.nodes() if G.in_degree(n) == 0][0]        
+        dataset_node = [n for n in G.nodes if G.in_degree(n) == 0][0]        
 
         for node_names_lineage in paths:
 

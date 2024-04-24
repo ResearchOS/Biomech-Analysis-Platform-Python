@@ -18,6 +18,7 @@ from ResearchOS.action import Action, logger
 from ResearchOS.tomlhandler import TOMLHandler
 from ResearchOS.sql.sql_runner import sql_order_result
 from ResearchOS.Digraph.pipeline_digraph import PipelineDiGraph, import_pl_objs
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 app = typer.Typer()
 
@@ -274,8 +275,9 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
     lgs = import_objects_of_type(Logsheet)
     lg = lgs[0]
     # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.          
-    G = PipelineDiGraph()
     action = Action(name = "run_pipeline", type="run")
+    graph = PipelineDiGraph(action=action)
+    G = graph.G    
     try:
         pass
     except Exception as e:
@@ -286,7 +288,7 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
         plobj_id = lg_id
     
     plobj = None
-    for plobj_tmp in G.nodes():
+    for plobj_tmp in G.nodes:
         if plobj_tmp.id == plobj_id: 
             plobj = plobj_tmp           
             break
@@ -298,7 +300,7 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
     if plobj:
         anc_nodes = list(nx.ancestors(G, plobj))
     else:
-        anc_nodes = list(G.nodes())
+        anc_nodes = list(G.nodes)
         print('Starting at the root node of the Pipeline!')
     anc_graph = G.subgraph(anc_nodes)
     anc_nodes_sorted = list(nx.topological_sort(anc_graph))
@@ -387,6 +389,8 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
     for idx, pl_node in enumerate(run_nodes_sorted):
         print(str(idx) + ":", pl_node)
 
+    pool = SQLiteConnectionPool()
+    pool.return_connection(action.conn)
     return run_nodes_sorted, up_to_date_nodes_sorted
 
 @app.command()
@@ -612,7 +616,7 @@ def vrs(vr_id: str = typer.Argument(help="Variable ID"),
         print(f"Path ID: {row[0]:<{max_path_id_len}} ( {dobj.name} ), VR ID: {row[1]:<{max_vr_id_len}}, PR ID: {row[2]:<{max_pr_id_len}}")    
 
 if __name__ == "__main__":
-    # app(["run"])  
+    app(["run"])  
     # app(["get", "TRE2F1AE_4DF"])
     # app(["db-reset","-y"])
-    app(["logsheet-read"])  
+    # app(["logsheet-read"])  

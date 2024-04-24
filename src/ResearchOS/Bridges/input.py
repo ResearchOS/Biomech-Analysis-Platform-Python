@@ -59,21 +59,15 @@ class Input():
         if parent_ro in nodes_sorted:
             nodes_sorted.remove(parent_ro)
 
+        vr = vr.id if isinstance(vr, Variable) else vr
         for node in nodes_sorted:
             if isinstance(node, Logsheet):
                 for h in node.headers:
-                    vr = vr.id if isinstance(vr, Variable) else vr
                     if h[3].id == vr:
-                        try:
-                            return node
-                        except:
-                            pass                        
+                        return node                     
                 continue
             for output in node.outputs.values():
                 output_main_vr = output["main"]["vr"]
-                output_lookup_vr = output["lookup"]["vr"]
-                if output_main_vr == vr.id or output_lookup_vr == vr.id:
-                    try:
-                        return node
-                    except:
-                        pass
+                output_lookup_vr = output["lookup"]["vr"]                
+                if output_main_vr == vr or output_lookup_vr == vr:
+                    return node
