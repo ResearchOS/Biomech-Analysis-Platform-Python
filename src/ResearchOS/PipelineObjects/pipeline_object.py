@@ -142,7 +142,8 @@ class PipelineObject(ResearchObject):
                     if pr:
                         final_dict[vr_name]["main"]["pr"] = [pr.id]
                 if put.lookup["vr"] and not put.lookup["pr"]:
-                    lookup_pr = Input.set_source_pr(self, put.lookup["vr"], G)
+                    lookup_vr = Variable(id=put.lookup["vr"], action=action)
+                    lookup_pr = Input.set_source_pr(self, lookup_vr, G)
                     if lookup_pr:
                         final_dict[vr_name]["lookup"]["pr"] = [lookup_pr.id]
             else: # Hard-coded value.

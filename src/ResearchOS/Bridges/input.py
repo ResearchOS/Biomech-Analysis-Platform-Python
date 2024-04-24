@@ -52,7 +52,7 @@ class Input():
 
         nodes_sorted = list(reversed(list(nx.topological_sort(G)))) # Latest first.
         if parent_ro in nodes_sorted:
-            raise ValueError(f"Parent RO {parent_ro} is already in the graph.")
+            nodes_sorted.remove(parent_ro)
 
         for node in nodes_sorted:
             if isinstance(node, Logsheet):

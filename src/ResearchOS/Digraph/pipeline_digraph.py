@@ -91,7 +91,8 @@ class PipelineDiGraph(nx.MultiDiGraph, metaclass=PipelineDiGraphMeta):
         super().add_edge(source_object, target_object, key = vr)
         if not nx.is_directed_acyclic_graph(self):
             super().remove_edge(source_object, target_object, key = vr)
-            raise ValueError("The edge would create a cycle!")
+            return
+            # raise ValueError("The edge would create a cycle!")
         
         if tmp:
             self.remove_edge(source_object, target_object, key = vr)
@@ -162,12 +163,12 @@ class PipelineDiGraph(nx.MultiDiGraph, metaclass=PipelineDiGraphMeta):
                 source_pr = source_pr_cls(id = source_pr_id, action=action)
             vr = Variable(id = vr_id, action=action) if vr_id else None
             if source_pr and target_pr:            
-                self.add_edge(source_pr, target_pr, vr = vr)     
+                self.add_edge(source_pr, target_pr, vr = vr, action=action)     
             else:
                 if source_pr:
-                    self.add_node(source_pr, is_input=False)
+                    self.add_node(source_pr, is_input=False, action=action)
                 if target_pr:
-                    self.add_node(target_pr, is_input=True)
+                    self.add_node(target_pr, is_input=True, action=action)
 
         PipelineDiGraph.G = self
 
@@ -192,7 +193,8 @@ def import_pl_objs(action: Action = None) -> nx.MultiDiGraph:
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.plot import Plot
     from ResearchOS.PipelineObjects.stats import Stats
-    # from src.research_objects import plots    
+    # from src.research_objects import plots   
+    from src.research_objects import processes 
     return_conn = True
     if action is None:
         return_conn = False
