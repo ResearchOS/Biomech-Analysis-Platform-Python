@@ -38,46 +38,48 @@ class PipelineDiGraph(nx.MultiDiGraph, metaclass=PipelineDiGraphMeta):
         self.build_pl_from_db(action = action)
 
     def add_node(self, node_for_adding: "ResearchObject", 
-                 vr_name_in_code: str = None, 
-                 vr: Variable = None, 
+                 vr_name_in_code: str = None,
                  action: Action = None, 
-                 is_input: bool = False,
-                 value: Any = None,
-                 **attr):
+                 is_input: bool = False):
         """Add a node to the Pipeline DiGraph.
         By providing a vr_name_in_code, the Output VR is set for the node."""
-        if not vr_name_in_code:            
-            return
-        if self.has_node(node_for_adding):
-            if vr_name_in_code in self.nodes[node_for_adding] and self.nodes[node_for_adding][vr_name_in_code] == vr:
-                return # Already done.
-            else:
-                self.nodes[node_for_adding][vr_name_in_code] = vr # Continue on to add the node to the database.
-        else:
+        if not vr_name_in_code:
+            raise ValueError("No VR name in code provided.")
+        if not self.has_node(node_for_adding):
             super().add_node(node_for_adding)
-            self.nodes[node_for_adding][vr_name_in_code] = vr
-        
 
-        # Add to the database.
-        show = True
-        target_pr_id = None
-        source_pr_id = None
         if is_input:
-            target_pr_id = node_for_adding.id
+            puts = node_for_adding.inputs
         else:
-            source_pr_id = node_for_adding.id            
-        is_lookup = int(False)
-        pr_idx = 0           
+            puts = node_for_adding.outputs
+
+        vr = puts[vr_name_in_code]["main"]["vr"]
+        if not isinstance(vr, Variable):
+            vr = Variable(id=vr, action=action) if isinstance(vr, str) else None
+
+        # Check for duplicates.
+        if vr_name_in_code in self.nodes[node_for_adding] and self.nodes[node_for_adding][vr_name_in_code] == vr:
+            return
+        
+        self.nodes[node_for_adding][vr_name_in_code] = vr # Continue on to add the node to the database.
+        
+        # Add to the database.
+        # (row_id, action_id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show, is_active)
+        show = True
+        ro_id = node_for_adding.id             
         vr_id = vr.id if vr else None
         is_active = 1
+        pr_ids = json.dumps(puts[vr_name_in_code]["main"]["pr"])
+        lookup_vr_id = puts[vr_name_in_code]["lookup"]["vr"] if not isinstance(puts[vr_name_in_code]["lookup"]["vr"], Variable) else puts[vr_name_in_code]["lookup"]["vr"].id
+        lookup_pr_ids = json.dumps(puts[vr_name_in_code]["lookup"]["pr"])
         if not isinstance(vr, Variable):
             value = value # Hard-coded
         else:
             value = vr.hard_coded_value if vr and vr.hard_coded_value else None
-        params = (action.id_num, target_pr_id, vr_name_in_code, source_pr_id, vr_id, value, pr_idx, is_lookup, int(show), is_active)
-        action.add_sql_query(None, "pipeline_insert", params)
+        params = (action.id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, value, is_input, int(show), is_active)
+        action.add_sql_query(None, "node_insert", params)
 
-    def add_edge(self, source_object: "ResearchObject", target_object: "ResearchObject", vr: "Variable", tmp: bool = False, action: Action = None, is_input: bool = True):
+    def add_edge(self, source_object: "ResearchObject", target_object: "ResearchObject", vr: "Variable", tmp: bool = False, action: Action = None):
         """Add an edge to the Pipeline DiGraph.
         source_object and target_object must both exist. The inputs & outputs must be fully formed."""
         from ResearchOS.PipelineObjects.logsheet import Logsheet
@@ -85,55 +87,30 @@ class PipelineDiGraph(nx.MultiDiGraph, metaclass=PipelineDiGraphMeta):
         if not vr:
             raise ValueError("No VR provided.")
         # For inputs & outputs, not edges.
-        if not target_object:
-            self.add_node(source_object, action=action)
-            return
-        if not source_object:
-            self.add_node(target_object, action=action)
-            return
+        if not target_object or not source_object:
+            raise ValueError("Both source and target objects must exist.")
         # Check for duplicate edges.
-        if source_object and target_object and self.has_edge(source_object, target_object, key = vr):
+        if self.has_edge(source_object, target_object, key = vr):
             return
         
         # Add the edge to the DiGraph.
         super().add_edge(source_object, target_object, key = vr)
         if not nx.is_directed_acyclic_graph(self):
             super().remove_edge(source_object, target_object, key = vr)
-            return
-            # raise ValueError("The edge would create a cycle!")
+            raise ValueError("The edge would create a cycle!")
+            # return            
         
         if tmp:
             self.remove_edge(source_object, target_object, key = vr)
             return
         
         # Convert the edge to a database entry.
-        show = False
         target_pr_id = target_object.id
         source_pr_id = source_object.id
-        if not isinstance(source_object, Logsheet):
-            source_vr_name_in_code = [key for key in source_object.outputs.keys() if source_object.outputs[key]["main"]["vr"] == vr.id][0]
-        else:
-            header_vrs = [header[3] for header in source_object.headers]
-            header_names = [header[0] for header in source_object.headers]
-            source_vr_name_in_code = header_names[header_vrs.index(vr)] if vr in header_vrs else None
-        
-        target_vr_name_in_code = [key for key in target_object.inputs.keys() if target_object.inputs[key]["main"]["vr"] == vr.id][0]
                 
-        vr_id = target_object.inputs[target_vr_name_in_code]["main"]["vr"]
-        pr_idx = target_object.inputs[target_vr_name_in_code]["main"]["pr"].index(source_pr_id)
-        is_lookup = int(False)
-        params = (action.id_num, target_pr_id, target_vr_name_in_code, source_pr_id, vr_id, None, pr_idx, is_lookup, int(show), 1)
-        action.add_sql_query(None, "pipeline_insert", params)
-
-        # # Lookup edges.
-        is_lookup = int(True)
-        lookup_vr_id = target_object.inputs[target_vr_name_in_code]["lookup"]["vr"]
-        for lookup_pr_id in target_object.inputs[target_vr_name_in_code]["lookup"]["pr"]:
-            lookup_vr_name_in_code = [key for key in target_object.inputs.keys() if target_object.inputs[key]["lookup"]["vr"] == lookup_vr_id][0]
-            lookup_vr_id = target_object.inputs[lookup_vr_name_in_code]["lookup"]["vr"]
-            lookup_pr_idx = target_object.inputs[lookup_vr_name_in_code]["lookup"]["pr"].index(lookup_pr_id)
-            params = (action.id_num, target_pr_id, target_vr_name_in_code, lookup_pr_id, lookup_vr_id, None, lookup_pr_idx, int(True), int(show), 1)
-            action.add_sql_query(None, "pipeline_insert", params)
+        vr_id = vr.id if isinstance(vr, Variable) else Variable(id=vr, action=action).id
+        params = (action.id_num, source_pr_id, target_pr_id, vr_id, 1)
+        action.add_sql_query(None, "edge_insert", params)
             
 
     def build_pl_from_db(self, action: Action = None):
@@ -146,16 +123,26 @@ class PipelineDiGraph(nx.MultiDiGraph, metaclass=PipelineDiGraphMeta):
             return_conn = True
             action = Action(name="Build_PL")
 
-        # Get all nodes & edges
-        sqlquery_raw = "SELECT target_pr_id, vr_name_in_code, source_pr_id, vr_id FROM pipeline WHERE is_active = 1"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["edge_id"], single = True, user = True, computer = False)
+        # Get all nodes
+        sqlquery_raw = "SELECT ro_id, vr_name_in_code FROM nodes WHERE is_active = 1"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["ro_id"], single = True, user = True, computer = False)
         result = action.conn.cursor().execute(sqlquery).fetchall()
         if not result:
             PipelineDiGraph.G = self
-            return        
+            return
+        
+        # Add nodes to graph.
+        for r in result:
+            cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix.startswith(r[0][0:2])][0]
+            ro = cls(id = r[0], action=action)
+            vr_name_in_code = r[1]
+            super().add_node(ro, vr_name_in_code=vr_name_in_code, action=action)
 
         # Add nodes & edges to the DiGraph.
         subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
+        sqlquery_raw = "SELECT source_pr_id, target_pr_id, vr_id FROM edges WHERE is_active = 1"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["source_pr_id", "target_pr_id", "vr_id"], single = True, user = True, computer = False)
+        result = action.conn.cursor().execute(sqlquery).fetchall()
         for row in result:
             # Row params to source & target & VR objects.
             target_pr = None
@@ -171,12 +158,7 @@ class PipelineDiGraph(nx.MultiDiGraph, metaclass=PipelineDiGraphMeta):
                 source_pr = source_pr_cls(id = source_pr_id, action=action)
             vr = Variable(id = vr_id, action=action) if vr_id else None
             if source_pr and target_pr:            
-                self.add_edge(source_pr, target_pr, vr = vr, action=action)     
-            else:
-                if source_pr:
-                    self.add_node(source_pr, is_input=False, action=action, vr_name_in_code=row[1], vr=vr)
-                if target_pr:
-                    self.add_node(target_pr, is_input=True, action=action, vr_name_in_code=row[1], vr=vr)
+                super().add_edge(source_pr, target_pr, key = vr, action=action)     
 
         PipelineDiGraph.G = self
 
@@ -235,46 +217,68 @@ def import_pl_objs(action: Action = None) -> nx.MultiDiGraph:
         action.execute()
 
 def write_puts_dict_to_db(ro: "ResearchObject", action: Action = None, puts: dict = None, is_input: bool = True, prev_puts: dict = None):
-    """Write the inputs or outputs of a ResearchObject to the database.
-    "puts" is the dict of inputs or outputs for that ResearchObject."""
+    """Write the inputs or outputs of a ResearchObject to the database. Also makes edges & nodes in graph.
+    "puts" is the dict of inputs or outputs for that ResearchObject.
+    Nodes: (row_id, action_id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show, is_active)
+    Edges: (edge_id, action_id_num, source_pr_id, target_pr_id, vr_id, is_active)"""
     from ResearchOS.research_object import ResearchObject
-    from ResearchOS.PipelineObjects.process import Process
-    from ResearchOS.PipelineObjects.logsheet import Logsheet
     return_conn = False
     if action is None:
         action = Action(name="Build_PL")
         return_conn = True
 
     G = PipelineDiGraph(action=action)
-    params_list = puts_dict_to_params_list(puts, action, ro, is_input)
+    nodes_params_list, edges_params_list = puts_dict_to_params_list(puts, action, ro, is_input)
     subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
 
-    # Check if there are any edges that have been removed. These would be vr_name_in_code's for this target_pr_id that are not in the puts.
-    vr_names = [vr_name for vr_name in prev_puts.keys() if vr_name not in puts.keys()] if puts else []
-    for vr_name in vr_names:              
-        params = (action.id_num, ro.id, vr_name, None, None, None, 0, int(False), int(False), int(False)) # Some default settings.
-        action.add_sql_query(None, "pipeline_insert", params)
+    # Check if there are any nodes that have been removed. These would be vr_name_in_code's for this pr_id that are not in the puts.
+    vr_names = [vr_name for vr_name in prev_puts.keys() if vr_name not in puts.keys()] if puts else []    
+    for vr_name in vr_names:
+        params = (action.id_num, ro.id, vr_name, None, None, None, None, is_input, int(False), int(False)) # Some default settings.
+        action.add_sql_query(None, "node_insert", params)
+        del G.nodes[ro][vr_name]
 
-    # Check that there are no cycles being introduced.
-    for param in params_list:        
+        # Check if there are any edges to be removed.
+        vr_id = prev_puts[vr_name]["main"]["vr"]
+        vr = Variable(id=vr_id, action=action)
+        rem_edges = [e for e in G.edges if (e[0]==source or e[1]==target) and e[2]==vr]
+        for edge in rem_edges:
+            G.remove_edge(edge[0], edge[1], key = edge[2])
+            edge_param = (action.id_num, edge[0].id, edge[1].id, edge[2].id, int(False))
+            action.add_sql_query(None, "edge_insert", edge_param)
+
+    # Convert the params lists to inputs for G.add_node and G.add_edge.
+    add_edges_list = []
+    for param in edges_params_list:        
         # Main & lookup.
-        source_id = param[3]
-        target_id = param[1]        
+        source_id = param[1]
+        target_id = param[2]        
         source_cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix.startswith(source_id[0:2])][0] if source_id else None
         target_cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix.startswith(target_id[0:2])][0] if target_id else None
-        source = source_cls(id = source_id) if source_cls else None
-        target = target_cls(id = target_id) if target_cls else None
+        source = source_cls(id = source_id, action=action)
+        target = target_cls(id = target_id, action=action)
         vr = Variable(id=param[4], action=action) if param[4] else None
         if not param[4] and (hasattr(ro, "import_file_vr_name") and param[2] == ro.import_file_vr_name):
             vr = Variable(id=ro.inputs[param[2]]["main"]["vr"], action=action)
-        if source_cls and target_cls:
-            G.add_edge(source, target, vr=vr, action=action)            
-        else:
-            value = param[5]
-            if source_cls:
-                G.add_node(source, action=action, is_input = is_input, vr_name_in_code = param[2], vr = vr, value=value)
-            if target_cls:
-                G.add_node(target, action=action, is_input = is_input, vr_name_in_code = param[2], vr = vr, value=value)
+        # Performs the cycle check and adds the query to the action.
+        add_edges_list.append((source, target, vr))    
+
+    # Add the nodes to the database.
+    add_nodes_list = []
+    for node_params in nodes_params_list:
+        node_id = node_params[1]
+        vr_name_in_code = node_params[2]
+        cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix.startswith(node_id[0:2])][0]
+        ro = cls(id=node_id, action=action)
+        # Adds the query to the action.
+        add_nodes_list.append((ro, vr_name_in_code))
+    
+    # Actually add the nodes & edges.
+    for ro, vr_name_in_code in add_nodes_list:
+        G.add_node(ro, vr_name_in_code=vr_name_in_code, is_input=is_input, action=action)
+
+    for source, target, vr in add_edges_list:
+        G.add_edge(source, target, vr=vr, action=action)    
 
     if return_conn:
         action.commit = True
@@ -282,8 +286,11 @@ def write_puts_dict_to_db(ro: "ResearchObject", action: Action = None, puts: dic
 
 
 def puts_dict_to_params_list(puts: dict, action: Action = None, ro: "ResearchObject" = None, is_input: bool = True) -> list:
-    """Convert the JSON-serializable dict of inputs or outputs to a list of params tuples for the database."""
-    params_list = []    
+    """Convert the JSON-serializable dict of inputs or outputs to a list of params tuples for the database.
+    Does NOT check for duplicate edges/nodes being added that are already present in the graph. That's done when assigning to the database.
+    (row_id, action_id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show, is_active)"""
+    nodes_params_list = []    
+    edges_params_list = []
     for key, put in puts.items():   
         show = put["show"]
         main_vr = put["main"]["vr"]
@@ -295,38 +302,67 @@ def puts_dict_to_params_list(puts: dict, action: Action = None, ro: "ResearchObj
         if not value:
             vr_id = main_vr.id if isinstance(main_vr, Variable) else main_vr
         pr_ids = put["main"]["pr"] if vr_id else []
-        if not pr_ids:
-            pr_ids = [None]
         lookup_vr_id = put["lookup"]["vr"]
         lookup_vr_id = lookup_vr_id.id if isinstance(lookup_vr_id, Variable) else lookup_vr_id
         lookup_pr_ids = put["lookup"]["pr"] if lookup_vr_id else []
-        if not lookup_pr_ids:
-            lookup_pr_ids = [None] if lookup_vr_id else []
         # Hard-coded value.
-        if value:
-            params = (action.id_num, ro.id, key, None, None, json.dumps(value), 0, int(False), int(show), int(True))
-            if not params in params_list:
-                params_list.append(params)
+        if not vr_id:
+            value = json.dumps(value) if value is not None else None
+            params = (action.id_num, ro.id, key, None, None, None, None, value, is_input, int(show), int(True))
+            nodes_params_list.append(params)
             continue
         elif vr_id:
             # Import file VR name.
-            if hasattr(ro, "import_file_vr_name") and key == ro.import_file_vr_name:                
-                params = (action.id_num, ro.id, key, None, None, None, 0, int(False), int(show), int(True))
-                if not params in params_list:
-                    params_list.append(params)    
+            if hasattr(ro, "import_file_vr_name") and key == ro.import_file_vr_name:
+                params = (action.id_num, ro.id, key, None, None, None, None, None, 0, is_input, int(show), int(True))
+                nodes_params_list.append(params)    
                 continue
 
-        for order_num, pr in enumerate(pr_ids):
-            if is_input:
-                value = value if not value else json.dumps(value)
-                params = (action.id_num, ro.id, key, pr, vr_id, value, order_num, int(False), int(show), int(True))
-            else: # Swap source & target for the output.
-                params = (action.id_num, pr, key, ro.id, vr_id, None, order_num, int(False), int(show), int(True))
-            if not params in params_list:
-                params_list.append(params)
-        for order_num, pr in enumerate(lookup_pr_ids):
-            params = (action.id_num, ro.id, key, pr, lookup_vr_id, None, order_num, int(True), int(show), int(True))
-            if not params in params_list:
-                params_list.append(params)
+        # Edges & dynamic nodes, if any.      
+        value = value if not value else json.dumps(value) 
+        node_params = (action.id_num, ro.id, key, vr_id, json.dumps(pr_ids), lookup_vr_id, json.dumps(lookup_pr_ids), value, is_input, int(show), int(True))
+        nodes_params_list.append(node_params)
+        for pr in pr_ids:
+            assert is_input                        
+            edge_params = (action.id_num, pr, ro.id, vr_id)            
+            edges_params_list.append(edge_params)
+        for pr in lookup_pr_ids:
+            assert is_input
+            edge_params = (action.id_num, pr, ro.id, lookup_vr_id)
+            edges_params_list.append(edge_params)
 
-    return params_list
+    edges_params_list = list(set(edges_params_list))
+    nodes_params_list = list(set(nodes_params_list))
+
+    # Check that these nodes are not duplicates
+    # for node_params in nodes_params_list:
+    #     ro_id = node_params[1]
+    #     cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix.startswith(ro_id[0:2])][0]
+    #     ro = cls(id=node_params[1], action=action)
+    #     vr_name_in_code = node_params[2]
+    #     vr = Variable(id=node_params[3], action=action) if node_params[3] else None
+    #     value = node_params[4]
+    #     # Merge VR and value because that's how they are stored in the graph.
+    #     if vr and vr.hard_coded_value:
+    #         value = vr.hard_coded_value
+    #     elif value:
+    #         value = json.loads(value)
+    #     if value:
+    #         vr = value
+    #     if G.has_node(ro) and G.nodes[ro][vr_name_in_code] == vr:
+    #         nodes_params_list.remove(node_params)
+
+    # Check that these edges are not duplicates
+    # for edge_params in edges_params_list:
+    #     source_id = edge_params[1]
+    #     target_id = edge_params[2]
+    #     vr_id = edge_params[3]
+    #     source_cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix.startswith(source_id[0:2])][0] if source_id else None
+    #     target_cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix.startswith(target_id[0:2])][0] if target_id else None
+    #     source = source_cls(id = source_id) if source_cls else None
+    #     target = target_cls(id = target_id) if target_cls else None
+    #     vr = Variable(id=vr_id, action=action) if vr_id else None
+    #     if G.has_edge(source, target, key = vr):
+    #         edges_params_list.remove(edge_params)
+
+    return nodes_params_list, edges_params_list

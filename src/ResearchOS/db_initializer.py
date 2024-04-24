@@ -200,22 +200,36 @@ class DBInitializer():
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")
         
-        # Pipeline graph. Lists all pipeline objects and their relationships.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS pipeline (
-                        edge_id INTEGER NOT NULL PRIMARY KEY,
+        # Nodes table. Lists all nodes in the pipeline graph. Each row is one PR & vr_name_in_code
+        cursor.execute("""CREATE TABLE IF NOT EXISTS nodes (
+                        row_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
-                        target_pr_id TEXT,
+                        ro_id TEXT NOT NULL,
                         vr_name_in_code TEXT NOT NULL,
-                        source_pr_id TEXT,
-                        vr_id TEXT,
+                        vr_id TEXT,                                                     
+                        pr_ids TEXT NOT NULL,  
+                        lookup_vr_id TEXT,          
+                        lookup_pr_ids TEXT,
                         hard_coded_value TEXT,
-                        order_num INTEGER NOT NULL DEFAULT 0,
-                        is_lookup INTEGER NOT NULL DEFAULT 0,                       
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        show INTEGER NOT NULL DEFAULT 0,                    
+                        is_input INTEGER NOT NULL DEFAULT 0,                        
+                        show INTEGER NOT NULL DEFAULT 0,     
+                        is_active INTEGER NOT NULL DEFAULT 1,                   
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        FOREIGN KEY (ro_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,                        
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (lookup_vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
+                        )""")
+        
+        # Edges table. Lists all edges.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS edges (
+                        edge_id INTEGER PRIMARY KEY,
+                        action_id_num INTEGER NOT NULL,
+                        source_pr_id TEXT NOT NULL,
+                        target_pr_id TEXT NOT NULL,
+                        vr_id TEXT NOT NULL,                                                
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        FOREIGN KEY (source_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (target_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (source_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         )""")
         

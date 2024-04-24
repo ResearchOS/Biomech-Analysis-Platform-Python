@@ -26,22 +26,16 @@ class PipelineObject(ResearchObject):
         
     def load_inputs(self, action: Action) -> dict:
         """Load the input variables."""        
-        return self.make_puts_dict_from_db(action, True)
+        return self.make_puts_dict_from_db(action)
 
     def load_outputs(self, action: Action) -> dict:
         """Load the output variables."""
-        return self.make_puts_dict_from_db(action, False)
+        return self.make_puts_dict_from_db(action)
     
-    def make_puts_dict_from_db(self, action: Action, is_input: bool) -> dict:
+    def make_puts_dict_from_db(self, action: Action) -> dict:
         """Load the input or output variables."""        
-        # If is input, then source is null and target is not null. 
-        # If is output, then source is not null and target is null.
-        if is_input:
-            col_name = "target_pr_id"
-        else:
-            col_name = "source_pr_id"
-        sqlquery_raw = f"SELECT vr_name_in_code, source_pr_id, vr_id, hard_coded_value, order_num, is_lookup, show FROM pipeline WHERE is_active = 1 AND {col_name} = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, [col_name], single = False, user = True, computer = False)
+        sqlquery_raw = f"SELECT pr_id, vr_name_in_code, vr_id, hard_coded_value, is_input, order_num, is_lookup, show, is_active) FROM nodes WHERE is_active = 1 AND pr_id = ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["pr_id", "vr_name_in_code"], single = True, user = True, computer = False)
         params = (self.id,)
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
         return self.make_puts_dict_from_db_result(result)

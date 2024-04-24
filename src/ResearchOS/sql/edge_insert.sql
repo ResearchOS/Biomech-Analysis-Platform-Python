@@ -1,0 +1,1 @@
+INSERT INTO edges (action_id_num, source_node_id, target_node_id, is_active) VALUES (?, ?, ?, ?)
