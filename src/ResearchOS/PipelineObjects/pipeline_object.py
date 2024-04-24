@@ -40,14 +40,16 @@ class PipelineObject(ResearchObject):
             col_name = "target_pr_id"
         else:
             col_name = "source_pr_id"
-        sqlquery_raw = f"SELECT vr_name_in_code, source_pr_id, vr_id, hard_coded_value, order_num, is_lookup, show FROM pipeline WHERE is_active = 1 AND {col_name} = ? ORDER BY order_num ASC"
+        sqlquery_raw = f"SELECT vr_name_in_code, source_pr_id, vr_id, hard_coded_value, order_num, is_lookup, show FROM pipeline WHERE is_active = 1 AND {col_name} = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, [col_name], single = False, user = True, computer = False)
         params = (self.id,)
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
         return self.make_puts_dict_from_db_result(result)
     
     def make_puts_dict_from_db_result(self, result: list) -> dict:
-        """Given the results of a query on the pipeline table for one ResearchObject, return a dictionary of the inputs or outputs."""
+        """Given the results of a query on the pipeline table for one ResearchObject, return a dictionary of the inputs or outputs.
+        If output, the dict contains only {vr_name: VR} filled in, the rest is left empty.
+        If input, the dict contains {vr_name: {"main": {"vr": VR, "pr": [PR]}, "lookup": {"vr": VR, "pr": [PR]}, "show": bool}} filled in."""
         from ResearchOS.research_object import ResearchObject
         vr_names = [row[0] for row in result] if result else []
         inputs = empty_vr_dict(vr_names)
@@ -69,16 +71,17 @@ class PipelineObject(ResearchObject):
             inputs[vr_name]["show"] = show
             if not is_lookup:
                 inputs[vr_name]["main"]["vr"] = vr_id if vr_id else hard_coded_value
-                if source_pr_id:
-                    while len(inputs[vr_name]["main"]["pr"]) <= order_num:
-                        inputs[vr_name]["main"]["pr"].append(None)                
-                    inputs[vr_name]["main"]["pr"][order_num] = source_pr_id                
+                if not source_pr_id:
+                    continue # Output only needs this.
+                while len(inputs[vr_name]["main"]["pr"]) <= order_num:
+                    inputs[vr_name]["main"]["pr"].append(None)                
+                inputs[vr_name]["main"]["pr"][order_num] = source_pr_id                                    
             else:
+                # Always an input here.
                 inputs[vr_name]["lookup"]["vr"] = vr_id
-                if source_pr_id:
-                    while len(inputs[vr_name]["lookup"]["pr"]) <= order_num:
-                        inputs[vr_name]["lookup"]["pr"].append(None)
-                    inputs[vr_name]["lookup"]["pr"][order_num] = source_pr_id if source_pr_id else []
+                while len(inputs[vr_name]["lookup"]["pr"]) <= order_num:
+                    inputs[vr_name]["lookup"]["pr"].append(None)
+                inputs[vr_name]["lookup"]["pr"][order_num] = source_pr_id
         return inputs   
     
     def set_inputs(self, action: Action = None, **kwargs) -> None:
@@ -88,9 +91,10 @@ class PipelineObject(ResearchObject):
         if not action:
             action = Action(name="Set Inputs")
             return_conn = True
-        standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=True, action=action)
-        self.__dict__["inputs"] = standardized_kwargs
-        write_puts_dict_to_db(self, puts=standardized_kwargs, is_input=True, action=action)
+        standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=True, action=action)  
+        prev_puts = self.__dict__["inputs"]
+        self.__dict__["inputs"] = standardized_kwargs      
+        write_puts_dict_to_db(self, puts=standardized_kwargs, is_input=True, prev_puts=prev_puts, action=action)        
         if return_conn:
             action.commit = True
             action.execute()
@@ -103,8 +107,11 @@ class PipelineObject(ResearchObject):
             return_conn = True       
             action = Action(name="Set Outputs")
         standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=False, action=action)
+        prev_puts = {}
+        if "outputs" in self.__dict__:
+            prev_puts = self.__dict__["outputs"]            
         self.__dict__["outputs"] = standardized_kwargs
-        write_puts_dict_to_db(self, puts=standardized_kwargs, is_input=False, action=action)
+        write_puts_dict_to_db(self, puts=standardized_kwargs, is_input=False, action=action, prev_puts = prev_puts)
         if return_conn:
             action.commit = True
             action.execute()
@@ -119,22 +126,25 @@ class PipelineObject(ResearchObject):
                 if put.hard_coded_value is None:
                     final_dict[vr_name]["main"]["vr"] = put.id
                     # Get the source_pr unless this is an import file VR.
-                    if not (hasattr(self, "import_file_vr_name") and vr_name==self.import_file_vr_name):
-                        if is_input:
-                            pr = Input.set_source_pr(self, put, vr_name, G)
-                        else:
-                            pr = self
-                        final_dict[vr_name]["main"]["pr"].append(pr.id if pr else None)
+                    if hasattr(self, "import_file_vr_name") and vr_name==self.import_file_vr_name:
+                        continue
+                    pr = final_dict[vr_name]["main"]["pr"]
+                    if is_input and not pr:
+                        pr = Input.set_source_pr(self, put, G)
+                    if pr:
+                        final_dict[vr_name]["main"]["pr"].append(pr.id)
                 else:
                     final_dict[vr_name]["main"]["vr"] = put.hard_coded_value
             elif isinstance(put, Input):
                 final_dict[vr_name] = put.__dict__
                 if put.main["vr"] and not put.main["pr"]:
-                    pr = Input.set_source_pr(self, put.main["vr"], vr_name, G)
-                    final_dict[vr_name]["main"]["pr"] = [pr.id]
+                    pr = Input.set_source_pr(self, put.main["vr"], G)
+                    if pr:
+                        final_dict[vr_name]["main"]["pr"] = [pr.id]
                 if put.lookup["vr"] and not put.lookup["pr"]:
-                    lookup_pr = Input.set_source_pr(self, put.lookup["vr"], vr_name, G)
-                    final_dict[vr_name]["lookup"]["pr"] = [lookup_pr.id]
+                    lookup_pr = Input.set_source_pr(self, put.lookup["vr"], G)
+                    if lookup_pr:
+                        final_dict[vr_name]["lookup"]["pr"] = [lookup_pr.id]
             else: # Hard-coded value.
                 if isinstance(put, dict):
                     cls = [key for key in put.keys()][0]

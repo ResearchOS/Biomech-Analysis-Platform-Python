@@ -151,9 +151,9 @@ class Logsheet(PipelineObject):
         Returns:
             ''headers'' as a JSON string using ''json.dumps''"""
         # Create Outputs for the Logsheet        
-        header_names = [header[0] for header in headers]
-        inputs_dict = {header[0]: header[3] for header in header_names}
+        inputs_dict = {header[0]: header[3] for header in headers}
         self.set_outputs(**inputs_dict, action=action)
+        del self.__dict__["outputs"]
 
         str_headers = []       
         for header in headers:

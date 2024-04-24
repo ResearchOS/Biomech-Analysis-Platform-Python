@@ -204,7 +204,7 @@ class DBInitializer():
         cursor.execute("""CREATE TABLE IF NOT EXISTS pipeline (
                         edge_id INTEGER NOT NULL PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
-                        parent_ro_id TEXT NOT NULL,
+                        target_pr_id TEXT,
                         vr_name_in_code TEXT NOT NULL,
                         source_pr_id TEXT,
                         vr_id TEXT,
@@ -214,7 +214,7 @@ class DBInitializer():
                         is_active INTEGER NOT NULL DEFAULT 1,
                         show INTEGER NOT NULL DEFAULT 0,                    
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (parent_ro_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (target_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (source_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
                         )""")
