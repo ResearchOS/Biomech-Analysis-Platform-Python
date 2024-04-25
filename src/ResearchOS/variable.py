@@ -15,13 +15,14 @@ class Variable(ResearchObject):
 
     def __getitem__(self, slice: tuple) -> Any:
         """Store the slice of the Variable."""
-        self.slice = slice
+        self._slice = [slice.start, slice.stop, slice.step]
         return self
 
     def __init__(self, 
                     hard_coded_value: Any = all_default_attrs["hard_coded_value"],
                     **kwargs):
         if self._initialized:
-            return      
+            return
         self.hard_coded_value = hard_coded_value
+        self._slice = None
         super().__init__(**kwargs)

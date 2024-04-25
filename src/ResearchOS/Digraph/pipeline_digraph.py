@@ -69,7 +69,8 @@ class PipelineDiGraph():
         # (row_id, action_id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show, is_active)        
         show = True
         ro_id = node_for_adding.id             
-        vr_id = vr.id if isinstance(vr, Variable) else vr if (isinstance(vr, str) and vr.startswith("VR")) else None
+        vr_id = vr.id if isinstance(vr, Variable) else None
+        vr_slice = json.dumps(vr._slice) if isinstance(vr, Variable) and vr._slice is not None else None
         is_active = 1
         pr_ids = json.dumps(puts[vr_name_in_code]["main"]["pr"])
         lookup_vr_id = puts[vr_name_in_code]["lookup"]["vr"] if not isinstance(puts[vr_name_in_code]["lookup"]["vr"], Variable) else puts[vr_name_in_code]["lookup"]["vr"].id
@@ -79,7 +80,7 @@ class PipelineDiGraph():
             value = json.dumps(value) if value is not None else None
         else:
             value = vr.hard_coded_value if vr and vr.hard_coded_value else None
-        params = (action.id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, value, is_input, int(show), is_active)
+        params = (action.id_num, ro_id, vr_name_in_code, vr_id, vr_slice, pr_ids, lookup_vr_id, lookup_pr_ids, value, is_input, int(show), is_active)
         action.add_sql_query(None, "node_insert", params)
 
     def add_edge(self, source_object: "ResearchObject", target_object: "ResearchObject", vr: "Variable", tmp: bool = False, action: Action = None):
@@ -131,7 +132,7 @@ class PipelineDiGraph():
         G = nx.MultiDiGraph()
 
         # Get all nodes
-        sqlquery_raw = "SELECT ro_id, vr_name_in_code, is_input, vr_id, hard_coded_value FROM nodes WHERE is_active = 1"
+        sqlquery_raw = "SELECT ro_id, vr_name_in_code, is_input, vr_id, hard_coded_value, vr_slice FROM nodes WHERE is_active = 1"
         sqlquery = sql_order_result(action, sqlquery_raw, ["ro_id", "vr_name_in_code"], single = True, user = True, computer = False)
         result = action.conn.cursor().execute(sqlquery).fetchall()
         if not result:
@@ -144,6 +145,7 @@ class PipelineDiGraph():
             ro = cls(id = r[0], action=action)
             vr_name_in_code = r[1]
             is_input = bool(r[2])
+            vr_slice = json.loads(r[5]) if r[5] else None
             if not G.has_node(ro):
                 G.add_node(ro)
                 G.nodes[ro]["inputs"] = {}
@@ -155,6 +157,7 @@ class PipelineDiGraph():
             if vr_name_in_code not in graph_puts:
                 hard_coded_value = json.loads(r[4]) if r[4] else None
                 vr = Variable(id=r[3], action=action) if isinstance(r[3], str) and r[3].startswith(Variable.prefix) else None
+                vr._slice = vr_slice
                 value = vr if not hard_coded_value else hard_coded_value
                 graph_puts[vr_name_in_code] = value
 
@@ -197,7 +200,7 @@ def import_pl_objs(action: Action = None) -> nx.MultiDiGraph:
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.plot import Plot
     from ResearchOS.PipelineObjects.stats import Stats
-    # from src.research_objects import plots   
+    from src.research_objects import plots   
     # from src.research_objects import processes 
     # from src.research_objects import stats
     return_conn = True
@@ -250,13 +253,25 @@ def write_puts_dict_to_db(ro: "ResearchObject", action: Action = None, puts: dic
     # Check if there are any nodes that have been removed. These would be vr_name_in_code's for this pr_id that are not in the puts.
     rem_vr_names = [vr_name for vr_name in prev_puts.keys() if vr_name not in puts.keys()] if puts else []    
     for vr_name in rem_vr_names:
-        params = (action.id_num, ro.id, vr_name, None, [], None, [], None, is_input, int(False), int(False)) # Some default settings.
+        empty_list_json = json.dumps([])
+        vr_id = None
+        vr_slice = None
+        pr_ids = empty_list_json
+        lookup_vr_id = None
+        lookup_pr_ids = empty_list_json
+        value = None
+        params = (action.id_num, ro.id, vr_name, vr_id, vr_slice, pr_ids, lookup_vr_id, lookup_pr_ids, value, int(is_input), int(False), int(False)) # Some default settings.
         action.add_sql_query(None, "node_insert", params)
 
         # Check if there are any edges to be removed.
         vr_id = prev_puts[vr_name]["main"]["vr"]
-        vr = Variable(id=vr_id, action=action)
-        rem_edges = [e for e in G.edges if (e[0]==source or e[1]==target) and e[2]==vr]
+        if isinstance(vr_id, str) and vr_id.startswith(Variable.prefix):
+            vr = Variable(id=vr_id, action=action)
+            vr_id = vr.id
+        elif isinstance(vr_id, Variable):
+            vr_id = vr_id.id # This shouldn't be necessary, but why not just in case?
+        rem_edges = [e for e in G.edges if (e[1]==ro.id) and e[2]==vr_id]
+        # Possible that the rem_edges is empty, if the input VR is hard-coded or otherwise does not have an edge.
         for edge in rem_edges:
             G.remove_edge(edge[0], edge[1], key = edge[2])
             edge_param = (action.id_num, edge[0].id, edge[1].id, edge[2].id, int(False))
