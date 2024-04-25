@@ -114,6 +114,7 @@ class PipelineObject(ResearchObject):
         for vr_name, put in all_puts.items():
             if isinstance(put, Variable):
                 if put.hard_coded_value is None:
+                    final_dict[vr_name]["slice"] = put._slice
                     final_dict[vr_name]["main"]["vr"] = put.id
                     # Get the source_pr unless this is an import file VR.
                     if hasattr(self, "import_file_vr_name") and vr_name==self.import_file_vr_name:
@@ -149,6 +150,6 @@ class PipelineObject(ResearchObject):
 
 def empty_vr_dict(keys: list) -> dict:
     """Return a dictionary with the keys as None."""
-    sub_dict = {"show": False, "main": {"vr": None, "pr": []}, "lookup": {"vr": None, "pr": []}}
+    sub_dict = {"slice": None, "show": False, "main": {"vr": None, "pr": []}, "lookup": {"vr": None, "pr": []}}
     final_dict = {key: copy.deepcopy(sub_dict) for key in keys}
     return final_dict

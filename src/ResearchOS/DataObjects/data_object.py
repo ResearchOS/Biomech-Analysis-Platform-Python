@@ -29,7 +29,7 @@ computer_specific_attr_names = []
 class DataObject(ResearchObject):
     """The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors."""    
 
-    def get(self, vr: "Variable", action: Action, process: "Process" = [], node_lineage: list = None, lookup_vr: "Variable" = None, lookup_pr: list = [], vr_name_in_code: str = None, parent_ro: "ResearchObject" = None) -> Any:
+    def get(self, vr: "Variable", action: Action, process: "Process" = [], node_lineage: list = None, lookup_vr: "Variable" = None, lookup_pr: list = [], vr_name_in_code: str = None, parent_ro: "ResearchObject" = None, slice_input: slice = None) -> Any:
         """Load the value of a VR from the database for this data object.
 
         Args:
@@ -143,9 +143,6 @@ class DataObject(ResearchObject):
                 # print(f"The VR {vr.name} ({vr.id}) has never been associated with the data object {base_node.name} ({base_node.id}) for PR {pr.id}.")
                 continue
             is_active = result[0][0]
-            # if is_active == 0:
-            #     print(f"The VR {vr.name} is not currently associated with the data object {base_node.name} ({base_node.id}) for PR {pr.id}.")
-            #     continue
             
             # 2. Load the data hash from the database.            
             sqlquery_raw = "SELECT data_blob_hash, pr_id, numeric_value, str_value FROM data_values WHERE path_id = ? AND vr_id = ? AND pr_id = ?"
@@ -193,6 +190,23 @@ class DataObject(ResearchObject):
 
             found_value = True
             if value is not None:
+                if vr._slice is not None:
+                    slice_list = vr._slice
+                    vr_slice = []
+                    for s in slice_list:
+                        if isinstance(s, list):
+                            # For indexing numeric values.
+                            start = s[0] if s[0] != "None" else None
+                            stop = s[1] if s[1] != "None" else None
+                            step = s[2] if s[2] != "None" else None
+                            s = slice(start, stop, step)    
+                        vr_slice.append(s)
+                    value = value[tuple(vr_slice)]
+                        # elif isinstance(s, str):
+                        #     # For indexing into a dict.
+                        #     slice_parts = vr._slice.split(".")
+                        #     for part in slice_parts:
+                        #         value = value[part]
                 break # Allow a None value to go through, but gives every opportunity to look for another value first.
         if not found_value:
             raise ValueError(f"The VR {vr.name} does not have a value set for the data object {base_node.name} ({base_node.id}) from any Process provided.")        

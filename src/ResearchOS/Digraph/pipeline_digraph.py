@@ -70,7 +70,8 @@ class PipelineDiGraph():
         show = True
         ro_id = node_for_adding.id             
         vr_id = vr.id if isinstance(vr, Variable) else None
-        vr_slice = json.dumps(vr._slice) if isinstance(vr, Variable) and vr._slice is not None else None
+        vr_slice = puts[vr_name_in_code]["slice"]
+        vr_slice = json.dumps(vr_slice) if vr_slice is not None else None
         is_active = 1
         pr_ids = json.dumps(puts[vr_name_in_code]["main"]["pr"])
         lookup_vr_id = puts[vr_name_in_code]["lookup"]["vr"] if not isinstance(puts[vr_name_in_code]["lookup"]["vr"], Variable) else puts[vr_name_in_code]["lookup"]["vr"].id
@@ -146,6 +147,16 @@ class PipelineDiGraph():
             vr_name_in_code = r[1]
             is_input = bool(r[2])
             vr_slice = json.loads(r[5]) if r[5] else None
+            full_slice = []
+            if vr_slice is not None:
+                for slice_elem in vr_slice:
+                    if isinstance(slice_elem, list):
+                        start = slice_elem[0] if slice_elem[0] != "None" else None
+                        stop = slice_elem[1] if slice_elem[1] != "None" else None
+                        step = slice_elem[2] if slice_elem[2] != "None" else None
+                        slice_elem = slice(start, stop, step)
+                    full_slice.append(slice_elem)
+            full_slice = tuple(full_slice) if full_slice else None
             if not G.has_node(ro):
                 G.add_node(ro)
                 G.nodes[ro]["inputs"] = {}
@@ -157,7 +168,8 @@ class PipelineDiGraph():
             if vr_name_in_code not in graph_puts:
                 hard_coded_value = json.loads(r[4]) if r[4] else None
                 vr = Variable(id=r[3], action=action) if isinstance(r[3], str) and r[3].startswith(Variable.prefix) else None
-                vr._slice = vr_slice
+                if vr and not vr._slice:
+                    vr._slice = full_slice # Only when it's being loaded from the database.
                 value = vr if not hard_coded_value else hard_coded_value
                 graph_puts[vr_name_in_code] = value
 
@@ -201,7 +213,7 @@ def import_pl_objs(action: Action = None) -> nx.MultiDiGraph:
     from ResearchOS.PipelineObjects.plot import Plot
     from ResearchOS.PipelineObjects.stats import Stats
     from src.research_objects import plots   
-    # from src.research_objects import processes 
+    from src.research_objects import processes 
     # from src.research_objects import stats
     return_conn = True
     if action is None:
@@ -324,6 +336,7 @@ def puts_dict_to_params_list(puts: dict, action: Action = None, ro: "ResearchObj
     nodes_params_list = []    
     edges_params_list = []
     for key, put in puts.items():   
+        slice = json.dumps(put["slice"]) if put["slice"] else None
         show = put["show"]
         main_vr = put["main"]["vr"]
         if isinstance(main_vr, Variable) or (isinstance(main_vr, str) and main_vr.startswith("VR")):
@@ -340,7 +353,7 @@ def puts_dict_to_params_list(puts: dict, action: Action = None, ro: "ResearchObj
         # Hard-coded value.
         if not vr_id:
             value = json.dumps(value) if value is not None else None
-            params = (action.id_num, ro.id, key, None, None, None, None, value, int(is_input), int(show), int(True))
+            params = (action.id_num, ro.id, key, None, None, None, None, None, value, int(is_input), int(show), int(True))
             nodes_params_list.append(params)
             continue
         elif vr_id:
@@ -352,7 +365,7 @@ def puts_dict_to_params_list(puts: dict, action: Action = None, ro: "ResearchObj
 
         # Edges & dynamic nodes, if any.      
         value = value if not value else json.dumps(value) 
-        node_params = (action.id_num, ro.id, key, vr_id, json.dumps(pr_ids), lookup_vr_id, json.dumps(lookup_pr_ids), value, int(is_input), int(show), int(True))
+        node_params = (action.id_num, ro.id, key, vr_id, slice, json.dumps(pr_ids), lookup_vr_id, json.dumps(lookup_pr_ids), value, int(is_input), int(show), int(True))
         nodes_params_list.append(node_params)
         for pr in pr_ids:
             assert is_input                        

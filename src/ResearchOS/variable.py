@@ -13,9 +13,17 @@ class Variable(ResearchObject):
     prefix: str = "VR"
     _initialized: bool = False
 
-    def __getitem__(self, slice: tuple) -> Any:
+    def __getitem__(self, slice_input: tuple) -> Any:
         """Store the slice of the Variable."""
-        self._slice = [slice.start, slice.stop, slice.step]
+        slice_list = []
+        for s in slice_input:
+            if isinstance(s, slice):
+                start = s.start if s.start is not None else "None"
+                stop = s.stop if s.stop is not None else "None"
+                step = s.step if s.step is not None else "None"
+                s = [start, stop, step]
+            slice_list.append(s)
+        self._slice = slice_list
         return self
 
     def __init__(self, 

@@ -34,6 +34,7 @@ class Input():
         lookup_pr_id = [p.id if isinstance(p, (Logsheet, Process)) else p for p in lookup_pr] if lookup_pr else []
 
         # Store the values.
+        self.slice = vr._slice if isinstance(vr, Variable) else None
         self.value = value
         self.show = show
         self.main = {}
@@ -45,19 +46,17 @@ class Input():
 
     @staticmethod
     def set_source_pr(parent_ro: "ResearchObject", vr: "Variable", G: nx.MultiDiGraph = None) -> "source_type":
-        """Set the source process or logsheet."""
+        """Set the source process or logsheet.
+        Method: Search backwards through all topologically sorted nodes in the graph to find the first node that has the variable as an output AND does not create a cycle."""
         from ResearchOS.research_object_handler import ResearchObjectHandler
         from ResearchOS.PipelineObjects.process import Process
         from ResearchOS.PipelineObjects.logsheet import Logsheet
 
-        try:
-            anc_nodes = list(nx.ancestors(G, parent_ro))
-        except:
-            anc_nodes = [n for n in G.nodes]
-        subgraph = G.subgraph(anc_nodes)
-        nodes_sorted = list(reversed(list(nx.topological_sort(subgraph)))) # Latest first.
+        nodes_sorted = list(reversed(list(nx.topological_sort(G)))) # Latest first.
+        first_idx = 0
         if parent_ro in nodes_sorted:
-            nodes_sorted.remove(parent_ro)
+            first_idx = nodes_sorted.index(parent_ro)+1
+        nodes_sorted = nodes_sorted[first_idx:]
 
         vr = vr.id if isinstance(vr, Variable) else vr
         for node in nodes_sorted:
@@ -70,4 +69,9 @@ class Input():
                 output_main_vr = output["main"]["vr"]
                 output_lookup_vr = output["lookup"]["vr"]                
                 if output_main_vr == vr or output_lookup_vr == vr:
+                    G.add_edge(node, parent_ro)
+                    is_dag = nx.is_directed_acyclic_graph(G)
+                    G.remove_edge(node, parent_ro)
+                    if not is_dag:
+                        continue
                     return node

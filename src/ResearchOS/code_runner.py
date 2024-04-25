@@ -385,7 +385,8 @@ class CodeRunner():
                                   lookup_pr = input["lookup"]["pr"],
                                   vr_name_in_code=vr_name_in_code,
                                   action=self.action, 
-                                  parent_ro=self.pl_obj)
+                                  parent_ro=self.pl_obj,
+                                  slice_input = input["slice"])
             self.inputs[vr_name_in_code] = value
         
     def check_output_vrs_active(self) -> bool:
