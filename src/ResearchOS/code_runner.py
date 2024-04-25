@@ -533,6 +533,7 @@ class CodeRunner():
             vr_vals_in = []
             for value in inputs.values():
                 vr_vals_in.append(value)
+            
 
         if pr.is_matlab:
             for idx, vr_val in enumerate(vr_vals_in):
@@ -540,7 +541,7 @@ class CodeRunner():
                     raise ValueError(f"Input variable {idx} is None. Please ensure that all input variables are assigned.")
 
         try:
-            if self.__class__.__name__=="PlotRunner":
+            if pr.id.startswith("PL"):
                 save_path = self.get_save_path(pr)
                 vr_values_out = fcn(pr.mfunc_name, save_path, vr_vals_in)
             else:
