@@ -209,7 +209,9 @@ class DataObject(ResearchObject):
                         #         value = value[part]
                 break # Allow a None value to go through, but gives every opportunity to look for another value first.
         if not found_value:
-            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {base_node.name} ({base_node.id}) from any Process provided.")        
+            self_idx = node_lineage.index(self)
+            upstream_lineage = node_lineage[self_idx:]
+            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {upstream_lineage} from any Process provided.")        
         return value
     
     def _set_vr_values(self, vr_values: dict, pr: "source_type", action: Action = None) -> None:
