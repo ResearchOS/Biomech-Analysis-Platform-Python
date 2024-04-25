@@ -92,8 +92,10 @@ class CodeRunner():
         dobj_ids = [dobj_ids[index] for index in subgraph_idx]
         paths = [paths[index] for index in subgraph_idx]
         dataset = [n for n in subset_graph.nodes if subset_graph.in_degree(n) == 0][0]
-        paths.append([dataset])
-        dobj_ids.append(dataset)
+        if dataset not in dobj_ids:
+            dobj_ids.append(dataset)
+        if [dataset] not in paths:
+            paths.append([dataset])
         level_node_ids_with_indices = [(index, dobj) for index, dobj in enumerate(dobj_ids) if dobj.startswith(robj.level.prefix)]        
         level_node_ids = [x[1] for x in level_node_ids_with_indices]
         indices = [x[0] for x in level_node_ids_with_indices]
@@ -132,10 +134,13 @@ class CodeRunner():
                 level = batch_list[0]
                 # Get the list of nodes that are connected to this node.
                 successors = list(graph.successors(node))
+                # Ensure that the successors are also connected to the rest of the nodes in the lineage.
+                successors = [s for s in successors if all([nx.has_path(subset_graph, n, s) or nx.has_path(subset_graph, s, n) for n in node_lineage])]
                 for n in successors:
                     batches_dict[n] = {}
                     node_lineage.append(n)
                     batches_dict[n] = graph_to_dict(graph, batches_dict[n], batch_list[1:], n, subset_graph, node_lineage)
+                    node_lineage.remove(n) # So as to not pollute the next lineage.
                 return batches_dict
             
             batches_dict_to_run = {}
@@ -144,12 +149,6 @@ class CodeRunner():
             for node in top_level_nodes:
                 batches_dict_to_run[node] = {}
                 batches_dict_to_run[node] = graph_to_dict(all_batches_graph, batches_dict_to_run[node], batch_list[1:], node, subset_graph, [node])
-
-            # Dict of dicts, where each top-level dict is a batch to run.
-            # Get a top level node.
-            # any_top_level_node = [n for n in batches_dict_to_run][0]
-            # leafs = [n for n in all_batches_graph.nodes() if all_batches_graph.out_degree(n) == 0]
-            # CodeRunner.depth = nx.shortest_path_length(all_batches_graph, any_top_level_node, leafs[0])
         else:
             batches_dict_to_run = {node: None for node in level_node_ids_sorted}
             # CodeRunner.depth = 0
@@ -317,12 +316,7 @@ class CodeRunner():
 
         input_dict = {node: copy.deepcopy(batch_dict) for node in self.pl_obj.inputs.keys()}
         for var_name_in_code in input_dict:
-            # curr_vr = self.pl_obj.inputs[var_name_in_code]
             process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
-            # if not isinstance(curr_vr, dict) or ("VR" not in curr_vr.keys() and "slice" not in curr_vr.keys()):
-            #     input_dict[var_name_in_code] = curr_vr # To make it not be a cell array in MATLAB.
-            # else:
-            #     process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
 
         # Run the process on the batch of nodes.
         is_batch = self.pl_obj.batch is not None
@@ -508,6 +502,7 @@ class CodeRunner():
     def compute_and_assign_outputs(self, inputs: dict, pr: "PipelineObject", info: dict = {}, is_batch: bool = False) -> None:
         """Run the function and assign the output variables to the DataObject node.
         """
+        from ResearchOS.variable import Variable
         # NOTE: For now, assuming that there is only one return statement in the entire method.  
         if pr.is_matlab:
             if not self.matlab_loaded:
@@ -530,10 +525,15 @@ class CodeRunner():
                 vr_vals_in.append(info)
         else:
             # Convert the vr_values_in to the right format.
+            # If this is a hard-coded value, then replace the batch dict with just the value.
             vr_vals_in = []
-            for value in inputs.values():
-                vr_vals_in.append(value)
-            
+            for vr_name_in_code, value in inputs.items():
+                vr = pr.inputs[vr_name_in_code]["main"]["vr"]
+                if isinstance(vr, Variable) or (isinstance(vr, str) and vr.startswith("VR")):
+                    vr_vals_in.append(value)                    
+                else:
+                    vr_vals_in.append(vr)
+                                
 
         if pr.is_matlab:
             for idx, vr_val in enumerate(vr_vals_in):

@@ -57,8 +57,8 @@ class PipelineDiGraph():
             puts = node_for_adding.outputs
 
         vr = puts[vr_name_in_code]["main"]["vr"]
-        if not isinstance(vr, Variable):
-            vr = Variable(id=vr, action=action) if isinstance(vr, str) and vr.startswith(Variable.prefix) else vr
+        if isinstance(vr, str) and vr.startswith(Variable.prefix):
+            vr = Variable(id=vr, action=action)
 
         if vr_name_in_code in graph_puts and graph_puts[vr_name_in_code] == vr:
             return
@@ -69,7 +69,7 @@ class PipelineDiGraph():
         # (row_id, action_id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show, is_active)        
         show = True
         ro_id = node_for_adding.id             
-        vr_id = vr.id if isinstance(vr, Variable) else vr if isinstance(vr, str) else None
+        vr_id = vr.id if isinstance(vr, Variable) else vr if (isinstance(vr, str) and vr.startswith("VR")) else None
         is_active = 1
         pr_ids = json.dumps(puts[vr_name_in_code]["main"]["pr"])
         lookup_vr_id = puts[vr_name_in_code]["lookup"]["vr"] if not isinstance(puts[vr_name_in_code]["lookup"]["vr"], Variable) else puts[vr_name_in_code]["lookup"]["vr"].id
