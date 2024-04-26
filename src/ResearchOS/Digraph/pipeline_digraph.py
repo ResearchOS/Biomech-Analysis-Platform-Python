@@ -45,7 +45,9 @@ class PipelineDiGraph():
             raise ValueError("No VR name in code provided.")
         if not G.has_node(node_for_adding):
             G.add_node(node_for_adding)
+        if "inputs" not in G.nodes[node_for_adding]:
             G.nodes[node_for_adding]["inputs"] = {}
+        if "outputs" not in G.nodes[node_for_adding]:
             G.nodes[node_for_adding]["outputs"] = {}
 
         # Check for duplicates.

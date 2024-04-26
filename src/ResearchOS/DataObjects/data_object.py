@@ -202,16 +202,11 @@ class DataObject(ResearchObject):
                             s = slice(start, stop, step)    
                         vr_slice.append(s)
                     value = value[tuple(vr_slice)]
-                        # elif isinstance(s, str):
-                        #     # For indexing into a dict.
-                        #     slice_parts = vr._slice.split(".")
-                        #     for part in slice_parts:
-                        #         value = value[part]
                 break # Allow a None value to go through, but gives every opportunity to look for another value first.
         if not found_value:
             self_idx = node_lineage.index(self)
             upstream_lineage = node_lineage[self_idx:]
-            raise ValueError(f"The VR {vr.name} does not have a value set for the data object {upstream_lineage} from any Process provided.")        
+            raise ValueError(f"The VR {vr} does not have a value set for the data object {upstream_lineage} from any of these Processes: {process}.")        
         return value
     
     def _set_vr_values(self, vr_values: dict, pr: "source_type", action: Action = None) -> None:

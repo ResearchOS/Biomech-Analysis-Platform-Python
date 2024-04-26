@@ -504,6 +504,8 @@ class CodeRunner():
         """Run the function and assign the output variables to the DataObject node.
         """
         from ResearchOS.variable import Variable
+        from ResearchOS.DataObjects.data_object import DataObject
+        subclasses = DataObject.__subclasses__()
         # NOTE: For now, assuming that there is only one return statement in the entire method.  
         if pr.is_matlab:
             if not self.matlab_loaded:
@@ -533,6 +535,12 @@ class CodeRunner():
                 if isinstance(vr, Variable) or (isinstance(vr, str) and vr.startswith("VR")):
                     vr_vals_in.append(value)                    
                 else:
+                    if isinstance(vr, dict):
+                        attr = [v for v in vr.values()][0]
+                        cls_prefix = [k for k in vr.keys()][0]
+                        node_lineage = self.node.get_node_lineage(action=self.action)
+                        node = [node for node in node_lineage if node.prefix == cls_prefix][0]
+                        vr=getattr(node, attr)
                     vr_vals_in.append(vr)
                                 
 
