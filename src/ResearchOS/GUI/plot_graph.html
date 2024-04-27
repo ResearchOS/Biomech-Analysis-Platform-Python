@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ResearchOS Pipeline</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="graph-data.js"></script> <!-- Include your data file before the main script -->
+    <style>
+        .node { fill: steelblue; stroke: #fff; stroke-width: 1.5px; }
+        .node:hover { fill: orange; }
+        .edge { stroke: gray; stroke-width: 1.5px; marker-end: url(#arrowhead); }
+        .edge:hover { stroke: orange; }
+        text { pointer-events: none; font-family: sans-serif; }
+        svg { width: 100%; height: 100%; display: block; }
+        .view { cursor: move; }
+    </style>
+</head>
+<body>
+    <svg></svg>
+
+    <script>
+        const svg = d3.select('svg')
+            .attr('width', window.innerWidth)
+            .attr('height', window.innerHeight);
+
+        const zoom = d3.zoom()
+            .scaleExtent([0.5, 10])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+
+        svg.call(zoom);
+        const g = svg.append("g").attr('class', 'view');
+
+        // Initialize the graph using graphData
+        initializeGraph(graphData);
+
+
+        function initializeGraph(data) {
+            const width = svg.attr('width');
+            const height = svg.attr('height');
+
+            // Convert relative positions to absolute coordinates
+            data.nodes.forEach(node => {
+                node.x *= width;
+                node.y *= height;
+            });
+
+            // Define arrow marker for edges
+            g.append('defs').append('marker')
+                .attr('id', 'arrowhead')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 10)
+                .attr('refY', 0)
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .attr('fill', 'gray');
+
+            // Draw edges
+            g.selectAll('.edge')
+                .data(data.edges)
+                .enter()
+                .append('line')
+                .attr('class', 'edge')
+                .attr('x1', edge => data.nodes.find(n => n.id === edge.from).x)
+                .attr('y1', edge => data.nodes.find(n => n.id === edge.from).y)
+                .attr('x2', edge => data.nodes.find(n => n.id === edge.to).x)
+                .attr('y2', edge => data.nodes.find(n => n.id === edge.to).y);
+
+            // Draw nodes
+            const node = g.selectAll('.node')
+                .data(data.nodes)
+                .enter()
+                .append('circle')
+                .attr('class', 'node')
+                .attr('r', 10)
+                .attr('cx', node => node.x)
+                .attr('cy', node => node.y)
+                .call(d3.drag()
+                    .on("drag", dragged));
+
+            // Draw node labels
+            g.selectAll('.label')
+                .data(data.nodes)
+                .enter()
+                .append('text')
+                .attr('class', 'label')
+                .attr('x', node => node.x)
+                .attr('y', node => node.y - 15)
+                .attr('text-anchor', 'middle')
+                .text(node => node.id);
+        }
+
+        function dragged(event, d) {
+            d.x = event.x;
+            d.y = event.y;
+            d3.select(this).attr("cx", d.x).attr("cy", d.y);
+
+            // Update edges connected to this node
+            g.selectAll('.edge')
+                .each(function(edge) {
+                    if (edge.from === d.id) {
+                        d3.select(this)
+                            .attr('x1', d.x)
+                            .attr('y1', d.y);
+                    }
+                    if (edge.to === d.id) {
+                        d3.select(this)
+                            .attr('x2', d.x)
+                            .attr('y2', d.y);
+                    }
+                });
+
+            // Update the node label position
+            g.selectAll('.label')
+                .filter(label => label.id === d.id)
+                .attr('x', d.x)
+                .attr('y', d.y - 15);
+        }
+    </script>
+</body>
+</html>

@@ -81,8 +81,8 @@ class PipelineObject(ResearchObject):
         if not action:
             action = Action(name="Set Inputs")
             return_conn = True
-        standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=True, action=action)  
         prev_puts = self.__dict__["inputs"]
+        standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=True, action=action, prev_puts=prev_puts)          
         self.__dict__["inputs"] = standardized_kwargs      
         write_puts_dict_to_db(self, puts=standardized_kwargs, is_input=True, prev_puts=prev_puts, action=action)        
         if return_conn:
@@ -96,17 +96,15 @@ class PipelineObject(ResearchObject):
         if not action:     
             return_conn = True       
             action = Action(name="Set Outputs")
-        standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=False, action=action)
-        prev_puts = {}
-        if "outputs" in self.__dict__:
-            prev_puts = self.__dict__["outputs"]            
+        prev_puts = self.__dict__["outputs"]  
+        standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=False, action=action, prev_puts=prev_puts)                  
         self.__dict__["outputs"] = standardized_kwargs
         write_puts_dict_to_db(self, puts=standardized_kwargs, is_input=False, action=action, prev_puts = prev_puts)
         if return_conn:
             action.commit = True
             action.execute()
 
-    def make_puts_dict_from_inputs(self, all_puts: Union[Input, dict], action: Action = None, is_input: bool = True) -> dict:
+    def make_puts_dict_from_inputs(self, all_puts: Union[Input, dict], action: Action = None, is_input: bool = True, prev_puts: dict = {}) -> dict:
         """Create the dictionary that is the equivalent of someone passing in a dictionary directly."""
         from ResearchOS.Digraph.pipeline_digraph import PipelineDiGraph
         G = PipelineDiGraph(action=action).G
@@ -119,9 +117,12 @@ class PipelineObject(ResearchObject):
                     # Get the source_pr unless this is an import file VR.
                     if hasattr(self, "import_file_vr_name") and vr_name==self.import_file_vr_name:
                         continue
-                    pr = final_dict[vr_name]["main"]["pr"]
+                    pr = final_dict[vr_name]["main"]["pr"].id
                     if is_input and not pr:
-                        pr = Input.set_source_pr(self, put, G)
+                        if prev_puts["main"]["pr"]:
+                            pr = prev_puts["main"]["pr"]
+                        else:
+                            pr = Input.set_source_pr(self, put, G).id
                     if pr:
                         final_dict[vr_name]["main"]["pr"].append(pr.id)
                 else:
