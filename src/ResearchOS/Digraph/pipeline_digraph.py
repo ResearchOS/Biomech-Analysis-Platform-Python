@@ -119,6 +119,13 @@ class PipelineDiGraph():
         vr_id = vr.id if isinstance(vr, Variable) else Variable(id=vr, action=action).id
         params = (action.id_num, source_pr_id, target_pr_id, vr_id, 1)
         action.add_sql_query(None, "edge_insert", params)
+
+        # Get all of the nodes that are descendants of the target object.
+        # Set their up_to_date to False.
+        descendants = nx.descendants(G, target_object)
+        descendants = [target_object] + list(descendants)
+        for desc in descendants:
+            desc.__setattr__("up_to_date", False, action=action)
             
 
     def build_pl_from_db(self, action: Action = None):

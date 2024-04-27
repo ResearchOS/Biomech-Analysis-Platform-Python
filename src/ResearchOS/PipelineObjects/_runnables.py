@@ -33,6 +33,7 @@ def run(self, module_file_path: str, force_redo: bool = False, action: Action = 
     for vr_name, output in self.outputs.items():
         print(f"Saved VR {vr_name} (VR: {output['main']['vr']}).")
 
+    self.__setattr__("up_to_date", True, action=action)
     action.add_sql_query(None, "run_history_insert", (action.id_num, self.id))
 
     action.commit = True

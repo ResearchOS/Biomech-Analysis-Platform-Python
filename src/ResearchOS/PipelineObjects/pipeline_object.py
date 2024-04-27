@@ -10,6 +10,7 @@ from ResearchOS.Digraph.pipeline_digraph import write_puts_dict_to_db
 from ResearchOS.Bridges.input import Input
 
 all_default_attrs = {}
+all_default_attrs["up_to_date"] = False
 
 computer_specific_attr_names = []
 
@@ -134,7 +135,7 @@ class PipelineObject(ResearchObject):
                         continue
                     pr = final_dict[vr_name]["main"]["pr"]
                     if is_input:
-                        if vr_name in prev_puts and prev_puts[vr_name]["main"]["pr"]:
+                        if vr_name in prev_puts and prev_puts[vr_name]["main"]["pr"] and self.up_to_date:
                             pr = prev_puts[vr_name]["main"]["pr"]
                         else:
                             pr = Input.set_source_pr(self, put, G)

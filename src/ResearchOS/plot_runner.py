@@ -15,19 +15,22 @@ class PlotRunner(CodeRunner):
 
     def get_save_path(self, pl: "Plot"):
         """Return the save path for the plot."""
-        lineage = self.node.get_node_lineage(action=self.action)
+        lineage = self.node.get_node_lineage(action=self.action)[::-1]
         ds_schema = self.dataset.schema
         schema_G = nx.MultiDiGraph()
         schema_G.add_edges_from(ds_schema)
         ds_schema_nodes = list(nx.topological_sort(schema_G))
         if self.pl_obj.batch:
             batch = self.pl_obj.batch
+            if self.dataset.__class__ in batch:
+                batch = batch[1:]
         else:
             batch = [self.pl_obj.level]
 
         # 1. Get all schema nodes that are not in the batch, that are lower than the lowest node in the batch.
         lowest_batch_idx_in_schema = min([ds_schema_nodes[1:].index(b) for b in batch]) # Omit the dataset.
         folder_names = lineage[0:lowest_batch_idx_in_schema]
+        folder_names = [f.name for f in folder_names]
         file_name_idx = [idx for idx in range(len(lineage)) if lineage[idx].__class__ == batch[0]]
         if len(file_name_idx) == 0:
             file_name = self.dataset.name # For Dataset, just use the top level node name

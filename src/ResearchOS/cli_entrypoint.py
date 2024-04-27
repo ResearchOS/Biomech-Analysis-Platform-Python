@@ -361,6 +361,15 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
     # Check if the previous nodes are all up to date.
     if plobj:
         anc_nodes = list(nx.ancestors(G, plobj))
+        desc_nodes = [] # Descendants of the ancestors.
+        for anc_node in anc_nodes:
+            desc = list(nx.descendants(G, anc_node))
+            desc_nodes.extend([d for d in desc if d not in desc_nodes])
+        anc_nodes_final = [] # Ancestors of the descendants.
+        for node in desc_nodes:
+            anc = list(nx.ancestors(G, node))
+            anc_nodes_final.extend([a for a in anc if a not in anc_nodes_final])
+        anc_nodes = anc_nodes_final
     else:
         anc_nodes = list(G.nodes)
         print('Starting at the root node of the Pipeline!')
@@ -458,19 +467,17 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
         if not plobj:
             print('All nodes are up to date. Nothing to run.')
             return
-        print('All previous nodes are up to date. Run starting from specified node.')        
-        first_out_of_date = [plobj]
+        print('All previous nodes are up to date. Run starting from specified node.')
 
-    run_nodes_graph = G.subgraph(nodes_to_run)
-
+    all_nodes_sorted = list(nx.topological_sort(G))
     up_to_date_nodes = list(set(up_to_date_nodes))
-    up_to_date_nodes_graph = G.subgraph(up_to_date_nodes)
-    up_to_date_nodes_sorted = list(nx.topological_sort(up_to_date_nodes_graph))
+    up_to_date_nodes_sorted = [n for n in all_nodes_sorted if n in up_to_date_nodes]
     print("Up to date nodes:")
     for idx, pl_node in enumerate(up_to_date_nodes_sorted):
-        print(str(idx) + ":", pl_node.id)
+        print(str(idx) + ":", pl_node)
 
-    run_nodes_sorted = list(nx.topological_sort(run_nodes_graph))
+    
+    run_nodes_sorted = [n for n in all_nodes_sorted if n in nodes_to_run]
     print("Run nodes:")
     for idx, pl_node in enumerate(run_nodes_sorted):
         print(str(idx) + ":", pl_node)
