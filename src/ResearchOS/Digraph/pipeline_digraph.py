@@ -214,6 +214,7 @@ def import_pl_objs(action: Action = None) -> nx.MultiDiGraph:
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.plot import Plot
     from ResearchOS.PipelineObjects.stats import Stats
+    from ResearchOS.variable import Variable
     from src.research_objects import plots   
     from src.research_objects import processes 
     # from src.research_objects import stats
@@ -224,6 +225,7 @@ def import_pl_objs(action: Action = None) -> nx.MultiDiGraph:
     prs, pr_mods = import_objects_of_type(Process)
     pls, pl_mods = import_objects_of_type(Plot)
     sts, st_mods = import_objects_of_type(Stats)
+    vrs, vr_mods = import_objects_of_type(Variable)
     if action is None:
         return_conn = False
         action = Action(name="Build_PL")
@@ -243,10 +245,11 @@ def import_pl_objs(action: Action = None) -> nx.MultiDiGraph:
     set_names(prs, pr_mods, Process, action=action)
     set_names(pls, pl_mods, Plot, action=action)
     set_names(sts, st_mods, Stats, action=action)   
+    set_names(vrs, vr_mods, Variable, action=action)
 
-    if return_conn:
-        action.commit = True
-        action.execute()
+    action.commit = True
+    action.exec = True
+    action.execute(return_conn=return_conn)
 
 def write_puts_dict_to_db(ro: "ResearchObject", action: Action = None, puts: dict = None, is_input: bool = True, prev_puts: dict = None):
     """Write the inputs or outputs of a ResearchObject to the database. Also makes edges & nodes in graph.

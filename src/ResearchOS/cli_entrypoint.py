@@ -262,6 +262,69 @@ def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, lo
         os.system(command)
 
 @app.command()
+def vis_pl():
+    import matplotlib.pyplot as plt
+    import pyvis.network as pyvis_network
+    from pyvis.network import Network
+    from pyvis.options import Options
+
+    from ResearchOS.PipelineObjects.logsheet import Logsheet
+    from ResearchOS.DataObjects.dataset import Dataset
+    from ResearchOS.build_pl import import_objects_of_type    
+    add_src_to_path()
+    print('Importing Dataset objects...')
+    import_objects_of_type(Dataset)
+    print('Importing Logsheet objects...')
+    # from src.research_objects import logsheets as lg
+    lgs = import_objects_of_type(Logsheet)
+    lg = lgs[0]
+    # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.          
+    action = Action(name = "run_pipeline", type="run")
+    graph = PipelineDiGraph(action=action)
+    G = graph.G         
+
+    # H = nx.relabel_nodes(G, {node: str(node) for node in G.nodes()})
+    H = nx.MultiDiGraph()
+    
+    nt = Network(height="800px", width="100%", directed=True, notebook=False, layout=True, neighborhood_highlight=True)
+    nt.options.physics.enabled = False
+    # nt.force_atlas_2based()
+    for layer, nodes in enumerate(nx.topological_generations(G)):
+        for node in nodes:
+            H.add_node(str(node))
+            H.nodes[str(node)]["layer"] = layer            
+
+    for e in G.edges:
+        H.add_edge(str(e[0]), str(e[1]), str(e[2]))
+    pos = nx.multipartite_layout(H, subset_key="layer")
+    for n in G.nodes:
+        nt.add_node(str(n), x=pos[str(n)][0], y=pos[str(n)][1], label=str(n), level=H.nodes[str(n)]["layer"], labelHighlightBold=True)
+        
+    # opt=Options({"physics":{"enabled": False}})
+    # opt.layout = {"hierarchical": {"enabled": True, "sortMethod": "directed"}}
+    for e in G.edges:
+        nt.add_edge(str(e[0]), str(e[1]), title=str(e[2]))
+        # H.add_edge(str(e[0]), str(e[1]), str(e[2]))
+
+    template_dir = os.path.join(os.path.dirname(__file__), "pyvis_template")
+    nt.set_template_dir(template_dir, template_file="template.html")    
+    # nt.set_options()
+
+    nt.show_buttons(filter_=['physics', 'nodes', 'edges', 'layout'])
+    nt.show("n.html", notebook=False)
+
+    # # Plot the graph.
+    # for layer, nodes in enumerate(nx.topological_generations(G)):
+    #     for node in nodes:
+    #         G.nodes[node]["layer"] = layer
+
+    # pos = nx.multipartite_layout(G, subset_key="layer")
+
+    # fig, ax = plt.subplots()
+    # nx.draw_networkx(G, pos, ax=ax, with_labels=True, node_size=3000, node_color="skyblue", font_size=10, font_weight="bold", font_color="black", edge_color="black", linewidths=1, width=1, alpha=0.9)
+    # plt.show()           
+
+@app.command()
 def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None)):
     """Show the pipeline objects in the graph in topologically sorted order."""
     from ResearchOS.PipelineObjects.logsheet import Logsheet
@@ -278,10 +341,6 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
     action = Action(name = "run_pipeline", type="run")
     graph = PipelineDiGraph(action=action)
     G = graph.G    
-    try:
-        pass
-    except Exception as e:
-        print(f"Error building the pipeline: {e}")
 
     if plobj_id is None:
         lg_id = None
@@ -616,7 +675,8 @@ def vrs(vr_id: str = typer.Argument(help="Variable ID"),
         print(f"Path ID: {row[0]:<{max_path_id_len}} ( {dobj.name} ), VR ID: {row[1]:<{max_vr_id_len}}, PR ID: {row[2]:<{max_pr_id_len}}")    
 
 if __name__ == "__main__":
-    app(["run","PL3"])  
+    # app(["run","PL1"])  
+    app(["vis-pl"])
     # app(["get", "TRE2F1AE_4DF"])
     # app(["db-reset","-y"])
     # app(["logsheet-read"])  
