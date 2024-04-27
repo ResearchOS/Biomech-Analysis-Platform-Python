@@ -15,14 +15,7 @@ class Variable(ResearchObject):
 
     def __getitem__(self, slice_input: tuple) -> Any:
         """Store the slice of the Variable."""
-        slice_list = []
-        for s in slice_input:
-            if isinstance(s, slice):
-                start = s.start if s.start is not None else "None"
-                stop = s.stop if s.stop is not None else "None"
-                step = s.step if s.step is not None else "None"
-                s = [start, stop, step]
-            slice_list.append(s)
+        slice_list = self.slice_to_list(slice_input)
         self._slice = slice_list
         return self
 
@@ -34,3 +27,15 @@ class Variable(ResearchObject):
         self.hard_coded_value = hard_coded_value
         self._slice = None
         super().__init__(**kwargs)
+
+    def slice_to_list(self, slice_input: tuple) -> list:
+        """Return the slice as a list."""
+        slice_list = []
+        for s in slice_input:
+            if isinstance(s, slice):
+                start = s.start if s.start is not None else "None"
+                stop = s.stop if s.stop is not None else "None"
+                step = s.step if s.step is not None else "None"
+                s = [start, stop, step]
+            slice_list.append(s)
+        return slice_list

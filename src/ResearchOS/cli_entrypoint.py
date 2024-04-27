@@ -372,7 +372,7 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
         
     # Get the date last edited for each pipeline object, and see if it was settings or run action.
     sqlquery_raw = "SELECT action_id_num, pl_object_id FROM run_history WHERE pl_object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
-    sqlquery = sql_order_result(action, sqlquery_raw, ["pl_object_id", "action_id_num"], single = False, user = True, computer = False)
+    sqlquery = sql_order_result(action, sqlquery_raw, ["pl_object_id"], single = False, user = True, computer = False)
     anc_node_ids = [node.id for node in anc_nodes_sorted]    
     params = tuple(anc_node_ids)
     run_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()    
@@ -388,57 +388,81 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
         
     run_history_result = [(r + ("run",)) for r in run_history_result]
 
-    sqlquery_raw = "SELECT action_id_num, object_id FROM simple_attributes WHERE object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
-    sqlquery = sql_order_result(action, sqlquery_raw, ["action_id_num", "object_id"], single = False, user = True, computer = False)
+    sqlquery_raw = "SELECT action_id_num, object_id, attr_id FROM simple_attributes WHERE object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["object_id"], single = False, user = True, computer = False)
     settings_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    # Omit the settings that don't affect the runtime:
+    # name
+    name_id = ResearchObjectHandler._get_attr_id("name")
+    remove_elems = []
+    for r in settings_history_result:
+        if r[2] == name_id:
+            remove_elems.append(r)
+    for r in remove_elems:
+        settings_history_result.remove(r)
+    settings_history_result = [r[:-1] for r in settings_history_result]
+
     settings_history_result = [(r + ("settings",)) for r in settings_history_result]
-    result = run_history_result + settings_history_result
-    action_id_nums = list(set([r[0] for r in result]))
+    sqlquery_raw = "SELECT action_id_num, ro_id FROM nodes WHERE is_active = 1 AND ro_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["ro_id"], single = True, user = True, computer = False)
+    nodes_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    nodes_history_result = [(r + ("settings",)) for r in nodes_history_result]
+    sqlquery_raw = "SELECT action_id_num, target_pr_id FROM edges WHERE is_active = 1 AND target_pr_id IN ({pr_id})".format(pr_id=",".join(["?" for i in range(len(anc_nodes_sorted))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["target_pr_id"], single = True, user = True, computer = False)
+    edges_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    edges_history_result = [(r + ("settings",)) for r in edges_history_result]
+    all_result = run_history_result + settings_history_result + nodes_history_result + edges_history_result
+    all_result = list(set(all_result))
+    action_id_nums = list(set([r[0] for r in all_result]))
 
     # Get the dates for action_ids
     sqlquery_raw = "SELECT action_id_num, datetime FROM actions WHERE action_id_num IN ({})".format(",".join(["?" for i in range(len(action_id_nums))]))
-    sqlquery = sql_order_result(action, sqlquery_raw, ["action_id_num"], single = False, user = True, computer = False)
+    sqlquery = sql_order_result(action, sqlquery_raw, ["action_id_num"], single = True, user = True, computer = False)
     params = tuple(action_id_nums)
     action_dates = action.conn.cursor().execute(sqlquery, params).fetchall()
     action_dates_dict = {r[0]: r[1] for r in action_dates}
-    result = [(r + (action_dates_dict[r[0]],)) for r in result]
-    result = sorted(result, key = lambda x: x[3]) # Sorted by datetime, descending.
-    first_out_of_date = []
+    all_result = [(r + (action_dates_dict[r[0]],)) for r in all_result]
+    result = sorted(all_result, key = lambda x: x[3], reverse=True) # Sorted by datetime, descending.
+    unique_result = []
+    done_prs = []
+    for r in result:
+        if r[1] not in done_prs:
+            done_prs.append(r[1])
+            unique_result.append(r)
+    out_of_date_nodes = []
+    up_to_date_nodes = []
     for anc_node in anc_nodes_sorted:
         if isinstance(anc_node, Logsheet):
             continue # Can't run the pipeline from a Logsheet.
-        most_recent_idx = [idx for idx, r in enumerate(result) if r[1] == anc_node.id][-1]
-        if result[most_recent_idx][2] == "run":
-            continue
+        most_recent_idx = [idx for idx, r in enumerate(unique_result) if r[1] == anc_node.id][0]
+        if unique_result[most_recent_idx][2] == "run":
+            up_to_date_nodes.append(anc_node)
         else:
-            # Ensure that there are multiple potential root nodes, to handle the case where maybe multiple nodes of the same generation are out of date.
-            first_out_of_date.append(anc_node)
-            for out_of_date_node in first_out_of_date:
-                if anc_node in nx.descendants(G, out_of_date_node):                    
-                    first_out_of_date.remove(anc_node)
-                    break
+            out_of_date_nodes.append(anc_node)
+            # # Ensure that there are multiple potential root nodes, to handle the case where maybe multiple nodes of the same generation are out of date.
+            # first_out_of_date.append(anc_node)
+            # for out_of_date_node in first_out_of_date:
+            #     if anc_node in nx.descendants(G, out_of_date_node):                    
+            #         first_out_of_date.remove(anc_node)
+            #         break
 
-    if first_out_of_date:
-        pass
-        # print(f"Node {first_out_of_date.id} is out of date. Running the pipeline starting from this node.")        
-    else:
+    out_of_date_nodes = list(set(out_of_date_nodes))
+    out_of_date_nodes = out_of_date_nodes + [plobj] if plobj else out_of_date_nodes
+    nodes_to_run = [n for n in out_of_date_nodes] # Include the out of date nodes themselves.
+    for node in out_of_date_nodes:
+        desc = list(nx.descendants(G, node))
+        desc = [d for d in desc if d not in out_of_date_nodes]
+        nodes_to_run.extend(desc)
+
+    if not nodes_to_run:
         if not plobj:
             print('All nodes are up to date. Nothing to run.')
             return
         print('All previous nodes are up to date. Run starting from specified node.')        
         first_out_of_date = [plobj]
 
-    run_nodes = []
-    run_nodes.extend(first_out_of_date)
-    for node in first_out_of_date:
-        run_nodes.extend(list(nx.descendants(G, node)))
+    run_nodes_graph = G.subgraph(nodes_to_run)
 
-    run_nodes_graph = G.subgraph(run_nodes)
-
-    up_to_date_nodes = []
-    for n in run_nodes:
-        anc_nodes = list(nx.ancestors(G, n))        
-        up_to_date_nodes.extend([node for node in anc_nodes if node not in run_nodes])
     up_to_date_nodes = list(set(up_to_date_nodes))
     up_to_date_nodes_graph = G.subgraph(up_to_date_nodes)
     up_to_date_nodes_sorted = list(nx.topological_sort(up_to_date_nodes_graph))
@@ -678,8 +702,8 @@ def vrs(vr_id: str = typer.Argument(help="Variable ID"),
         print(f"Path ID: {row[0]:<{max_path_id_len}} ( {dobj.name} ), VR ID: {row[1]:<{max_vr_id_len}}, PR ID: {row[2]:<{max_pr_id_len}}")    
 
 if __name__ == "__main__":
-    # app(["run","PL1"])  
-    app(["vis-pl"])
+    app(["run"])  
+    # app(["vis-pl"])
     # app(["get", "TRE2F1AE_4DF"])
     # app(["db-reset","-y"])
     # app(["logsheet-read"])  

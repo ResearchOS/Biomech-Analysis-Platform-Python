@@ -136,7 +136,7 @@ class PipelineDiGraph():
 
         # Get all nodes
         sqlquery_raw = "SELECT ro_id, vr_name_in_code, is_input, vr_id, hard_coded_value, vr_slice FROM nodes WHERE is_active = 1"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["ro_id", "vr_name_in_code"], single = True, user = True, computer = False)
+        sqlquery = sql_order_result(action, sqlquery_raw, ["ro_id", "vr_name_in_code", "is_input"], single = True, user = True, computer = False)
         result = action.conn.cursor().execute(sqlquery).fetchall()
         if not result:
             PipelineDiGraph.G = G
@@ -189,7 +189,7 @@ class PipelineDiGraph():
             source_pr_cls = [cls for cls in subclasses if hasattr(cls, "prefix") and source_pr_id.startswith(cls.prefix)][0]            
             source_pr = source_pr_cls(id = source_pr_id, action=action)
             vr = Variable(id = vr_id, action=action) if vr_id else None
-            G.add_edge(source_pr, target_pr, key = vr, action=action)     
+            G.add_edge(source_pr, target_pr, key = vr)     
 
         PipelineDiGraph.G = G
 
@@ -215,17 +215,18 @@ def import_pl_objs(action: Action = None) -> nx.MultiDiGraph:
     from ResearchOS.PipelineObjects.plot import Plot
     from ResearchOS.PipelineObjects.stats import Stats
     from ResearchOS.variable import Variable
-    from src.research_objects import plots   
-    from src.research_objects import processes 
-    # from src.research_objects import stats
+    from src.research_objects import processes
+    from src.research_objects import plots
+    from src.research_objects import stats
     return_conn = True
     if action is None:
         return_conn = False
         action = Action(name="Build_PL")
+    vrs, vr_mods = import_objects_of_type(Variable)
     prs, pr_mods = import_objects_of_type(Process)
     pls, pl_mods = import_objects_of_type(Plot)
     sts, st_mods = import_objects_of_type(Stats)
-    vrs, vr_mods = import_objects_of_type(Variable)
+    
     if action is None:
         return_conn = False
         action = Action(name="Build_PL")
@@ -309,7 +310,7 @@ def write_puts_dict_to_db(ro: "ResearchObject", action: Action = None, puts: dic
         if not vr_id and (hasattr(ro, "import_file_vr_name") and ro.import_file_vr_name is not None):
             vr_name_in_code = ro.import_file_vr_name
             vr = Variable(id=ro.inputs[vr_name_in_code]["main"]["vr"], action=action)
-        # Performs the cycle check and adds the query to the action.
+        # Append to the list of edges to potentially add.
         add_edges_list.append((source, target, vr))    
 
     # Add the nodes to the database.

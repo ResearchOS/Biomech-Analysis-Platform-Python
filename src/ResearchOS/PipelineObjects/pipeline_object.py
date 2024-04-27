@@ -35,10 +35,17 @@ class PipelineObject(ResearchObject):
     def make_puts_dict_from_db(self, action: Action, is_input: bool) -> dict:
         """Load the input or output variables."""        
         # (row_id, action_id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show, is_active)
-        sqlquery_raw = f"SELECT ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show FROM nodes WHERE is_active = 1 AND ro_id = ? AND is_input = ?"
+        sqlquery_raw = f"SELECT ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show FROM nodes WHERE ro_id = ? AND is_input = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, ["vr_name_in_code"], single = True, user = True, computer = False)
         params = (self.id, int(is_input))
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        # Get rid of outdated puts.
+        del_list = []
+        for row in result:
+            if row[8]==0:
+                del_list.append(row)
+        for row in del_list:
+            result.remove(row)
         return self.make_puts_dict_from_db_result(result)
     
     def make_puts_dict_from_db_result(self, result: list) -> dict:
@@ -92,11 +99,14 @@ class PipelineObject(ResearchObject):
     def set_outputs(self, action: Action = None, **kwargs) -> None:
         """Convenience function to set the output variables with named variables rather than a dict.
         Edges are NOT created here."""
+        from ResearchOS.PipelineObjects.logsheet import Logsheet
         return_conn = False
         if not action:     
             return_conn = True       
             action = Action(name="Set Outputs")
-        prev_puts = self.__dict__["outputs"]  
+        prev_puts = {}
+        if not isinstance(self, Logsheet):
+            prev_puts = self.__dict__["outputs"]  
         standardized_kwargs = self.make_puts_dict_from_inputs(kwargs, is_input=False, action=action, prev_puts=prev_puts)                  
         self.__dict__["outputs"] = standardized_kwargs
         write_puts_dict_to_db(self, puts=standardized_kwargs, is_input=False, action=action, prev_puts = prev_puts)
@@ -112,19 +122,25 @@ class PipelineObject(ResearchObject):
         for vr_name, put in all_puts.items():
             if isinstance(put, Variable):
                 if put.hard_coded_value is None:
-                    final_dict[vr_name]["slice"] = put._slice
+                    if isinstance(put._slice, tuple):
+                        slice_list = put.slice_to_list(put._slice)
+                    else:
+                        slice_list = put._slice
+                    final_dict[vr_name]["slice"] = slice_list
+                    put._slice = None # Reset the slice.
                     final_dict[vr_name]["main"]["vr"] = put.id
                     # Get the source_pr unless this is an import file VR.
                     if hasattr(self, "import_file_vr_name") and vr_name==self.import_file_vr_name:
                         continue
-                    pr = final_dict[vr_name]["main"]["pr"].id
-                    if is_input and not pr:
-                        if prev_puts["main"]["pr"]:
-                            pr = prev_puts["main"]["pr"]
+                    pr = final_dict[vr_name]["main"]["pr"]
+                    if is_input:
+                        if vr_name in prev_puts and prev_puts[vr_name]["main"]["pr"]:
+                            pr = prev_puts[vr_name]["main"]["pr"]
                         else:
-                            pr = Input.set_source_pr(self, put, G).id
+                            pr = Input.set_source_pr(self, put, G)
+                            pr = [pr.id] if pr else []
                     if pr:
-                        final_dict[vr_name]["main"]["pr"].append(pr.id)
+                        final_dict[vr_name]["main"]["pr"] = pr
                 else:
                     final_dict[vr_name]["main"]["vr"] = put.hard_coded_value
             elif isinstance(put, Input):

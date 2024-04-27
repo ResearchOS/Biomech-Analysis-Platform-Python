@@ -1,0 +1,8 @@
+.highlight-node {
+    fill: red; /* or any color you prefer */
+}
+
+.highlight-edge {
+    stroke: red; /* or any color you prefer */
+    stroke-width: 3px; /* Make the line slightly thicker to stand out */
+}

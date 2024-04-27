@@ -53,10 +53,6 @@ class Input():
         from ResearchOS.PipelineObjects.logsheet import Logsheet
 
         nodes_sorted = list(reversed(list(nx.topological_sort(G)))) # Latest first.
-        first_idx = 0
-        if parent_ro in nodes_sorted:
-            first_idx = nodes_sorted.index(parent_ro)+1
-        nodes_sorted = nodes_sorted[first_idx:]
 
         vr = vr.id if isinstance(vr, Variable) else vr
         for node in nodes_sorted:
@@ -64,6 +60,8 @@ class Input():
                 for h in node.headers:
                     if h[3].id == vr:
                         return node                     
+                continue
+            if not hasattr(node, "outputs"):
                 continue
             for output in node.outputs.values():
                 output_main_vr = output["main"]["vr"]
