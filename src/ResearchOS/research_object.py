@@ -84,8 +84,10 @@ class ResearchObject():
             return
                        
         commit = False
+        return_conn = False
         if action is None:
             commit = True
+            return_conn = True
             action = Action(name = "attribute_changed")
 
         if not kwargs_dict:
@@ -107,10 +109,11 @@ class ResearchObject():
         for key in del_keys:
             del kwargs_dict[key]
         ResearchObjectHandler._set_builtin_attributes(self, default_attrs, kwargs_dict, action)
-        
-        action.commit = commit
-        action.exec = exec
-        action.execute()     
+                
+        if return_conn:
+            action.commit = commit
+            action.exec = exec
+            action.execute()     
     
     def __init__(self, action: Action = None, name: str = None, notes: str = None, **other_kwargs):
         """Initialize the research object.

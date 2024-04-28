@@ -2,10 +2,11 @@ from typing import Any, TYPE_CHECKING
 import json
 import pickle
 
+import numpy as np
+import networkx as nx
+
 if TYPE_CHECKING:
     from ResearchOS.action import Action
-
-import networkx as nx
 
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.DataObjects.dataset import Dataset
@@ -146,6 +147,8 @@ class Subset(PipelineObject):
                 value = str_value
             elif numeric_value is not None:
                 value = numeric_value
+            else:
+                value = None # Handle None values.
             vr_values[vr_id][dataobject_id] = value
 
         dataset_node = [n for n in G.nodes if G.in_degree(n) == 0][0]        

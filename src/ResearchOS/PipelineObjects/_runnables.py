@@ -30,14 +30,17 @@ def run(self, module_file_path: str, force_redo: bool = False, action: Action = 
     if code_runner.matlab_loaded and self.is_matlab:
         ProcessRunner.matlab_eng.rmpath(self.mfolder)
         
-    for vr_name, output in self.outputs.items():
-        print(f"Saved VR {vr_name} (VR: {output['main']['vr']}).")
-
-    self.__setattr__("up_to_date", True, action=action)
+    if hasattr(self, "outputs"):
+        for vr_name, output in self.outputs.items():
+            print(f"Saved VR {vr_name} (VR: {output['main']['vr']}).")
+    
     action.add_sql_query(None, "run_history_insert", (action.id_num, self.id))
+    self.__setattr__("up_to_date", True, action=action, exec=False)
 
     action.commit = True
     action.exec = True
     action.execute(return_conn=return_conn)
+
+    self.up_to_date = True # Uses a separate action.
 
     print(f"Finished running {self.id} on {self.level.__name__}s in {time.time() - start_time} seconds.")

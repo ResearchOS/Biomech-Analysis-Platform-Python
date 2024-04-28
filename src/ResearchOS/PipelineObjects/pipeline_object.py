@@ -16,6 +16,10 @@ computer_specific_attr_names = []
 
 class PipelineObject(ResearchObject):
     """Parent class of all pipeline objects: Projects, Analyses, Logsheets, Process Groups, Processes, Variables, SpecifyTrials, Views""" 
+
+    def __init__(self, up_to_date: bool = all_default_attrs["up_to_date"], **kwargs) -> None:
+        self.up_to_date = up_to_date
+        super().__init__(**kwargs)
     
     def save_inputs(self, inputs: dict, action: Action) -> None:
         """Saving the input variables. is done in the input class."""
@@ -122,14 +126,15 @@ class PipelineObject(ResearchObject):
         final_dict = empty_vr_dict(all_puts.keys())
         for vr_name, put in all_puts.items():
             if isinstance(put, Variable):
-                if put.hard_coded_value is None:
+                if put.hard_coded_value is None:    
+                    # Get the slice.
                     if isinstance(put._slice, tuple):
                         slice_list = put.slice_to_list(put._slice)
                     else:
                         slice_list = put._slice
                     final_dict[vr_name]["slice"] = slice_list
                     put._slice = None # Reset the slice.
-                    final_dict[vr_name]["main"]["vr"] = put.id
+                    final_dict[vr_name]["main"]["vr"] = put.id                
                     # Get the source_pr unless this is an import file VR.
                     if hasattr(self, "import_file_vr_name") and vr_name==self.import_file_vr_name:
                         continue
@@ -141,7 +146,7 @@ class PipelineObject(ResearchObject):
                             pr = Input.set_source_pr(self, put, G)
                             pr = [pr.id] if pr else []
                     if pr:
-                        final_dict[vr_name]["main"]["pr"] = pr
+                        final_dict[vr_name]["main"]["pr"] = pr                        
                 else:
                     final_dict[vr_name]["main"]["vr"] = put.hard_coded_value
             elif isinstance(put, Input):

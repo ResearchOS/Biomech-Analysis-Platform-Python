@@ -401,11 +401,13 @@ def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=No
     sqlquery = sql_order_result(action, sqlquery_raw, ["object_id"], single = False, user = True, computer = False)
     settings_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
     # Omit the settings that don't affect the runtime:
-    # name
+    # name, up_to_date
     name_id = ResearchObjectHandler._get_attr_id("name")
+    up_to_date_id = ResearchObjectHandler._get_attr_id("up_to_date")
+    attrs_to_remove = [name_id, up_to_date_id]
     remove_elems = []
     for r in settings_history_result:
-        if r[2] == name_id:
+        if r[2] in attrs_to_remove:
             remove_elems.append(r)
     for r in remove_elems:
         settings_history_result.remove(r)
@@ -491,20 +493,18 @@ def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
         yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type '-y' to run the pipeline without confirmation.")):
     """Run the runnable pipeline objects."""
     from ResearchOS.PipelineObjects.logsheet import Logsheet
+    from ResearchOS.research_object import ResearchObject
+    from ResearchOS.research_object_handler import ResearchObjectHandler        
     add_src_to_path()
     import_pl_objs()
+    subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
     run_nodes_sorted, up_to_date_nodes_sorted = show_pl(plobj_id)
     action = Action(name = "run_pipeline", type="run")
 
-    # dur = 0
-    # result = ""
-    # if yes_or_no != "y":
-    #     result = input_with_timeout(f"Press Enter to continue, or any other key to cancel. Or auto-start in {dur} seconds.", dur)        
-    # if result == "":
-    #     pass # No user input, or hit enter.
-    # else:
-    #     print('Pipeline run cancelled.')
-    #     return
+    if not yes_or_no and plobj_id is not None:
+        cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix==plobj_id[0:2]][0]
+        run_nodes_sorted = [cls(id=plobj_id, action=action)]
+        
             
     for idx, pl_node in enumerate(run_nodes_sorted):
         if isinstance(pl_node, Logsheet):
@@ -709,7 +709,7 @@ def vrs(vr_id: str = typer.Argument(help="Variable ID"),
         print(f"Path ID: {row[0]:<{max_path_id_len}} ( {dobj.name} ), VR ID: {row[1]:<{max_vr_id_len}}, PR ID: {row[2]:<{max_pr_id_len}}")    
 
 if __name__ == "__main__":
-    app(["run"])  
+    app(["run","PL8"])  
     # app(["vis-pl"])
     # app(["get", "TRE2F1AE_4DF"])
     # app(["db-reset","-y"])

@@ -125,7 +125,7 @@ class PipelineDiGraph():
         descendants = nx.descendants(G, target_object)
         descendants = [target_object] + list(descendants)
         for desc in descendants:
-            desc.__setattr__("up_to_date", False, action=action)
+            desc.__setattr__("up_to_date", False, action=action, exec=False)
             
 
     def build_pl_from_db(self, action: Action = None):
