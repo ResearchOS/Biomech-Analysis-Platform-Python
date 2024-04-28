@@ -709,7 +709,7 @@ def vrs(vr_id: str = typer.Argument(help="Variable ID"),
         print(f"Path ID: {row[0]:<{max_path_id_len}} ( {dobj.name} ), VR ID: {row[1]:<{max_vr_id_len}}, PR ID: {row[2]:<{max_pr_id_len}}")    
 
 if __name__ == "__main__":
-    app(["run","PL8"])  
+    app(["run","PR48"])  
     # app(["vis-pl"])
     # app(["get", "TRE2F1AE_4DF"])
     # app(["db-reset","-y"])

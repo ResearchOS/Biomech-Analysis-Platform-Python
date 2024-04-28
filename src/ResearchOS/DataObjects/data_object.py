@@ -235,7 +235,7 @@ class DataObject(ResearchObject):
                 if isinstance(value, (type(None), str, int, float, bool)):
                     tmp = json.dumps(value) # Scalars
                 elif isinstance(value, np.ndarray):
-                    assert len(value) == 1 # Scalar numpy arrays
+                    assert np.shape(value) == () # Scalar numpy arrays
                 else:
                     assert False # Blob value.
                 scalar_value = value                

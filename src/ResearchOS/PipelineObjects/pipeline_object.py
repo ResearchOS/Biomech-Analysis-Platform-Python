@@ -133,7 +133,7 @@ class PipelineObject(ResearchObject):
                     else:
                         slice_list = put._slice
                     final_dict[vr_name]["slice"] = slice_list
-                    put._slice = None # Reset the slice.
+                    # put._slice = None # Reset the slice.
                     final_dict[vr_name]["main"]["vr"] = put.id                
                     # Get the source_pr unless this is an import file VR.
                     if hasattr(self, "import_file_vr_name") and vr_name==self.import_file_vr_name:
