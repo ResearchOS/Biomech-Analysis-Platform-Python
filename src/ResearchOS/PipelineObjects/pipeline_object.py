@@ -126,6 +126,7 @@ class PipelineObject(ResearchObject):
         from ResearchOS.Digraph.pipeline_digraph import PipelineDiGraph
         G = PipelineDiGraph(action=action).G
         final_dict = empty_vr_dict(all_puts.keys())
+        subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
         for vr_name, put in all_puts.items():
             if isinstance(put, Variable):
                 if put.hard_coded_value is None:    
@@ -144,8 +145,19 @@ class PipelineObject(ResearchObject):
                     if is_input:
                         # Last two criteria:
                         # If the VR is up to date and the PR is the same as the previous PR, then use the previous PR.
-                        if vr_name in prev_puts and prev_puts[vr_name]["main"]["pr"] and self.up_to_date and prev_puts[vr_name]["main"]["vr"]==put.id:
-                            pr = prev_puts[vr_name]["main"]["pr"]
+                        if vr_name in prev_puts and prev_puts[vr_name]["main"]["pr"] and prev_puts[vr_name]["main"]["vr"]==put.id:
+                            # Check that the previous PR is still in the graph.
+                            # I think maybe a fix elsewhere removed the need for this code?
+                            prev_pr = prev_puts[vr_name]["main"]["pr"][0] # Guaranteed to be of length 1
+                            prev_pr_cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix == prev_pr[:2]][0]
+                            prev_pr = prev_pr_cls(id=prev_pr, action=action)
+                            if not hasattr(prev_pr, "outputs"):
+                                pr = [prev_pr.id] # The logsheet.
+                            elif not any([prev_pr.outputs[vr_name]["main"]["vr"]==put.id for vr_name in prev_pr.outputs]):
+                                pr = Input.set_source_pr(self, put, G)
+                                pr = [pr.id] if pr else []
+                            else:
+                                pr = prev_puts[vr_name]["main"]["pr"]
                         else:
                             pr = Input.set_source_pr(self, put, G)
                             pr = [pr.id] if pr else []

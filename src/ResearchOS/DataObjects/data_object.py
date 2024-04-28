@@ -190,8 +190,8 @@ class DataObject(ResearchObject):
 
             found_value = True
             if value is not None:
-                if vr._slice is not None:
-                    slice_list = vr._slice
+                if slice_input is not None:
+                    slice_list = slice_input
                     vr_slice = []
                     for s in slice_list:
                         if isinstance(s, list):

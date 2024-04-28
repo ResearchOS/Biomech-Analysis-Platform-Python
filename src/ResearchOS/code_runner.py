@@ -533,8 +533,9 @@ class CodeRunner():
             for vr_name_in_code, value in inputs.items():
                 vr = pr.inputs[vr_name_in_code]["main"]["vr"]
                 if isinstance(vr, Variable) or (isinstance(vr, str) and vr.startswith("VR")):
-                    vr_vals_in.append(value)                    
+                    vr_vals_in.append(value)
                 else:
+                    # DataObject attributes.
                     if isinstance(vr, dict):
                         attr = [v for v in vr.values()][0]
                         cls_prefix = [k for k in vr.keys()][0]

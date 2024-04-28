@@ -286,47 +286,6 @@ def vis_pl():
     html_path = write_js_graph(G) 
     webbrowser.open_new_tab(html_path)
 
-    # H = nx.relabel_nodes(G, {node: str(node) for node in G.nodes()})
-    # H = nx.MultiDiGraph()
-    
-    # nt = Network(height="800px", width="100%", directed=True, notebook=False, layout=True, neighborhood_highlight=True)
-    # nt.options.physics.enabled = False
-    # # nt.force_atlas_2based()
-    # for layer, nodes in enumerate(nx.topological_generations(G)):
-    #     for node in nodes:
-    #         H.add_node(str(node))
-    #         H.nodes[str(node)]["layer"] = layer            
-
-    # for e in G.edges:
-    #     H.add_edge(str(e[0]), str(e[1]), str(e[2]))
-    # pos = nx.multipartite_layout(H, subset_key="layer")
-    # for n in G.nodes:
-    #     nt.add_node(str(n), x=pos[str(n)][0], y=pos[str(n)][1], label=str(n), level=H.nodes[str(n)]["layer"], labelHighlightBold=True)
-        
-    # # opt=Options({"physics":{"enabled": False}})
-    # # opt.layout = {"hierarchical": {"enabled": True, "sortMethod": "directed"}}
-    # for e in G.edges:
-    #     nt.add_edge(str(e[0]), str(e[1]), title=str(e[2]))
-    #     # H.add_edge(str(e[0]), str(e[1]), str(e[2]))
-
-    # template_dir = os.path.join(os.path.dirname(__file__), "pyvis_template")
-    # nt.set_template_dir(template_dir, template_file="template.html")    
-    # # nt.set_options()
-
-    # nt.show_buttons(filter_=['physics', 'nodes', 'edges', 'layout'])
-    # nt.show("n.html", notebook=False)
-
-    # # Plot the graph.
-    # for layer, nodes in enumerate(nx.topological_generations(G)):
-    #     for node in nodes:
-    #         G.nodes[node]["layer"] = layer
-
-    # pos = nx.multipartite_layout(G, subset_key="layer")
-
-    # fig, ax = plt.subplots()
-    # nx.draw_networkx(G, pos, ax=ax, with_labels=True, node_size=3000, node_color="skyblue", font_size=10, font_weight="bold", font_color="black", edge_color="black", linewidths=1, width=1, alpha=0.9)
-    # plt.show()           
-
 @app.command()
 def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None)):
     """Show the pipeline objects in the graph in topologically sorted order."""
@@ -709,7 +668,7 @@ def vrs(vr_id: str = typer.Argument(help="Variable ID"),
         print(f"Path ID: {row[0]:<{max_path_id_len}} ( {dobj.name} ), VR ID: {row[1]:<{max_vr_id_len}}, PR ID: {row[2]:<{max_pr_id_len}}")    
 
 if __name__ == "__main__":
-    app(["run","PL8"])  
+    app(["run","PL6"])  
     # app(["vis-pl"])
     # app(["get", "TRE2F1AE_4DF"])
     # app(["db-reset","-y"])

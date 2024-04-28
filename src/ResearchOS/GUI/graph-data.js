@@ -7,18 +7,43 @@ const graphData = {
         },
         {
                 "id": "WBAM Transverse Timeseries PL1",
-                "x": 0.58,
+                "x": 0.45,
+                "y": 0.34
+        },
+        {
+                "id": "H Remote Local PL2",
+                "x": 0.68,
                 "y": 0.11
         },
         {
                 "id": "WBAM Scatter PL3",
-                "x": 0.8,
-                "y": 0.06
+                "x": 0.68,
+                "y": 0.0
         },
         {
                 "id": "WBAM Bar Graph PL4",
-                "x": 0.8,
-                "y": -0.06
+                "x": 0.68,
+                "y": -0.11
+        },
+        {
+                "id": "Segment COM Position PL5",
+                "x": 0.34,
+                "y": 0.11
+        },
+        {
+                "id": "Linear Momentum Scatter PL6",
+                "x": 0.57,
+                "y": 0.11
+        },
+        {
+                "id": "Linear Momentum Transverse Timeseries PL7",
+                "x": 0.45,
+                "y": 0.22
+        },
+        {
+                "id": "TBCM Position and Velocity Timeseries PL8",
+                "x": 0.45,
+                "y": 0.11
         },
         {
                 "id": "importer PR1",
@@ -28,7 +53,7 @@ const graphData = {
         {
                 "id": "static_hjc PR10",
                 "x": -0.55,
-                "y": 0.0
+                "y": 0.06
         },
         {
                 "id": "static_cal_rigid_bodies_dumas2007 PR11",
@@ -37,12 +62,12 @@ const graphData = {
         },
         {
                 "id": "foot_virtual_markers_to_dynamic PR12",
-                "x": -0.1,
+                "x": -0.22,
                 "y": 0.17
         },
         {
                 "id": "anatomic_axes PR13",
-                "x": -0.21,
+                "x": -0.33,
                 "y": 0.0
         },
         {
@@ -52,78 +77,78 @@ const graphData = {
         },
         {
                 "id": "start_end_frames PR16",
-                "x": -0.77,
+                "x": -0.78,
                 "y": 0.11
         },
         {
                 "id": "seg_com_pos PR17",
-                "x": 0.01,
+                "x": -0.11,
                 "y": 0.17
         },
         {
                 "id": "tbcm_pos PR18",
-                "x": 0.13,
+                "x": 0.01,
                 "y": 0.11
         },
         {
                 "id": "Derivative of TBCM Position PR19",
-                "x": 0.24,
+                "x": 0.12,
                 "y": 0.17
         },
         {
                 "id": "load_calib PR2",
-                "x": -0.77,
+                "x": -0.78,
                 "y": 0.0
         },
         {
                 "id": "Derivative of Segment COM Position PR20",
-                "x": 0.13,
+                "x": 0.01,
                 "y": 0.0
         },
         {
                 "id": "mom_of_i_to_global PR21",
-                "x": -0.1,
+                "x": -0.22,
                 "y": 0.06
         },
         {
                 "id": "Segment Angular Velocity PR22",
-                "x": -0.1,
+                "x": -0.22,
                 "y": -0.06
         },
         {
                 "id": "seg_com_to_tbcm_pos_vector PR23",
-                "x": 0.24,
+                "x": 0.12,
                 "y": 0.06
         },
         {
                 "id": "seg_com_to_tbcm_veloc_vector PR24",
-                "x": 0.35,
-                "y": 0.23
+                "x": 0.23,
+                "y": 0.34
         },
         {
                 "id": "wbam_global PR25",
-                "x": 0.46,
-                "y": 0.06
+                "x": 0.34,
+                "y": 0.0
         },
         {
                 "id": "normalize_wbam_vistamehr PR26",
-                "x": 0.58,
+                "x": 0.45,
                 "y": 0.0
         },
         {
                 "id": "bodyfixed_ax_pelvis PR27",
-                "x": -0.1,
+                "x": -0.22,
                 "y": -0.17
         },
         {
                 "id": "bodyfixed_ax_wbam PR28",
-                "x": 0.58,
+                "x": 0.45,
                 "y": -0.11
         },
         {
                 "id": "bodyfixed_ax_wbam_vistamehr PR29",
-                "x": 0.69,
-                "y": 0.06
+                "x": 0.57,
+                "y": 0.0
         },
         {
                 "id": "comp_height PR3",
@@ -132,67 +157,87 @@ const graphData = {
         },
         {
                 "id": "zeni_gait_events PR33",
-                "x": 0.01,
+                "x": -0.11,
                 "y": 0.06
         },
         {
                 "id": "pelv_heading_angle_plotting PR34",
-                "x": 0.01,
+                "x": -0.11,
                 "y": -0.06
         },
         {
                 "id": "pelv_heading_angle PR35",
-                "x": 0.01,
+                "x": -0.11,
                 "y": -0.17
         },
         {
                 "id": "phase_of_interest PR36",
-                "x": 0.35,
-                "y": 0.11
+                "x": 0.23,
+                "y": 0.22
         },
         {
                 "id": "pass_column_idx PR37",
-                "x": 0.24,
+                "x": 0.12,
                 "y": -0.06
         },
         {
                 "id": "pelvis_heading_angle_thresh PR38",
-                "x": 0.13,
+                "x": 0.01,
                 "y": -0.11
         },
         {
                 "id": "gait_speed_3d PR39",
-                "x": 0.35,
-                "y": 0.0
+                "x": 0.23,
+                "y": 0.11
         },
         {
                 "id": "gait_speed_horz PR40",
-                "x": 0.35,
-                "y": -0.11
+                "x": 0.23,
+                "y": 0.0
         },
         {
                 "id": "wbam_per_gait_phase PR41",
-                "x": 0.69,
-                "y": -0.06
+                "x": 0.57,
+                "y": -0.11
         },
         {
                 "id": "lin_mom PR42",
-                "x": 0.35,
-                "y": -0.23
+                "x": 0.23,
+                "y": -0.11
         },
         {
                 "id": "lin_mom_per_gait_phase PR43",
-                "x": 0.46,
-                "y": -0.06
+                "x": 0.45,
+                "y": -0.22
         },
         {
                 "id": "golyski_turn_strategy PR44",
-                "x": 0.24,
+                "x": 0.12,
                 "y": -0.17
         },
         {
+                "id": "rotate_wbam_segs PR45",
+                "x": 0.45,
+                "y": -0.34
+        },
+        {
+                "id": "dir_adj_lin_mom PR46",
+                "x": 0.34,
+                "y": -0.11
+        },
+        {
+                "id": "dir_adj_veloc PR47",
+                "x": 0.23,
+                "y": -0.22
+        },
+        {
+                "id": "dir_adj_tbcm_pos PR48",
+                "x": 0.23,
+                "y": -0.34
+        },
+        {
                 "id": "subj_mass PR5",
-                "x": -0.77,
+                "x": -0.78,
                 "y": -0.11
         },
         {
@@ -207,8 +252,8 @@ const graphData = {
         },
         {
                 "id": "best_marker_names PR9",
-                "x": -0.32,
-                "y": 0.0
+                "x": -0.55,
+                "y": -0.06
         }
 ],
     edges: [
@@ -288,16 +333,6 @@ const graphData = {
                 "to": "lin_mom PR42"
         },
         {
-                "id": "Motive_Initial_Frame VR13",
-                "from": "LG1",
-                "to": "golyski_turn_strategy PR44"
-        },
-        {
-                "id": "Motive_Final_Frame VR14",
-                "from": "LG1",
-                "to": "golyski_turn_strategy PR44"
-        },
-        {
                 "id": "Gender VR4",
                 "from": "LG1",
                 "to": "seg_params PR6"
@@ -374,11 +409,6 @@ const graphData = {
         },
         {
                 "id": "card_mocap_data VR33",
-                "from": "static_hjc PR10",
-                "to": "best_marker_names PR9"
-        },
-        {
-                "id": "card_mocap_data VR33",
                 "from": "static_cal_rigid_bodies_dumas2007 PR11",
                 "to": "foot_virtual_markers_to_dynamic PR12"
         },
@@ -431,11 +461,6 @@ const graphData = {
                 "id": "seg_mom_of_inertia VR46",
                 "from": "static_cal_rigid_bodies_dumas2007 PR11",
                 "to": "mom_of_i_to_global PR21"
-        },
-        {
-                "id": "card_mocap_data VR33",
-                "from": "static_cal_rigid_bodies_dumas2007 PR11",
-                "to": "best_marker_names PR9"
         },
         {
                 "id": "card_mocap_data VR33",
@@ -505,6 +530,46 @@ const graphData = {
         {
                 "id": "Motive_Initial_Frame VR13",
                 "from": "start_end_frames PR16",
+                "to": "H Remote Local PL2"
+        },
+        {
+                "id": "Motive_Final_Frame VR14",
+                "from": "start_end_frames PR16",
+                "to": "H Remote Local PL2"
+        },
+        {
+                "id": "Motive_Initial_Frame VR13",
+                "from": "start_end_frames PR16",
+                "to": "Segment COM Position PL5"
+        },
+        {
+                "id": "Motive_Final_Frame VR14",
+                "from": "start_end_frames PR16",
+                "to": "Segment COM Position PL5"
+        },
+        {
+                "id": "Motive_Initial_Frame VR13",
+                "from": "start_end_frames PR16",
+                "to": "Linear Momentum Transverse Timeseries PL7"
+        },
+        {
+                "id": "Motive_Final_Frame VR14",
+                "from": "start_end_frames PR16",
+                "to": "Linear Momentum Transverse Timeseries PL7"
+        },
+        {
+                "id": "Motive_Initial_Frame VR13",
+                "from": "start_end_frames PR16",
+                "to": "TBCM Position and Velocity Timeseries PL8"
+        },
+        {
+                "id": "Motive_Final_Frame VR14",
+                "from": "start_end_frames PR16",
+                "to": "TBCM Position and Velocity Timeseries PL8"
+        },
+        {
+                "id": "Motive_Initial_Frame VR13",
+                "from": "start_end_frames PR16",
                 "to": "foot_virtual_markers_to_dynamic PR12"
         },
         {
@@ -645,16 +710,6 @@ const graphData = {
         {
                 "id": "Motive_Initial_Frame VR13",
                 "from": "start_end_frames PR16",
-                "to": "wbam_per_gait_phase PR41"
-        },
-        {
-                "id": "Motive_Final_Frame VR14",
-                "from": "start_end_frames PR16",
-                "to": "wbam_per_gait_phase PR41"
-        },
-        {
-                "id": "Motive_Initial_Frame VR13",
-                "from": "start_end_frames PR16",
                 "to": "lin_mom_per_gait_phase PR43"
         },
         {
@@ -681,6 +736,11 @@ const graphData = {
                 "id": "Motive_Final_Frame VR14",
                 "from": "start_end_frames PR16",
                 "to": "best_marker_names PR9"
+        },
+        {
+                "id": "seg_com_position VR55",
+                "from": "seg_com_pos PR17",
+                "to": "Segment COM Position PL5"
         },
         {
                 "id": "seg_com_position VR55",
@@ -705,6 +765,11 @@ const graphData = {
         {
                 "id": "tbcm_position VR67",
                 "from": "tbcm_pos PR18",
+                "to": "TBCM Position and Velocity Timeseries PL8"
+        },
+        {
+                "id": "tbcm_position VR67",
+                "from": "tbcm_pos PR18",
                 "to": "Derivative of TBCM Position PR19"
         },
         {
@@ -721,6 +786,21 @@ const graphData = {
                 "id": "tbcm_position VR67",
                 "from": "tbcm_pos PR18",
                 "to": "golyski_turn_strategy PR44"
+        },
+        {
+                "id": "tbcm_position VR67",
+                "from": "tbcm_pos PR18",
+                "to": "dir_adj_veloc PR47"
+        },
+        {
+                "id": "tbcm_position VR67",
+                "from": "tbcm_pos PR18",
+                "to": "dir_adj_tbcm_pos PR48"
+        },
+        {
+                "id": "tbcm_velocity VR68",
+                "from": "tbcm_pos PR18",
+                "to": "dir_adj_tbcm_pos PR48"
         },
         {
                 "id": "tbcm_velocity VR68",
@@ -741,6 +821,21 @@ const graphData = {
                 "id": "tbcm_velocity VR68",
                 "from": "Derivative of TBCM Position PR19",
                 "to": "lin_mom PR42"
+        },
+        {
+                "id": "tbcm_velocity VR68",
+                "from": "Derivative of TBCM Position PR19",
+                "to": "dir_adj_lin_mom PR46"
+        },
+        {
+                "id": "tbcm_velocity VR68",
+                "from": "Derivative of TBCM Position PR19",
+                "to": "dir_adj_veloc PR47"
+        },
+        {
+                "id": "tbcm_velocity VR68",
+                "from": "Derivative of TBCM Position PR19",
+                "to": "dir_adj_tbcm_pos PR48"
         },
         {
                 "id": "calib_results VR39",
@@ -828,6 +923,11 @@ const graphData = {
                 "to": "bodyfixed_ax_wbam PR28"
         },
         {
+                "id": "wbam_seg_global VR75",
+                "from": "wbam_global PR25",
+                "to": "rotate_wbam_segs PR45"
+        },
+        {
                 "id": "wbam_global_vistamehr VR76",
                 "from": "normalize_wbam_vistamehr PR26",
                 "to": "bodyfixed_ax_wbam_vistamehr PR29"
@@ -858,6 +958,16 @@ const graphData = {
                 "to": "pelv_heading_angle PR35"
         },
         {
+                "id": "pelvis_fixed_axes VR79",
+                "from": "bodyfixed_ax_pelvis PR27",
+                "to": "rotate_wbam_segs PR45"
+        },
+        {
+                "id": "wbam_pelvis_fixed_axes VR80",
+                "from": "bodyfixed_ax_wbam PR28",
+                "to": "H Remote Local PL2"
+        },
+        {
                 "id": "wbam_pelvis_fixed_axes VR80",
                 "from": "bodyfixed_ax_wbam PR28",
                 "to": "wbam_per_gait_phase PR41"
@@ -871,6 +981,26 @@ const graphData = {
                 "id": "zeni_gait_events VR82",
                 "from": "zeni_gait_events PR33",
                 "to": "WBAM Transverse Timeseries PL1"
+        },
+        {
+                "id": "zeni_gait_events VR82",
+                "from": "zeni_gait_events PR33",
+                "to": "H Remote Local PL2"
+        },
+        {
+                "id": "zeni_gait_events VR82",
+                "from": "zeni_gait_events PR33",
+                "to": "Segment COM Position PL5"
+        },
+        {
+                "id": "zeni_gait_events VR82",
+                "from": "zeni_gait_events PR33",
+                "to": "Linear Momentum Transverse Timeseries PL7"
+        },
+        {
+                "id": "zeni_gait_events VR82",
+                "from": "zeni_gait_events PR33",
+                "to": "TBCM Position and Velocity Timeseries PL8"
         },
         {
                 "id": "zeni_gait_events VR82",
@@ -920,12 +1050,52 @@ const graphData = {
         {
                 "id": "phase_of_interest_start_time VR97",
                 "from": "phase_of_interest PR36",
-                "to": "WBAM Scatter PL3"
+                "to": "H Remote Local PL2"
         },
         {
                 "id": "phase_of_interest_end_time VR98",
                 "from": "phase_of_interest PR36",
-                "to": "WBAM Scatter PL3"
+                "to": "H Remote Local PL2"
+        },
+        {
+                "id": "phase_of_interest_start_time VR97",
+                "from": "phase_of_interest PR36",
+                "to": "Segment COM Position PL5"
+        },
+        {
+                "id": "phase_of_interest_end_time VR98",
+                "from": "phase_of_interest PR36",
+                "to": "Segment COM Position PL5"
+        },
+        {
+                "id": "phase_of_interest_start_time VR97",
+                "from": "phase_of_interest PR36",
+                "to": "Linear Momentum Transverse Timeseries PL7"
+        },
+        {
+                "id": "phase_of_interest_end_time VR98",
+                "from": "phase_of_interest PR36",
+                "to": "Linear Momentum Transverse Timeseries PL7"
+        },
+        {
+                "id": "phase_of_interest_start_time VR97",
+                "from": "phase_of_interest PR36",
+                "to": "TBCM Position and Velocity Timeseries PL8"
+        },
+        {
+                "id": "phase_of_interest_end_time VR98",
+                "from": "phase_of_interest PR36",
+                "to": "TBCM Position and Velocity Timeseries PL8"
+        },
+        {
+                "id": "phase_of_interest_start_time VR97",
+                "from": "phase_of_interest PR36",
+                "to": "wbam_per_gait_phase PR41"
+        },
+        {
+                "id": "phase_of_interest_end_time VR98",
+                "from": "phase_of_interest PR36",
+                "to": "wbam_per_gait_phase PR41"
         },
         {
                 "id": "tbcm_pass_first_col_idx VR89",
@@ -943,6 +1113,11 @@ const graphData = {
                 "to": "phase_of_interest PR36"
         },
         {
+                "id": "wbam_pelvis_fixed_axes VR80",
+                "from": "wbam_per_gait_phase PR41",
+                "to": "H Remote Local PL2"
+        },
+        {
                 "id": "wbam_per_gait_phase_delta VR106",
                 "from": "wbam_per_gait_phase PR41",
                 "to": "WBAM Scatter PL3"
@@ -955,12 +1130,62 @@ const graphData = {
         {
                 "id": "linear_momentum VR108",
                 "from": "lin_mom PR42",
+                "to": "Linear Momentum Transverse Timeseries PL7"
+        },
+        {
+                "id": "linear_momentum VR108",
+                "from": "lin_mom PR42",
                 "to": "lin_mom_per_gait_phase PR43"
+        },
+        {
+                "id": "linear_momentum VR108",
+                "from": "lin_mom PR42",
+                "to": "dir_adj_lin_mom PR46"
+        },
+        {
+                "id": "lin_mom_per_gait_phase_delta VR111",
+                "from": "lin_mom_per_gait_phase PR43",
+                "to": "Linear Momentum Scatter PL6"
         },
         {
                 "id": "turn_strategy VR118",
                 "from": "golyski_turn_strategy PR44",
                 "to": "WBAM Scatter PL3"
+        },
+        {
+                "id": "turn_strategy VR118",
+                "from": "golyski_turn_strategy PR44",
+                "to": "Linear Momentum Scatter PL6"
+        },
+        {
+                "id": "wbam_seg_pelvis_fixed_axes VR119",
+                "from": "rotate_wbam_segs PR45",
+                "to": "H Remote Local PL2"
+        },
+        {
+                "id": "linear_momentum_dir_adj VR121",
+                "from": "dir_adj_lin_mom PR46",
+                "to": "Linear Momentum Transverse Timeseries PL7"
+        },
+        {
+                "id": "linear_momentum_dir_adj VR121",
+                "from": "dir_adj_lin_mom PR46",
+                "to": "TBCM Position and Velocity Timeseries PL8"
+        },
+        {
+                "id": "linear_momentum_dir_adj VR121",
+                "from": "dir_adj_lin_mom PR46",
+                "to": "lin_mom_per_gait_phase PR43"
+        },
+        {
+                "id": "tbcm_velocity_dir_adj VR122",
+                "from": "dir_adj_veloc PR47",
+                "to": "TBCM Position and Velocity Timeseries PL8"
+        },
+        {
+                "id": "tbcm_position_dir_adj VR123",
+                "from": "dir_adj_tbcm_pos PR48",
+                "to": "TBCM Position and Velocity Timeseries PL8"
         },
         {
                 "id": "Body_Weight VR42",
