@@ -38,4 +38,5 @@ class Variable(ResearchObject):
                 step = s.step if s.step is not None else "None"
                 s = [start, stop, step]
             slice_list.append(s)
+        self._slice = None
         return slice_list

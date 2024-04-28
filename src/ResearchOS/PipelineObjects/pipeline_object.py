@@ -40,7 +40,7 @@ class PipelineObject(ResearchObject):
     def make_puts_dict_from_db(self, action: Action, is_input: bool) -> dict:
         """Load the input or output variables."""        
         # (row_id, action_id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show, is_active)
-        sqlquery_raw = f"SELECT ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show FROM nodes WHERE ro_id = ? AND is_input = ?"
+        sqlquery_raw = f"SELECT ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show, vr_slice FROM nodes WHERE ro_id = ? AND is_input = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, ["vr_name_in_code"], single = True, user = True, computer = False)
         params = (self.id, int(is_input))
         result = action.conn.cursor().execute(sqlquery, params).fetchall()
@@ -71,6 +71,7 @@ class PipelineObject(ResearchObject):
             lookup_pr_ids = json.loads(row[5])
             hard_coded_value = json.loads(row[6]) if row[6] else None
             # is_input = bool(row[7])
+            slice = json.loads(row[9]) if row[9] else None
             show = row[8]                        
             if isinstance(hard_coded_value, dict):
                 prefix = [key for key in hard_coded_value.keys()][0]
@@ -79,6 +80,7 @@ class PipelineObject(ResearchObject):
                 if cls:
                     hard_coded_value = {cls[0]: attr_name}
 
+            puts[vr_name]["slice"] = slice
             puts[vr_name]["show"] = show
             puts[vr_name]["main"]["vr"] = vr_id if vr_id else hard_coded_value
             puts[vr_name]["main"]["pr"] = pr_ids  
@@ -140,7 +142,9 @@ class PipelineObject(ResearchObject):
                         continue
                     pr = final_dict[vr_name]["main"]["pr"]
                     if is_input:
-                        if vr_name in prev_puts and prev_puts[vr_name]["main"]["pr"] and self.up_to_date:
+                        # Last two criteria:
+                        # If the VR is up to date and the PR is the same as the previous PR, then use the previous PR.
+                        if vr_name in prev_puts and prev_puts[vr_name]["main"]["pr"] and self.up_to_date and prev_puts[vr_name]["main"]["vr"]==put.id:
                             pr = prev_puts[vr_name]["main"]["pr"]
                         else:
                             pr = Input.set_source_pr(self, put, G)
