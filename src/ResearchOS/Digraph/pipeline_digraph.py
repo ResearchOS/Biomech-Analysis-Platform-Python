@@ -68,7 +68,7 @@ class PipelineDiGraph():
             return
         
         graph_puts[vr_name_in_code] = vr # Continue on to add the node to the database.
-        
+         
         # Add to the database.
         # (row_id, action_id_num, ro_id, vr_name_in_code, vr_id, pr_ids, lookup_vr_id, lookup_pr_ids, hard_coded_value, is_input, show, is_active)        
         # show = True
