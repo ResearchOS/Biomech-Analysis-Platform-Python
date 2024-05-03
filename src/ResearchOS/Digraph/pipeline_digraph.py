@@ -202,7 +202,7 @@ class PipelineDiGraph():
                 value = vr if not hard_coded_value else hard_coded_value
                 graph_puts[vr_name_in_code] = value
 
-        # Add nodes & edges to the DiGraph.        
+        # Add edges to the DiGraph.        
         sqlquery_raw = "SELECT source_pr_id, target_pr_id, vr_id FROM edges WHERE is_active = 1"
         sqlquery = sql_order_result(action, sqlquery_raw, ["source_pr_id", "target_pr_id", "vr_id"], single = True, user = True, computer = False)
         result = action.conn.cursor().execute(sqlquery).fetchall()
@@ -251,9 +251,8 @@ def import_pl_objs(action: Action = None) -> nx.MultiDiGraph:
         action = Action(name="Build_PL")
     vrs, vr_mods = import_objects_of_type(Variable)
     prs, pr_mods = import_objects_of_type(Process)
-    pls, pl_mods = import_objects_of_type(Plot)
-    sts, st_mods = import_objects_of_type(Stats)
-    
+    # pls, pl_mods = import_objects_of_type(Plot)
+    # sts, st_mods = import_objects_of_type(Stats)
     if action is None:
         return_conn = False
         action = Action(name="Build_PL")
@@ -271,9 +270,8 @@ def import_pl_objs(action: Action = None) -> nx.MultiDiGraph:
                 if obj.name==obj.id or obj.name==default_attrs["name"]:
                     obj.__setattr__("name", obj_name, action=action, exec=False)
     set_names(prs, pr_mods, Process, action=action)
-    set_names(pls, pl_mods, Plot, action=action)
-    set_names(sts, st_mods, Stats, action=action)   
-    set_names(vrs, vr_mods, Variable, action=action)
+    # set_names(pls, pl_mods, Plot, action=action)
+    # set_names(sts, st_mods, Stats, action=action)   
 
     action.commit = True
     action.exec = True
@@ -338,7 +336,7 @@ def write_puts_dict_to_db(ro: "ResearchObject", action: Action = None, puts: dic
         if not vr_id and (hasattr(ro, "import_file_vr_name") and ro.import_file_vr_name is not None):
             vr_name_in_code = ro.import_file_vr_name
             vr = Variable(id=ro.inputs[vr_name_in_code]["main"]["vr"], action=action)
-        # Append to the list of edges to potentially add.
+        # Performs the cycle check and adds the query to the action.
         add_edges_list.append((source, target, vr))    
 
     # Add the nodes to the database.
