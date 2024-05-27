@@ -59,9 +59,12 @@ def load_bridges(bridges_file_path: str, pkg_settings_dict: dict) -> dict:
     custom_class_names = ["subset"] # Classes with special integration requirements from the bridges file.
     auto_class_names = [class_name for class_name in class_names if class_name not in custom_class_names]
     pkg_bridges_toml_dict = read_toml.read_toml(bridges_file_path)
-    # For subsets, replace all of the subsets in the package as specified.
+
+    # For subsets & data objects, replace all occurrences with new values as specified.
     subsets = pkg_bridges_toml_dict.get("subsets", None)
-    pkg_settings_dict = replace_subsets(subsets, pkg_settings_dict)
+    pkg_settings_dict = replace_field(subsets, pkg_settings_dict, "subset")
+    levels = pkg_bridges_toml_dict.get("data_objects", None)
+    pkg_settings_dict = replace_field(levels, pkg_settings_dict, "level")
 
     # Auto-merge the settings from the bridges file. For example, after changing inputs & outputs in the bridges file, overwrite that Process's settings.
     for class_name in auto_class_names:
@@ -70,12 +73,17 @@ def load_bridges(bridges_file_path: str, pkg_settings_dict: dict) -> dict:
 
     return pkg_settings_dict # Each field is a research object ID/name.
 
-def replace_subsets(subsets: dict, settings_dict: dict) -> dict:
-    """Replace the subsets in the settings dictionary."""
-    for old_subset, new_subset in subsets.items():
+def replace_field(field_dict_from_bridges: dict, settings_dict: dict, field_name: str) -> dict:
+    """Replace the specified field in the settings dictionary.
+    For example, replace the subset field in the settings dictionary with the values in the bridges file.
+    Syntax is {old_subset: "new_subset"}."""
+    for old_value, new_value in field_dict_from_bridges.items():
         for class_name in class_names:
             for obj_name in settings_dict[class_name].keys():
-                current_subset_in_file = settings_dict[class_name][obj_name].get("subset", None)
-                if current_subset_in_file == old_subset:
-                    settings_dict[class_name]["subset"] = new_subset
+                current_value_in_file = settings_dict[class_name][obj_name].get(field_name, None)
+                if current_value_in_file == old_value:
+                    settings_dict[class_name][field_name] = new_value
+                elif isinstance(current_value_in_file, list) and old_value in current_value_in_file: # Replace items in a list.
+                    idx = current_value_in_file.index(old_value)
+                    settings_dict[class_name][field_name][idx] = new_value
     return settings_dict # Each field is a research object ID/name.

@@ -1,15 +1,15 @@
 [process1]
+level = "Subject"
+is_matlab = true
 inputs.var_name1 = ""
 inputs.var_name2 = ""
 fcn = "path/to/file:fcn_name"
 subset = "subset1"
-
-[process1.outputs]
-var_name1 = "var1"
-var_name2 = "var2"
+outputs.var_name1 = "var1"
+outputs.var_name2 = "var2"
 
 [process2]
-inputs.var_name1 = "process1.var1" # Can be any Process in this package.
+inputs.var_name1 = "process1.var1" # Can be any Process in this package, even from a different file (?)
 fcn = "path/to/file:fcn_name"
 subset = "subset2"
 outputs.var_name1 = "var1"
