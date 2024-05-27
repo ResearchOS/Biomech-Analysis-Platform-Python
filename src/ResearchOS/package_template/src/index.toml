@@ -1,0 +1,9 @@
+[root]
+data_path = "data"
+logsheet_path = "logsheet.csv"
+database_path.settings = "database.db"
+database_path.data = "database_data.db"
+
+[data-objects]
+Subject = "SJ"
+Trial = "TR"
