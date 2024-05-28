@@ -26,14 +26,14 @@ def get_pipeline_deps_graph():
     return G
 
 
-def parse_input_node(input_node: str, pkg: str, class_name: str) -> tuple:
+def parse_input_node(input_node: str, current_pkg: str, current_class_name: str) -> tuple:
     """Parse the input node to get the package, class_name, and obj.
-    Returned in order from smallest to largest scope."""
+    Returned in order from smallest to largest scope (obj, class_name, package)."""
     split_list = list(reversed(input_node.split("."))) # Reversed so the order is obj, class_name, pkg.
     # If length is 1, use current package and class_name.
     if len(split_list)==1:
-        split_list += [class_name, pkg]
+        split_list += [current_class_name, current_pkg]
     elif len(split_list)==2:
-        split_list += [pkg]
+        split_list += [current_pkg]
 
     return tuple(split_list)
