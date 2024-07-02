@@ -1,10 +1,16 @@
 ### Contains all steps necessary to run the `compile` CLI command.
 import os
+import concurrent.futures
+from functools import partial
 
 import tomli as tomllib
 import networkx as nx
 
 PACKAGES_PREFIX = 'ros-'
+
+def is_specified(input: str) -> bool:
+    # True if the variable is provided
+    return input != "?"
 
 def discover_packages(packages_parent_folders: list = None) -> list:
     """Return a list of all packages in the specified folders.
@@ -110,37 +116,6 @@ def create_package_dag(package_runnables_dict: dict = None, package_name: str = 
             dag.add_edge(source_node_name, node_name, input = var_name_in_code, output = output_var_name, bridge = None)
     return dag
 
-def compile():
-    """Compile all packages in the project."""
-    packages_parent_folders = ['src/ResearchOS']
-    packages_folders = discover_packages(packages_parent_folders)
-    print('Packages folders: ', packages_folders)
-
-    dag = nx.MultiDiGraph()
-    all_packages_bridges = {}
-
-    # Per-package operations
-    for package_folder in packages_folders:
-        package_name = os.path.split(package_folder)[-1]
-        index_dict = get_package_index_dict(package_folder)
-        print('Package ', package_folder, ' Index: ', index_dict)
-        processes_dict = get_runnables_in_package(package_folder=package_folder, paths_from_index=index_dict['processes'])
-        print('Package ', package_folder, ' Processes: ', processes_dict)
-        package_runnables_dict = {}
-        package_runnables_dict['processes'] = processes_dict        
-        dag = create_package_dag(package_runnables_dict, package_name=package_name, dag=dag)
-        all_packages_bridges[package_name] = get_package_bridges(package_folder, index_dict['bridges'])
-
-    # Connect the packages into one cohesive DAG
-    dag = connect_packages(dag, all_packages_bridges)
-
-    # Get the order of the packages
-    packages_ordered = get_package_order(dag)
-
-    # Substitute the levels and subsets for each package in topologically sorted order
-
-    # Add the constants to the DAG
-
 def get_package_order(dag: nx.MultiDiGraph = None):
     # Topologically sort the nodes
     sorted_nodes = list(nx.topological_sort(dag))
@@ -177,13 +152,67 @@ def connect_packages(dag: nx.MultiDiGraph = None, all_packages_bridges: dict = N
                 dag.add_edge(source_node_name, target_node_name, input = target_input_var_name, output = source_output_var_name, bridge = package_bridge_name)
     return dag
 
+def compile() -> nx.MultiDiGraph:
+    """Compile all packages in the project."""
+    packages_parent_folders = ['src/ResearchOS']
+    packages_folders = discover_packages(packages_parent_folders)
+    print('Packages folders: ', packages_folders)
 
-def is_specified(input: str) -> bool:
-    # True if the variable is provided
-    return input != "?"
+    dag = nx.MultiDiGraph()
+    all_packages_bridges = {}
+
+    # Per-package operations
+    for package_folder in packages_folders:
+        package_name = os.path.split(package_folder)[-1]
+        index_dict = get_package_index_dict(package_folder)
+        print('Package ', package_folder, ' Index: ', index_dict)
+        processes_dict = get_runnables_in_package(package_folder=package_folder, paths_from_index=index_dict['processes'])
+        print('Package ', package_folder, ' Processes: ', processes_dict)
+        package_runnables_dict = {}
+        package_runnables_dict['processes'] = processes_dict        
+        dag = create_package_dag(package_runnables_dict, package_name=package_name, dag=dag)
+        all_packages_bridges[package_name] = get_package_bridges(package_folder, index_dict['bridges'])
+
+    # Connect the packages into one cohesive DAG
+    dag = connect_packages(dag, all_packages_bridges)
+
+    # Get the order of the packages
+    packages_ordered = get_package_order(dag)
+
+    # Substitute the levels and subsets for each package in topologically sorted order
+
+    # Add the constants to the DAG
+
+    return dag
+
+def run_node(node: str, node_attrs: dict = None):
+    """Run an individual node"""
+    pass
+    
+    # 1. Get the subset of Data Objects to operate on
+    subset = []
+
+    # Process the data objects in series
+    for data_object in subset:
+        pass
+    
+
+def run(dag: nx.MultiDiGraph = None):
+    """Run the compiled DAG."""
+    if not dag:
+        print("No DAG provided.")
+        return
+
+    # Get the order of the nodes
+    sorted_nodes = list(nx.topological_sort(dag))
+
+    # Run the nodes in series
+    for node in sorted_nodes:
+        run_node(node, node_attrs=dag.nodes[node]['attributes'])    
         
 
 if __name__ == '__main__':
-    compile()
+    dag = compile()
+    run(dag)
 
 
