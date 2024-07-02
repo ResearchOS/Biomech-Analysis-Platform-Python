@@ -1,0 +1,3 @@
+[var1]
+value = {__file__ = "file.json"}
+targets = ["ros-fake1.fake_process1.inputs.x1"]
