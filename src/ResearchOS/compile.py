@@ -2,15 +2,27 @@
 import os
 import concurrent.futures
 from functools import partial
+import json
 
 import tomli as tomllib
 import networkx as nx
 
 PACKAGES_PREFIX = 'ros-'
+LOAD_FROM_FILE_KEY = '__file__'
 
 def is_specified(input: str) -> bool:
     # True if the variable is provided
     return input != "?"
+
+def is_dynamic_variable(var_string: str) -> bool:
+    """Check if the variable is a dynamic variable."""
+    # Check if it's of the form "string.string", or "string.string.string", or "string.string.string.string"
+    # Also check to make sure that the strings are not just numbers.
+    names = var_string.split('.')
+    for name in names:
+        if name.isdigit():
+            return False
+    return True
 
 def discover_packages(packages_parent_folders: list = None) -> list:
     """Return a list of all packages in the specified folders.
@@ -134,6 +146,8 @@ def connect_packages(dag: nx.MultiDiGraph = None, all_packages_bridges: dict = N
     """Read each package's bridges.toml file and connect the nodes in the DAG accordingly."""
     for package_name, package_bridges in all_packages_bridges.items():
         for bridge_name, bridge_dict in package_bridges.items():
+            if not bridge_dict:
+                continue
             source_node_name = bridge_dict['source']
             source_package_name, source_runnable_node_name, tmp, source_output_var_name = source_node_name.split('.')
             source_node_name = source_package_name + "." + source_runnable_node_name
@@ -147,14 +161,14 @@ def connect_packages(dag: nx.MultiDiGraph = None, all_packages_bridges: dict = N
                 target_node_name = target_package_name + "." + target_runnable_node_name
                 target_node_attrs = dag.nodes[target_node_name]['attributes']                
                 if is_specified(target_node_attrs['inputs'][target_input_var_name]):
-                    raise ValueError(f"Input variable {bridge_name} for {target_node_name} is already specified.")
-                package_bridge_name = package_name + "." + bridge_name
-                dag.add_edge(source_node_name, target_node_name, input = target_input_var_name, output = source_output_var_name, bridge = package_bridge_name)
+                    raise ValueError(f"Input variable {bridge_name} for {target_node_name} is already specified.")                
+                dag.add_edge(source_node_name, target_node_name, input = target_input_var_name, output = source_output_var_name, bridge = bridge_name)
     return dag
 
-def compile() -> nx.MultiDiGraph:
+def compile(packages_parent_folders: list = []) -> nx.MultiDiGraph:
     """Compile all packages in the project."""
-    packages_parent_folders = ['src/ResearchOS']
+    
+
     packages_folders = discover_packages(packages_parent_folders)
     print('Packages folders: ', packages_folders)
 
@@ -185,17 +199,111 @@ def compile() -> nx.MultiDiGraph:
 
     return dag
 
-def run_node(node: str, node_attrs: dict = None):
-    """Run an individual node"""
+def get_data_objects_in_subset(subset_name: str) -> list:
+    """Get the data objects in the specified subset. Returns a list of Data Object strings using dot notation.
+    e.g. `Subject.Task.Trial`"""
     pass
-    
+
+def get_input_variables_hashes_or_values(inputs: dict) -> dict:
+    """Prep to load the input variables from the mat file.
+    1. Get the hashes for each of the input variables.
+    If the variable is a constant, then use that value."""
+    input_vars_info = {}
+    for var_name_in_code, source in inputs.items():
+        if not is_specified(source):
+            raise ValueError(f"Input variable {var_name_in_code} is not specified.")
+        
+        # Check if it's a dynamic variable
+        if is_dynamic_variable(source):
+            hash = get_output_var_hash(dag, source)
+            input_vars_info[var_name_in_code] = hash
+        else:
+            # Check if constant is a dict with one of the special keys
+            if isinstance(source, dict):
+                if LOAD_FROM_FILE_KEY in source:
+                    file_name = source[LOAD_FROM_FILE_KEY]
+                    # Check if file is .toml or .json
+                    if file_name.endswith('.toml'):
+                        with open(file_name, 'rb') as f:
+                            input_vars_info[var_name_in_code] = tomllib.load(f)
+                    elif file_name.endswith('.json'):
+                        with open(file_name, 'rb') as f:
+                            input_vars_info[var_name_in_code] = json.load(f)
+                    continue
+            input_vars_info[var_name_in_code] = source
+    return input_vars_info
+
+def run_batch(dag, node_attrs: dict):
+    """Run an individual batch for an individual node."""
+    pass
+
+    # 1. Load the input variables
+    input_var_metadata = get_input_variables_hashes_or_values(dag, node_attrs['inputs'])
+    # Get the file path to the mat file
+    # 2. Execute the process for this data object. .m file also saves the data
+
+def get_node_settings_and_run_batch(dag, node_attrs: dict = None):
+    """Run an individual node"""
     # 1. Get the subset of Data Objects to operate on
-    subset = []
+    subset_name = node_attrs['subset']
+
+    subset_of_data_objects = get_data_objects_in_subset(subset_name)    
 
     # Process the data objects in series
-    for data_object in subset:
+    for data_object in subset_of_data_objects:
+        os.environ['DATA_OBJECT'] = data_object
+        run_batch(dag, node_attrs)
         pass
     
+def make_all_data_objects(logsheet_toml_path: str) -> dict:
+    """Create data objects in memory, reading from the logsheet file.
+    Each key is one Data Object, specified with dot notation, e.g. `Subject.Task.Trial`.
+    Each value is a dictionary with keys for each column."""
+
+    # 1. Read the logsheet file.
+    with open(logsheet_toml_path, 'rb') as f:
+        logsheet = tomllib.load(f)    
+    logsheet_path = logsheet['path']
+    logsheet_path.replace('/', os.sep)
+
+    # 2. Read the logsheet object from the logsheet.toml file.
+    pass
+
+def get_output_var_hash(dag: nx.MultiDiGraph = None, output_var: str = None) -> str:
+    """Hash the DAG up to the node outputting the output_var, including the var itself.
+    output_var is of the form "package_name.runnable_name.var_name" OR "package_name.runnable_name.outputs.var_name".
+    
+    NOTE: Currently, changes to output variables that are not directly involved in generating this output_var, 
+    but originate from the same node as an involved output variable will be detected as requiring changes, even though technically they should not."""
+    if not dag:
+        return None
+    if not output_var:
+        raise ValueError('No output_var specified.')
+    
+    names = output_var.split('.')
+    if len(names) == 3:
+        package_name, runnable_name, var_name = names
+    elif len(names) == 4:
+        package_name, runnable_name, tmp, var_name = names
+    else:
+        raise ValueError('Invalid output_var format.')
+    
+    node = package_name + "." + runnable_name
+
+    # Get the ancestors of the node
+    ancestors = list(nx.ancestors(dag, node))
+    ancestors.append(node)
+    ancestors_dag = dag.subgraph(ancestors)
+
+    # Remove all of the output variables that are not the specified one
+    node_attrs = dag.nodes[node]['attributes']
+    for output_var_name in node_attrs['outputs']:
+        if output_var_name != var_name:
+            node_attrs['outputs'].pop(output_var_name)
+    dag.nodes[node]['attributes'] = node_attrs
+
+    # Hash the DAG
+    return hash(ancestors_dag)
 
 def run(dag: nx.MultiDiGraph = None):
     """Run the compiled DAG."""
@@ -208,11 +316,13 @@ def run(dag: nx.MultiDiGraph = None):
 
     # Run the nodes in series
     for node in sorted_nodes:
-        run_node(node, node_attrs=dag.nodes[node]['attributes'])    
+        os.environ['NODE'] = node
+        get_node_settings_and_run_batch(dag, node_attrs=dag.nodes[node]['attributes'])
         
 
 if __name__ == '__main__':
-    dag = compile()
+    packages_parent_folders = ['src/ResearchOS']
+    dag = compile(packages_parent_folders)
     run(dag)
 
 
