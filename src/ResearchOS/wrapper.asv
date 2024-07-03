@@ -1,0 +1,38 @@
+function [] = wrapper(inputs_metadata, outputs_metadata, mat_file_path)
+
+% Load the input data
+input_names = cell(size(inputs_metadata));
+input_hashes = cell(size(input_names));
+input_values = cell(size(input_names));
+for i = 1:length(inputs_metadata)
+    input_names{i} = inputs_metadata{i}.name;
+    input_hashes{i} = inputs_metadata{i}.hash;
+    input_values{i} = 
+
+for i = 1:length(input_names)
+    input_hashes{i} = inputs_metadata.(input_names{i});
+    % This is probably slow because it's doing file I/O N times, where N =
+    % num of inputs. Should really just do the load once outside of the
+    % loop, but then how to put the data into the proper indices, given the
+    % possibility of constants?
+    if ischar(input_hashes{i}) && length(input_hashes{i})==64
+        inputs{i} = load(mat_file_path, input_hashes{i});
+    else
+        inputs{i} = input_hashes{i};
+    end
+end
+% inputs = load(mat_file_path, input_hashes{:});
+
+% Run the function
+outputs = feval(fcn, inputs{:});
+
+% Save the output data
+outputs_struct = struct;
+output_names = fieldnames(outputs_metadata);
+output_hashes = cell(size(output_names));
+for i = 1:length(output_names)
+    output_hashes{i} = outputs_metadata.(output_names{i});
+    outputs_struct.(output_hashes{i}) = outputs{i};
+end
+
+save(mat_file_path, 'outputs_struct', '-struct','-v6');
