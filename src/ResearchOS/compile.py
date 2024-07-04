@@ -14,6 +14,7 @@ LOAD_FROM_FILE_KEY = '__file__'
 DATA_OBJECT_NAME_KEY = '__data_object__'
 
 MAT_DATA_FOLDER_KEY = 'mat_data_folder'
+RAW_DATA_FOLDER_KEY = 'raw_data_folder'
 
 def graph_to_tuple(graph):
     # Extract node data. Order of the edge tuples matters.
@@ -76,6 +77,19 @@ def get_package_index_dict(package_folder_path: str) -> dict:
     index_path = get_package_index_path(package_folder_path)
     with open(index_path, 'rb') as f:
         index_dict = tomllib.load(f)
+    for key in index_dict:
+        if not isinstance(index_dict[key], list):
+            index_dict[key] = index_dict[key].replace('/', os.sep)
+        else:
+            index_dict[key] = [path.replace('/', os.sep) for path in index_dict[key]]
+    # Validate the keys in the index_dict
+    # all packages
+    if 'processes' not in index_dict:
+        raise ValueError(f"Processes not found in {index_path}.")
+    # if 'plots' not in index_dict:
+    #     raise ValueError(f"Plots not found in {index_path}.")
+    # if 'stats' not in index_dict:
+    #     raise ValueError(f"Stats not found in {index_path}.")    
     return index_dict
 
 def get_runnables_in_package(package_folder: str = None, paths_from_index: list = None) -> dict:
@@ -92,6 +106,23 @@ def get_runnables_in_package(package_folder: str = None, paths_from_index: list 
         path = os.path.join(package_folder, path)
         with open(path, 'rb') as f:
             runnables_dict = tomllib.load(f)
+        for runnable in runnables_dict:
+            # Validate each runnables_dict!
+            curr_dict = runnables_dict[runnable]
+            if "level" not in curr_dict:
+                curr_dict["level"] = "Trial"
+            if "batch" not in curr_dict:
+                curr_dict["batch"] = curr_dict["level"]
+            if "path" not in curr_dict:
+                raise ValueError(f"Path not found in {path}.")
+            if "subset" not in curr_dict:
+                raise ValueError(f"Subset not found in {path}.")
+            if "inputs" not in curr_dict:
+                raise ValueError(f"Inputs not found in {path}.")
+            if "outputs" not in curr_dict:
+                raise ValueError(f"Outputs not found in {path}.")
+            curr_dict["path"] = curr_dict["path"].replace('/', os.sep)
+            runnables_dict[runnable] = curr_dict
         all_runnables_dict.update(runnables_dict)
     return all_runnables_dict
 
@@ -378,9 +409,10 @@ def run(both_dags: dict, project_folder_path: str = None):
     matlab_eng = matlab_output['matlab_eng']
     matlab_eng.addpath(m_files_folder)
 
-    # Get the MAT data folder by reading the package's index.toml file
+    # Get the MAT (i.e. processed) & raw data folder by reading the project's index.toml file
     index_dict = get_package_index_dict(project_folder_path)
     os.environ[MAT_DATA_FOLDER_KEY.upper()] = index_dict[MAT_DATA_FOLDER_KEY.lower()]
+    os.environ[RAW_DATA_FOLDER_KEY.upper()] = index_dict[RAW_DATA_FOLDER_KEY.lower()]
 
     # Get the order of the nodes
     sorted_nodes = list(nx.topological_sort(both_dags['nodes']))
@@ -423,9 +455,9 @@ def import_matlab(is_matlab: bool):
     return matlab_output
 
 if __name__ == '__main__':
-    packages_parent_folders = ['src/ResearchOS']
+    packages_parent_folders = ['/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Test_Packages_Folder']
     both_dags = compile(packages_parent_folders)
-    fake_project_folder = 'src/ResearchOS/ros-fake1'
+    fake_project_folder = packages_parent_folders
     run(both_dags, project_folder_path=fake_project_folder)
 
 

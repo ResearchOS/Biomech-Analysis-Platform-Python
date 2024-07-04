@@ -1,7 +1,0 @@
-processes = ["process.toml"]
-bridges = ["bridges.toml"]
-subsets = ["subsets.toml"]
-
-logsheet = "logsheet.toml"
-data_objects = "data_objects.toml"
-mat_data_folder = "mat_data"
