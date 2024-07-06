@@ -6,7 +6,7 @@ from typing import Any
 import tomli as tomllib
 import networkx as nx
 
-from ResearchOS.overhaul.constants import LOAD_FROM_FILE_KEY, DATA_OBJECT_NAME_KEY
+from ResearchOS.overhaul.constants import LOAD_CONSTANT_FROM_FILE_KEY, DATA_OBJECT_NAME_KEY
 from ResearchOS.overhaul.helper_functions import is_specified, is_dynamic_variable
 
 def graph_to_tuple(graph):
@@ -79,8 +79,8 @@ def get_input_variable_hashes_or_values(both_dags: dict, inputs: dict) -> list:
             # Check if constant is a dict with one of the special keys
             if isinstance(source, dict):
                 # Load the constant from a JSON or TOML file.
-                if LOAD_FROM_FILE_KEY in source:
-                    file_name = source[LOAD_FROM_FILE_KEY]
+                if LOAD_CONSTANT_FROM_FILE_KEY in source:
+                    file_name = source[LOAD_CONSTANT_FROM_FILE_KEY]
                     # Check if file is .toml or .json
                     if file_name.endswith('.toml'):
                         with open(file_name, 'rb') as f:

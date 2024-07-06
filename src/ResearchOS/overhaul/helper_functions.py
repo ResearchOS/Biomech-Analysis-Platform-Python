@@ -1,4 +1,4 @@
-from ResearchOS.overhaul.constants import DATA_OBJECT_NAME_KEY, LOAD_FROM_FILE_KEY, LOGSHEET_KEY, DATA_FILE_NAME_KEY
+from ResearchOS.overhaul.constants import DATA_OBJECT_NAME_KEY, LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_KEY, DATA_FILE_KEY
 
 def parse_variable_name(var_name: str) -> tuple:
     """Parse the variable name into its constituent parts."""    
@@ -41,9 +41,9 @@ def is_special_dict(var_dict: dict) -> bool:
         return False
     key = list(var_dict.keys())[0]
     if key in [DATA_OBJECT_NAME_KEY, 
-               LOAD_FROM_FILE_KEY,
+               LOAD_CONSTANT_FROM_FILE_KEY,
                LOGSHEET_KEY,
-               DATA_FILE_NAME_KEY
+               DATA_FILE_KEY
                ]:
         return True
     return False

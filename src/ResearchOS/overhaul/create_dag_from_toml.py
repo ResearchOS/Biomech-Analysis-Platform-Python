@@ -1,38 +1,59 @@
 import os
-import json
+import uuid
 
 import networkx as nx
-
 import tomli as tomllib
-from ResearchOS.overhaul.constants import PACKAGES_PREFIX, DATA_OBJECT_NAME_KEY, LOAD_FROM_FILE_KEY
-from ResearchOS.overhaul.helper_functions import is_specified, is_dynamic_variable, is_special_dict
+
+from ResearchOS.overhaul.constants import PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY
 from ResearchOS.overhaul.helper_functions import parse_variable_name
+from ResearchOS.overhaul.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable
+from ResearchOS.overhaul.input_classifier import classify_input_type
 
-def connect_packages(both_dags: dict, all_packages_bridges: dict = None) -> nx.MultiDiGraph:
+def connect_packages(dag: nx.MultiDiGraph, all_packages_bridges: dict = None) -> nx.MultiDiGraph:
     """Read each package's bridges.toml file and connect the nodes in the DAG accordingly."""
+    package_names_str = os.environ['PACKAGE_NAMES']
+    package_names = package_names_str.split('.')
     for package_name, package_bridges in all_packages_bridges.items():
-        for bridge_name, bridge_dict in package_bridges.items():
-            if not bridge_dict:
+        for bridge_name, bridges_dict in package_bridges.items():
+            if not bridges_dict:
                 continue
-            source_edge_node_name = bridge_dict['source']
-            source_package_name, source_runnable_node_name, tmp, source_output_var_name = source_edge_node_name.split('.')
-            source_node_name = source_package_name + "." + source_runnable_node_name
-            source_edge_node_name = source_node_name + "." + source_output_var_name
+            sources = bridges_dict[SOURCES_KEY]
+            if not isinstance(sources, list):
+                sources = [sources]      
+            targets = bridges_dict[TARGETS_KEY]
+            if not isinstance(targets, list):
+                targets = [targets]
+            for source in sources:
+                source_type, attrs = classify_input_type(source)
+                if source_type != InputVariable:
+                    # Handle logsheet, constants, etc.
+                    continue
 
-            target_edge_node_names = bridge_dict['targets']
-            if not isinstance(target_edge_node_names, list):
-                target_edge_node_names = [target_edge_node_names]
-            for target_edge_node_name in target_edge_node_names:
-                # Ensure the target node's input is "?"
-                target_package_name, target_runnable_node_name, tmp, target_input_var_name = target_edge_node_name.split('.')
-                target_node_name = target_package_name + "." + target_runnable_node_name
-                target_edge_node_name = target_node_name + "." + target_input_var_name
-                target_node_attrs = both_dags['nodes'].nodes[target_node_name]['attributes']                
-                if is_specified(target_node_attrs['inputs'][target_input_var_name]):
-                    raise ValueError(f"Input variable {bridge_name} for {target_node_name} is already specified.")
-                both_dags['nodes'].add_edge(source_node_name, target_node_name, bridge = package_name + "." + bridge_name)
-                both_dags['edges'].add_edge(source_edge_node_name, target_edge_node_name, bridge = package_name + "." + bridge_name)
-    return both_dags
+                try:
+                    source_node = [n['node'] for _, n in dag.nodes(data=True) if n['node'].name == source][0]
+                except IndexError:                                        
+                    source_package, source_runnable, tmp = parse_variable_name(source)
+                    # Check if the package is in the project
+                    if source_package not in package_names:                        
+                        raise ValueError(f"Source package {source_package} not found in the project. Packages are {package_names}.")
+                    source_outputs = [n['node'].name for _, n in dag.nodes(data=True) if isinstance(n['node'], OutputVariable) and n['node'].name.startswith(source_package + "." + source_runnable + ".")]
+                    if not any([n['node'].name.startswith(source_package + "." + source_runnable + ".") for _, n in dag.nodes(data=True)]):                        
+                        raise ValueError(f"Source runnable {source_runnable} in package {source_package} not found in the DAG. Did you mean one of these sources instead: {source_outputs}.")                    
+                    raise ValueError(f"Source {source} not found in the DAG. Did you mean one of these sources instead: {source_outputs}.")                    
+
+                for target in targets:
+                    target_type, tmp = classify_input_type(target)  
+                    assert target_type == InputVariable, f"Target type is {target_type}."
+                    try:
+                        target_node = [n['node'] for _, n in dag.nodes(data=True) if n['node'].name == target][0]
+                    except IndexError:
+                        target_package, target_runnable, tmp = target.split('.')
+                        if target_package not in package_names:
+                            raise ValueError(f"Target package {target_package} not found in the project.")
+                        target_inputs = [n['node'].name for _, n in dag.nodes(data=True) if isinstance(n['node'], InputVariable) and n['node'].name.startswith(target_package + "." + target_runnable + ".")]
+                        raise ValueError(f"Target {target} not found in the DAG. Did you mean one of these targets instead: {target_inputs}.")
+                    dag.add_edge(source_node.id, target_node.id, bridge = package_name + "." + bridge_name)
+    return dag
 
 def discover_packages(packages_parent_folders: list = None) -> list:
     """Return a list of all packages in the specified folders.
@@ -75,19 +96,18 @@ def get_package_index_dict(package_folder_path: str) -> dict:
         else:
             index_dict[key] = [path.replace('/', os.sep) for path in index_dict[key]]
     # Validate the keys in the index_dict
-    # all packages
-    if 'processes' not in index_dict:
-        raise ValueError(f"Processes not found in {index_path}.")
-    # if 'plots' not in index_dict:
-    #     raise ValueError(f"Plots not found in {index_path}.")
-    # if 'stats' not in index_dict:
-    #     raise ValueError(f"Stats not found in {index_path}.")    
+    allowed_keys = [PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY]
+    wrong_keys = [key for key in index_dict if key not in allowed_keys] 
+    if wrong_keys:
+        raise ValueError(f"Invalid keys in the index.toml file: {wrong_keys}.")
     return index_dict
 
 def get_runnables_in_package(package_folder: str = None, paths_from_index: list = None) -> dict:
     """Get the package's processes, given the paths to the processes.toml files from the index.toml.
     Call this function by indexing into the output of `get_package_index_dict` as the second argument.
-    Valid keys are `processes`, `plots`, and `stats`."""
+    Valid keys are `processes`, `plots`, and `stats`.
+    TODO: This is the place to validate & standardize the attributes returned by each runnable. For example, if missing 'level', fill it. 
+    Same with 'batch', 'language', and other optional attributes"""
     if not package_folder:
         raise ValueError('No package specified.')
     if not paths_from_index:
@@ -136,87 +156,54 @@ def get_package_bridges(package_folder: str = None, paths_from_index: list = Non
             all_bridges_dict.update(bridges_dict)
         return all_bridges_dict
 
-def get_nodes_dag(both_dags: dict) -> nx.MultiDiGraph:
-    return both_dags['nodes']
-
-def get_edges_dag(both_dags: dict) -> nx.MultiDiGraph:    
-    return both_dags['edges']
-
 def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> nx.MultiDiGraph:
     """Create a directed acyclic graph (DAG) of the package's runnables.
-    node name format: `package_name.runnable_name`
-    edge format: `package_name1.runnable_name1.var1 -> package_name2.runnable_name2.var2`"""
-    
-    # Create a new DAG for the package
-    package_dag = {}
-    package_dag['nodes'] = nx.MultiDiGraph()
-    package_dag['edges'] = nx.MultiDiGraph()
+    runnable name format: `package_name.runnable_name`
+    variable format: `package_name.runnable_name.variable_name`"""
 
-    # 1. Create a node for each runnable
+    package_dag = nx.MultiDiGraph()
+    runnable_classes = {PROCESS_NAME: Process, PLOT_NAME: Plot, STATS_NAME: Stats}    
+    # 1. Create a node for each runnable and input/output variable.
+    # Also connect the inputs and outputs to each runnable. Still need to connect the runnables.
     # process, plot, stats
+    variable_nodes = {}
+    for runnable_type, runnables in package_runnables_dict.items():
+        runnable_class = runnable_classes[runnable_type]
+        variable_nodes[runnable_type] = {}
+        # Add each node
+        for runnable_name, runnable_dict in runnables.items():
+            runnable_node_uuid = str(uuid.uuid4())
+            runnable_node_name = package_name + "." + runnable_name
+            node = runnable_class(runnable_node_uuid, runnable_node_name, runnable_dict)
+            package_dag.add_node(runnable_node_uuid, node = node)
+            variable_nodes[runnable_type][runnable_name] = {}
+            for input_var_name in runnable_dict['inputs']:
+                input_node_uuid = str(uuid.uuid4())
+                input_node_name = runnable_node_name + "." + input_var_name
+                input_class, input_attrs = classify_input_type(runnable_dict['inputs'][input_var_name])
+                node = input_class(input_node_uuid, input_node_name, input_attrs)
+                package_dag.add_node(input_node_uuid, node = node)
+                package_dag.add_edge(input_node_uuid, runnable_node_uuid)
+                variable_nodes[runnable_type][runnable_name][input_var_name] = node
+            for output_var_name in runnable_dict['outputs']:
+                output_node_uuid = str(uuid.uuid4())
+                output_node_name = runnable_node_name + "." + output_var_name
+                node = OutputVariable(output_node_uuid, output_node_name, {})
+                package_dag.add_node(output_node_uuid, node = node)
+                package_dag.add_edge(runnable_node_uuid, output_node_uuid)
+
+    # 2. Create edges between runnables.
     for runnable_type, runnables in package_runnables_dict.items():
         # Add each node
         for runnable_name, runnable_dict in runnables.items():
-            node_name = package_name + "." + runnable_name
-            package_dag['nodes'].add_node(node_name, type = runnable_type, attributes = runnable_dict, package_name = package_name)
+            runnable_node_name = package_name + "." + runnable_name
             for input_var_name in runnable_dict['inputs']:
-                for output_var_name in runnable_dict['outputs']:
-                    package_dag['edges'].add_edge(node_name + "." + input_var_name, node_name + "." + output_var_name)
+                # target_var_name = runnable_dict['inputs'][input_var_name]
+                target_var_node = variable_nodes[runnable_type][runnable_name][input_var_name]
+                if type(target_var_node) != InputVariable:
+                    continue
 
-    # 2. Create edges between runnables. 
-    # Does this need to be implemented differently for process vs. plots vs. stats?
-    nodes_in_dag = list(package_dag['nodes'].nodes)
-    for target_node_name in nodes_in_dag:
-        node_attrs = package_dag['nodes'].nodes[target_node_name]['attributes']
-        if 'inputs' not in node_attrs:
-            continue
-        for var_name_in_code, source in node_attrs['inputs'].items():
-            if not is_specified(source):
-                continue
-
-            target_edge_node_name = target_node_name + "." + var_name_in_code
-
-            # Isolate the function name from the input (the part of the value before the ".")
-            if is_dynamic_variable(source):                
-                tmp, runnable_node_name, output_var_name = parse_variable_name(source)
-                source_node_name = package_name + "." + runnable_node_name
-                source_edge_node_name = source_node_name + "." + output_var_name            
-                # Ensure source node exists before adding the edge
-                if source_node_name not in package_dag['nodes'].nodes:
-                    raise ValueError(f"Node {source_node_name} not found in the DAG.")                
-            elif is_special_dict(source):
-                key = list(source.keys())[0]
-                # value = parse_special_dict(source)
-                source_node_name = package_name + "." + key
-                source_edge_node_name = source_node_name + "." + var_name_in_code
-            else:
-                # Hard-coded constant
-                source_node_name = package_name + ".constants"
-                source_edge_node_name = source_node_name + "." + var_name_in_code
-            package_dag['nodes'].add_edge(source_node_name, target_node_name, bridge_name = None)
-            package_dag['edges'].add_edge(source_edge_node_name, target_edge_node_name, bridge_name = None)            
+                source_var_name = runnable_node_name + "." + input_var_name
+                source_var_node = [n['node'] for _, n in package_dag.nodes(data=True) if n['node'].name == source_var_name][0]
+                package_dag.add_edge(source_var_node.id, target_var_node.id)
     return package_dag
-
-def parse_special_dict(var_dict: dict) -> str:
-    """Parse the special dictionary to get the value of the variable."""
-    node = os.environ['NODE']
-
-    if DATA_OBJECT_NAME_KEY in var_dict:
-        data_objects_list = node.split('.')
-        data_object_type = var_dict[DATA_OBJECT_NAME_KEY]
-        data_objects_ref_list = []
-        data_object_type_index = data_objects_ref_list.index(data_object_type) # Find where the data object type is in the reference list of data object types.
-        data_object_name = data_objects_list[data_object_type_index]
-        return data_object_name
-    
-    if LOAD_FROM_FILE_KEY in var_dict:
-        file_name = var_dict[LOAD_FROM_FILE_KEY]
-        if file_name.endswith('.toml'):
-            with open(file_name, 'rb') as f:
-                value = tomllib.load(f)
-        elif file_name.endswith('.json'):
-            with open(file_name, 'rb') as f:
-                value = json.load(f)
-        return value
-
-    raise ValueError(f"Invalid special dictionary: {var_dict}.")
