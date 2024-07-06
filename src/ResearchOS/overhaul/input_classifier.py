@@ -8,7 +8,8 @@ from ResearchOS.overhaul.custom_classes import InputVariable, Constant, DataObje
 from ResearchOS.overhaul.helper_functions import is_dynamic_variable, is_specified
 
 def classify_input_type(input: Any):
-    """Takes in an input from a TOML file and spits out the class of the input."""
+    """Takes in an input from a TOML file and returns the class of the input.
+    Also returns the attributes as a dict, which may be empty if unneeded for that input type."""
     attrs = {}
 
     if not is_specified(input):

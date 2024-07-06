@@ -6,53 +6,54 @@ import tomli as tomllib
 
 from ResearchOS.overhaul.constants import PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY
 from ResearchOS.overhaul.helper_functions import parse_variable_name
-from ResearchOS.overhaul.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable
+from ResearchOS.overhaul.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable, LogsheetVariable, Constant, Unspecified
 from ResearchOS.overhaul.input_classifier import classify_input_type
+from ResearchOS.overhaul.dag_info import check_variable_properly_specified
 
-def connect_packages(dag: nx.MultiDiGraph, all_packages_bridges: dict = None) -> nx.MultiDiGraph:
+def bridge_dynamic_variables(dag: nx.MultiDiGraph, package_name: str, bridge_name: str, source: str, targets: list, package_names: list):
+    """Bridge from a source (output) variable in one package to a target (input) variable in another package.
+    If the target variable is Unspecified, then the 'node' attribute is converted to an InputVariable type."""
+    try:
+        source_node = [n['node'] for _, n in dag.nodes(data=True) if n['node'].name == source and type(n['node']) == OutputVariable][0]
+    except Exception:
+        source_package, source_runnable, source_variable = parse_variable_name(source)
+        check_variable_properly_specified(dag, source_package, source_runnable, source_variable)                    
+
+    for target in targets:
+        target_type, tmp = classify_input_type(target)  
+        assert target_type == InputVariable, f"Target type is {target_type}."        
+        target_package, target_runnable, target_variable = parse_variable_name(target)
+        try:
+            target_node = [n['node'] for _, n in dag.nodes(data=True) if n['node'].name == target and type(n['node']) in [Unspecified, InputVariable]][0]
+        except Exception as e:
+            check_variable_properly_specified(dag, target_package, target_runnable, target_variable)
+            raise e
+        if isinstance(target_node, Unspecified):
+            target_node = InputVariable(target_node.id, target_node.name, {})
+        dag.nodes[target_node.id]['node'] = target_node
+        dag.add_edge(source_node.id, target_node.id, bridge = package_name + "." + bridge_name)
+    return dag
+
+def bridge_packages(dag: nx.MultiDiGraph, all_packages_bridges: dict = None) -> nx.MultiDiGraph:
     """Read each package's bridges.toml file and connect the nodes in the DAG accordingly."""
     package_names_str = os.environ['PACKAGE_NAMES']
     package_names = package_names_str.split('.')
     for package_name, package_bridges in all_packages_bridges.items():
         for bridge_name, bridges_dict in package_bridges.items():
-            if not bridges_dict:
-                continue
             sources = bridges_dict[SOURCES_KEY]
-            if not isinstance(sources, list):
-                sources = [sources]      
-            targets = bridges_dict[TARGETS_KEY]
-            if not isinstance(targets, list):
-                targets = [targets]
+            targets = bridges_dict[TARGETS_KEY]            
+            sources = [sources] if not isinstance(sources, list) else sources
+            targets = [targets] if not isinstance(targets, list) else targets
+
             for source in sources:
                 source_type, attrs = classify_input_type(source)
-                if source_type != InputVariable:
-                    # Handle logsheet, constants, etc.
+                if source_type == InputVariable:
+                    dag = bridge_dynamic_variables(dag, package_name, bridge_name, source, targets, package_names)
+                elif source_type == LogsheetVariable:
                     continue
-
-                try:
-                    source_node = [n['node'] for _, n in dag.nodes(data=True) if n['node'].name == source][0]
-                except IndexError:                                        
-                    source_package, source_runnable, tmp = parse_variable_name(source)
-                    # Check if the package is in the project
-                    if source_package not in package_names:                        
-                        raise ValueError(f"Source package {source_package} not found in the project. Packages are {package_names}.")
-                    source_outputs = [n['node'].name for _, n in dag.nodes(data=True) if isinstance(n['node'], OutputVariable) and n['node'].name.startswith(source_package + "." + source_runnable + ".")]
-                    if not any([n['node'].name.startswith(source_package + "." + source_runnable + ".") for _, n in dag.nodes(data=True)]):                        
-                        raise ValueError(f"Source runnable {source_runnable} in package {source_package} not found in the DAG. Did you mean one of these sources instead: {source_outputs}.")                    
-                    raise ValueError(f"Source {source} not found in the DAG. Did you mean one of these sources instead: {source_outputs}.")                    
-
-                for target in targets:
-                    target_type, tmp = classify_input_type(target)  
-                    assert target_type == InputVariable, f"Target type is {target_type}."
-                    try:
-                        target_node = [n['node'] for _, n in dag.nodes(data=True) if n['node'].name == target][0]
-                    except IndexError:
-                        target_package, target_runnable, tmp = target.split('.')
-                        if target_package not in package_names:
-                            raise ValueError(f"Target package {target_package} not found in the project.")
-                        target_inputs = [n['node'].name for _, n in dag.nodes(data=True) if isinstance(n['node'], InputVariable) and n['node'].name.startswith(target_package + "." + target_runnable + ".")]
-                        raise ValueError(f"Target {target} not found in the DAG. Did you mean one of these targets instead: {target_inputs}.")
-                    dag.add_edge(source_node.id, target_node.id, bridge = package_name + "." + bridge_name)
+                    raise NotImplementedError("LogsheetVariable is not implemented yet.")
+                elif isinstance(source, Constant):
+                    dag.nodes[source.id]['node']['value'] = attrs['value']                
     return dag
 
 def discover_packages(packages_parent_folders: list = None) -> list:
@@ -164,7 +165,7 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
     package_dag = nx.MultiDiGraph()
     runnable_classes = {PROCESS_NAME: Process, PLOT_NAME: Plot, STATS_NAME: Stats}    
     # 1. Create a node for each runnable and input/output variable.
-    # Also connect the inputs and outputs to each runnable. Still need to connect the runnables.
+    # Also connect the inputs and outputs to each runnable. Still need to connect the variables between runnables after this.
     # process, plot, stats
     variable_nodes = {}
     for runnable_type, runnables in package_runnables_dict.items():
@@ -192,13 +193,12 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
                 package_dag.add_node(output_node_uuid, node = node)
                 package_dag.add_edge(runnable_node_uuid, output_node_uuid)
 
-    # 2. Create edges between runnables.
+    # 2. Create edges between runnables' variables.
     for runnable_type, runnables in package_runnables_dict.items():
         # Add each node
         for runnable_name, runnable_dict in runnables.items():
             runnable_node_name = package_name + "." + runnable_name
             for input_var_name in runnable_dict['inputs']:
-                # target_var_name = runnable_dict['inputs'][input_var_name]
                 target_var_node = variable_nodes[runnable_type][runnable_name][input_var_name]
                 if type(target_var_node) != InputVariable:
                     continue

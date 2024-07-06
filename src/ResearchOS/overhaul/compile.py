@@ -3,7 +3,7 @@ import os
 
 import networkx as nx
 
-from ResearchOS.overhaul.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, connect_packages
+from ResearchOS.overhaul.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages
 from ResearchOS.overhaul.run import run
 from ResearchOS.overhaul.furcate import get_nodes_to_furcate
 from ResearchOS.overhaul.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME
@@ -61,7 +61,7 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
         dag.add_edges_from(all_packages_dags[package_name].edges(data=True))
 
     # Connect the packages into one cohesive DAG
-    dag = connect_packages(dag, all_packages_bridges)
+    dag = bridge_packages(dag, all_packages_bridges)
 
     # Get the order of the packages
     packages_ordered = get_package_order(dag)
