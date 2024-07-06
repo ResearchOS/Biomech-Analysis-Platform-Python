@@ -178,6 +178,8 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
             node = runnable_class(runnable_node_uuid, runnable_node_name, runnable_dict)
             package_dag.add_node(runnable_node_uuid, node = node)
             variable_nodes[runnable_type][runnable_name] = {}
+            variable_nodes[runnable_type][runnable_name]['inputs'] = {}
+            variable_nodes[runnable_type][runnable_name]['outputs'] = {}
             for input_var_name in runnable_dict['inputs']:
                 input_node_uuid = str(uuid.uuid4())
                 input_node_name = runnable_node_name + "." + input_var_name
@@ -185,13 +187,15 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
                 node = input_class(input_node_uuid, input_node_name, input_attrs)
                 package_dag.add_node(input_node_uuid, node = node)
                 package_dag.add_edge(input_node_uuid, runnable_node_uuid)
-                variable_nodes[runnable_type][runnable_name][input_var_name] = node
+                # is_dag = nx.is_directed_acyclic_graph(package_dag)
+                variable_nodes[runnable_type][runnable_name]['inputs'][input_var_name] = node
             for output_var_name in runnable_dict['outputs']:
                 output_node_uuid = str(uuid.uuid4())
                 output_node_name = runnable_node_name + "." + output_var_name
                 node = OutputVariable(output_node_uuid, output_node_name, {})
                 package_dag.add_node(output_node_uuid, node = node)
                 package_dag.add_edge(runnable_node_uuid, output_node_uuid)
+                # is_dag = nx.is_directed_acyclic_graph(package_dag)
 
     # 2. Create edges between runnables' variables.
     for runnable_type, runnables in package_runnables_dict.items():
@@ -199,11 +203,12 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
         for runnable_name, runnable_dict in runnables.items():
             runnable_node_name = package_name + "." + runnable_name
             for input_var_name in runnable_dict['inputs']:
-                target_var_node = variable_nodes[runnable_type][runnable_name][input_var_name]
+                target_var_node = variable_nodes[runnable_type][runnable_name]['inputs'][input_var_name]
                 if type(target_var_node) != InputVariable:
                     continue
 
-                source_var_name = runnable_node_name + "." + input_var_name
-                source_var_node = [n['node'] for _, n in package_dag.nodes(data=True) if n['node'].name == source_var_name][0]
+                source_var_name = package_name + "." + runnable_dict['inputs'][input_var_name]
+                source_var_node = [n['node'] for _, n in package_dag.nodes(data=True) if n['node'].name == source_var_name and isinstance(n['node'], OutputVariable)][0]
                 package_dag.add_edge(source_var_node.id, target_var_node.id)
+                # is_dag = nx.is_directed_acyclic_graph(package_dag)
     return package_dag

@@ -7,19 +7,22 @@ from ResearchOS.overhaul.create_dag_from_toml import create_package_dag, discove
 from ResearchOS.overhaul.run import run
 from ResearchOS.overhaul.furcate import get_nodes_to_furcate
 from ResearchOS.overhaul.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME
+from ResearchOS.overhaul.helper_functions import parse_variable_name
 
 
 def get_package_order(dag: dict) -> list:
-    # Topologically sort the nodes
+    # Topologically sort the nodes    
     sorted_nodes = list(nx.topological_sort(dag))
+    node_names = [dag.nodes[node]['node'].name for node in sorted_nodes]
 
     # Get the package for each node
-    packages = [dag.nodes[node]['package_name'] for node in sorted_nodes]
+    info_tuple = [parse_variable_name(node_name) for node_name in node_names]
+    packages = [info[0] for info in info_tuple]
 
     # Make the list of packages unique, preserving the order
     unique_packages = []
     for package in packages:
-        if package not in unique_packages:
+        if package not in unique_packages and package is not None:
             unique_packages.append(package)
     return unique_packages
 
@@ -71,8 +74,12 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
 
     # Substitute the levels and subsets for each package in topologically sorted order
 
-    # Add the constants to the DAG
+    # Topologically sort the nodes to furcate by
+    all_sorted_nodes = list(nx.topological_sort(dag))
+    topo_sorted_nodes_to_furcate = [node for node in all_sorted_nodes if node in nodes_to_furcate]
+    topo_sorted_nodes_to_furcate = list(reversed(topo_sorted_nodes_to_furcate))
 
+    # Furcate (split) the DAG
     return dag
 
 if __name__ == '__main__':
