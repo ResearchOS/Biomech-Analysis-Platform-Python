@@ -10,10 +10,11 @@ import tomli as tomllib
 import networkx as nx
 
 from ResearchOS.overhaul.create_dag_from_toml import get_package_index_dict
-from ResearchOS.overhaul.constants import DATASET_SCHEMA_KEY, DATASET_KEY, LOGSHEET_NAME, MAT_DATA_FOLDER_KEY
+from ResearchOS.overhaul.constants import DATASET_SCHEMA_KEY, DATASET_KEY, LOGSHEET_NAME, MAT_DATA_FOLDER_KEY, DATASET_FILE_SCHEMA_KEY
 from ResearchOS.overhaul.custom_classes import Logsheet, OutputVariable
 from ResearchOS.overhaul.hash_dag import get_output_var_hash
 from ResearchOS.overhaul.matlab_eng import import_matlab
+from ResearchOS.overhaul.io import schema_to_file
 
 def _read_and_clean_logsheet(logsheet_path: str, nrows: int = None) -> list:
         """Read the logsheet (CSV only) and clean it.
@@ -63,6 +64,7 @@ def read_logsheet(project_folder: str = None) -> None:
     with open(project_settings_path, "rb") as f:
         project_settings = tomllib.load(f)
     data_objects = project_settings[DATASET_SCHEMA_KEY]
+    data_file_schema = project_settings[DATASET_FILE_SCHEMA_KEY]
     if data_objects[0].upper() != DATASET_KEY.upper():
         raise ValueError(f"The first data object must be the Dataset class, but got {data_objects[0]}!")
     data_objects_str = '.'.join(data_objects)
@@ -185,24 +187,28 @@ def read_logsheet(project_folder: str = None) -> None:
 
     # Write the values to the DataObjects.
     matlab_eng = matlab['matlab_eng']
-    logsheet_wrapper_m_file_name = ""
-    path_to_logsheet_wrapper_m_file = ""
-    matlab_eng.addpath(path_to_logsheet_wrapper_m_file)
+    save_m_file_folder = "src/ResearchOS/overhaul"
+    save_fcn = "safe_save"
+    matlab_eng.addpath(save_m_file_folder)
     dobj_to_save = {}
-    mat_data_folder = index_dict[MAT_DATA_FOLDER_KEY.lower()]
+    mat_data_folder = project_settings[MAT_DATA_FOLDER_KEY.lower()]
     # modified_dobjs = []
-    wrapper_fcn = getattr(matlab_eng, logsheet_wrapper_m_file_name)
+    wrapper_fcn = getattr(matlab_eng, save_fcn)
     for dobj, attrs in all_attrs.items():
         for attr in attrs:
             node_id = mapping[attr]
             hash = hashes[node_id]
             dobj_to_save[hash] = attrs[attr]
         # Save the values to file.
-        wrapper_fcn(mat_data_folder, dobj, dobj_to_save, nargout=0)
+        file_dobj = schema_to_file(dobj, schema=schema, file_schema=data_file_schema)
+        wrapper_fcn(mat_data_folder, file_dobj, dobj_to_save, nargout=0)
 
     # Save the logsheet output to "logsheet_output.mat" file in the project's "src/" folder.
     # schema: [data_object_type1, data_object_type2, ...]
     # data_objects: [data_object1, data_object2, ...]
+    logsheet_wrapper_m_file_name = "save_logsheet_output"
+    logsheet_save = getattr(matlab_eng, logsheet_wrapper_m_file_name)
+    logsheet_save(mat_data_folder, schema, data_objects, nargout=0)
 
     elapsed_time = time.time() - logsheet_start_time
     print(f"Logsheet import complete (nrows={len(logsheet)}). Created {len(all_attrs)} new DataObjects, modified {0} DataObjects in {round(elapsed_time, 2)} seconds.")

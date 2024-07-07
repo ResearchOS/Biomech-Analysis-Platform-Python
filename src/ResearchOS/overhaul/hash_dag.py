@@ -7,8 +7,7 @@ import tomli as tomllib
 import networkx as nx
 
 from ResearchOS.overhaul.constants import LOAD_CONSTANT_FROM_FILE_KEY
-from ResearchOS.overhaul.helper_functions import is_specified, is_dynamic_variable, parse_variable_name
-# from ResearchOS.overhaul.custom_classes import Runnable
+from ResearchOS.overhaul.helper_functions import is_specified, is_dynamic_variable
 
 def graph_to_tuple(graph):
     # Extract node data. Order of the edge tuples matters.
@@ -17,10 +16,11 @@ def graph_to_tuple(graph):
 
 def ros_hash(obj: Any) -> str:
     """Hash the input string."""
-    from hashlib import sha256
+    from hashlib import sha224
+    hash_fcn = sha224
     if isinstance(obj, nx.MultiDiGraph):
         obj = graph_to_tuple(obj)
-    return sha256(str(obj).encode()).hexdigest()
+    return 'ros_' + hash_fcn(str(obj).encode()).hexdigest()
 
 def get_output_var_hash(dag: nx.MultiDiGraph, output_var_id: str = None) -> str:
     """Hash the DAG up to the node outputting the output_var, including the var itself.
@@ -29,7 +29,8 @@ def get_output_var_hash(dag: nx.MultiDiGraph, output_var_id: str = None) -> str:
         raise ValueError('No output_var specified.')
 
     # Get the ancestors of the node
-    ancestors = list(nx.ancestors(dag, output_var_id)).append(output_var_id)
+    ancestors = list(nx.ancestors(dag, output_var_id))
+    ancestors.append(output_var_id)
     ancestors_dag = dag.subgraph(ancestors)
 
     if len(ancestors_dag.edges) == 0:

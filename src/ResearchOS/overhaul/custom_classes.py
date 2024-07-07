@@ -41,11 +41,11 @@ class Logsheet(Runnable):
     class_name = LOGSHEET_NAME
 
     def __init__(self, id: str, name: str, attrs: str):
-        super().__init__(id, name, attrs)
         attrs['path'] = None
-        attrs['level'] = DATASET_KEY
+        attrs['level'] = DATASET_KEY        
         attrs['subset'] = None
         attrs['inputs'] = None
+        super().__init__(id, name, attrs)
         if 'outputs' not in attrs:
             raise ValueError(f'Logsheet {name} does not have outputs.')
         self.outputs = attrs['outputs']        
