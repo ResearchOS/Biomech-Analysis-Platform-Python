@@ -5,7 +5,7 @@ import networkx as nx
 
 from ResearchOS.overhaul.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages
 from ResearchOS.overhaul.run import run
-from ResearchOS.overhaul.furcate import get_nodes_to_furcate
+from ResearchOS.overhaul.furcate import get_nodes_to_furcate, polyfurcate
 from ResearchOS.overhaul.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME
 from ResearchOS.overhaul.helper_functions import parse_variable_name
 
@@ -80,6 +80,7 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     topo_sorted_nodes_to_furcate = list(reversed(topo_sorted_nodes_to_furcate))
 
     # Furcate (split) the DAG
+    dag = polyfurcate(dag, topo_sorted_nodes_to_furcate)
     return dag
 
 if __name__ == '__main__':
@@ -87,6 +88,6 @@ if __name__ == '__main__':
     packages_parent_folders = ['/Users/mitchelltillman/Documents/MATLAB/Science-Code/MATLAB/Packages']
     dag = compile(project_folder, packages_parent_folders)
     fake_project_folder = packages_parent_folders
-    run(dag, project_folder_path=fake_project_folder)
+    run(dag, project_folder=project_folder)
 
 

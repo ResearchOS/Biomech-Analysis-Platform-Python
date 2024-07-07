@@ -1,4 +1,5 @@
-from ResearchOS.overhaul.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, UNSPECIFIED_VARIABLE_NAME, CONSTANT_VARIABLE_NAME, DATA_OBJECT_NAME, INPUT_VARIABLE_NAME, OUTPUT_VARIABLE_NAME
+from ResearchOS.overhaul.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, UNSPECIFIED_VARIABLE_NAME, CONSTANT_VARIABLE_NAME, INPUT_VARIABLE_NAME, OUTPUT_VARIABLE_NAME, LOGSHEET_NAME
+from ResearchOS.overhaul.constants import DATASET_KEY
 
 class Node():
 
@@ -16,7 +17,7 @@ class Node():
 
 class Runnable(Node):
 
-    def __init__(self, id: str, name: str, attrs: str):
+    def __init__(self, id: str, name: str, attrs: dict):
         self.id = id
         self.name = name
         if 'path' not in attrs:            
@@ -35,6 +36,19 @@ class Runnable(Node):
         self.subset = attrs['subset']  
         self.level = attrs['level']
         self.batch = attrs['batch']
+
+class Logsheet(Runnable):
+    class_name = LOGSHEET_NAME
+
+    def __init__(self, id: str, name: str, attrs: str):
+        super().__init__(id, name, attrs)
+        attrs['path'] = None
+        attrs['level'] = DATASET_KEY
+        attrs['subset'] = None
+        attrs['inputs'] = None
+        if 'outputs' not in attrs:
+            raise ValueError(f'Logsheet {name} does not have outputs.')
+        self.outputs = attrs['outputs']        
     
 class Process(Runnable):
     class_name = PROCESS_NAME
@@ -97,4 +111,4 @@ class LoadConstantFromFile(Constant):
     class_name = "load_constant_from_file"
 
 class DataObjectName(Variable):
-    class_name = DATA_OBJECT_NAME
+    class_name = "data_object_name"

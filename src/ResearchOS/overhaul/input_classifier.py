@@ -3,7 +3,7 @@ from typing import Any
 import tomli as tomllib
 import json
 
-from ResearchOS.overhaul.constants import DATA_OBJECT_NAME_KEY, LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_KEY, DATA_FILE_KEY
+from ResearchOS.overhaul.constants import LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_VAR_KEY, DATA_FILE_KEY
 from ResearchOS.overhaul.custom_classes import InputVariable, Constant, DataObjectName, Unspecified, DataFilePath, LoadConstantFromFile, LogsheetVariable
 from ResearchOS.overhaul.helper_functions import is_dynamic_variable, is_specified
 
@@ -19,7 +19,7 @@ def classify_input_type(input: Any):
         if input.startswith("__"):
             if input == DATA_OBJECT_NAME_KEY:
                 return DataObjectName, attrs
-            if input.startswith(LOGSHEET_KEY):
+            if input.startswith(LOGSHEET_VAR_KEY):
                 return LogsheetVariable, attrs
         if is_dynamic_variable(input):
             return InputVariable, attrs
