@@ -15,7 +15,7 @@ def run_batch(dag: nx.MultiDiGraph, runnable: Runnable, matlab):
     """Run an individual batch for an individual node."""
     # mat_data_folder = os.environ[MAT_DATA_FOLDER_KEY.upper()]
     mat_data_folder = 'mat_data'
-    node = os.environ['NODE']
+    node = os.environ['NODE_UUID']
 
     # 1. Load the input variables
     for input_name, input_value in runnable.inputs.items():
@@ -60,7 +60,7 @@ def run(dag: nx.MultiDiGraph, start_node_name: str = None, project_folder: str =
     # os.environ[MAT_DATA_FOLDER_KEY.upper()] = index_dict[MAT_DATA_FOLDER_KEY.lower()]
     # os.environ[RAW_DATA_FOLDER_KEY.upper()] = index_dict[RAW_DATA_FOLDER_KEY.lower()]
 
-    # Get where to start the DAG. If not specified, start with the first node.
+    # Get where to start the DAG. If not specified, include all nodes.
     dag_to_run = dag
     if start_node_name:
         # Get the UUID of the start node
@@ -83,7 +83,8 @@ def run(dag: nx.MultiDiGraph, start_node_name: str = None, project_folder: str =
         node_full_name = dag_to_run.nodes[node]['node'].name
         tmp, package_name, node_name = parse_variable_name(node_full_name)
         os.environ['PACKAGE'] = package_name
-        os.environ['NODE'] = node
+        os.environ['NODE_UUID'] = node
+        os.environ['NODE_FULL_NAME'] = node_full_name
         get_node_settings_and_run_batch(dag_to_run, runnable=dag.nodes[node]['node'], matlab=matlab_output)
 
 def get_node_settings_and_run_batch(dag: nx.MultiDiGraph, runnable: Runnable = None, matlab = None):

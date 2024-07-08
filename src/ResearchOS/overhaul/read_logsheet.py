@@ -64,7 +64,7 @@ def read_logsheet(project_folder: str = None) -> None:
     project_settings_path = os.path.join(project_folder, project_settings_path)
     with open(project_settings_path, "rb") as f:
         project_settings = tomllib.load(f)
-    data_objects = project_settings[DATASET_SCHEMA_KEY]
+    data_objects = project_settings[DATASET_SCHEMA_KEY]    
     data_file_schema = project_settings[DATASET_FILE_SCHEMA_KEY]
     if data_objects[0].upper() != DATASET_KEY.upper():
         raise ValueError(f"The first data object must be the Dataset class, but got {data_objects[0]}!")
@@ -204,8 +204,8 @@ def read_logsheet(project_folder: str = None) -> None:
         count += 1
         dobj_to_save = {}
         # TESTING
-        if count >= 10:
-            break
+        # if count >= 10:
+        #     break
         for attr in attrs:
             node_id = mapping[attr]
             hash = hashes[node_id]
