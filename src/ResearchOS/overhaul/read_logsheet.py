@@ -189,12 +189,12 @@ def read_logsheet(project_folder: str = None) -> None:
     # Write the values to the DataObjects.
     matlab_eng = matlab['matlab_eng']
     ros_m_files_folder = "/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Python/src/ResearchOS/overhaul"
-    save_fcn = "safe_save"
+    save_fcn_name = "safe_save"
     matlab_eng.addpath(ros_m_files_folder)
     mat_data_folder = project_settings[MAT_DATA_FOLDER_KEY.lower()]
     if mat_data_folder == ".":
         mat_data_folder = project_folder
-    wrapper_fcn = getattr(matlab_eng, save_fcn)
+    save_fcn = getattr(matlab_eng, save_fcn_name)
     # Sort the all_attrs dict alphabetically by key
     sorted_keys = sorted(all_attrs.keys())
     all_attrs = {key: all_attrs[key] for key in sorted_keys}
@@ -203,6 +203,9 @@ def read_logsheet(project_folder: str = None) -> None:
     for dobj, attrs in all_attrs.items():
         count += 1
         dobj_to_save = {}
+        # TESTING
+        if count >= 10:
+            break
         for attr in attrs:
             node_id = mapping[attr]
             hash = hashes[node_id]
@@ -214,7 +217,7 @@ def read_logsheet(project_folder: str = None) -> None:
         except FileNotFoundError:
             pass
         print(f"Saving Data Object {count} of {num_dobjs}: ", dobj)
-        wrapper_fcn(mat_data_folder, dobj, dobj_to_save, nargout=0)
+        save_fcn(mat_data_folder, dobj, dobj_to_save, nargout=0)
 
     # Save the logsheet output to "logsheet_output.mat" file in the project's "src/" folder.
     # schema: [data_object_type1, data_object_type2, ...]
