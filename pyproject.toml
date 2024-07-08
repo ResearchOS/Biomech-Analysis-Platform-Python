@@ -56,7 +56,8 @@ dependencies = [
   "typer==0.11.1",  
   "toml>=0.10.2",
   "matplotlib==3.8.4",
-  "netgraph==4.13.2"
+  "netgraph==4.13.2",
+  "scipy==1.13.1"
 ]
 
 [project.optional-dependencies]

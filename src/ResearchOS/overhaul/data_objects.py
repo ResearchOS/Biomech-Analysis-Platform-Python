@@ -10,7 +10,7 @@ any_type_logic_options = ("==", '=', "!=", "in", "not in", "is", "is not", "cont
 logic_options = numeric_logic_options + any_type_logic_options
 plural_logic = ("in", "not in", "contains", "not contains")
 
-def get_data_objects_in_subset(subset_name: str, all_data_objects: list, level: str) -> list:
+def get_data_objects_in_subset(subset_name: str, all_data_objects: list, level: str, matlab) -> list:
     """Get the data objects in the specified subset. Returns a list of Data Object strings using dot notation.
     e.g. `Subject.Task.Trial`"""
     # 1. Read the subset to determine which variables need to be loaded from file.
@@ -30,12 +30,16 @@ def get_data_objects_in_subset(subset_name: str, all_data_objects: list, level: 
     # 3. Get all of the variables used in the subset's conditions.
     vars_list = []
     for condition in subset_conditions_list:
-        vars_list.append(condition[2])
+        vars_list.append(condition[0])
 
     all_vars = {}
+    matlab_eng = matlab['matlab_eng']
+    mat_data_folder = os.environ['PROJECT_FOLDER']
     for data_object in all_data_objects:
         all_vars[data_object] = {}             
         # Load the variables all at once from the file.
+        mat_file_path = os.path.join(mat_data_folder, data_object.replace(".", os.sep) + ".mat")
+        vars_dict = matlab_eng.readMatFileSafe(mat_file_path, vars_list)
         all_vars[data_object] = vars_dict
 
     # 4. For each data object, evaluate whether the subset condition is met.
@@ -63,12 +67,16 @@ def _extract_and_replace_lists(data, extracted_lists: list, counter=[0]):
 
 def get_subset_conditions(subset_name: str) -> dict:
     """Get the conditions for the subset."""
-    index_dict = get_package_index_dict()
-    project_settings_path = index_dict["project_settings"]    
-    with open(project_settings_path, "r") as f:
-        project_settings = tomllib.load(f)
-    subsets = project_settings[SUBSET_KEY]
-    return subsets[subset_name]
+    folder_path = os.environ['PROJECT_FOLDER']
+    index_dict = get_package_index_dict(package_folder_path=folder_path)
+    subset_settings_path = index_dict[SUBSET_KEY]
+    if isinstance(subset_settings_path, list):
+        subset_settings_path = subset_settings_path[0]
+    subset_settings_path = subset_settings_path.replace("/", os.sep)
+    subset_settings_path = os.path.join(folder_path, subset_settings_path)
+    with open(subset_settings_path, "rb") as f:
+        subset_settings = tomllib.load(f)
+    return subset_settings[subset_name]
 
 
 def _meets_conditions(node_id: str, conditions: dict, vr_values: dict, all_data_objects: dict) -> bool:

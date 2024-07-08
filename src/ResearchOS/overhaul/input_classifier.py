@@ -3,7 +3,7 @@ from typing import Any
 import tomli as tomllib
 import json
 
-from ResearchOS.overhaul.constants import LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_VAR_KEY, DATA_FILE_KEY
+from ResearchOS.overhaul.constants import LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_VAR_KEY, DATA_FILE_KEY, DATA_OBJECT_NAME_KEY
 from ResearchOS.overhaul.custom_classes import InputVariable, Constant, DataObjectName, Unspecified, DataFilePath, LoadConstantFromFile, LogsheetVariable
 from ResearchOS.overhaul.helper_functions import is_dynamic_variable, is_specified
 

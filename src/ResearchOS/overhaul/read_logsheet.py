@@ -56,25 +56,13 @@ def read_logsheet(project_folder: str = None) -> None:
     matlab = import_matlab(is_matlab=True)
 
     # 2. Get the logsheet object
-    index_dict = get_package_index_dict(project_folder)
-    project_settings_path = index_dict['project_settings']
-    if isinstance(project_settings_path, list):
-        assert len(project_settings_path) == 1, "Only one project settings file is allowed."
-        project_settings_path = project_settings_path[0]
-    project_settings_path = os.path.join(project_folder, project_settings_path)
-    with open(project_settings_path, "rb") as f:
-        project_settings = tomllib.load(f)
-    data_objects = project_settings[DATASET_SCHEMA_KEY]    
-    data_file_schema = project_settings[DATASET_FILE_SCHEMA_KEY]
-    if data_objects[0].upper() != DATASET_KEY.upper():
-        raise ValueError(f"The first data object must be the Dataset class, but got {data_objects[0]}!")
-    data_objects_str = '.'.join(data_objects)
-    os.environ[DATASET_SCHEMA_KEY] = data_objects_str
-    logsheet = project_settings['logsheet']
+    logsheet = get_logsheet_dict(project_folder)    
     logsheet_path = logsheet['path']
     num_header_rows = logsheet['num_header_rows']
     headers_in_toml = logsheet['headers']
     class_column_names = logsheet['class_column_names']
+    data_objects_str = os.environ[DATASET_SCHEMA_KEY]
+    data_objects = data_objects_str.split(".")
 
     # 1. Read the logsheet file (using built-in Python libraries)
     full_logsheet = _read_and_clean_logsheet(logsheet_path)    
@@ -191,7 +179,7 @@ def read_logsheet(project_folder: str = None) -> None:
     ros_m_files_folder = "/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Python/src/ResearchOS/overhaul"
     save_fcn_name = "safe_save"
     matlab_eng.addpath(ros_m_files_folder)
-    mat_data_folder = project_settings[MAT_DATA_FOLDER_KEY.lower()]
+    mat_data_folder = os.environ[MAT_DATA_FOLDER_KEY.upper()]
     if mat_data_folder == ".":
         mat_data_folder = project_folder
     save_fcn = getattr(matlab_eng, save_fcn_name)
@@ -253,6 +241,26 @@ def _clean_value(type_str: str, raw_value: Any) -> Any:
         else:
             value = float(value)
     return value
+
+def get_logsheet_dict(project_folder: str) -> dict:
+    """Return the logsheet dict from the project_settings.toml file."""
+    index_dict = get_package_index_dict(project_folder)
+    project_settings_path = index_dict['project_settings']
+    if isinstance(project_settings_path, list):
+        assert len(project_settings_path) == 1, "Only one project settings file is allowed."
+        project_settings_path = project_settings_path[0]
+    project_settings_path = os.path.join(project_folder, project_settings_path)
+    with open(project_settings_path, "rb") as f:
+        project_settings = tomllib.load(f)
+    data_objects = project_settings[DATASET_SCHEMA_KEY]
+    if data_objects[0].upper() != DATASET_KEY.upper():
+        raise ValueError(f"The first data object must be the Dataset class, but got {data_objects[0]}!")
+    data_objects_str = '.'.join(data_objects)
+    os.environ[DATASET_SCHEMA_KEY] = data_objects_str
+    logsheet_dict = project_settings['logsheet']
+    os.environ[MAT_DATA_FOLDER_KEY.upper()] = project_settings[MAT_DATA_FOLDER_KEY.lower()]
+    return logsheet_dict
+    
 
 if __name__ == "__main__":
     read_logsheet("/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Test_Project_Folder")

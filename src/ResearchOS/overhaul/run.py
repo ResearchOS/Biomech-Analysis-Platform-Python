@@ -5,7 +5,7 @@ import networkx as nx
 
 from ResearchOS.overhaul.matlab_eng import import_matlab
 from ResearchOS.overhaul.create_dag_from_toml import get_package_index_dict
-from ResearchOS.overhaul.constants import MAT_DATA_FOLDER_KEY, RAW_DATA_FOLDER_KEY
+from ResearchOS.overhaul.constants import MAT_DATA_FOLDER_KEY, RAW_DATA_FOLDER_KEY, DATASET_SCHEMA_KEY
 from ResearchOS.overhaul.data_objects import get_data_objects_in_subset
 from ResearchOS.overhaul.hash_dag import get_input_variable_hashes_or_values, get_output_var_hash
 from ResearchOS.overhaul.helper_functions import parse_variable_name, is_specified
@@ -46,9 +46,11 @@ def run_batch(dag: nx.MultiDiGraph, runnable: Runnable, matlab):
 
 def run(dag: nx.MultiDiGraph, start_node_name: str = None, project_folder: str = None):
     """Run the compiled DAG."""
-    m_files_folder = 'src/ResearchOS'
+    m_files_folder = 'src/ResearchOS/overhaul'
     if not project_folder:
         project_folder = os.getcwd()
+
+    os.environ['PROJECT_FOLDER'] = project_folder
 
     # Import MATLAB   
     matlab_output = import_matlab(is_matlab=True) 
@@ -78,6 +80,14 @@ def run(dag: nx.MultiDiGraph, start_node_name: str = None, project_folder: str =
     sorted_nodes = list(nx.topological_sort(dag_to_run))
     sorted_runnable_nodes = [node for node in sorted_nodes if isinstance(dag_to_run.nodes[node]['node'], Runnable)]
 
+    logsheet_output_file_path = os.path.join(project_folder, 'logsheet_output.mat')
+    logsheet_data = matlab_eng.load(logsheet_output_file_path, nargout=1)
+    schema = logsheet_data['schema']
+    schema_str = '.'.join(schema)
+    os.environ[DATASET_SCHEMA_KEY] = schema_str
+    all_data_objects = logsheet_data['data_objects']
+
+
     # Run the nodes in series
     for node in sorted_runnable_nodes:
         node_full_name = dag_to_run.nodes[node]['node'].name
@@ -85,13 +95,13 @@ def run(dag: nx.MultiDiGraph, start_node_name: str = None, project_folder: str =
         os.environ['PACKAGE'] = package_name
         os.environ['NODE_UUID'] = node
         os.environ['NODE_FULL_NAME'] = node_full_name
-        get_node_settings_and_run_batch(dag_to_run, runnable=dag.nodes[node]['node'], matlab=matlab_output)
+        get_node_settings_and_run_batch(dag_to_run, runnable=dag.nodes[node]['node'], matlab=matlab_output, all_data_objects=all_data_objects)
 
-def get_node_settings_and_run_batch(dag: nx.MultiDiGraph, runnable: Runnable = None, matlab = None):
+def get_node_settings_and_run_batch(dag: nx.MultiDiGraph, runnable: Runnable = None, matlab = None, all_data_objects: list = None):
     """Run an individual Runnable node."""
     # 1. Get the subset of Data Objects to operate on
     subset_name = runnable.subset
-    subset_of_data_objects = get_data_objects_in_subset(subset_name)    
+    subset_of_data_objects = get_data_objects_in_subset(subset_name, all_data_objects=all_data_objects, level=runnable.level, matlab=matlab)    
 
     # Process the data objects in series
     for data_object in subset_of_data_objects:

@@ -1,5 +1,5 @@
 from ResearchOS.overhaul.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, UNSPECIFIED_VARIABLE_NAME, CONSTANT_VARIABLE_NAME, INPUT_VARIABLE_NAME, OUTPUT_VARIABLE_NAME, LOGSHEET_NAME
-from ResearchOS.overhaul.constants import DATASET_KEY
+from ResearchOS.overhaul.constants import DATASET_KEY, DATA_OBJECT_NAME_KEY
 
 class Node():
 
@@ -111,4 +111,4 @@ class LoadConstantFromFile(Constant):
     class_name = "load_constant_from_file"
 
 class DataObjectName(Variable):
-    class_name = "data_object_name"
+    class_name = DATA_OBJECT_NAME_KEY

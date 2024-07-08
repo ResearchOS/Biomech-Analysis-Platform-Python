@@ -1,13 +1,17 @@
 ### Contains all steps necessary to run the `compile` CLI command.
 import os
+import uuid
 
 import networkx as nx
+import tomli as tomllib
 
 from ResearchOS.overhaul.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages
 from ResearchOS.overhaul.run import run
 from ResearchOS.overhaul.furcate import get_nodes_to_furcate, polyfurcate
-from ResearchOS.overhaul.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME
+from ResearchOS.overhaul.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY
 from ResearchOS.overhaul.helper_functions import parse_variable_name
+from ResearchOS.overhaul.custom_classes import Logsheet, OutputVariable, Runnable
+from ResearchOS.overhaul.read_logsheet import get_logsheet_dict
 
 
 def get_package_order(dag: dict) -> list:
@@ -63,6 +67,23 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
         dag.add_nodes_from(all_packages_dags[package_name].nodes(data=True))
         dag.add_edges_from(all_packages_dags[package_name].edges(data=True))
 
+    # Get the headers from the logsheet
+    logsheet = get_logsheet_dict(project_folder)
+    data_objects = os.environ[DATASET_SCHEMA_KEY]
+    headers_in_toml = logsheet['headers']
+
+    # Add the logsheet nodes.
+    logsheet_attrs = {}
+    logsheet_attrs['outputs'] = [header for header in headers_in_toml]
+    logsheet_node = Logsheet(id = str(uuid.uuid4()), name = LOGSHEET_NAME, attrs = logsheet_attrs)
+
+    mapping = {}
+    for column in headers_in_toml:
+        output_var = OutputVariable(id=str(uuid.uuid4()), name=LOGSHEET_NAME + "." + column, attrs={})
+        mapping[column] = output_var.id
+        dag.add_node(output_var.id, node = output_var)
+        dag.add_edge(logsheet_node.id, output_var.id)
+
     # Connect the packages into one cohesive DAG
     dag = bridge_packages(dag, all_packages_bridges)
 
@@ -73,6 +94,26 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     nodes_to_furcate = get_nodes_to_furcate(dag)
 
     # Substitute the levels and subsets for each package in topologically sorted order
+    for package in packages_ordered:
+        if package not in all_packages_bridges:
+            continue
+        # Get the level and subset conversions for this package.
+        project_settings_path = project_folder + os.sep + index_dict[package]['project_settings'].replace("/", os.sep)
+        with open(project_settings_path, "rb") as f:
+            project_settings = tomllib.load(f)
+        level_conversions = project_settings['levels']
+        subset_conversions = project_settings['subsets']
+        # Get the nodes in this package.
+        package_nodes = [node for node in dag.nodes if node['node'].name.startswith(package + ".") and isinstance(node['node'], Runnable)]  
+        package_ancestor_nodes = []      
+        for node in package_nodes:
+            curr_ancestor_nodes = list(nx.ancestors(dag, node))
+            curr_ancestor_nodes = [node for node in curr_ancestor_nodes if node not in package_nodes] # Make sure to not change the package's nodes.
+            package_ancestor_nodes.extend(curr_ancestor_nodes)
+        # Nodes to change subset & level for.
+        for node in package_ancestor_nodes:
+            dag.nodes['node'].subset = subset_conversions[dag.nodes['node'].subset]
+            dag.nodes['node'].level = level_conversions[dag.nodes['node'].level]
 
     # Topologically sort the nodes to furcate by
     all_sorted_nodes = list(nx.topological_sort(dag))

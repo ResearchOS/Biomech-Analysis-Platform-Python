@@ -2,6 +2,8 @@ import os
 
 import networkx as nx
 
+from ResearchOS.overhaul.custom_classes import Runnable
+
 def is_package_in_packages(package_name: str) -> bool:
     """Check if a package is in the list of packages."""
     return package_name in os.environ['PACKAGE_NAMES'].split('.')
@@ -9,7 +11,7 @@ def is_package_in_packages(package_name: str) -> bool:
 def is_runnable_in_package(dag: nx.MultiDiGraph, package_name: str, runnable_name: str) -> bool:
     """Check if a runnable is in a package."""
     full_runnable_name = package_name + '.' + runnable_name
-    return len([node for _, node in dag.nodes(data=True) if node['node'].name.startswith(full_runnable_name)]) > 0
+    return len([node for node, _ in dag.nodes(data=True) if isinstance(dag.nodes[node]['node'], Runnable) and dag.nodes[node]['node'].name.startswith(full_runnable_name)]) > 0
 
 def is_variable_in_runnable(dag: nx.MultiDiGraph, package_name: str, runnable_name: str, variable_name: str) -> bool:
     """Check if a variable is in a runnable."""
