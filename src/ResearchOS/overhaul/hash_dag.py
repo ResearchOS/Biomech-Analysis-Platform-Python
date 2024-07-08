@@ -11,7 +11,9 @@ from ResearchOS.overhaul.helper_functions import is_specified, is_dynamic_variab
 
 def graph_to_tuple(graph):
     # Extract node data. Order of the edge tuples matters.
-    edges_tuple = tuple([(src, dst) for src, dst in sorted(graph.edges(data=False))])    
+    node_mapping = {node_uuid: node_data['node'].name for node_uuid, node_data in graph.nodes(data=True)}
+    edges_tuple = tuple([(node_mapping[edge[0]], node_mapping[edge[1]]) for edge in sorted(graph.edges, key=lambda x: (x[0].lower(), x[1].lower()))])
+    print('Edges tuple: ', edges_tuple)
     return edges_tuple
 
 def ros_hash(obj: Any) -> str:

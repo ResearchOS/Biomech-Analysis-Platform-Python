@@ -5,6 +5,7 @@ import os
 import uuid
 from typing import Any
 import builtins
+import math
 
 import tomli as tomllib
 import networkx as nx
@@ -187,28 +188,40 @@ def read_logsheet(project_folder: str = None) -> None:
 
     # Write the values to the DataObjects.
     matlab_eng = matlab['matlab_eng']
-    save_m_file_folder = "src/ResearchOS/overhaul"
+    ros_m_files_folder = "/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Python/src/ResearchOS/overhaul"
     save_fcn = "safe_save"
-    matlab_eng.addpath(save_m_file_folder)
-    dobj_to_save = {}
+    matlab_eng.addpath(ros_m_files_folder)
     mat_data_folder = project_settings[MAT_DATA_FOLDER_KEY.lower()]
-    # modified_dobjs = []
+    if mat_data_folder == ".":
+        mat_data_folder = project_folder
     wrapper_fcn = getattr(matlab_eng, save_fcn)
+    # Sort the all_attrs dict alphabetically by key
+    sorted_keys = sorted(all_attrs.keys())
+    all_attrs = {key: all_attrs[key] for key in sorted_keys}
+    count = 0
+    num_dobjs = len(all_attrs)
     for dobj, attrs in all_attrs.items():
+        count += 1
+        dobj_to_save = {}
         for attr in attrs:
             node_id = mapping[attr]
             hash = hashes[node_id]
-            dobj_to_save[hash] = attrs[attr]
+            dobj_to_save[hash] = attrs[attr] if attrs[attr] is not None else math.nan
         # Save the values to file.
-        file_dobj = schema_to_file(dobj, schema=schema, file_schema=data_file_schema)
-        wrapper_fcn(mat_data_folder, file_dobj, dobj_to_save, nargout=0)
+        lock_file_path = os.path.join(mat_data_folder, dobj.replace('.', os.sep) + ".lock")
+        try:
+            os.remove(lock_file_path)
+        except FileNotFoundError:
+            pass
+        print(f"Saving Data Object {count} of {num_dobjs}: ", dobj)
+        wrapper_fcn(mat_data_folder, dobj, dobj_to_save, nargout=0)
 
     # Save the logsheet output to "logsheet_output.mat" file in the project's "src/" folder.
     # schema: [data_object_type1, data_object_type2, ...]
     # data_objects: [data_object1, data_object2, ...]
     logsheet_wrapper_m_file_name = "save_logsheet_output"
     logsheet_save = getattr(matlab_eng, logsheet_wrapper_m_file_name)
-    logsheet_save(mat_data_folder, schema, data_objects, nargout=0)
+    logsheet_save(mat_data_folder, schema, dobj_names, nargout=0)
 
     elapsed_time = time.time() - logsheet_start_time
     print(f"Logsheet import complete (nrows={len(logsheet)}). Created {len(all_attrs)} new DataObjects, modified {0} DataObjects in {round(elapsed_time, 2)} seconds.")
