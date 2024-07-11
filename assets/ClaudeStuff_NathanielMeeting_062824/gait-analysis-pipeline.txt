@@ -1,0 +1,36 @@
+pipeline:
+  - name: "load_time_series"
+    command: "load_data"
+    params:
+      file: "trial_data.csv"
+    output_to: "raw_time_series"
+
+  - name: "detect_gait_phases"
+    command: "gait_phase_detection"
+    input_from: "raw_time_series"
+    params:
+      algorithm: "peak_detection"
+    output_to: "gait_phases"
+
+  - name: "segment_by_phase"
+    command: "segment_time_series"
+    input_from: 
+      - "raw_time_series"
+      - "gait_phases"
+    params:
+      metrics: ["joint_angles", "ground_reaction_forces", "muscle_activations"]
+    output_to: "segmented_data"
+
+  - name: "calculate_phase_metrics"
+    command: "compute_metrics"
+    input_from: "segmented_data"
+    params:
+      statistics: ["mean", "max", "min", "range"]
+    output_to: "phase_metrics"
+
+  - name: "visualize_results"
+    command: "generate_plots"
+    input_from: "phase_metrics"
+    params:
+      plot_type: "box_plot"
+    output_to: "gait_analysis_results"

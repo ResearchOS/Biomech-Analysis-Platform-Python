@@ -1,0 +1,42 @@
+pipeline:
+  load_data:
+    command: load_from_source
+    output:
+      - dataset_A
+      - dataset_B
+      - dataset_C
+      - dataset_D
+      - raw_time_series
+  
+  main_processes:
+    process_A:
+      command: transformation_A
+      input: dataset_A
+      output: result_A
+    process_B:
+      command: transformation_B
+      input: dataset_B
+      output: result_B
+    process_C:
+      command: transformation_C
+      input: dataset_C
+      output: secondary_output
+    process_D:
+      command: transformation_D
+      input: dataset_D
+      output: result_D
+  
+  merge_results:
+    command: combine_data
+    input:
+      - result_A
+      - result_B
+      - result_D
+    output: merged_result
+  
+  final_output:
+    command: generate_final_output
+    input:
+      - merged_result
+      - gait_analysis_results
+    output: final_output

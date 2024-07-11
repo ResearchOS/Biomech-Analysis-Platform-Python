@@ -1,0 +1,8 @@
+graph TD
+    A[Load Data] --> B[Process A]
+    A --> C[Process B]
+    B --> D[Merge Results]
+    C --> D
+    D --> E[Final Output]
+    A --> F[Process C]
+    F --> G[Secondary Output]
