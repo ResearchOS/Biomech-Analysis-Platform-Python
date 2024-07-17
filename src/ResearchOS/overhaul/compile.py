@@ -31,20 +31,24 @@ def get_package_order(dag: dict) -> list:
     return unique_packages
 
 def compile(project_folder: str, packages_parent_folders: list = []) -> nx.MultiDiGraph:
-    """Compile all packages in the project."""    
+    """Compile all packages in the project into one DAG."""    
     packages_folders = discover_packages(packages_parent_folders)
-    packages_folders.append(project_folder)
+    packages_folders.append(project_folder) # The project folder is considered a package folder.
 
     dag = nx.MultiDiGraph()
     all_packages_bridges = {}
 
-    # Read all of the packages' TOML files.
+    ## Read all of the packages' TOML files.
+    # 1. Get all of the package names.
     package_names = []
-    index_dict = {}
-    runnables_dict = {}
     for package_folder in packages_folders:
         package_name = os.path.split(package_folder)[-1]
         package_names.append(package_name)
+
+    # 2. Get the index dict for each package.
+    index_dict = {}
+    runnables_dict = {}
+    for package_folder, package_name in zip(packages_folders, package_names):
         index_dict[package_name] = {}
         index_dict[package_name] = get_package_index_dict(package_folder)
         processes_dict = get_runnables_in_package(package_folder=package_folder, paths_from_index=index_dict[package_name][PROCESS_NAME])
@@ -72,11 +76,12 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     data_objects = os.environ[DATASET_SCHEMA_KEY]
     headers_in_toml = logsheet['headers']
 
-    # Add the logsheet nodes.
+    # Create the logsheet Runnable node.
     logsheet_attrs = {}
     logsheet_attrs['outputs'] = [header for header in headers_in_toml]
     logsheet_node = Logsheet(id = str(uuid.uuid4()), name = LOGSHEET_NAME, attrs = logsheet_attrs)
 
+    # Add the logsheet node to the DAG
     mapping = {}
     for column in headers_in_toml:
         output_var = OutputVariable(id=str(uuid.uuid4()), name=LOGSHEET_NAME + "." + column, attrs={})
@@ -96,13 +101,13 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     # Substitute the levels and subsets for each package in topologically sorted order
     for package in packages_ordered:
         if package not in all_packages_bridges:
-            continue
+            continue # No bridges to other packages, which is ok!
         # Get the level and subset conversions for this package.
         project_settings_path = project_folder + os.sep + index_dict[package]['project_settings'].replace("/", os.sep)
         with open(project_settings_path, "rb") as f:
             project_settings = tomllib.load(f)
-        level_conversions = project_settings['levels']
-        subset_conversions = project_settings['subsets']
+        level_conversions = project_settings['levels'] # Dict where keys are new levels and values are old levels.
+        subset_conversions = project_settings['subsets'] # Dict where keys are new subsets and values are old subsets.
         # Get the nodes in this package.
         package_nodes = [node for node in dag.nodes if node['node'].name.startswith(package + ".") and isinstance(node['node'], Runnable)]  
         package_ancestor_nodes = []      
@@ -110,7 +115,7 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
             curr_ancestor_nodes = list(nx.ancestors(dag, node))
             curr_ancestor_nodes = [node for node in curr_ancestor_nodes if node not in package_nodes] # Make sure to not change the package's nodes.
             package_ancestor_nodes.extend(curr_ancestor_nodes)
-        # Nodes to change subset & level for.
+        # Change subset & level to the new value.
         for node in package_ancestor_nodes:
             dag.nodes['node'].subset = subset_conversions[dag.nodes['node'].subset]
             dag.nodes['node'].level = level_conversions[dag.nodes['node'].level]

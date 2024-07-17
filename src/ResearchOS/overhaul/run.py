@@ -5,7 +5,7 @@ import networkx as nx
 
 from ResearchOS.overhaul.matlab_eng import import_matlab
 from ResearchOS.overhaul.create_dag_from_toml import get_package_index_dict
-from ResearchOS.overhaul.constants import MAT_DATA_FOLDER_KEY, RAW_DATA_FOLDER_KEY, DATASET_SCHEMA_KEY
+from ResearchOS.overhaul.constants import MAT_DATA_FOLDER_KEY, RAW_DATA_FOLDER_KEY, DATASET_SCHEMA_KEY, PROJECT_FOLDER_KEY
 from ResearchOS.overhaul.data_objects import get_data_objects_in_subset
 from ResearchOS.overhaul.hash_dag import get_input_variable_hashes_or_values, get_output_var_hash
 from ResearchOS.overhaul.helper_functions import parse_variable_name, is_specified
@@ -50,7 +50,7 @@ def run(dag: nx.MultiDiGraph, start_node_name: str = None, project_folder: str =
     if not project_folder:
         project_folder = os.getcwd()
 
-    os.environ['PROJECT_FOLDER'] = project_folder
+    os.environ[PROJECT_FOLDER_KEY] = project_folder
 
     # Import MATLAB   
     matlab_output = import_matlab(is_matlab=True) 
@@ -59,8 +59,8 @@ def run(dag: nx.MultiDiGraph, start_node_name: str = None, project_folder: str =
 
     # Get the MAT (i.e. processed) & raw data folder by reading the project's index.toml file
     index_dict = get_package_index_dict(project_folder)
-    # os.environ[MAT_DATA_FOLDER_KEY.upper()] = index_dict[MAT_DATA_FOLDER_KEY.lower()]
-    # os.environ[RAW_DATA_FOLDER_KEY.upper()] = index_dict[RAW_DATA_FOLDER_KEY.lower()]
+    os.environ[MAT_DATA_FOLDER_KEY] = index_dict[MAT_DATA_FOLDER_KEY.lower()]
+    os.environ[RAW_DATA_FOLDER_KEY] = index_dict[RAW_DATA_FOLDER_KEY.lower()]
 
     # Get where to start the DAG. If not specified, include all nodes.
     dag_to_run = dag
@@ -68,11 +68,11 @@ def run(dag: nx.MultiDiGraph, start_node_name: str = None, project_folder: str =
         # Get the UUID of the start node
         start_node = [node for _, node in dag.nodes if node['node'].name == start_node_name and isinstance(node['node'], Runnable)]
         if not start_node:
-            raise ValueError(f"Runnable node {start_node_name} not found in the DAG.")
+            raise ValueError(f"Specified Runnable node {start_node_name} not found in the DAG.")
         # Get the input variable nodes for the start_node.        
         input_variable_nodes = list(dag.predecessors(start_node))
         assert all([isinstance(dag.nodes[node]['node'], Variable) for node in input_variable_nodes])
-        # Get all of the nodes (Runnable & Variable)
+        # Get all of the downstream nodes (Runnable & Variable)
         nodes_in_dag = list(nx.descendants(dag, start_node)).append(start_node).extend(input_variable_nodes)        
         dag_to_run = dag.subgraph(nodes_in_dag)
 

@@ -27,7 +27,7 @@ SUBSET_KEY = 'subsets'
 # Special strings
 DATA_OBJECT_NAME_STR = '__name__' # Returns the short name of the data object, e.g. "Trial1"
 DATA_OBJECT_FULL_NAME_STR = '__full_name__' # Returns the full name of the data object, e.g. "Subject1.Condition1.Trial1"
-PROJECT_FOLDER_STR = '__project_folder__' # Returns the project folder
+PROJECT_FOLDER_KEY_STR = '__project_folder__' # Returns the project folder
 # Keys in input variable dictionary.
 LOAD_CONSTANT_FROM_FILE_KEY = '__load_file__' # Load the constant from the specified file, {__load_file__: file_path}
 DATA_FILE_KEY = '__file_path__' # Use the absolute path of the current data object's data file as input (minus the file extension) {__file_path__: file_path}
@@ -39,3 +39,6 @@ CONSTANT_VARIABLE_NAME = 'constant'
 UNSPECIFIED_VARIABLE_NAME = 'unspecified'
 LOGSHEET_NAME = 'logsheet'
 DATA_OBJECT_NAME_KEY = 'data_object_name'
+
+## Environment variable keys
+PROJECT_FOLDER_KEY = 'project_folder'

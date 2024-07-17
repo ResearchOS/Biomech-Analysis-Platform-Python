@@ -2,7 +2,7 @@ import os
 
 import tomli as tomllib
 
-from ResearchOS.overhaul.constants import DATASET_SCHEMA_KEY, SUBSET_KEY
+from ResearchOS.overhaul.constants import DATASET_SCHEMA_KEY, SUBSET_KEY, PROJECT_FOLDER_KEY
 from ResearchOS.overhaul.create_dag_from_toml import get_package_index_dict
 
 numeric_logic_options = (">", "<", ">=", "<=", )
@@ -34,7 +34,7 @@ def get_data_objects_in_subset(subset_name: str, all_data_objects: list, level: 
 
     all_vars = {}
     matlab_eng = matlab['matlab_eng']
-    mat_data_folder = os.environ['PROJECT_FOLDER']
+    mat_data_folder = os.environ[PROJECT_FOLDER_KEY]
     for data_object in all_data_objects:
         all_vars[data_object] = {}             
         # Load the variables all at once from the file.
@@ -67,7 +67,7 @@ def _extract_and_replace_lists(data, extracted_lists: list, counter=[0]):
 
 def get_subset_conditions(subset_name: str) -> dict:
     """Get the conditions for the subset."""
-    folder_path = os.environ['PROJECT_FOLDER']
+    folder_path = os.environ[PROJECT_FOLDER_KEY]
     index_dict = get_package_index_dict(package_folder_path=folder_path)
     subset_settings_path = index_dict[SUBSET_KEY]
     if isinstance(subset_settings_path, list):
