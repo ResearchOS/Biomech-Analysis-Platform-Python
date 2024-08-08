@@ -1,8 +1,0 @@
-[subset]
-their_subset = "my_subset" # Replace "their_subset" in another package with "my_subset" in this package.
-
-[data-objects]
-Subject_Other = "Subject" # Replace "Subject_Other" in another package with "Subject" in this package.
-
-[process]
-process1.inputs.var1 = "pkg.process2.outputs.var3" # Replace "process1.inputs.var1" in my package with "pkg.process2.outputs.var3" from another package.

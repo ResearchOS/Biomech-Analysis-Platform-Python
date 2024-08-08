@@ -1,1 +1,0 @@
-INSERT INTO data_values (action_id_num, vr_id, path_id, data_blob_hash, scalar_value) VALUES (?, ?, ?, ?, ?)

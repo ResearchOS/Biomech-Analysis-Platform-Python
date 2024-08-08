@@ -1,1 +1,0 @@
-INSERT INTO actions (action_id, action_id_num, name, datetime, redo_of, type) VALUES (?, ?, ?, ?, ?, ?)
