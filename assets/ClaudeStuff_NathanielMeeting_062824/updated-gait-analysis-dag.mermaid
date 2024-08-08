@@ -1,0 +1,17 @@
+graph TD
+    A[Load Time Series] --> B[Detect Gait Phases]
+    A --> C[Segment by Phase]
+    B --> C
+    C --> D[Calculate Phase Metrics]
+    D --> E[Visualize Results]
+    D --> F[Process D: Advanced Analysis]
+    E --> F
+    F --> G[ML Insights]
+
+    style A fill:#f9d71c
+    style B fill:#f9d71c
+    style C fill:#f9d71c
+    style D fill:#f9d71c
+    style E fill:#f9d71c
+    style F fill:#ff9999
+    style G fill:#ff9999

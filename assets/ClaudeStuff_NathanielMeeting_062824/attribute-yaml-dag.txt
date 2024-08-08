@@ -1,0 +1,58 @@
+pipeline:
+  - name: load_data
+    type: source
+    attributes:
+      command: load_from_source
+      output:
+        - dataset_A
+        - dataset_B
+        - dataset_C
+        - dataset_D
+        - raw_time_series
+
+  - name: process_A
+    type: transform
+    attributes:
+      command: transformation_A
+      input: dataset_A
+      output: result_A
+
+  - name: process_B
+    type: transform
+    attributes:
+      command: transformation_B
+      input: dataset_B
+      output: result_B
+
+  - name: process_C
+    type: transform
+    attributes:
+      command: transformation_C
+      input: dataset_C
+      output: secondary_output
+
+  - name: process_D
+    type: transform
+    attributes:
+      command: transformation_D
+      input: dataset_D
+      output: result_D
+
+  - name: merge_results
+    type: combine
+    attributes:
+      command: combine_data
+      input:
+        - result_A
+        - result_B
+        - result_D
+      output: merged_result
+
+  - name: final_output
+    type: sink
+    attributes:
+      command: generate_final_output
+      input:
+        - merged_result
+        - gait_analysis_results
+      output: final_output

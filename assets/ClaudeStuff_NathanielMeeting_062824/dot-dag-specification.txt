@@ -1,0 +1,25 @@
+digraph DAG {
+  load_data [label="Load Data"];
+  process_A [label="Process A"];
+  process_B [label="Process B"];
+  process_C [label="Process C"];
+  process_D [label="Process D"];
+  merge_results [label="Merge Results"];
+  final_output [label="Final Output"];
+
+  load_data -> process_A [label="dataset_A"];
+  load_data -> process_B [label="dataset_B"];
+  load_data -> process_C [label="dataset_C"];
+  load_data -> process_D [label="dataset_D"];
+
+  process_A -> merge_results [label="result_A"];
+  process_B -> merge_results [label="result_B"];
+  process_D -> merge_results [label="result_D"];
+  process_C -> final_output [label="secondary_output"];
+
+  merge_results -> final_output [label="merged_result"];
+
+  // Gait analysis pipeline (simplified)
+  load_data -> gait_analysis [label="raw_time_series"];
+  gait_analysis -> final_output [label="gait_analysis_results"];
+}

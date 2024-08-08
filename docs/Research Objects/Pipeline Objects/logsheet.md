@@ -32,4 +32,4 @@ class_column_names = {
 }
 ```
 
-::: src.ResearchOS.PipelineObjects.logsheet.Logsheet
+<!-- ::: src.ResearchOS.PipelineObjects.logsheet.Logsheet -->

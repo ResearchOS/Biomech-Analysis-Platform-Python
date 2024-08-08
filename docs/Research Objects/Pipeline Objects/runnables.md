@@ -19,6 +19,35 @@ schema = [
 Generally, most of my analysis will probably focus on the `Trial` level.
 
 ### input_vrs (Required)
+Input vrs syntax options:
+From code like this in `research_objects/processes.py`:
+```python
+import ResearchOS as ros
+
+pr1 = ros.Process(id = "PR1")
+# 1. Set the value to None, indicating that "show" = True and there is no input value here.
+pr1.set_inputs(vr_name = None)
+
+# 2. Set the value to a Variable object, indicating that this is a dynamic input that receives an Output.
+pr1.set_inputs(vr_name = vr.variable_object) # source PR is assumed to be the most recent PR that outputted this variable
+
+# 3. Set the value to a Variable object with a lookup Variable.
+pr1.set_inputs(vr_name = vr.variable_object, lookup_vr_name = vr.lookup_variable_object) # source PR is assumed to be the most recent PR that outputted this variable
+
+# 4. Explicitly set the source PR for the input Variable.
+pr1.set_inputs(vr_name = vr.variable_object, pr = source_pr)
+
+# 5. Specify a specific slice of the Variable object, e.g. the second column.
+pr1.set_inputs(vr_name = vr.variable_object[:,1])
+
+# 5. Set the value to a hard-coded Variable object.
+vr.variable_object.hard_coded_value = "test"
+pr1.set_inputs(vr_name = vr.variable_object)
+
+# 6. Set the value to a hard-coded value directly.
+pr1.set_inputs(vr_name = "test")
+
+```
 The runnable Pipeline Objects expect `input_vrs` to be a dictionary, where the keys are strings representing the variable's name in the runnable Pipeline object's code to be run, and the value is the variable's value. Most commonly, that looks something like this:
 ```python
 # research_objects/processes.py

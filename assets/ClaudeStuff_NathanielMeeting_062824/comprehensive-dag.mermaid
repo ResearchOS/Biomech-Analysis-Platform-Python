@@ -1,0 +1,33 @@
+graph TD
+    Load[Load Data] --> A[Process A]
+    Load --> B[Process B]
+    Load --> C[Process C]
+    Load --> GaitPhase[Detect Gait Phases]
+    Load --> Segment[Segment by Phase]
+    
+    GaitPhase --> Segment
+    Segment --> Calculate[Calculate Phase Metrics]
+    Calculate --> Visualize[Visualize Results]
+    
+    A --> Merge[Merge Results]
+    B --> Merge
+    Merge --> D[Process D: Advanced Analysis]
+    
+    Calculate --> D
+    Visualize --> D
+    
+    C --> SecondaryOutput[Secondary Output]
+    D --> FinalOutput[Final Output: ML Insights]
+
+    style Load fill:#f9d71c,stroke:#333,stroke-width:2px
+    style A fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style B fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style C fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style GaitPhase fill:#e6f3ff,stroke:#333,stroke-width:2px
+    style Segment fill:#e6f3ff,stroke:#333,stroke-width:2px
+    style Calculate fill:#e6f3ff,stroke:#333,stroke-width:2px
+    style Visualize fill:#e6f3ff,stroke:#333,stroke-width:2px
+    style Merge fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style D fill:#ff9999,stroke:#333,stroke-width:2px
+    style SecondaryOutput fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style FinalOutput fill:#ff9999,stroke:#333,stroke-width:2px

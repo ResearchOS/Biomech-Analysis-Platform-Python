@@ -1,0 +1,29 @@
+nodes:
+  - id: load_data
+    command: load_from_source
+  - id: process_A
+    command: transformation_A
+  - id: process_B
+    command: transformation_B
+  - id: process_C
+    command: transformation_C
+  - id: process_D
+    command: transformation_D
+  - id: merge_results
+    command: combine_data
+  - id: final_output
+    command: generate_final_output
+
+flows:
+  - from: load_data
+    to: [process_A, process_B, process_C, process_D]
+    data: [dataset_A, dataset_B, dataset_C, dataset_D]
+  - from: [process_A, process_B, process_D]
+    to: merge_results
+    data: [result_A, result_B, result_D]
+  - from: process_C
+    to: final_output
+    data: secondary_output
+  - from: merge_results
+    to: final_output
+    data: merged_result

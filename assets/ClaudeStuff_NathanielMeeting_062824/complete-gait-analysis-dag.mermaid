@@ -1,0 +1,26 @@
+graph TD
+    A[Load Time Series] --> B[Detect Gait Phases]
+    A --> C[Segment by Phase]
+    B --> C
+    C --> D[Calculate Phase Metrics]
+    D --> E[Visualize Results]
+    D --> F[Process D: Advanced Analysis]
+    E --> F
+    F --> G[ML Insights]
+
+    A -->|raw_time_series| B
+    A -->|raw_time_series| C
+    B -->|gait_phases| C
+    C -->|segmented_data| D
+    D -->|phase_metrics| E
+    D -->|phase_metrics| F
+    E -->|gait_analysis_results| F
+    F -->|ml_insights| G
+
+    style A fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style B fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style C fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style D fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style E fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style F fill:#e6f3ff,stroke:#333,stroke-width:2px
+    style G fill:#e6f3ff,stroke:#333,stroke-width:2px

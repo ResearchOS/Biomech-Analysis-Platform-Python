@@ -164,3 +164,4 @@ credentials.py
 .DS_Store
 *.pptx
 researchos_data.db
+/manuscript

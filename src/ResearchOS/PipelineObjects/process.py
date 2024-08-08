@@ -1,13 +1,18 @@
 from typing import Any, Callable
+<<<<<<< HEAD
 
 import networkx as nx
+=======
+>>>>>>> code-sharing-test-MT2
 
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.action import Action
-from ResearchOS.process_runner import ProcessRunner
-from ResearchOS.vr_handler import VRHandler
 
 all_default_attrs = {}
+# For import
+all_default_attrs["import_file_ext"] = None
+all_default_attrs["import_file_vr_name"] = None
+
 # For MATLAB
 all_default_attrs["is_matlab"] = False
 all_default_attrs["mfolder"] = None
@@ -19,10 +24,13 @@ all_default_attrs["level"] = None
 all_default_attrs["inputs"] = {}
 all_default_attrs["outputs"] = {}
 all_default_attrs["subset"] = None
+<<<<<<< HEAD
 
 # For import
 all_default_attrs["import_file_ext"] = None
 all_default_attrs["import_file_vr_name"] = None
+=======
+>>>>>>> code-sharing-test-MT2
 
 # For including other Data Object attributes from the node lineage in the input variables.
 # For example, if a Process is run on a Trial, and one of the inputs needs to be the Subject's name.
@@ -91,6 +99,7 @@ class Process(PipelineObject):
             raise ValueError("Variable name must be a string.")
         if not str(vr_name).isidentifier():
             raise ValueError("Variable name must be a valid variable name.")
+<<<<<<< HEAD
         if vr_name not in self.inputs:
             raise ValueError("Variable name must be one of the input variable names in code.")                
     
@@ -127,3 +136,12 @@ class Process(PipelineObject):
 
         if action.conn:
             pool.return_connection(action.conn)
+=======
+        
+
+    def run(self, force_redo: bool = False, action: Action = None, return_conn: bool = True) -> None:
+        """Execute the attached method.
+        kwargs are the input VR's."""
+        from ResearchOS.PipelineObjects._runnables import run
+        run(self, __file__, force_redo=force_redo, action=action, return_conn=return_conn)
+>>>>>>> code-sharing-test-MT2

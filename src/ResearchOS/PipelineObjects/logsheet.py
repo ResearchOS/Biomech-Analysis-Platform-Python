@@ -17,6 +17,12 @@ from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.DataObjects.data_object import load_data_object_classes
 from ResearchOS.validator import Validator
 from ResearchOS.sql.sql_runner import sql_order_result
+<<<<<<< HEAD
+=======
+from ResearchOS.Bridges.input_types import Dynamic
+from ResearchOS.Bridges.let import Let
+from ResearchOS.Bridges.letput import LetPut
+>>>>>>> code-sharing-test-MT2
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -26,8 +32,6 @@ all_default_attrs["num_header_rows"] = None
 all_default_attrs["class_column_names"] = {}
 
 computer_specific_attr_names = ["path"]
-
-# read_logsheet_stream = open("logfile_read_logsheet.log", "w")
 
 class Logsheet(PipelineObject):
 
@@ -92,7 +96,7 @@ class Logsheet(PipelineObject):
             None
         
         Raises:
-            ValueError: incorrect ''header'' format"""
+            ValueError: incorrect ''header'' format"""        
         if headers == default:
             return
         self.validate_path(self.path, action, None)
@@ -116,10 +120,20 @@ class Logsheet(PipelineObject):
             if header[2] not in DataObject.__subclasses__():
                 raise ValueError("Third element of each header tuple must be a ResearchObject subclass!")
             # 6. Check that the third element of each header tuple is a valid variable ID.                
-            if not isinstance(header[3],(str, Variable)):
+            if not isinstance(header[3],Variable):
                 raise ValueError("Fourth element of each header tuple must be a valid pre-existing variable ID OR the variable object itself!")
-            if isinstance(header[3], str) and not (header[3].startswith(Variable.prefix) and ResearchObjectHandler.object_exists(header[3], action)):
-                raise ValueError("Fourth element of each header tuple (if provided as a str) must be a valid pre-existing variable ID!")
+            # if isinstance(header[3], str) and not (header[3].startswith(Variable.prefix) and ResearchObjectHandler.object_exists(header[3], action)):
+            #     raise ValueError("Fourth element of each header tuple (if provided as a str) must be a valid pre-existing variable ID!")
+
+        # Check that there are no duplicate header names or VR ID's.
+        header_names = [header[0] for header in headers]
+        header_vrids = [header[3] for header in headers]
+        if len(header_names) != len(set(header_names)):
+            print("Redundant header names: ", [h for h in header_names if header_names.count(h) > 1])
+            raise ValueError("Header names must be unique!")
+        if len(header_vrids) != len(set(header_vrids)):
+            print("Redundant VR ID's: ", [h for h in header_vrids if header_vrids.count(h) > 1])
+            raise ValueError("VR ID's must be unique!") 
             
         logsheet = self._read_and_clean_logsheet(nrows = 1)
         headers_in_logsheet = logsheet[0]
@@ -127,7 +141,7 @@ class Logsheet(PipelineObject):
         missing = [header for header in headers_in_logsheet if header not in header_names]
 
         if len(missing) > 0:
-            raise ValueError(f"The headers {missing} do not match between logsheet and code!")
+            raise ValueError(f"The headers {missing} do not match between logsheet and code!")        
             
     def to_json_headers(self, headers: list, action: Action) -> str:
         """Convert the headers to a JSON string.
@@ -139,16 +153,26 @@ class Logsheet(PipelineObject):
             
         Returns:
             ''headers'' as a JSON string using ''json.dumps''"""
-        str_headers = []        
+        # Create Outputs for the Logsheet        
+        inputs_dict = {header[0]: header[3] for header in headers}
+        self.set_outputs(**inputs_dict, action=action)
+        del self.__dict__["outputs"]
+
+        str_headers = []       
         for header in headers:
             # Update the Variable object with the name if it is not already set, and the level.
             if isinstance(header[3], Variable):
                 vr = header[3]                
             else:
                 vr = Variable(id = header[3], action = action)
+<<<<<<< HEAD
             # default_attrs = DefaultAttrs(vr).default_attrs
             kwarg_dict = {"name": header[0]}
             vr.__setattr__(None, None, action=action, kwargs_dict=kwarg_dict)
+=======
+            kwarg_dict = {"name": header[0]}            
+            vr.__setattr__(None, None, action=action, kwargs_dict=kwarg_dict, exec=False)
+>>>>>>> code-sharing-test-MT2
             str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, vr.id))
         return json.dumps(str_headers)
 
@@ -173,7 +197,7 @@ class Logsheet(PipelineObject):
         }
         for header in str_var:
             cls_header = [cls for cls in subclasses if cls.prefix == header[2]][0]
-            headers.append((header[0], mapping[header[1]], cls_header, header[3]))                
+            headers.append((header[0], mapping[header[1]], cls_header, Variable(id=header[3], action=action)))                
         return headers
             
     ### Num header rows
@@ -292,7 +316,6 @@ class Logsheet(PipelineObject):
         df = pd.read_excel(self.path, header = None)
         return df.values.tolist()
     
-    # @profile(stream = read_logsheet_stream)
     def read_logsheet(self) -> None:
         """Run the logsheet import process.
         
@@ -303,7 +326,7 @@ class Logsheet(PipelineObject):
             ValueError: more header rows than logsheet rows or incorrect schema format?"""
         logsheet_start_time = time.time()
         global all_default_attrs
-        action = Action(name = "read logsheet")
+        action = Action(name = "read logsheet", type="run")        
         ds = Dataset(id = self._get_dataset_id(), action = action)
         validator = Validator(self, action)      
         validator.validate(self.__dict__, all_default_attrs)
@@ -316,10 +339,7 @@ class Logsheet(PipelineObject):
 
         if len(full_logsheet) < self.num_header_rows:
             raise ValueError("The number of header rows is greater than the number of rows in the logsheet!")
-
-        # Run the logsheet import.
-        # headers = full_logsheet[0:self.num_header_rows]
-        if len(full_logsheet) == self.num_header_rows:
+        elif len(full_logsheet) == self.num_header_rows:
             logsheet = []
         else:
             logsheet = full_logsheet[self.num_header_rows:]
@@ -328,9 +348,13 @@ class Logsheet(PipelineObject):
         sqlquery = "SELECT dataobject_id, path FROM paths"
         result = action.conn.cursor().execute(sqlquery).fetchall()
         dataobject_ids = [row[0] for row in result]
+<<<<<<< HEAD
         paths = [json.loads(row[1]) for row in result]
 
         print("Conn", action.conn)
+=======
+        paths = [json.loads(row[1]) for row in result]        
+>>>>>>> code-sharing-test-MT2
         
         # For each row, connect instances of the appropriate DataObject subclass to all other instances of appropriate DataObject subclasses.
         headers_in_logsheet = full_logsheet[0]
@@ -401,6 +425,7 @@ class Logsheet(PipelineObject):
             if len(header) > max_len:
                 max_len = len(header)
 
+<<<<<<< HEAD
         # Remove the data objects that are unchanged                
         sqlquery_raw = "SELECT path_id, vr_id, str_value, numeric_value, pr_id FROM data_values WHERE pr_id = ?"
         sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single=True, user=True, computer=True)
@@ -410,6 +435,19 @@ class Logsheet(PipelineObject):
         str_values = [row[2] for row in result]
         numeric_values = [row[3] for row in result]
         pr_ids = [row[4] for row in result]              
+=======
+        # Prep to omit the data objects that are unchanged                
+        sqlquery_raw = "SELECT path_id, vr_id, str_value, numeric_value FROM data_values WHERE pr_id = ? AND vr_id IN ({})".format("?, "*(len(vr_obj_list)-1) + "?")
+        sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single=True, user=True, computer=True)
+        params = (self.id,) + tuple(vr_list)
+        result = action.conn.cursor().execute(sqlquery, params).fetchall()
+
+        # All in the same order.
+        path_ids = [row[0] for row in result]
+        vr_ids = [row[1] for row in result]
+        str_values = [row[2] for row in result]
+        numeric_values = [row[3] for row in result]      
+>>>>>>> code-sharing-test-MT2
         
         # Assign the values to the DataObject instances.
         all_attrs = {}
@@ -442,24 +480,36 @@ class Logsheet(PipelineObject):
                     all_attrs[dobj] = {}
                 all_attrs[dobj][vr] = value        
                     
+<<<<<<< HEAD
+=======
+        print("Assigning Data Object values...")
+>>>>>>> code-sharing-test-MT2
         modified_dobjs = []        
         for dobj, attrs in all_attrs.items():
             # Create dict for the DataObject with previous values.
             if dobj.id in path_ids:
                 prev_attrs = {}
                 path_idx = [index for index, value in enumerate(path_ids) if value == dobj.id]
+<<<<<<< HEAD
                 prev_attrs = {Variable(id = vr_ids[idx], action = action): str_values[idx] if str_values[idx] is not None else numeric_values[idx] for idx in path_idx if pr_ids[idx] == self.id}
+=======
+                prev_attrs = {Variable(id=vr_ids[idx]): str_values[idx] if str_values[idx] is not None else numeric_values[idx] for idx in path_idx}
+>>>>>>> code-sharing-test-MT2
                 # Remove the attributes that are the same as the previous attributes.
                 attrs = {vr: value for vr, value in attrs.items() if vr not in prev_attrs or prev_attrs[vr] != value}
                 if len(attrs) > 0:
                     modified_dobjs.append(dobj)
+<<<<<<< HEAD
             dobj._set_vr_values(attrs, pr_id = self.id, action = action)         
+=======
+            dobj._set_vr_values(attrs, pr = self, action = action)         
+>>>>>>> code-sharing-test-MT2
 
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.
         print('Creating Data Objects graph...')
         addresses = []
-        dobj_names = [[ds.name] + row for row in dobj_names]
+        dobj_names = [[ds.id] + row for row in dobj_names]
         for row in dobj_names:
             for idx in range(1, len(row)):
                 pair = [row[idx-1], row[idx]]
@@ -471,11 +521,19 @@ class Logsheet(PipelineObject):
         action.conn = conn
 
         # Set all the paths to the DataObjects.        
+<<<<<<< HEAD
         print("Saving Data Objects...")        
+=======
+        print("Saving Data Objects to dataset...")        
+>>>>>>> code-sharing-test-MT2
         for idx, row in enumerate(dobj_names):
             if row[1:] not in paths: # Exclude Dataset object.
                 action.add_sql_query(all_dobjs_ordered[idx].id, "path_insert", (action.id_num, all_dobjs_ordered[idx].id, json.dumps(row[1:])))
         
+<<<<<<< HEAD
+=======
+        action.add_sql_query(None, "run_history_insert", (action.id_num, self.id))
+>>>>>>> code-sharing-test-MT2
         action.exec = True
         action.commit = True        
         action.execute() # Commit the action.
@@ -502,3 +560,15 @@ class Logsheet(PipelineObject):
             else:
                 value = float(value)
         return value
+    
+if __name__=="__main__":
+    import sys, os
+    from ResearchOS.PipelineObjects.logsheet import Logsheet
+    from ResearchOS.DataObjects.dataset import Dataset
+    from ResearchOS.build_pl import import_objects_of_type
+    sys.path.append(os.getcwd())
+    sys.path.append(os.path.join(os.getcwd(), "src"))
+    lgs = import_objects_of_type(Logsheet)
+    ds = import_objects_of_type(Dataset)
+    lg = lgs[0]
+    lg.read_logsheet()
