@@ -24,6 +24,7 @@ class Variable(ResearchObject):
                     **kwargs):
         if self._initialized:
             return
+        self._dataobject_attr = None # Purposefully not included in all_default_attrs.
         self.hard_coded_value = hard_coded_value
         self._slice = None
         super().__init__(**kwargs)

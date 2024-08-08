@@ -203,6 +203,14 @@ class CodeRunner():
         validate_dict = {key: value for key, value in robj.__dict__.items() if key not in ["inputs", "outputs"]}
         validator.validate(validate_dict, default_attrs)
 
+        for input in robj.inputs.values():
+            if input.vr is None:
+                raise ValueError(f"Input VR {input} is None.")
+            
+        for output in robj.outputs.values():
+            if output.vr is None:
+                raise ValueError(f"Output VR {output} is None.")
+
         self.action = action
         self.pl_obj = robj 
         self.force_redo = force_redo

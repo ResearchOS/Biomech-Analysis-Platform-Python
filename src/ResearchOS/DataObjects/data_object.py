@@ -27,7 +27,7 @@ all_default_attrs = {}
 computer_specific_attr_names = []
 
 class DataObject(ResearchObject):
-    """The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors."""    
+    """The parent class for all data objects. Data objects represent some form of data storage, and approximately map to statistical factors."""
 
     def get(self, vr: "Variable", action: Action, process: "Process" = [], node_lineage: list = None, lookup_vr: "Variable" = None, lookup_pr: list = [], vr_name_in_code: str = None, parent_ro: "ResearchObject" = None, slice_input: slice = None) -> Any:
         """Load the value of a VR from the database for this data object.
