@@ -7,8 +7,9 @@
         "data_values",
         "data_addresses",
         "paths",
-        "vr_dataobjects",
-        "pipelineobjects_graph"
+        "nodes",
+        "edges",
+        "run_history"
     ],
     "intended_tables_data": [
         "data_values_blob"

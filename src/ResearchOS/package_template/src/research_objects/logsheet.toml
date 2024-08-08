@@ -1,0 +1,4 @@
+[logsheet]
+num_header_rows = 3
+outputs.header_name1 = {type = "str", level = "SJ"}
+outputs.header_name2 = {type = "str", level = "SJ"}

@@ -1,10 +1,14 @@
 import os, sys
 import importlib
 import json
+import time
+import copy
+import pickle
 
 import typer
 from typer.testing import CliRunner
 import toml
+import networkx as nx
 
 from ResearchOS.research_object_handler import ResearchObjectHandler
 from ResearchOS.config import Config
@@ -12,17 +16,22 @@ from ResearchOS.cli.quickstart import create_folders
 from ResearchOS.db_initializer import DBInitializer
 from ResearchOS.action import Action, logger
 from ResearchOS.tomlhandler import TOMLHandler
+from ResearchOS.sql.sql_runner import sql_order_result
+from ResearchOS.Digraph.pipeline_digraph import PipelineDiGraph, import_pl_objs
+from ResearchOS.sqlite_pool import SQLiteConnectionPool
 
 app = typer.Typer()
-# Add the current working directory to the path so that the code can be imported.
-sys.path.append(os.getcwd())
-with open ("pyproject.toml", "r") as f:
-    pyproject = toml.load(f)
-src_path = pyproject["tool"]["researchos"]["paths"]["root"]["root"]
-if not os.path.isabs(src_path):
-    src_path = os.path.join(os.getcwd(), src_path)
-sys.path.append(src_path)
-logger.warning(f"Adding {src_path} to the path.")
+
+def add_src_to_path():
+    # Add the current working directory to the path so that the code can be imported.
+    sys.path.append(os.getcwd())
+    with open ("pyproject.toml", "r") as f:
+        pyproject = toml.load(f)
+    src_path = pyproject["tool"]["researchos"]["paths"]["root"]["root"]
+    if not os.path.isabs(src_path):
+        src_path = os.path.join(os.getcwd(), src_path)
+    sys.path.append(src_path)
+    logger.debug(f"Adding {src_path} to the path.")
 
 
 @app.command()
@@ -64,6 +73,7 @@ def init_project(folder: str = typer.Option(None, help="Folder name"),
 def init_package(name: str = typer.Argument(help="Package name. This will be the name of the folder.")):
     """Initialize the folder structure to create a package. Must provide the subfolder to create the package in."""
     cwd = os.getcwd()
+    add_src_to_path()
     packages_folder = os.path.join(cwd, "packages")
     package_folder = os.path.join(packages_folder, name)
     if not os.path.exists(package_folder):
@@ -82,6 +92,7 @@ def config(github_token: str = typer.Option(None, help="GitHub token"),
            data_db_file: str = typer.Option(None, help="Data database file"),
            data_objects_path: str = typer.Option(None, help="Path to data objects")
         ):
+    add_src_to_path()
     config = Config()
     command = f'code "{config._config_path}"'
     if github_token is None and db_file is None and data_db_file is None and data_objects_path is None:
@@ -99,6 +110,7 @@ def config(github_token: str = typer.Option(None, help="GitHub token"),
 def db_reset(yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type 'y' to reset the databases to their default state.")):
     """Reset the databases to their default state."""
     # Ask the user for confirmation.
+    add_src_to_path()
     user_input = "y"
     if not yes_or_no:
         user_input = input("Are you sure you want to reset the databases to their default (empty) state? All data will be deleted! (y/n) ")        
@@ -110,16 +122,28 @@ def db_reset(yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type 'y'
     logger.warning(db_msg)
 
 @app.command()
-def dobjs(is_active: int = typer.Option(1, help="1 for active, 0 for inactive, default 1")):
-    """List all available data objects."""    
+def dobjs(path = typer.Argument(help="Path to the data object of interest", default=None)):
+    """List all available data objects."""
+    import matplotlib.pyplot as plt
+    from netgraph import Graph, InteractiveGraph, EditableGraph    
+    from ResearchOS.cli.get_all_paths_of_type import import_objects_of_type
+    from ResearchOS.DataObjects.data_object import DataObject
+    add_src_to_path()
+    import_objects_of_type(DataObject)
+    if path is not None and not isinstance(path, list):        
+        path = [path]
     action = Action(name = "list_dobjs")
     cursor = action.conn.cursor()
     sqlquery = "SELECT path_id, dataobject_id, path FROM paths WHERE is_active = ?"
+    is_active = 1
     params = (is_active,)    
     result = cursor.execute(sqlquery, params).fetchall()
-
-    # ds = Dataset(id = self._get_dataset_id())
-    # G = ds.get_addresses_graph()
+    if not result:
+        print("No data objects found.")
+        return
+    if path is not None:
+        result = [row for row in result if set(path).issubset(json.loads(row[2]))]
+    
     max_num_levels = -1
     str_lens = []
     for row in result:
@@ -134,25 +158,34 @@ def dobjs(is_active: int = typer.Option(1, help="1 for active, 0 for inactive, d
     for i in range(max_num_levels):
         lens[i] = max([row[i] for row in str_lens if len(row)>=i+1])
         
+    subclasses = DataObject.__subclasses__()
+    max_cls_len = max([len(cls.__name__) for cls in subclasses])
+
     for row in result:
         path = json.loads(row[2])
         lens_list = [f"{{:<{lens[i]}}}" for i in range(len(path))]
         lens_str = " ".join(lens_list)
 
         # Prepare the complete format string
-        style_str = "{:<12} {:<15} {:<7} " + lens_str          
-        print(style_str.format(f"Path ID: {row[0]}", f"DataObject ID: {row[1]}", "Path: ", *path))
+        prefix = row[1][0:2]
+        cls = [cls for cls in subclasses if cls.prefix == prefix][0]
+        cls_name = cls.__name__
+
+        style_str = "{:<12} {" + f":<{max_cls_len}" + "} {:<7} "
+        path_str = ", ".join(path)
+        print(style_str.format(f"Path ID: {row[0]}", f"{cls_name} ID: {row[1]}", "Path: " + path_str))
 
 @app.command()
 def logsheet_read():
     """Run the logsheet."""
+    add_src_to_path()
     tomlhandler = TOMLHandler("pyproject.toml")
-    dataset_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["Dataset"]    
+    dataset_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["dataset"]    
     dataset_py_path = tomlhandler.make_abs_path(dataset_raw_path)
     dataset_py_path = dataset_py_path.replace("/", os.sep)
     dataset_py_path = dataset_py_path.replace(os.sep, ".").replace(".py", "")
 
-    logsheet_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["Logsheet"]
+    logsheet_raw_path = tomlhandler.toml_dict["tool"]["researchos"]["paths"]["research_objects"]["logsheet"]
     logsheet_py_path = tomlhandler.make_abs_path(logsheet_raw_path)
     logsheet_py_path = logsheet_py_path.replace("/", os.sep)
     logsheet_py_path = logsheet_py_path.replace(os.sep, ".").replace(".py", "")
@@ -175,55 +208,467 @@ def graph_show(package_or_project_name: str = typer.Argument(default=None, help=
         package_or_project_name = os.path.basename(os.getcwd())
 
 @app.command()
-def open(ro_type: str = typer.Argument(help="Research object type (e.g. data, logsheet, pipeline)"),
+def edit(ro_type: str = typer.Argument(help="Research object type (e.g. data, logsheet, pipeline)"),
          p: str = typer.Option(None, help="The package name to open the research object from")):
     """Open a research object in the default editor.
     They can come from a few places:
     1. The project: Looks in the root/pyproject.toml file for the research object location.
     2. The package: Looks in root/packages/package_name/pyproject.toml for the research object location. 
     If root/packages/package_name does not exist, searches through the pip installed packages for a package with the name package_name."""
-    subclasses = ResearchObjectHandler._get_subclasses()
-    name_list = [cls.__name__ for cls in subclasses if cls.__name__.lower() == ro_type.lower()]
-    if len(name_list) == 0:        
-        name_list = [cls.__name__ for cls in subclasses if cls.prefix.lower() == ro_type.lower()]
-    if len(name_list) == 0:
-        raise ValueError(f"Research object type {ro_type} not found.")
-    ro_type = name_list[0]
-    # Get the pyproject.toml file path.
+    from ResearchOS.research_object import ResearchObject
+    add_src_to_path()
+    subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
+    cls = [cls for cls in subclasses if cls.__name__.lower() == ro_type.lower()]
+    if len(cls) == 0:        
+        cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix.lower() == ro_type.lower()]
+    if len(cls) == 0:
+        print(f"Research object type {ro_type} not found.")
+        return        
+    ro_type = cls[0]
+    # Get the pyproject.toml file path from all the places it could be.
+    # TODO: Support more than "venv" here.
     root_path = os.getcwd()
     root_package_path = os.path.join(root_path, "packages", str(p))
     venv_package_path = os.path.join(os.getcwd(), "venv", "lib", "site-packages", str(p))
+    # Project
     if os.path.exists(os.path.join(root_path, "pyproject.toml")):
         toml_path = os.path.join(root_path, "pyproject.toml")
+    # My package
     elif os.path.exists(os.path.join(root_package_path, "pyproject.toml")):
         toml_path = os.path.join(root_package_path, "pyproject.toml")
+    # Venv package
     elif os.path.exists(os.path.join(venv_package_path, "pyproject.toml")):
         toml_path = os.path.join(venv_package_path, "pyproject.toml")
 
     if not os.path.exists(toml_path):
         raise ValueError(f"pyproject.toml file not found in {root_path} or {root_package_path} or {venv_package_path}")
     
-    with open(toml_path, "r") as f:
-        pyproject = toml.load(f)
-
-    if "tool" not in pyproject:
-        raise ValueError("No tool section in pyproject.toml file.")
+    ro_name = ro_type.__name__.lower()    
     
-    if "researchos" not in pyproject["tool"]:
-        raise ValueError("No researchos section in pyproject.toml file.")
+    toml_handler = TOMLHandler(toml_path)
+
+    paths = toml_handler.get("tool.researchos.paths.research_objects." + ro_name)
+    root = toml_handler.get("tool.researchos.paths.root.root")
+
+    if not isinstance(paths, list):
+        paths = [paths]
+
+    if not os.path.isabs(root):
+        root = os.path.join(os.getcwd(), root)
     
-    if "paths" not in pyproject["tool"]["researchos"]:
-        raise ValueError("No paths section in pyproject.toml file.")
+    for path in paths:
+        full_path = os.path.join(root, path)
+        command = "code " + full_path
+        os.system(command)
+
+@app.command()
+def vis_pl():
+    # import matplotlib.pyplot as plt
+    # import pyvis.network as pyvis_network
+    # from pyvis.network import Network
+    # from pyvis.options import Options
+    import webbrowser
+    from ResearchOS.GUI.position_graph import write_js_graph
+    from ResearchOS.PipelineObjects.logsheet import Logsheet
+    from ResearchOS.DataObjects.dataset import Dataset
+    from ResearchOS.build_pl import import_objects_of_type    
+    add_src_to_path()
+    print('Importing Dataset objects...')
+    import_objects_of_type(Dataset)
+    print('Importing Logsheet objects...')
+    # from src.research_objects import logsheets as lg
+    lgs = import_objects_of_type(Logsheet)
+    lg = lgs[0]
+    # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.          
+    action = Action(name = "run_pipeline", type="run")
+    graph = PipelineDiGraph(action=action)
+    G = graph.G        
+    html_path = write_js_graph(G) 
+    webbrowser.open_new_tab(html_path)
+
+@app.command()
+def show_pl(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None)):
+    """Show the pipeline objects in the graph in topologically sorted order."""
+    from ResearchOS.PipelineObjects.logsheet import Logsheet
+    from ResearchOS.DataObjects.dataset import Dataset
+    from ResearchOS.build_pl import import_objects_of_type
+    add_src_to_path()
+    print('Importing Dataset objects...')
+    import_objects_of_type(Dataset)
+    print('Importing Logsheet objects...')
+    # from src.research_objects import logsheets as lg
+    lgs = import_objects_of_type(Logsheet)
+    lg = lgs[0]
+    # Build my pipeline object MultiDiGraph. Nodes are Logsheet/Process objects, edges are "Connection" objects which contain the VR object/value.          
+    action = Action(name = "run_pipeline", type="run")
+    graph = PipelineDiGraph(action=action)
+    G = graph.G    
+
+    if plobj_id is None:
+        lg_id = None
+        plobj_id = lg_id
     
-    if ro_type not in pyproject["tool"]["researchos"]["paths"]:
-        raise ValueError(f"No path for {ro_type} in pyproject.toml file.")
+    plobj = None
+    for plobj_tmp in G.nodes:
+        if plobj_tmp.id == plobj_id: 
+            plobj = plobj_tmp           
+            break
 
-    path = pyproject["tool"]["researchos"]["paths"][ro_type]
+    if plobj is None and plobj_id is not None:
+        raise ValueError("Pipeline object not found.")
 
-    command = "code " + path
+    # Check if the previous nodes are all up to date.
+    if plobj:
+        anc_nodes = list(nx.ancestors(G, plobj))
+        desc_nodes = [] # Descendants of the ancestors.
+        for anc_node in anc_nodes:
+            desc = list(nx.descendants(G, anc_node))
+            desc_nodes.extend([d for d in desc if d not in desc_nodes])
+        anc_nodes_final = [] # Ancestors of the descendants.
+        for node in desc_nodes:
+            anc = list(nx.ancestors(G, node))
+            anc_nodes_final.extend([a for a in anc if a not in anc_nodes_final])
+        anc_nodes = anc_nodes_final
+    else:
+        anc_nodes = list(G.nodes)
+        print('Starting at the root node of the Pipeline!')
+    anc_graph = G.subgraph(anc_nodes)
+    anc_nodes_sorted = list(nx.topological_sort(anc_graph))
+    if not anc_nodes_sorted:
+        print('Nothing to run! Aborting...')
+        return [], []
+        
+    # Get the date last edited for each pipeline object, and see if it was settings or run action.
+    sqlquery_raw = "SELECT action_id_num, pl_object_id FROM run_history WHERE pl_object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["pl_object_id"], single = False, user = True, computer = False)
+    anc_node_ids = [node.id for node in anc_nodes_sorted]    
+    params = tuple(anc_node_ids)
+    run_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()    
 
-    os.system(command)
+    if not run_history_result:
+        print("No run history found. Need to run the logsheet before running the pipeline. Attempting to run the logsheet for you...")
+        time.sleep(2)
+        try:            
+            lg.read_logsheet()
+            run_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()    
+        except:
+            raise ValueError("Error auto-running logsheet. Must be addressed before the pipeline can be run.")
+        
+    run_history_result = [(r + ("run",)) for r in run_history_result]
+
+    sqlquery_raw = "SELECT action_id_num, object_id, attr_id FROM simple_attributes WHERE object_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["object_id"], single = False, user = True, computer = False)
+    settings_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    # Omit the settings that don't affect the runtime:
+    # name, up_to_date
+    name_id = ResearchObjectHandler._get_attr_id("name")
+    up_to_date_id = ResearchObjectHandler._get_attr_id("up_to_date")
+    attrs_to_remove = [name_id, up_to_date_id]
+    remove_elems = []
+    for r in settings_history_result:
+        if r[2] in attrs_to_remove:
+            remove_elems.append(r)
+    for r in remove_elems:
+        settings_history_result.remove(r)
+    settings_history_result = [r[:-1] for r in settings_history_result]
+
+    settings_history_result = [(r + ("settings",)) for r in settings_history_result]
+    sqlquery_raw = "SELECT action_id_num, ro_id FROM nodes WHERE is_active = 1 AND ro_id IN ({})".format(",".join(["?" for i in range(len(anc_nodes_sorted))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["ro_id"], single = True, user = True, computer = False)
+    nodes_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    nodes_history_result = [(r + ("settings",)) for r in nodes_history_result]
+    sqlquery_raw = "SELECT action_id_num, target_pr_id FROM edges WHERE is_active = 1 AND target_pr_id IN ({pr_id})".format(pr_id=",".join(["?" for i in range(len(anc_nodes_sorted))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["target_pr_id"], single = True, user = True, computer = False)
+    edges_history_result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    edges_history_result = [(r + ("settings",)) for r in edges_history_result]
+    all_result = run_history_result + settings_history_result + nodes_history_result + edges_history_result
+    all_result = list(set(all_result))
+    action_id_nums = list(set([r[0] for r in all_result]))
+
+    # Get the dates for action_ids
+    sqlquery_raw = "SELECT action_id_num, datetime FROM actions WHERE action_id_num IN ({})".format(",".join(["?" for i in range(len(action_id_nums))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["action_id_num"], single = True, user = True, computer = False)
+    params = tuple(action_id_nums)
+    action_dates = action.conn.cursor().execute(sqlquery, params).fetchall()
+    action_dates_dict = {r[0]: r[1] for r in action_dates}
+    all_result = [(r + (action_dates_dict[r[0]],)) for r in all_result]
+    result = sorted(all_result, key = lambda x: x[3], reverse=True) # Sorted by datetime, descending.
+    unique_result = []
+    done_prs = []
+    for r in result:
+        if r[1] not in done_prs:
+            done_prs.append(r[1])
+            unique_result.append(r)
+    out_of_date_nodes = []
+    up_to_date_nodes = []
+    for anc_node in anc_nodes_sorted:
+        if isinstance(anc_node, Logsheet):
+            continue # Can't run the pipeline from a Logsheet.
+        most_recent_idx = [idx for idx, r in enumerate(unique_result) if r[1] == anc_node.id][0]
+        if unique_result[most_recent_idx][2] == "run":
+            up_to_date_nodes.append(anc_node)
+        else:
+            out_of_date_nodes.append(anc_node)
+            # # Ensure that there are multiple potential root nodes, to handle the case where maybe multiple nodes of the same generation are out of date.
+            # first_out_of_date.append(anc_node)
+            # for out_of_date_node in first_out_of_date:
+            #     if anc_node in nx.descendants(G, out_of_date_node):                    
+            #         first_out_of_date.remove(anc_node)
+            #         break
+
+    out_of_date_nodes = list(set(out_of_date_nodes))
+    out_of_date_nodes = out_of_date_nodes + [plobj] if plobj else out_of_date_nodes
+    nodes_to_run = [n for n in out_of_date_nodes] # Include the out of date nodes themselves.
+    for node in out_of_date_nodes:
+        desc = list(nx.descendants(G, node))
+        desc = [d for d in desc if d not in out_of_date_nodes]
+        nodes_to_run.extend(desc)
+
+    if not nodes_to_run:
+        if not plobj:
+            print('All nodes are up to date. Nothing to run.')
+            return
+        print('All previous nodes are up to date. Run starting from specified node.')
+
+    all_nodes_sorted = list(nx.topological_sort(G))
+    up_to_date_nodes = list(set(up_to_date_nodes))
+    up_to_date_nodes_sorted = [n for n in all_nodes_sorted if n in up_to_date_nodes]
+    print("Up to date nodes:")
+    for idx, pl_node in enumerate(up_to_date_nodes_sorted):
+        print(str(idx) + ":", pl_node)
+
+    
+    run_nodes_sorted = [n for n in all_nodes_sorted if n in nodes_to_run]
+    print("Run nodes:")
+    for idx, pl_node in enumerate(run_nodes_sorted):
+        print(str(idx) + ":", pl_node)
+
+    pool = SQLiteConnectionPool()
+    pool.return_connection(action.conn)
+    return run_nodes_sorted, up_to_date_nodes_sorted
+
+@app.command()
+def run(plobj_id: str = typer.Argument(help="Pipeline object ID", default=None),
+        yes_or_no: bool = typer.Option(False, "--yes", "-y", help="Type '-y' to run the pipeline without confirmation.")):
+    """Run the runnable pipeline objects."""
+    from ResearchOS.PipelineObjects.logsheet import Logsheet
+    from ResearchOS.research_object import ResearchObject
+    from ResearchOS.research_object_handler import ResearchObjectHandler        
+    add_src_to_path()
+    import_pl_objs()
+    subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
+    run_nodes_sorted, up_to_date_nodes_sorted = show_pl(plobj_id)
+    action = Action(name = "run_pipeline", type="run")
+
+    if not yes_or_no and plobj_id is not None:
+        cls = [cls for cls in subclasses if hasattr(cls, "prefix") and cls.prefix==plobj_id[0:2]][0]
+        run_nodes_sorted = [cls(id=plobj_id, action=action)]
+        
+            
+    for idx, pl_node in enumerate(run_nodes_sorted):
+        if isinstance(pl_node, Logsheet):
+            continue
+        if idx > 0:
+            show_pl(pl_node.id)
+        pl_node.run(action=action, return_conn=False)
+
+def input_with_timeout(prompt, timeout):
+    import threading
+    result = [""]
+
+    def wait_for_input():
+        result[0] = input(prompt)
+
+    thread = threading.Thread(target=wait_for_input)
+    thread.daemon = True
+    thread.start()
+    thread.join(timeout)
+    if thread.is_alive():
+        print('Starting the pipeline...')
+
+    return result[0]
+
+@app.command()
+def init_bridges():
+    """Creates the bridges.py file in the project root directory.
+    If the file already exists, does not do anything."""
+    from ResearchOS.build_pl import build_pl
+    from ResearchOS.build_pl import import_objects_of_type
+    tomlhandler = TOMLHandler("pyproject.toml")
+    # Respects the root folder.
+    bridges_path = tomlhandler.get("tool.researchos.paths.root.bridges") 
+    bridges_path = tomlhandler.make_abs_path(bridges_path)   
+    if os.path.exists(bridges_path):
+        print("Bridges file already exists. Aborting...")
+        return
+    
+    # 1. Build the pipeline.
+    G = build_pl()
+
+    # 2. Get the most up-to-date inputs and outputs where show = True.
+    sqlquery_raw = "SELECT id FROM inlets_outlets WHERE show = ?"
+    action = Action(name = "init_bridges")
+    params = (1,)
+    sqlquery = sql_order_result(action, sqlquery_raw, ["show"], single = False, user = True, computer = False)
+    result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    put_ids = [r[0] for r in result]
+
+    # 3. Look at lets_puts table to see which inlets/outlest are connected to those inputs/outputs.
+    sqlquery_raw = "SELECT let_id, put_id FROM lets_puts WHERE put_id IN ({})".format(",".join(["?" for i in range(len(put_ids))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["put_id"], single = False, user = True, computer = False)
+    params = tuple(put_ids)
+    result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    let_put_ids = [(r[0], r[1]) for r in result]
+    let_ids = [r[0] for r in let_put_ids]
+
+    # 4. Get the inlets/outlets vr_name_in_code and the source pr_id.
+    sqlquery_raw = "SELECT id, vr_name_in_code, source_pr_id FROM inlets_outlets WHERE id IN ({})".format(",".join(["?" for i in range(len(let_ids))]))
+    sqlquery = sql_order_result(action, sqlquery_raw, ["id"], single = False, user = True, computer = False)
+    params = tuple(let_ids)
+    result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    let_ids = [r[0] for r in result]
+    vr_name_in_codes = [r[1] for r in result]
+    source_pr_ids = [r[2] for r in result]
+
+    # 5. Look in each loaded module under each package's Process field for the variable name in the code.
+    # 5.1. Get the package names.
+    packages_folder = os.path.join(os.getcwd(), "packages")
+    packages = os.listdir(packages_folder)
+    # 5.2. Get the process names for each package by scanning each module with dir()
+    # Is this right? No idea. Thanks Copilot.
+    package_process_dict = {}
+    for package in packages:
+        package_path = os.path.join(packages_folder, package)
+        if not os.path.isdir(package_path):
+            continue
+        package_process_dict[package] = []
+        for root, dirs, files in os.walk(package_path):
+            for file in files:
+                if file.endswith(".py"):
+                    module_path = os.path.join(root, file)
+                    module_path = module_path.replace("/", os.sep)
+                    module_path = module_path.replace(os.sep, ".").replace(".py", "")
+                    module = importlib.import_module(module_path)
+                    process_names = [obj for obj in dir(module) if obj.startswith("PR")]
+                    package_process_dict[package].extend(process_names)        
+
+    # 6. Compose each line of the bridges.py file as: 
+    # <package_abbrev>.<process_name>[<variable_name_in_code>] = None
+
+    # 7. Write the file. Organize the rows by packages, then by process name organized topologically.
+
+@app.command()
+def get(node_id: str = typer.Argument(help="Node ID"),
+    vr_id: str = typer.Argument(help="Variable ID", default=None)):
+    """Get the variable value from the database."""
+    from ResearchOS.variable import Variable
+    from ResearchOS.DataObjects.data_object import DataObject
+    from ResearchOS.cli.get_all_paths_of_type import import_objects_of_type    
+    from ResearchOS.sqlite_pool import SQLiteConnectionPool
+    add_src_to_path()
+    import_objects_of_type(Variable)
+    import_objects_of_type(DataObject)
+    action = Action(name = "get_variable")
+    cls = [cls for cls in DataObject.__subclasses__() if cls.prefix == node_id[0:2]][0]
+    node = cls(id = node_id, action = action)
+    if vr_id is None:
+        sqlquery_raw = "SELECT pr_id, vr_id, numeric_value, str_value FROM data_values WHERE is_active = 1 AND path_id = ?"
+        sqlquery = sql_order_result(action, sqlquery_raw, ["path_id"], single = True, user = True, computer = False)
+        params = (node_id,)
+        result = action.conn.cursor().execute(sqlquery, params).fetchall()
+        if not result:
+            print("No variable found.")
+            return
+        max_pr_len = max(len(row[0]) if row[0] is not None else 0 for row in result)
+        max_vr_len = max(len(row[1]) if row[1] is not None else 0 for row in result)
+        max_numeric_len = max(len(str(row[2])) if row[2] is not None else 0 for row in result)
+        max_str_len = max(len(row[3]) if row[3] is not None else 0 for row in result)
+        max_scalar_len = max([max_numeric_len, max_str_len])
+        for row in result:
+            pr_id = row[0]
+            vr_id = row[1]
+            numeric_value = row[2]
+            str_value = row[3]
+            if numeric_value:
+                print(f"PR ID: {pr_id:<{max_pr_len}} VR ID: {vr_id:<{max_vr_len}} Numeric Value: {numeric_value:<{max_scalar_len}}")
+            elif str_value:                
+                print(f"PR ID: {pr_id:<{max_pr_len}} VR ID: {vr_id:<{max_vr_len}} String Value: {str_value:<{max_scalar_len}}")
+            else:
+                print(f"PR ID: {pr_id:<{max_pr_len}} VR ID: {vr_id:<{max_vr_len}} Hashed.")
+        lineage = node.get_node_lineage()
+        print("ABOVE: the variables in", node_id, "(", ", ".join([n.name for n in reversed(lineage)]), ")")
+        return
+    sqlquery_raw = "SELECT str_value, numeric_value, data_blob_hash FROM data_values WHERE is_active = 1 AND vr_id = ? AND path_id = ?"
+    sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "path_id"], single = True, user = True, computer = False)
+    params = (vr_id, node_id)    
+    result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    if not result:
+        print("No value found.")
+        return
+    if len(result) > 1:
+        raise ValueError("Multiple values found.")
+    data_blob_hash = result[0][2]
+    int_value = result[0][1]
+    if data_blob_hash:
+        # Get the data blob.
+        sqlquery = "SELECT data_blob FROM data_values_blob WHERE data_blob_hash = ?"
+        pool = SQLiteConnectionPool(name = "data")
+        conn = pool.get_connection()
+        params = (data_blob_hash,)
+        result = conn.cursor().execute(sqlquery, params).fetchall()
+        if not result:
+            raise ValueError("Data blob not found.")
+        value = pickle.loads(result[0][0])
+        print(value)
+    elif int_value:
+        value = int_value
+    else:
+        value = result[0][0]
+    print(value)    
+    print(f"ABOVE: the value of {vr_id} in {node_id} ({node.name})")
+    print("Type: ", value.__class__.__name__)
+
+@app.command()
+def vrs(vr_id: str = typer.Argument(help="Variable ID"),
+        dobj_id: str = typer.Argument(help="Data object ID", default=None)):
+    """List all available variable types."""
+    from ResearchOS.variable import Variable
+    from ResearchOS.DataObjects.data_object import DataObject
+    from ResearchOS.cli.get_all_paths_of_type import import_objects_of_type
+    add_src_to_path()    
+    import_objects_of_type(Variable)
+    import_objects_of_type(DataObject)
+    subclasses = DataObject.__subclasses__()
+    action = Action(name = "get_variable")
+    sqlquery_raw = "SELECT path_id, vr_id, pr_id FROM data_values WHERE is_active = 1 AND vr_id = ?"
+    vr_id = vr_id[0:2].upper() + vr_id[2:]
+    params = (vr_id,)
+    sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id", "pr_id", "path_id"], single = False, user = True, computer = False)
+    result = action.conn.cursor().execute(sqlquery, params).fetchall()
+    if not result:
+        print("No variable found.")
+        return
+    max_path_id_len= max(len(row[0]) for row in result)
+    max_vr_id_len= max(len(row[1]) for row in result)
+    max_pr_id_len= max(len(row[2]) for row in result)
+    ids = []
+    if dobj_id is not None:
+        ids = [row[0] for row in result]
+    if dobj_id in ids:
+        idx = ids.index(dobj_id)
+        cls = [cls for cls in subclasses if cls.prefix == dobj_id[0:2]][0]
+        dobj = cls(id = dobj_id, action = action)
+        get(dobj_id, vr_id)
+        print(f"Path ID: {result[idx][0]:<{max_path_id_len}} VR ID: {result[idx][1]:<{max_vr_id_len}} PR ID: {result[idx][2]:<{max_pr_id_len}}")
+        return
+
+    for row in result:
+        cls = [cls for cls in subclasses if cls.prefix == row[0][0:2]][0]
+        dobj = cls(id = row[0], action = action)
+        print(f"Path ID: {row[0]:<{max_path_id_len}} ( {dobj.name} ), VR ID: {row[1]:<{max_vr_id_len}}, PR ID: {row[2]:<{max_pr_id_len}}")    
 
 if __name__ == "__main__":
-    # app()
-    app(["logsheet-read"])
+    app(["run","PR1"])  
+    # app(["get", "TRE2F1AE_4DF"])
+    # app(["db-reset","-y"])
+    # app(["logsheet-read"])  

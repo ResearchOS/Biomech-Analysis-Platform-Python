@@ -1,0 +1,1 @@
+INSERT INTO inlets_outlets (let_id, action_id_num, is_input, parent_ro_id, vr_name_in_code, value, show) VALUES (?, ?, ?, ?, ?, ?, ?)

@@ -118,11 +118,12 @@ class DBInitializer():
 
         # Actions table. Lists all actions that have been performed, and their timestamps.
         cursor.execute("""CREATE TABLE IF NOT EXISTS actions (
-                        action_id_num INTEGER PRIMARY KEY,
+                        action_id_num INTEGER PRIMARY KEY AUTOINCREMENT,
                         action_id TEXT NOT NULL,
                         name TEXT NOT NULL,
                         datetime TEXT NOT NULL,
                         redo_of TEXT,
+                        type TEXT NOT NULL,
                         FOREIGN KEY (redo_of) REFERENCES actions(action_id) ON DELETE CASCADE
                         )""")
 
@@ -133,7 +134,7 @@ class DBInitializer():
                         attr_name TEXT NOT NULL
                         )""")
 
-        # Simple attributes table. Lists all "simple" (i.e. json-serializable) attributes that have been associated with research objects.
+        # Simple attributes table. Lists all "simple" (i.e. json-serializable and single-celled) attributes that have been associated with research objects.
         cursor.execute("""CREATE TABLE IF NOT EXISTS simple_attributes (
                         action_row_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,
@@ -149,12 +150,12 @@ class DBInitializer():
         
         # Data objects data values. Lists all data values for all data objects.
         # dataobject_id is just the lowest level data object ID (the lowest level of the address).
-        # Either data blob hash can be null, or scalar_value, but not both or neither.
+        # All dynamic_vr_ids here are for OUTPUTS.
         cursor.execute("""CREATE TABLE IF NOT EXISTS data_values (
                         action_id_num INTEGER NOT NULL,
                         path_id INTEGER NOT NULL,
-                        vr_id TEXT NOT NULL,
                         pr_id TEXT NOT NULL,
+                        vr_id TEXT NOT NULL,
                         data_blob_hash TEXT,
                         str_value TEXT,
                         numeric_value INTEGER,
@@ -164,10 +165,10 @@ class DBInitializer():
                         ),
                         FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,                        
-                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,                  
                         FOREIGN KEY (pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id_num, path_id, vr_id, pr_id, data_blob_hash, str_value, numeric_value)
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id_num, path_id, pr_id, vr_id, data_blob_hash, str_value, numeric_value)
                         )""")
         
         # Data addresses. Lists all data addresses for all data.
@@ -180,63 +181,13 @@ class DBInitializer():
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
                         )""")
         
-        # Data address schemas. Lists all data address schemas for all data.
-        # cursor.execute("""CREATE TABLE IF NOT EXISTS data_address_schemas (
-        #                 action_id TEXT NOT NULL,
-        #                 schema_id TEXT NOT NULL,
-        #                 dataset_id TEXT NOT NULL,
-        #                 levels_edge_list TEXT NOT NULL,
-        #                 FOREIGN KEY (dataset_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-        #                 FOREIGN KEY (action_id) REFERENCES actions(action_id) ON DELETE CASCADE,
-        #                 PRIMARY KEY (dataset_id, schema_id)
-        #                 )""")
-        
-        # Variable -> DataObjects table. Lists all variables and which data objects they are associated with.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS vr_dataobjects (
-                        action_id_num INTEGER NOT NULL,
-                        vr_id TEXT NOT NULL,
-                        path_id TEXT NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (path_id) REFERENCES paths(path_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        PRIMARY KEY (path_id, vr_id, action_id_num)
-                        )""")
-        
-        # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
-        # The "edge_id" is typically a VR ID, but perhaps not always.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
-                        action_id_num INTEGER NOT NULL,
-                        source_object_id TEXT NOT NULL,
-                        target_object_id TEXT NOT NULL,
-                        edge_id TEXT NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        FOREIGN KEY (edge_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        PRIMARY KEY (source_object_id, target_object_id, edge_id)
-                        )""")
-        
         # Users_Computers table. Maps all users to their computers.
         cursor.execute("""CREATE TABLE IF NOT EXISTS users_computers (
                         action_id_num INTEGER PRIMARY KEY,
                         user_id TEXT NOT NULL,
                         computer_id TEXT NOT NULL,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
-                        )""")
-        
-        # PipelineObjects Graph table. Lists all pipeline objects and their relationships.
-        cursor.execute("""CREATE TABLE IF NOT EXISTS pipelineobjects_graph (
-                        action_id_num INTEGER NOT NULL,
-                        source_object_id TEXT NOT NULL,
-                        target_object_id TEXT NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (source_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (target_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
-                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
-                        PRIMARY KEY (action_id_num, source_object_id, target_object_id, is_active)
-                        )""")
+                        )""")        
         
         # Paths table. Lists all data object paths.
         # "path" column is the JSON'd list of data object names in the path.
@@ -244,8 +195,52 @@ class DBInitializer():
                         path_id INTEGER PRIMARY KEY,
                         action_id_num INTEGER NOT NULL,                        
                         dataobject_id TEXT NOT NULL,
-                        is_active INTEGER NOT NULL DEFAULT 1,
                         path TEXT NOT NULL,
                         FOREIGN KEY (dataobject_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
                         FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE
-                        )""")        
+                        )""")
+        
+        # Nodes table. Lists all nodes in the pipeline graph. Each row is one PR & vr_name_in_code
+        cursor.execute("""CREATE TABLE IF NOT EXISTS nodes (
+                        row_id INTEGER PRIMARY KEY,
+                        action_id_num INTEGER NOT NULL,
+                        ro_id TEXT NOT NULL,
+                        vr_name_in_code TEXT NOT NULL,
+                        vr_id TEXT,
+                        vr_slice TEXT,
+                        pr_ids TEXT NOT NULL,  
+                        lookup_vr_id TEXT,          
+                        lookup_pr_ids TEXT,
+                        hard_coded_value TEXT,
+                        is_input INTEGER NOT NULL DEFAULT 0,                        
+                        show INTEGER NOT NULL DEFAULT 0,     
+                        is_active INTEGER NOT NULL DEFAULT 1,                   
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        FOREIGN KEY (ro_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,                        
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (lookup_vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
+                        )""")
+        
+        # Edges table. Lists all edges.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS edges (
+                        edge_id INTEGER PRIMARY KEY,
+                        action_id_num INTEGER NOT NULL,
+                        source_pr_id TEXT NOT NULL,
+                        target_pr_id TEXT NOT NULL,
+                        vr_id TEXT NOT NULL,  
+                        is_active INTEGER NOT NULL DEFAULT 1,                                              
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        FOREIGN KEY (source_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (target_pr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        FOREIGN KEY (vr_id) REFERENCES research_objects(object_id) ON DELETE CASCADE
+                        )""")
+        
+        # run_history table. Lists all actions that occurred during runs.
+        cursor.execute("""CREATE TABLE IF NOT EXISTS run_history (
+                        action_id_num INTEGER,
+                        pl_object_id TEXT NOT NULL,
+                        FOREIGN KEY (action_id_num) REFERENCES actions(action_id_num) ON DELETE CASCADE,
+                        FOREIGN KEY (pl_object_id) REFERENCES research_objects(object_id) ON DELETE CASCADE,
+                        PRIMARY KEY (action_id_num, pl_object_id)
+                        )""")
+        

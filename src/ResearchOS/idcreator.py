@@ -1,5 +1,6 @@
 import random, uuid, sqlite3
 import uuid
+import random
 
 from ResearchOS.config import Config
 # from ResearchOS.sqlite_pool import SQLiteConnectionPool
@@ -92,33 +93,21 @@ class IDCreator():
         instance_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}_[a-fA-F0-9]{3}$"
         abstract_pattern = "^[a-zA-Z]{2}[a-fA-F0-9]{6}$"
         subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
-        # Check for a valid prefix.
-        # self.pool.return_connection(self.conn)
-        # self.pool.return_connection(self.conn)
         if not any(id.startswith(cls.prefix) for cls in subclasses if hasattr(cls, "prefix")):
             return False
         return True
-        # if not isinstance(id, str):
-        #     raise ValueError("id must be a str!")
-        # if re.match(instance_pattern, id) or re.match(abstract_pattern, id):
-        #     return True
-        # return False  
 
-# def main():
-#     parser = argparse.ArgumentParser(description='Generate a UUID based on the specified version.')
-#     parser.add_argument('-a', '--action', action='store_const', const='3', help='Generate a UUID using uuid3 (requires -a or -r argument).')
-#     parser.add_argument('-r', '--researchobject', action='store_const', const='4', help='Generate a UUID using uuid4 (requires -a or -r argument).')
-#     args = parser.parse_args()
-
-#     # Check which argument is provided
-#     if args.action:
-#         id = IDCreator().create_action_id()
-#     elif args.researchobject:
-#         id = IDCreator().create_ro_id()
-#     else:
-#         parser.print_help()
-#         sys.exit(1)
-    
-
-if __name__ == "__main__":
-    main()
+    def create_generic_id(self, table_name: str, id_name: str) -> str:
+        """Create a generic ID for the given table."""
+        conn = self.conn
+        cursor = conn.cursor()
+        is_unique = False
+        while not is_unique:
+            id = random.randint(1, 1000000)
+            sql = f'SELECT {id_name} FROM {table_name} WHERE {id_name} = "{id}"'
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            if len(rows) == 0:
+                is_unique = True
+            # Check in the action add_sql_query.            
+        return id

@@ -63,13 +63,20 @@ def append_table_to_columns(where_criteria, table_name = "outerr"):
     if not where_criteria:
         return ""
     # Split the WHERE criteria into individual conditions
+    # conditions = re.split('AND|OR', where_criteria)
     conditions = where_criteria.split(' AND ')
 
     # Append the table name to each column name
     updated_conditions = []
     for condition in conditions:
         column, rest = condition.split(' ', 1)
-        updated_conditions.append(f"{table_name}.{column} {rest}")
+        # Handles cases where the column name is enclosed in parentheses
+        open_paren_char = ""
+        close_paren_char = "" # Always empty because the close parenthesis is not removed. Left here to be explicit, don't add closing parens.
+        if column[0]=="(":
+            open_paren_char = column[0]
+            column = column[1:]
+        updated_conditions.append(f"{open_paren_char}{table_name}.{column} {rest}{close_paren_char}")
 
     # Join the updated conditions back into a string
     updated_where_criteria = ' AND '.join(updated_conditions)

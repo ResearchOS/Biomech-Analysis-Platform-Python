@@ -25,10 +25,9 @@ class ResearchObjectHandler:
     """Keep track of all instances of all research objects. This is an static class."""
 
     instances = weakref.WeakValueDictionary() # Keep track of all instances of all research objects.
-    counts = {} # Keep track of the number of instances of each ID.    
-    # pool = SQLiteConnectionPool(name = "main")
-    # pool_data = SQLiteConnectionPool(name = "data")
+    counts = {} # Keep track of the number of instances of each ID.
     default_attrs = {} # Keep track of the default attributes for each class.     
+    instances_list = []
 
     @staticmethod
     def from_json(research_object: "ResearchObject", attr_name: str, attr_value_json: Any, action: Action = None) -> Any:
@@ -43,8 +42,6 @@ class ResearchObjectHandler:
     @staticmethod
     def object_exists(id: str, action: Action) -> bool:
         """Return true if the specified id exists in the database, false if not."""
-        # if id in ResearchObjectHandler.instances:
-        #     return True
         cursor = action.conn.cursor()
         sqlquery = "SELECT object_id FROM research_objects WHERE object_id = ?"
         cursor.execute(sqlquery, (id,))
@@ -104,17 +101,20 @@ class ResearchObjectHandler:
             raise ValueError("No computer-specific attributes exist for this object.")
 
         # Computer-specific and computer-independent attributes.
+        # Ordered to be in the same order as in the default_attrs.
+        ordered_attr_result_dict_name = {key: ordered_attr_result_dict[ResearchObjectHandler._get_attr_id(key)] for key in default_attrs if ResearchObjectHandler._get_attr_id(key) in ordered_attr_result_dict.keys()}
         attrs = {}
-        for attr_id, value in ordered_attr_result_dict.items():            
-            attr_name = ResearchObjectHandler._get_attr_name(attr_id)
+        for attr_name, value in ordered_attr_result_dict_name.items():                        
             attr_value = JSONConverter.from_json(research_object, attr_name, value, action)
-            attrs[attr_name] = attr_value        
+            research_object.__dict__[attr_name] = attr_value  
+            attrs[attr_name] = attr_value      
 
         # 3. Load the class-specific/"complex" builtin attributes.
         for attr_name in default_attrs.keys():
             if hasattr(research_object, "load_" + attr_name):
                 load_method = getattr(research_object, "load_" + attr_name)
                 value = load_method(action)
+                research_object.__dict__[attr_name] = value
                 attrs[attr_name] = value
 
         return attrs
@@ -130,7 +130,7 @@ class ResearchObjectHandler:
         for key in kwargs:
 
             # 2. Skip the attribute if the value has not changed.
-            if key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
+            if not hasattr(research_object, "_is_init") and key in research_object.__dict__ and getattr(research_object, key) == kwargs[key]:
                 continue
 
             # 3. Save simple & complex attributes.
@@ -144,52 +144,10 @@ class ResearchObjectHandler:
 
             # 4. Set the attribute in the object's __dict__.
             research_object.__dict__[key] = kwargs[key] # Set the attribute in the object's __dict__.         
-
-    # @staticmethod
-    # def clean_value_from_load_mat(numpy_array: Any) -> Any:
-    #     """Ensure that all data types are from scipy.io.loadmat are Pythonic."""
-    #     if isinstance(numpy_array, np.ndarray) and numpy_array.dtype.names is not None:
-    #         return {name: ResearchObjectHandler.clean_value_from_load_mat(numpy_array[name]) for name in numpy_array.dtype.names}
-    #     elif isinstance(numpy_array, np.ndarray):
-    #         numpy_array_tmp = numpy_array
-    #         if numpy_array.size == 1:
-    #             numpy_array_tmp = numpy_array[0]
-    #         return numpy_array_tmp.tolist()
-    #     else:
-    #         return numpy_array
-
-    # @staticmethod
-    # def clean_value_for_save_mat(value: Any) -> Any:
-    #     """Ensure that all data types are compatible with the scipy.io.savemat method."""
-    #     # Recursive.
-    #     if isinstance(value, (dict, set)):
-    #         for key in value.keys():
-    #             value[key] = ResearchObjectHandler.clean_value_for_save_mat(value[key])
-    #         return value
-
-    #     if isinstance(value, (list, tuple)):
-    #         if len(value) == 0:
-    #             return value
-    #         if isinstance(value[0], (list, tuple, dict, set)):
-    #             for i, item in enumerate(value):
-    #                 value[i] = ResearchObjectHandler.clean_value_for_save_mat(item)
-    #             return value
-
-    #     # Actually clean the values.
-    #     return np.array(value)
-    
-    # @staticmethod
-    # def save_simple_attribute(id: str, name: str, json_value: Any, action: Action) -> Action:
-    #     """If no store_attr method exists for the object attribute, use this default method."""                                      
-    #     sqlquery = "INSERT INTO simple_attributes (action_id, object_id, attr_id, attr_value) VALUES (?, ?, ?, ?)"
-    #     params = (action.id, id, ResearchObjectHandler._get_attr_id(name), json_value)
-    #     action.add_sql_query(sqlquery, params)
-    #     action.add_params(params)
     
     @staticmethod
     def _get_attr_name(attr_id: int) -> str:
         """Get the name of an attribute given the attribute's ID. If it does not exist, return an error."""
-        # cursor = DBConnectionFactory.create_db_connection().conn.cursor()
         pool = SQLiteConnectionPool()
         conn = pool.get_connection()
         cursor = conn.cursor()
@@ -259,7 +217,8 @@ class ResearchObjectHandler:
     def _prefix_to_class(prefix: str) -> type:
         """Convert a prefix to a class."""
         from ResearchOS.research_object import ResearchObject
-        for cls in ResearchObjectHandler._get_subclasses(ResearchObject):
+        subclasses = ResearchObjectHandler._get_subclasses(ResearchObject)
+        for cls in subclasses:
             if hasattr(cls, "prefix") and prefix.startswith(cls.prefix):
                 return cls
         raise ValueError("No class with that prefix exists.")

@@ -1,1 +1,1 @@
-INSERT INTO data_values (action_id_num, vr_id, path_id, data_blob_hash, pr_id, str_value, numeric_value) VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO data_values (action_id_num, path_id, pr_id, vr_id, data_blob_hash, str_value, numeric_value) VALUES (?, ?, ?, ?, ?, ?, ?);

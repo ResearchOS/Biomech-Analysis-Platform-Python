@@ -17,12 +17,9 @@ from ResearchOS.default_attrs import DefaultAttrs
 from ResearchOS.DataObjects.data_object import load_data_object_classes
 from ResearchOS.validator import Validator
 from ResearchOS.sql.sql_runner import sql_order_result
-<<<<<<< HEAD
-=======
 from ResearchOS.Bridges.input_types import Dynamic
 from ResearchOS.Bridges.let import Let
 from ResearchOS.Bridges.letput import LetPut
->>>>>>> code-sharing-test-MT2
 
 # Defaults should be of the same type as the expected values.
 all_default_attrs = {}
@@ -165,14 +162,8 @@ class Logsheet(PipelineObject):
                 vr = header[3]                
             else:
                 vr = Variable(id = header[3], action = action)
-<<<<<<< HEAD
-            # default_attrs = DefaultAttrs(vr).default_attrs
-            kwarg_dict = {"name": header[0]}
-            vr.__setattr__(None, None, action=action, kwargs_dict=kwarg_dict)
-=======
             kwarg_dict = {"name": header[0]}            
             vr.__setattr__(None, None, action=action, kwargs_dict=kwarg_dict, exec=False)
->>>>>>> code-sharing-test-MT2
             str_headers.append((header[0], str(header[1])[8:-2], header[2].prefix, vr.id))
         return json.dumps(str_headers)
 
@@ -348,13 +339,7 @@ class Logsheet(PipelineObject):
         sqlquery = "SELECT dataobject_id, path FROM paths"
         result = action.conn.cursor().execute(sqlquery).fetchall()
         dataobject_ids = [row[0] for row in result]
-<<<<<<< HEAD
-        paths = [json.loads(row[1]) for row in result]
-
-        print("Conn", action.conn)
-=======
         paths = [json.loads(row[1]) for row in result]        
->>>>>>> code-sharing-test-MT2
         
         # For each row, connect instances of the appropriate DataObject subclass to all other instances of appropriate DataObject subclasses.
         headers_in_logsheet = full_logsheet[0]
@@ -425,17 +410,6 @@ class Logsheet(PipelineObject):
             if len(header) > max_len:
                 max_len = len(header)
 
-<<<<<<< HEAD
-        # Remove the data objects that are unchanged                
-        sqlquery_raw = "SELECT path_id, vr_id, str_value, numeric_value, pr_id FROM data_values WHERE pr_id = ?"
-        sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single=True, user=True, computer=True)
-        result = action.conn.cursor().execute(sqlquery, (self.id,)).fetchall()
-        path_ids = [row[0] for row in result]
-        vr_ids = [row[1] for row in result]
-        str_values = [row[2] for row in result]
-        numeric_values = [row[3] for row in result]
-        pr_ids = [row[4] for row in result]              
-=======
         # Prep to omit the data objects that are unchanged                
         sqlquery_raw = "SELECT path_id, vr_id, str_value, numeric_value FROM data_values WHERE pr_id = ? AND vr_id IN ({})".format("?, "*(len(vr_obj_list)-1) + "?")
         sqlquery = sql_order_result(action, sqlquery_raw, ["path_id", "vr_id"], single=True, user=True, computer=True)
@@ -447,7 +421,6 @@ class Logsheet(PipelineObject):
         vr_ids = [row[1] for row in result]
         str_values = [row[2] for row in result]
         numeric_values = [row[3] for row in result]      
->>>>>>> code-sharing-test-MT2
         
         # Assign the values to the DataObject instances.
         all_attrs = {}
@@ -480,30 +453,19 @@ class Logsheet(PipelineObject):
                     all_attrs[dobj] = {}
                 all_attrs[dobj][vr] = value        
                     
-<<<<<<< HEAD
-=======
         print("Assigning Data Object values...")
->>>>>>> code-sharing-test-MT2
         modified_dobjs = []        
         for dobj, attrs in all_attrs.items():
             # Create dict for the DataObject with previous values.
             if dobj.id in path_ids:
                 prev_attrs = {}
                 path_idx = [index for index, value in enumerate(path_ids) if value == dobj.id]
-<<<<<<< HEAD
-                prev_attrs = {Variable(id = vr_ids[idx], action = action): str_values[idx] if str_values[idx] is not None else numeric_values[idx] for idx in path_idx if pr_ids[idx] == self.id}
-=======
                 prev_attrs = {Variable(id=vr_ids[idx]): str_values[idx] if str_values[idx] is not None else numeric_values[idx] for idx in path_idx}
->>>>>>> code-sharing-test-MT2
                 # Remove the attributes that are the same as the previous attributes.
                 attrs = {vr: value for vr, value in attrs.items() if vr not in prev_attrs or prev_attrs[vr] != value}
                 if len(attrs) > 0:
                     modified_dobjs.append(dobj)
-<<<<<<< HEAD
-            dobj._set_vr_values(attrs, pr_id = self.id, action = action)         
-=======
             dobj._set_vr_values(attrs, pr = self, action = action)         
->>>>>>> code-sharing-test-MT2
 
         # Arrange the address ID's that were generated into an edge list.
         # Then assign that to the Dataset.
@@ -521,19 +483,12 @@ class Logsheet(PipelineObject):
         action.conn = conn
 
         # Set all the paths to the DataObjects.        
-<<<<<<< HEAD
-        print("Saving Data Objects...")        
-=======
         print("Saving Data Objects to dataset...")        
->>>>>>> code-sharing-test-MT2
         for idx, row in enumerate(dobj_names):
             if row[1:] not in paths: # Exclude Dataset object.
                 action.add_sql_query(all_dobjs_ordered[idx].id, "path_insert", (action.id_num, all_dobjs_ordered[idx].id, json.dumps(row[1:])))
         
-<<<<<<< HEAD
-=======
         action.add_sql_query(None, "run_history_insert", (action.id_num, self.id))
->>>>>>> code-sharing-test-MT2
         action.exec = True
         action.commit = True        
         action.execute() # Commit the action.

@@ -1,9 +1,4 @@
 from typing import Any, Callable
-<<<<<<< HEAD
-
-import networkx as nx
-=======
->>>>>>> code-sharing-test-MT2
 
 from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 from ResearchOS.action import Action
@@ -24,13 +19,6 @@ all_default_attrs["level"] = None
 all_default_attrs["inputs"] = {}
 all_default_attrs["outputs"] = {}
 all_default_attrs["subset"] = None
-<<<<<<< HEAD
-
-# For import
-all_default_attrs["import_file_ext"] = None
-all_default_attrs["import_file_vr_name"] = None
-=======
->>>>>>> code-sharing-test-MT2
 
 # For including other Data Object attributes from the node lineage in the input variables.
 # For example, if a Process is run on a Trial, and one of the inputs needs to be the Subject's name.
@@ -99,44 +87,6 @@ class Process(PipelineObject):
             raise ValueError("Variable name must be a string.")
         if not str(vr_name).isidentifier():
             raise ValueError("Variable name must be a valid variable name.")
-<<<<<<< HEAD
-        if vr_name not in self.inputs:
-            raise ValueError("Variable name must be one of the input variable names in code.")                
-    
-    def set_inputs(self, **kwargs) -> None:
-        """Convenience function to set the input variables with named variables rather than a dict."""
-        standardized_kwargs = VRHandler.standardize_inputs(kwargs)
-        self.__setattr__("inputs", standardized_kwargs)
-
-    def set_outputs(self, **kwargs) -> None:
-        """Convenience function to set the output variables with named variables rather than a dict."""
-        standardized_kwargs = VRHandler.standardize_outputs(kwargs)
-        self.__setattr__("outputs", standardized_kwargs)
-
-    def run(self, force_redo: bool = False) -> None:
-        """Execute the attached method.
-        kwargs are the input VR's."""        
-        start_msg = f"Running {self.mfunc_name} on {self.level.__name__}s."
-        print(start_msg)
-        action = Action(name = start_msg)
-        process_runner = ProcessRunner()        
-        batches_dict_to_run, all_batches_graph, G, pool = process_runner.prep_for_run(self, action, force_redo)
-        curr_batch_graph = nx.MultiDiGraph()
-        process_runner.add_matlab_to_path(__file__)
-        for batch_id, batch_value in batches_dict_to_run.items():
-            if self.batch is not None:
-                curr_batch_graph = nx.MultiDiGraph(all_batches_graph.subgraph([batch_id] + list(nx.descendants(all_batches_graph, batch_id))))
-            process_runner.run_batch(batch_id, batch_value, G, curr_batch_graph)
-
-        if process_runner.matlab_loaded and self.is_matlab:
-            ProcessRunner.matlab_eng.rmpath(self.mfolder)
-            
-        for vr_name, output in self.outputs.items():
-            print(f"Saved VR {vr_name} (VR: {output.vr.id}).")
-
-        if action.conn:
-            pool.return_connection(action.conn)
-=======
         
 
     def run(self, force_redo: bool = False, action: Action = None, return_conn: bool = True) -> None:
@@ -144,4 +94,3 @@ class Process(PipelineObject):
         kwargs are the input VR's."""
         from ResearchOS.PipelineObjects._runnables import run
         run(self, __file__, force_redo=force_redo, action=action, return_conn=return_conn)
->>>>>>> code-sharing-test-MT2

@@ -1,0 +1,6 @@
+*.DS_Store
+researchos_data.db
+data/
+output/
+paths.py
+config.json

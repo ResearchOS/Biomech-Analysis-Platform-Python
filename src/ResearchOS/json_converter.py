@@ -42,152 +42,49 @@ class JSONConverter():
         else:
             return json.loads(input)
         
-    @staticmethod
-    def from_json_inputs(self, inputs: str, action: Action) -> dict:
-        """Convert a JSON string to a dictionary of input variables."""      
-        from ResearchOS.vr_handler import VRHandler  
-        serialized_dict = json.loads(inputs)
-        for key, value in serialized_dict.items():
-            serialized_dict[key]["vr"] = VRHandler.deserialize_input_vr(value["vr"])
-            serialized_dict[key]["pr"] = VRHandler.deserialize_pr(value["pr"])
-            serialized_dict[key]["lookup_vr"] = VRHandler.deserialize_lookup_vr(value["lookup_vr"])    
-        return serialized_dict
-
-
-
-        # input_vrs_dict = {}
-        # dataobject_subclasses = DataObject.__subclasses__()
-        # for name, vr_dict in input_vr_ids_dict.items():
-        #     # Two keys: "VR" and "slice".
-        #     input_vrs_dict[name] = {}
-        #     if isinstance(vr_dict, VRPort):
-        #         vrport = VRPort.from_str(vr_dict)
-        #         input_vrs_dict[name] = vrport
-        #         continue
-        #     if not isinstance(vr_dict, dict) or (isinstance(vr_dict, dict) and "VR" not in vr_dict.keys()):
-        #         input_vrs_dict[name] = vr_dict
-        #         continue
-        #     if isinstance(vr_dict["VR"], dict):
-        #         cls_prefix = [key for key in vr_dict["VR"].keys()][0]
-        #         attr_name = [value for value in vr_dict["VR"].values()][0]
-        #         cls = [cls for cls in dataobject_subclasses if cls.prefix == cls_prefix][0]
-        #         input_vrs_dict[name]["VR"] = {cls: attr_name}                
-        #     else:
-        #         vr = Variable(id = vr_dict["VR"], action = action)
-        #         input_vrs_dict[name]["VR"] = vr
-        #     slice_var_tmp = input_vr_ids_dict[name]["slice"]
-        #     if not isinstance(slice_var_tmp, (str, type(None))):
-        #         slice_var = []
-        #         for i in range(len(slice_var_tmp)):
-        #             if isinstance(slice_var_tmp[i], dict):
-        #                 slice_var.append(slice(slice_var_tmp[i]['start'], slice_var_tmp[i]['stop'], slice_var_tmp[i]['step']))
-        #             else:
-        #                 slice_var.append(slice_var_tmp[i])
-        #     else:
-        #         slice_var = slice_var_tmp
-        #     input_vrs_dict[name]["slice"] = slice_var
-        # return input_vrs_dict
-    
-    @staticmethod
-    def to_json_inputs(self, inputs: dict, action: Action) -> str:
-        """Convert a dictionary of input variables to a JSON string."""       
-        from ResearchOS.Bridges.input import Input
-        from ResearchOS.vr_handler import VRHandler
-        tmp_dict = {key: {} for key in inputs.keys()} # Initialize the dict.
-        for key, input in inputs.items():
-            if isinstance(input, Input):
-                tmp_dict[key] = input.to_dict()
-            else:
-                tmp_dict[key] = input # A dictionary
-            tmp_dict[key]["vr"] = VRHandler.serialize_input_vr(input.vr)
-            tmp_dict[key]["pr"] = VRHandler.serialize_pr(input.pr)
-            tmp_dict[key]["lookup_vr"] = VRHandler.serialize_lookup_vr(input.lookup_vr)
-        return json.dumps(tmp_dict)
-
-    
-
-
-
-
-
-
-
-
-
-
-        # for key, vr_dict in input_vrs.items():
-        #     tmp_dict[key] = {}
-        #     if not isinstance(vr_dict, dict) or (isinstance(vr_dict, dict) and "VR" not in vr_dict.keys()):
-        #         tmp_dict[key] = vr_dict
-        #         continue
-        #     if isinstance(vr_dict["VR"], dict):
-        #         tmp_dict[key]["VR"] = {key.prefix: value for key, value in vr_dict["VR"].items()} # DataObject level & attribute.
-        #     else:
-        #         tmp_dict[key]["VR"] = vr_dict["VR"].id # Variables
-        #     slice_var_tmp = vr_dict["slice"]
-        #     if not isinstance(slice_var_tmp, (str, type(None))):
-        #         slice_var = []
-        #         for curr_slice_var in slice_var_tmp:
-        #             if isinstance(curr_slice_var, slice):
-        #                 slice_var.append({'start': curr_slice_var.start, 'stop': curr_slice_var.stop, 'step': curr_slice_var.step})
-        #             else:
-        #                 slice_var.append(curr_slice_var)
-        #     else:
-        #         slice_var = slice_var_tmp
-        #     tmp_dict[key]["slice"] = slice_var
-        # return json.dumps(tmp_dict)
-    
-    @staticmethod
-    def from_json_outputs(self, outputs: str, action: Action) -> dict:
-        """Convert a JSON string to a dictionary of output variables."""
-        from ResearchOS.vr_handler import VRHandler  
-        serialized_dict = json.loads(outputs)
-        for key, value in serialized_dict.items():
-            serialized_dict[key]["vr"] = VRHandler.deserialize_output_vr(value["vr"])
-        return serialized_dict
-    
-    @staticmethod
-    def to_json_outputs(self, outputs: dict, action: Action) -> str:
-        """Convert a dictionary of output variables to a JSON string."""
-        from ResearchOS.Bridges.output import Output
-        from ResearchOS.vr_handler import VRHandler
-        tmp_dict = {key: {} for key in outputs.keys()} # Initialize the dict.
-        for key, output in outputs.items():
-            if isinstance(output, Output):
-                tmp_dict[key] = output.to_dict()
-            else:
-                tmp_dict[key] = output # A dictionary
-            tmp_dict[key]["vr"] = VRHandler.serialize_output_vr(output.vr)
-        return json.dumps(tmp_dict)
+    # @staticmethod
+    # def from_json_inputs(self, inputs: str, action: Action) -> dict:
+    #     """Convert a JSON string to a dictionary of input variables."""
+    #     from ResearchOS.Bridges.input import Input
+    #     from ResearchOS.Bridges.inlet import Inlet
+    #     serializable_dict = json.loads(inputs)
+    #     tmp_dict = {}
+    #     for key in serializable_dict:                       
+    #         input = Input(id=serializable_dict[key], action=action)
+    #         tmp_dict[key] = input
+    #     return tmp_dict
     
     # @staticmethod
-    # def from_json_vrs_source_pr(self, vrs_source_pr: str, action: Action) -> dict:
-    #     """Convert a JSON string to a dictionary of source processes for the input variables."""
-    #     from ResearchOS.PipelineObjects.logsheet import Logsheet
-    #     from ResearchOS.PipelineObjects.process import Process
-    #     vrs_source_pr_ids_dict = json.loads(vrs_source_pr)
-    #     vrs_source_pr_dict = {}
-    #     for name, pr_id in vrs_source_pr_ids_dict.items():            
-    #         if not isinstance(pr_id, list):
-    #             if pr_id.startswith(Process.prefix):
-    #                 pr = Process(id = pr_id, action = action)
-    #             else:
-    #                 pr = Logsheet(id = pr_id, action = action)                
-    #         else:
-    #             pr = [Process(id = pr_id, action = action) if pr_id.startswith(Process.prefix) else Logsheet(id = pr_id, action = action) for pr_id in pr_id]
-    #         vrs_source_pr_dict[name] = pr
-    #     return vrs_source_pr_dict
+    # def to_json_inputs(self, inputs: dict, action: Action) -> str:
+    #     """Convert the .inputs attribute of a runnable Pipeline Object to a JSON string.
+    #     The format is a dictionary with the inlet names in code as keys, and the values are the input ID's."""
+    #     tmp_dict = {}
+    #     for key, input in inputs.items():
+    #         tmp_dict[key] = input.id                       
+    #     return json.dumps(tmp_dict)
     
     # @staticmethod
-    # def to_json_vrs_source_pr(self, vrs_source_pr: dict, action: Action) -> str:
-    #     """Convert a dictionary of source processes for the input variables to a JSON string."""
-    #     json_dict = {}
-    #     for vr_name, pr in vrs_source_pr.items():
-    #         if not isinstance(pr, list):
-    #             json_dict[vr_name] = pr.id
-    #         else:
-    #             json_dict[vr_name] = [value.id for value in pr]
-    #     return json.dumps(json_dict) 
+    # def from_json_outputs(self, outputs: str, action: Action) -> dict:
+    #     """Convert a JSON string to a dictionary of output variables."""
+    #     from ResearchOS.Bridges.output import Output
+    #     from ResearchOS.Bridges.outlet import Outlet
+    #     serializable_dict = json.loads(outputs)
+    #     tmp_dict = {}
+    #     for key in serializable_dict:
+    #         tmp_dict[key] = Outlet(self, key, action)
+    #         tmp_dict[key].add_put(Output.load(id=serializable_dict[key], action=action), action, do_insert=False)
+    #     return tmp_dict
+    
+    # @staticmethod
+    # def to_json_outputs(self, outputs: dict, action: Action) -> str:
+    #     """Convert the .outputs attribute of a runnable Pipeline Object to a JSON string.
+    #     The format is a dictionary with the outlet names in code as keys, and the values are the output ID's."""
+    #     tmp_dict = {}
+    #     for key, outlet in outputs.items():
+    #         tmp_dict[key] = None
+    #         if len(outlet.puts) > 0:
+    #             tmp_dict[key] = outlet.puts[0].id                            
+    #     return json.dumps(tmp_dict)
     
     @staticmethod
     def from_json_batch(self, batch: str, action: Action) -> list:
@@ -205,39 +102,6 @@ class JSONConverter():
         if batch is None:
             return json.dumps(None)
         return json.dumps([cls.prefix for cls in batch])
-    
-    # @staticmethod
-    # def from_json_lookup_vrs(self, lookup_vrs: str, action: Action) -> dict:
-    #     """Convert a JSON string to a dictionary of lookup variables."""
-    #     from ResearchOS.variable import Variable
-    #     from ResearchOS.Bridges.vrport import VRPort
-    #     lookup_vrs_ids_dict = json.loads(lookup_vrs)
-    #     lookup_vrs_dict = {}
-    #     for key, value in lookup_vrs_ids_dict.items():
-    #         lookup_vrs_dict[key] = {}
-    #         for vr_id, vr_names in value.items():
-    #             if vr_id.startswith(VRPort.prefix):
-    #                 vr = VRPort.from_str(vr_id)                    
-    #             else:
-    #                 vr = Variable(id = vr_id, action = action)
-    #             lookup_vrs_dict[key][vr] = vr_names 
-    #     return lookup_vrs_dict                
-    
-    # @staticmethod
-    # def to_json_lookup_vrs(self, lookup_vrs: dict, action: Action) -> str:
-    #     """Convert a dictionary of lookup variables to a JSON string."""
-    #     from ResearchOS.Bridges.vrport import VRPort
-    #     tmp_dict = {}
-    #     for key, value in lookup_vrs.items():
-    #         tmp_dict[key] = {}
-    #         for k, v in value.items():
-    #             if isinstance(k, VRPort):
-    #                 k.add_attrs(research_object, True, key)
-    #                 tmp_k = k.to_str()
-    #             else:
-    #                 tmp_k = k.id
-    #             tmp_dict[key][tmp_k] = v
-    #     return json.dumps(tmp_dict)
     
     @staticmethod
     def from_json_level(self, json_level: str, action: Action) -> type:

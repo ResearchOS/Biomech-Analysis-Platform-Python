@@ -30,7 +30,7 @@ class CurrentUser():
         sqlquery = "SELECT user_id FROM users_computers WHERE computer_id = ?"
         result = cursor.execute(sqlquery, (COMPUTER_ID,)).fetchone()
         if result is None:
-            raise ValueError("current user does not exist because there are no users for this computer")
+            raise ValueError("current user does not exist because there are no users for this computer. Type 'ros db-reset' to reset the database.")
 
         CurrentUser.current_user = result[0]
         return CurrentUser.current_user

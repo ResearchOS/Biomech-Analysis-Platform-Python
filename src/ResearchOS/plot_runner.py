@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING
 import os
 
+import networkx as nx
+
 if TYPE_CHECKING:
     from ResearchOS.PipelineObjects.plot import Plot
 
@@ -11,55 +13,37 @@ class PlotRunner(CodeRunner):
     def __init__(self) -> None:
         pass
 
-    def compute_and_assign_outputs(self, vr_values_in: dict, pl: "Plot", info: dict = {}, is_batch: bool = False) -> None:
-        """Assign the output variables to the DataObject node.
-        """
-
-        # 1. Get the plot wrapper function.
-        if pl.is_matlab:
-            if not self.matlab_loaded:
-                raise ValueError("MATLAB is not loaded.")            
-            fcn = getattr(self.matlab_eng, "PlotWrapper")
+    def get_save_path(self, pl: "Plot"):
+        """Return the save path for the plot."""
+        lineage = self.node.get_node_lineage(action=self.action)[::-1]
+        ds_schema = self.dataset.schema
+        schema_G = nx.MultiDiGraph()
+        schema_G.add_edges_from(ds_schema)
+        ds_schema_nodes = list(nx.topological_sort(schema_G))
+        if self.pl_obj.batch:
+            batch = self.pl_obj.batch
+            if self.dataset.__class__ in batch:
+                batch = batch[1:]
         else:
-            fcn = getattr(pl, pl.method)
+            batch = [self.pl_obj.level]
 
-        # 2. Convert the vr_values_in to the right format.
-        if not is_batch:
-            vr_vals_in = list(vr_values_in.values())
-            vr_vals_in.append(info) # Always include the info variable.
+        # 1. Get all schema nodes that are not in the batch, that are lower than the lowest node in the batch.
+        lowest_batch_idx_in_schema = min([ds_schema_nodes[1:].index(b) for b in batch]) # Omit the dataset.
+        folder_names = lineage[0:lowest_batch_idx_in_schema]
+        folder_names = [f.name for f in folder_names]
+        file_name_idx = [idx for idx in range(len(lineage)) if lineage[idx].__class__ == batch[0]]
+        if len(file_name_idx) == 0:
+            file_name = self.dataset.name # For Dataset, just use the top level node name
         else:
-            # Convert the vr_values_in to the right format.
-            vr_vals_in = []
-            for vr_name in vr_values_in:
-                vr_vals_in.append(vr_values_in[vr_name])
+            file_name_idx = file_name_idx[0]
+            file_name = lineage[file_name_idx].name
 
-        # 3. Call the plot wrapper function.
-        # Provide it with:
-        # - the input variables
-        # - the plot function name
-        # - the file path to save the plot to
-        lineage = self.get_node_lineage(self.node, self.dataset_object_graph)
-        lineage.remove(self.dataset)
-        if self.node in lineage:
-            lineage.remove(self.node)
         dataset_parent_folder = os.path.dirname(self.dataset.dataset_path)
         plots_folder = os.path.join(dataset_parent_folder, "plots")
         save_path = os.path.join(plots_folder, pl.id + " " + pl.name)
-        for l in lineage[::-1]:
-            save_path = os.path.join(save_path, l.id)
+        for folder_name in folder_names:
+            save_path = os.path.join(save_path, folder_name)
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-        if self.node.id != self.dataset.id:
-            save_path = os.path.join(save_path, self.node.id)            
-        try:
-            fig_handle = fcn(pl.mfunc_name, save_path, vr_vals_in)
-        except PlotRunner.matlab.engine.MatlabExecutionError as e:
-            if "ResearchOS:" not in e.args[0]:
-                print("'ResearchOS:' not found in error message, ending run.")
-                raise e
-            return # Do not assign anything, because nothing was done!
-        
-        # if not isinstance(fig_handle, tuple):
-        #     fig_handle = (fig_handle,)
-
-        
+        save_path = os.path.join(save_path, file_name)
+        return save_path

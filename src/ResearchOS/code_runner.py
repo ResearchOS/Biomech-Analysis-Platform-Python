@@ -4,11 +4,14 @@ import copy
 import os
 import json
 import time
+import math
 
+import numpy as np
 import networkx as nx
 
 if TYPE_CHECKING:
     from ResearchOS.research_object import ResearchObject
+    from ResearchOS.PipelineObjects.pipeline_object import PipelineObject
 
 from ResearchOS.action import Action
 from ResearchOS.sql.sql_runner import sql_order_result
@@ -57,87 +60,15 @@ class CodeRunner():
         CodeRunner.matlab_double_type = matlab_double_type
 
     @staticmethod
-    def set_vrs_source_pr(robj: "ResearchObject", action: Action, default_attrs: dict) -> None:
-        from ResearchOS.PipelineObjects.process import Process
-        from ResearchOS.PipelineObjects.logsheet import Logsheet
-        from ResearchOS.variable import Variable
-
-        needs_pr = []
-        for input in robj.inputs.values():
-            if input.pr is not None:
-                continue
-            if not isinstance(input.vr, Variable):
-                continue
-            if input.vr.hard_coded_value is not None:
-                continue
-            if input.vr._dataobject_attr is not None:
-                continue
-            if hasattr(input.parent_ro, "import_file_vr_name") and input.parent_ro.import_file_vr_name == input.vr_name_in_code:
-                continue
-            needs_pr.append(input)
-
-        if len(needs_pr)==0:
-            return
-        
-        sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({})".format(",".join(["?" for _ in needs_pr]))
-        sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
-        params = tuple([input.vr.id for input in needs_pr])
-        vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        # TODO: Changing the "input" variable here does not change the Research Object. Need to ensure the change reaches the database.
-        for input in needs_pr:
-            vr_id = input.vr.id
-            vr_id_idx = [idx for idx, row in enumerate(vr_pr_ids_result) if row[0] == vr_id]
-            assert(len(vr_id_idx) == 1)
-            vr_id_idx = vr_id_idx[0]
-            if vr_pr_ids_result[vr_id_idx][1].startswith(Process.prefix):
-                pr = Process(id = vr_pr_ids_result[vr_id_idx][1], action = action)
-            else:
-                pr = Logsheet(id = vr_pr_ids_result[vr_id_idx][1], action = action)
-            input.pr = pr
-            robj.inputs[input.vr_name_in_code] = input
-
-        # Lookup PR
-        # needs_pr = []
-        # for input in robj.inputs.values():
-        #     if input.lookup_pr is not None:
-        #         continue
-        #     if not isinstance(input.lookup_vr, Variable):
-        #         continue
-        #     needs_pr.append(input)
-
-        # if len(needs_pr)==0:
-        #     return
-        
-        # sqlquery_raw = "SELECT vr_id, pr_id FROM data_values WHERE vr_id IN ({})".format(",".join(["?" for _ in needs_pr]))
-        # sqlquery = sql_order_result(action, sqlquery_raw, ["vr_id"], single = True, user = True, computer = False)
-        # params = tuple([input.lookup_vr.id for input in needs_pr])
-        # vr_pr_ids_result = action.conn.cursor().execute(sqlquery, params).fetchall()
-        # # TODO: Changing the "input" variable here does not change the Research Object. Need to ensure the change reaches the database.
-        # for input in needs_pr:
-        #     vr_id = input.lookup_vr.id
-        #     vr_id_idx = [idx for idx, row in enumerate(vr_pr_ids_result) if row[0] == vr_id]
-        #     assert(len(vr_id_idx) == 1)
-        #     vr_id_idx = vr_id_idx[0]
-        #     if vr_pr_ids_result[vr_id_idx][1].startswith(Process.prefix):
-        #         pr = Process(id = vr_pr_ids_result[vr_id_idx][1], action = action)
-        #     else:
-        #         pr = Logsheet(id = vr_pr_ids_result[vr_id_idx][1], action = action)
-        #     input.lookup_pr = pr
-        #     robj.inputs[input.vr_name_in_code] = input
-        
-        robj.__setattr__("inputs", robj.inputs, action=action)
-
-
-        
-
-    @staticmethod
-    def get_lowest_level(robj: "ResearchObject", schema_ordered: list) -> Optional[str]:
+    def get_lowest_level(robj: "ResearchObject", schema_ordered: list, action: Action) -> Optional[str]:
         """Get the lowest level for this batch."""
+        from ResearchOS.PipelineObjects.process import Process
         lowest_level_idx = -1
         lowest_level = schema_ordered[-1]
         for input in robj.inputs.values():
             try:
-                level = input.pr.level                
+                pr = input["main"]["pr"][0]
+                level = Process(id=pr, action=action).level                
             except: # For Logsheet, defer to current PR level.
                 level = robj.level
             level_idx = schema_ordered.index(level)
@@ -161,8 +92,10 @@ class CodeRunner():
         dobj_ids = [dobj_ids[index] for index in subgraph_idx]
         paths = [paths[index] for index in subgraph_idx]
         dataset = [n for n in subset_graph.nodes if subset_graph.in_degree(n) == 0][0]
-        paths.append([dataset])
-        dobj_ids.append(dataset)
+        if dataset not in dobj_ids:
+            dobj_ids.append(dataset)
+        if [dataset] not in paths:
+            paths.append([dataset])
         level_node_ids_with_indices = [(index, dobj) for index, dobj in enumerate(dobj_ids) if dobj.startswith(robj.level.prefix)]        
         level_node_ids = [x[1] for x in level_node_ids_with_indices]
         indices = [x[0] for x in level_node_ids_with_indices]
@@ -201,30 +134,24 @@ class CodeRunner():
                 level = batch_list[0]
                 # Get the list of nodes that are connected to this node.
                 successors = list(graph.successors(node))
-                # level_nodes = [n for n in successors if n.startswith(level.prefix)]
-                # level_nodes = [n for n in level_nodes if set(node_lineage).issubset(set(list(nx.ancestors(subset_graph, n))))]
+                # Ensure that the successors are also connected to the rest of the nodes in the lineage.
+                successors = [s for s in successors if all([nx.has_path(subset_graph, n, s) or nx.has_path(subset_graph, s, n) for n in node_lineage])]
                 for n in successors:
                     batches_dict[n] = {}
                     node_lineage.append(n)
                     batches_dict[n] = graph_to_dict(graph, batches_dict[n], batch_list[1:], n, subset_graph, node_lineage)
+                    node_lineage.remove(n) # So as to not pollute the next lineage.
                 return batches_dict
             
             batches_dict_to_run = {}
-            dataset_node = [paths[0][0]]
             top_level_idx = schema_ordered.index(level)
             top_level_nodes = list(set([p[top_level_idx] for p in paths if len(p) > top_level_idx]))
             for node in top_level_nodes:
                 batches_dict_to_run[node] = {}
                 batches_dict_to_run[node] = graph_to_dict(all_batches_graph, batches_dict_to_run[node], batch_list[1:], node, subset_graph, [node])
-
-            # Dict of dicts, where each top-level dict is a batch to run.
-            # Get a top level node.
-            any_top_level_node = [n for n in batches_dict_to_run][0]
-            leafs = [n for n in all_batches_graph.nodes() if all_batches_graph.out_degree(n) == 0]
-            CodeRunner.depth = nx.shortest_path_length(all_batches_graph, any_top_level_node, leafs[0])
         else:
             batches_dict_to_run = {node: None for node in level_node_ids_sorted}
-            CodeRunner.depth = 0
+            # CodeRunner.depth = 0
             all_batches_graph = None
         CodeRunner.lowest_level = lowest_level
         if robj.batch == []:
@@ -262,13 +189,6 @@ class CodeRunner():
         
         for path in paths_in_batch:
             batch_path = [path[idx-1] if idx-1 < len(path) else None for idx in batch_idx_in_schema]
-            # batch_idx_in_schema_subtracted = [idx - 1 for idx in batch_idx_in_schema if idx - 1 < len(path)]
-            # arranged_path = [path[idx] for idx in batch_idx_in_schema_subtracted[0:len(path)]]
-            # batch_path = [n for n in arranged_path if n in batch_graph.nodes()]
-            # if len(batch_path) == 1:
-            #     # Avoid self-loops
-            #     if dataset_node != batch_path[0] and (dataset_node, batch_path[0]) not in batch_graph.edges():
-            #         batch_graph.add_edge(dataset_node, batch_path[0])
             for idx in range(len(batch_path) - 1):
                 edge = (batch_path[idx], batch_path[idx + 1])
                 if all([e is not None for e in edge]) and edge not in batch_graph.edges():
@@ -280,7 +200,8 @@ class CodeRunner():
         """Do all of the prep for running a Process/Plot/Stats object."""        
         default_attrs = DefaultAttrs(robj).default_attrs 
         validator = Validator(robj, action)
-        validator.validate(robj.__dict__, default_attrs)
+        validate_dict = {key: value for key, value in robj.__dict__.items() if key not in ["inputs", "outputs"]}
+        validator.validate(validate_dict, default_attrs)
 
         for input in robj.inputs.values():
             if input.vr is None:
@@ -304,10 +225,10 @@ class CodeRunner():
         sqlquery = "SELECT dataobject_id, path FROM paths"
         cursor = action.conn.cursor()
         result = cursor.execute(sqlquery).fetchall()        
-        paths = [[ds.name] + json.loads(row[1]) for row in result]
+        paths = [[ds.id] + json.loads(row[1]) for row in result]
         dobj_ids = [row[0] for row in result]
         # Append Dataset into the paths.
-        paths.append([ds.name])
+        paths.append([ds.id])
         dobj_ids.append(ds.id)
 
         self.paths = paths
@@ -343,13 +264,10 @@ class CodeRunner():
             CodeRunner.dataset_object_graph = ds.get_addresses_graph(objs = True, action = action)
         G = CodeRunner.dataset_object_graph
 
-        # Set the vrs_source_prs for any var that it wasn't set for.
-        CodeRunner.set_vrs_source_pr(robj, action, default_attrs)
-
         # Get the lowest level for this batch.
         schema_ordered = [n for n in nx.topological_sort(schema_graph)]
         self.schema_order = schema_ordered
-        lowest_level = CodeRunner.get_lowest_level(robj, schema_ordered)
+        lowest_level = CodeRunner.get_lowest_level(robj, schema_ordered, action=action)
 
         level_node_ids_sorted, paths, dobj_ids = CodeRunner.get_level_nodes_sorted(robj, action, paths, dobj_ids, subset_graph)
             
@@ -366,6 +284,8 @@ class CodeRunner():
             self.run_node(batch_id)
             return
         
+        start_time = time.time()
+        
         lowest_nodes = [node for node in batch_graph.nodes() if batch_graph.out_degree(node) == 0]
 
         for node in lowest_nodes:
@@ -373,11 +293,9 @@ class CodeRunner():
             path_idx = [idx for idx, path in enumerate(self.paths) if path[-1] == node][0]
             dobj_id = self.dobj_ids[path_idx]
             self.node = self.lowest_level(id = dobj_id)
-            result = self.check_if_run_node(node)
-            if not result["do_run"]:
-                return
-            for vr_name_in_code, vr_val in result["vr_values_in"].items():
-                batch_graph.nodes[node][vr_name_in_code] = vr_val
+            self.get_input_vrs()
+            for vr_name_in_code, input in self.inputs.items():
+                batch_graph.nodes[node][vr_name_in_code] = input
 
         # Now that all the input VR's have been gotten, change the node to the one to save the output VR's to.
         if batch_id == self.dataset.name:
@@ -386,12 +304,14 @@ class CodeRunner():
             batch_node_idx = [idx for idx, node in enumerate(self.paths) if node[-1] == batch_id][0]
             batch_node = self.dobj_ids[batch_node_idx]
         self.node = self.highest_level(id = batch_node)
+
+        print(f"Running {self.pl_obj} on batch {self.node}.")
                 
         def process_dict(self, batch_graph, input_dict, G, vr_name_in_code: str = None):
             all_keys = list(input_dict.keys())
             if any(isinstance(key, int) for key in all_keys):
                 raise ValueError("Check your batch list, no Variables at this level.")
-            is_var_name_in_code = all_keys == list(self.pl_obj.input_vrs.keys())
+            is_var_name_in_code = all_keys == list(self.pl_obj.inputs.keys())
             leaf_nodes = [n for n in batch_graph.nodes() if batch_graph.out_degree(n) == 0]
             do_recurse = is_var_name_in_code or not all([key in leaf_nodes for key in all_keys])
             if do_recurse and isinstance(input_dict, dict):
@@ -402,13 +322,9 @@ class CodeRunner():
             for dataobj_id in all_keys:
                 input_dict[dataobj_id] = batch_graph.nodes[dataobj_id][vr_name_in_code]
 
-        input_dict = {node: copy.deepcopy(batch_dict) for node in self.pl_obj.input_vrs.keys()}
+        input_dict = {node: copy.deepcopy(batch_dict) for node in self.pl_obj.inputs.keys()}
         for var_name_in_code in input_dict:
-            curr_vr = self.pl_obj.input_vrs[var_name_in_code]
-            if not isinstance(curr_vr, dict) or ("VR" not in curr_vr.keys() and "slice" not in curr_vr.keys()):
-                input_dict[var_name_in_code] = result["vr_values_in"][var_name_in_code] # To make it not be a cell array in MATLAB.
-            else:
-                process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
+            process_dict(self, batch_graph, input_dict[var_name_in_code], G, var_name_in_code)
 
         # Run the process on the batch of nodes.
         is_batch = self.pl_obj.batch is not None
@@ -416,7 +332,9 @@ class CodeRunner():
 
         self.action.commit = True
         self.action.exec = True
-        self.action.execute(return_conn = False)         
+        self.action.execute(return_conn = False)    
+
+        print(f"Running {self.pl_obj} on batch {self.node} took {round(time.time() - start_time, 3)} seconds.")     
 
     def run_node(self, node_id: str) -> None:
         """Run the process on the given node ID.
@@ -426,32 +344,32 @@ class CodeRunner():
         pl_obj = self.pl_obj
         node = pl_obj.level(id = node_id, action = self.action)
         self.node = node
-        result = self.check_if_run_node(node_id) # Verify whether this node should be run or skipped.
-        
-        if not result:
+        self.get_input_vrs()
+
+        if hasattr(pl_obj, "import_file_vr_name") and pl_obj.import_file_vr_name is not None and self.inputs[pl_obj.import_file_vr_name] is None:
+            print(f"Skipping {pl_obj} due to missing raw data file...")
             return
         
-        node_info = node.get_node_info()
-        run_msg = f"Running {node.name} ({node.id})."
+        node_info = node.get_node_info(action=self.action)
+        run_msg = f"Running {self.pl_obj} ({node})."
         print(run_msg)
         is_batch = pl_obj.batch is not None
         assert is_batch == False
-        self.compute_and_assign_outputs(self.pl_obj.inputs, pl_obj, node_info, is_batch)
+        self.compute_and_assign_outputs(self.inputs, pl_obj, node_info, is_batch)
 
         self.action.commit = True
         self.action.exec = True
         self.action.execute(return_conn = False)        
 
         done_run_time = time.time()
-        done_msg = f"Running {node.name} ({node.id}) took {round(done_run_time - start_run_time, 3)} seconds."
+        done_msg = f"Running {self.pl_obj} ({node}) took {round(done_run_time - start_run_time, 3)} seconds."
         print(done_msg)
         
     def check_if_run_node(self, node_id: str) -> bool:
         """Check whether to run the Process on the given node ID. If False, skip. If True, run.
         """
         self.node_id = node_id
-
-        self.get_input_vrs()
+        
         for input in self.pl_obj.inputs.values():
             if input.vr._value.exit_code != 0:
                 raise ValueError(f"Input VR {input} has exit code {input.vr._value.exit_code}.")
@@ -465,9 +383,19 @@ class CodeRunner():
     def get_input_vrs(self) -> dict:
         """Load the input variables.
         """
+        self.inputs = {}
+        node_lineage = self.node.get_node_lineage(action=self.action)
         for vr_name_in_code, input in self.pl_obj.inputs.items():
-            value = self.node.get(input = input, action=self.action)
-            self.pl_obj.inputs[vr_name_in_code].vr._value = value
+            value = self.node.get(vr = input["main"]["vr"],
+                                  node_lineage=node_lineage,  
+                                  process=input["main"]["pr"], 
+                                  lookup_vr = input["lookup"]["vr"],
+                                  lookup_pr = input["lookup"]["pr"],
+                                  vr_name_in_code=vr_name_in_code,
+                                  action=self.action, 
+                                  parent_ro=self.pl_obj,
+                                  slice_input = input["slice"])
+            self.inputs[vr_name_in_code] = value
         
     def check_output_vrs_active(self) -> bool:
         """Check if the output variables are active.
@@ -484,7 +412,7 @@ class CodeRunner():
         run_process = False
 
         # Check that all output VR connections are active.
-        sqlquery_raw = "SELECT is_active FROM vr_dataobjects WHERE dataobject_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
+        sqlquery_raw = "SELECT is_active FROM data_values WHERE path_id = ? AND vr_id IN ({})".format(",".join("?" * len(output_vr_ids)))
         sqlquery = sql_order_result(self.action, sqlquery_raw, ["is_active"], single = True, user = True, computer = False)
         params = ([node.id] + output_vr_ids)
         result = cursor.execute(sqlquery, params).fetchall()            
@@ -526,8 +454,7 @@ class CodeRunner():
         """
         from ResearchOS.variable import Variable
         cursor = self.action.conn.cursor()
-        # Check if the values for all the input variables are up to date. If so, skip this node.
-        # check_vr_values_in = {vr_name: vr_val for vr_name, vr_val in vr_vals_in.items()}            
+        # Check if the values for all the input variables are up to date. If so, skip this node.        
         input_vrs_latest_time = datetime.min.replace(tzinfo=timezone.utc)
         for vr_name_in_code, input in inputs.items():
             if hasattr(input.parent_ro, "import_file_vr_name") and vr_name_in_code == input.parent_ro.import_file_vr_name:
@@ -579,4 +506,97 @@ class CodeRunner():
         matlab_folder = os.path.join(research_os_dir, "matlab")
         if self.matlab_eng is None:
             raise ValueError("MATLAB engine not loaded. Run `pip list` to check whether the MATLAB Engine API is installed. Is MATLAB itself installed?")
-        self.matlab_eng.addpath(matlab_folder)
+        self.matlab_eng.addpath(matlab_folder)    
+
+    def compute_and_assign_outputs(self, inputs: dict, pr: "PipelineObject", info: dict = {}, is_batch: bool = False) -> None:
+        """Run the function and assign the output variables to the DataObject node.
+        """
+        from ResearchOS.variable import Variable
+        from ResearchOS.DataObjects.data_object import DataObject
+        subclasses = DataObject.__subclasses__()
+        # NOTE: For now, assuming that there is only one return statement in the entire method.  
+        if pr.is_matlab:
+            if not self.matlab_loaded:
+                raise ValueError("MATLAB is not loaded.")
+            
+            if pr.prefix.startswith("PR"):
+                fcn = getattr(self.matlab_eng, pr.mfunc_name)
+            elif pr.prefix.startswith("PL"):
+                fcn = getattr(self.matlab_eng, "PlotWrapper")          
+        else:
+            fcn = getattr(pr, pr.method)
+
+        if not is_batch:
+            vr_vals_in = []
+            for value in inputs.values():
+                if value is None:
+                    value = np.nan
+                vr_vals_in.append(value)
+            if self.num_inputs > len(vr_vals_in): # There's an extra input open.
+                vr_vals_in.append(info)
+        else:
+            # Convert the vr_values_in to the right format.
+            # If this is a hard-coded value, then replace the batch dict with just the value.
+            vr_vals_in = []
+            for vr_name_in_code, value in inputs.items():
+                vr = pr.inputs[vr_name_in_code]["main"]["vr"]
+                if isinstance(vr, Variable) or (isinstance(vr, str) and vr.startswith("VR")):
+                    vr_vals_in.append(value)
+                else:
+                    # DataObject attributes.
+                    if isinstance(vr, dict):
+                        attr = [v for v in vr.values()][0]
+                        cls_prefix = [k for k in vr.keys()][0]
+                        node_lineage = self.node.get_node_lineage(action=self.action)
+                        node = [node for node in node_lineage if node.prefix == cls_prefix][0]
+                        vr=getattr(node, attr)
+                    vr_vals_in.append(vr)
+                                
+
+        if pr.is_matlab:
+            for idx, vr_val in enumerate(vr_vals_in):
+                if vr_val is None:
+                    vr_vals_in[idx] = np.nan
+
+        try:
+            if pr.id.startswith("PL"):
+                save_path = self.get_save_path(pr)
+                vr_values_out = fcn(pr.mfunc_name, save_path, vr_vals_in)
+            else:
+                vr_values_out = fcn(*vr_vals_in, nargout=len(pr.outputs))
+        except CodeRunner.matlab.engine.MatlabExecutionError as e:
+            if "ResearchOS:" not in e.args[0]:
+                print("'ResearchOS:' not found in error message, ending run.")
+                raise e
+            return # Do not assign anything, because nothing was computed!
+        
+        if not self.__class__.__name__ == "ProcessRunner":            
+            return
+                
+        if not isinstance(vr_values_out, tuple):
+            vr_values_out = (vr_values_out,)
+        # Convert NaN from MATLAB to None. NaN/None indicates that the variable is not set.
+        if pr.is_matlab:
+            adjusted_vr_values_out = []
+            for vr_value in vr_values_out:
+                if isinstance(vr_value, (int, float)) and (math.isnan(vr_value) or np.isnan(vr_value)):
+                    adjusted_vr_values_out.append(None)
+                else:
+                    adjusted_vr_values_out.append(vr_value)
+            vr_values_out = tuple(adjusted_vr_values_out)
+        if len(vr_values_out) != len(pr.outputs):
+            raise ValueError("The number of variables returned by the method must match the number of output variables registered with this Process instance.")
+            
+        # Set the output variables for this DataObject node.
+        idx = -1 # For MATLAB. Requires that the args are in the proper order.
+        kwargs_dict = {}
+        output_var_names_in_code = [vr for vr in pr.outputs.keys()]
+        for vr_name, input in pr.outputs.items():
+            if not pr.is_matlab:
+                idx = output_var_names_in_code.index(vr_name) # Ensure I'm pulling the right VR name because the order of the VR's coming out and the order in the output_vrs dict are probably different.
+            else:
+                idx += 1
+            # Search through the variable to look for any matlab numeric types and convert them to numpy arrays.
+            kwargs_dict[input["main"]["vr"]] = vr_values_out[idx] # Convert any matlab.double to numpy arrays. (This is a recursive function.)
+
+        self.node._set_vr_values(kwargs_dict, pr = self.pl_obj, action = self.action)

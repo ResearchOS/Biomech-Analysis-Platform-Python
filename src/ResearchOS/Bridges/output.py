@@ -1,33 +1,13 @@
-<<<<<<< HEAD
-from typing import TYPE_CHECKING, Union
-
-if TYPE_CHECKING:
-    from ResearchOS.variable import Variable
-=======
 from typing import TYPE_CHECKING, Union, Any
 import json
 
 if TYPE_CHECKING:
     from ResearchOS.variable import Variable
     from ResearchOS.action import Action
->>>>>>> code-sharing-test-MT2
     from ResearchOS.PipelineObjects.process import Process
     from ResearchOS.PipelineObjects.logsheet import Logsheet
     source_type = Union[Process, Logsheet]
 
-<<<<<<< HEAD
-from ResearchOS.Bridges.port import Port
-
-class Output(Port):
-    """Output port to connect between DiGraphs."""
-
-    def __init__(self, vr: "Variable" = None, show: bool = False):
-        """Initializes the Input object"""
-        self.vr = vr
-        if not vr:
-            show = True
-        self.show = show    
-=======
 from ResearchOS.Bridges.put import Put
 from ResearchOS.Bridges.input_types import Dynamic
 
@@ -72,4 +52,3 @@ class Output(Put):
         #                  order_num=order_num,
         #                  is_lookup=is_lookup,
         #                  dynamic_vr_id=dynamic_vr_ids)
->>>>>>> code-sharing-test-MT2
