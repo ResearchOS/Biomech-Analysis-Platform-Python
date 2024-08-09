@@ -85,6 +85,39 @@ def validate_language(language: str):
         return False, "Language is not 'matlab' or 'python'."
     return True, None
 
+def validate_num_header_rows(num_header_rows: int):
+    if not isinstance(num_header_rows, int):
+        return False, "num_header_rows is not an integer."
+    if num_header_rows < 0:
+        return False, "num_header_rows is negative."
+    return True, None
+
+def validate_class_column_names(class_column_names: dict):
+    if not isinstance(class_column_names, dict):
+        return False, "class_column_names is not a dictionary."
+    if len(class_column_names)==0:
+        return False, "class_column_names dictionary is empty."
+    for key, value in class_column_names.items():
+        if not isinstance(key, str):
+            return False, "class_column_names key is not a string."
+        if len(key) == 0:
+            return False, "class_column_names key is empty."
+        if not isinstance(value, str):
+            return False, "class_column_names value is not a string."
+    return True, None
+
+def validate_headers(headers: dict):
+    for key, value in headers.items():
+        if not isinstance(value, list):
+            return False, "Each header value should be a list."
+        if len(value) != 2:
+            return False, "Each header value should have two elements."
+        if value[1] not in ['str','num','bool']:
+            return False, "Each header value should specify if it is a string, number, or boolean."
+        if not isinstance(value[0], str):
+            return False, "Each header value should be a string."
+    return True, None
+
 def standardize_inputs(inputs: dict):
     new_inputs = {}
     for key, value in inputs.items():
@@ -134,6 +167,25 @@ def standardize_batch(batch: str):
 def standardize_language(language: str):
     return str(language).lower()
 
+def standardize_num_header_rows(num_header_rows: int):
+    return num_header_rows
+
+def standardize_class_column_names(class_column_names: dict):
+    new_class_column_names = {}
+    for key, value in class_column_names.items():
+        key = key[0].upper() + key[1:].lower() if len(key) > 1 else key.upper()
+        new_class_column_names[key] = value
+    return new_class_column_names
+
+def standardize_headers(headers: dict):
+    new_headers = {}
+    for key, value in headers.items():
+        value[0] = value[0][0].upper() + value[0][1:].lower() if len(value[0]) > 1 else value[0].upper()
+        value[1] = value[1].lower()
+        key = key.lower()
+        new_headers[key] = value
+    return new_headers
+
 
 class RunnableType():
     """Specify the attributes needed for a Runnable to be properly added to the DAG during compilation.
@@ -147,16 +199,14 @@ class RunnableType():
 
     @classmethod
     def validate(cls, attrs, compilation_only: bool):
+        is_valid = True
         if attrs == {}:
             return True, None # Skip empty dictionaries
         
         # The minimum required attributes must be present
         missing_minimal_attrs = [attr for attr in cls.runnable_minimum_required_manual_attrs_compilation if attr not in attrs]
         if missing_minimal_attrs != []:
-            return False, "Missing minimal attributes for compilation: " + str(missing_minimal_attrs)
-        
-        is_valid_input, input_err_msg = validate_inputs(attrs['inputs'])    
-        is_valid = is_valid_input    
+            return False, "Missing minimal attributes for compilation: " + str(missing_minimal_attrs)                            
 
         err_msg = []
         if not compilation_only:
@@ -167,9 +217,11 @@ class RunnableType():
             is_valid_level, level_err_msg = validate_level(attrs['level'])
             is_valid_batch, batch_err_msg = validate_batch(attrs['batch'])
             is_valid_language, language_err_msg = validate_language(attrs['language'])
-            is_valid = is_valid_input and is_valid_path and is_valid_level and is_valid_batch and is_valid_language and is_valid
-            err_msg = [msg for msg in [input_err_msg, path_err_msg, level_err_msg, batch_err_msg, language_err_msg] if msg is not None]
-        err_msg = '; '.join([msg for msg in err_msg + [input_err_msg] if msg is not None])
+            is_valid = is_valid_path and is_valid_level and is_valid_batch and is_valid_language and is_valid
+            err_msg = [msg for msg in [path_err_msg, level_err_msg, batch_err_msg, language_err_msg] if msg is not None]
+        err_msg = '; '.join([msg for msg in err_msg if msg is not None])
+        if not err_msg:
+            err_msg = None
         return is_valid, err_msg
 
     @classmethod
@@ -180,9 +232,7 @@ class RunnableType():
         # Fill in the missing fillable attributes with their default values
         missing_fillable_attrs = [attr for attr in cls.runnable_attrs_fillable_w_defaults_compilation if attr not in attrs]
         for attr in missing_fillable_attrs:
-            attrs[attr] = cls.runnable_attrs_fillable_w_defaults_compilation[attr]
-
-        attrs['inputs'] = standardize_inputs(attrs['inputs'])        
+            attrs[attr] = cls.runnable_attrs_fillable_w_defaults_compilation[attr]              
         
         if not compilation_only:
             missing_fillable_attrs_running = [attr for attr in cls.runnable_attrs_fillable_w_defaults_running if attr not in attrs]
@@ -209,9 +259,10 @@ class ProcessType():
         if missing_minimal_attrs != []:
             return False, "Missing minimal attributes: " + str(missing_minimal_attrs)
         
+        is_valid_input, err_msg_input = validate_inputs(attrs['inputs'])
         is_valid_output, err_msg_output = validate_outputs(attrs['outputs'])
-        is_valid = is_valid_output and is_valid
-        err_msg = '; '.join([msg for msg in err_msg + [err_msg_output] if msg is not None])
+        is_valid = is_valid and is_valid_output and is_valid_input
+        err_msg = '; '.join([msg for msg in err_msg + [err_msg_output, err_msg_input] if msg is not None])
         return is_valid, err_msg
 
     @classmethod
@@ -219,7 +270,8 @@ class ProcessType():
         attrs = RunnableType.standardize(attrs, compilation_only)
         if attrs == {}:
             return attrs
-        attrs['outputs'] = standardize_outputs(attrs['outputs'])
+        attrs['inputs'] = standardize_inputs(attrs['inputs'])
+        attrs['outputs'] = standardize_outputs(attrs['outputs'])        
 
         if not compilation_only:
             attrs['subset'] = standardize_subset(attrs['subset'])
@@ -247,6 +299,7 @@ class PlotType():
         attrs = RunnableType.standardize(attrs, compilation_only)
         if attrs == {}:
             return attrs
+        attrs['inputs'] = standardize_inputs(attrs['inputs'])
         if not compilation_only:
             attrs['subset'] = standardize_subset(attrs['subset'])
         return attrs
@@ -269,6 +322,7 @@ class StatsType():
         attrs = RunnableType.standardize(attrs, compilation_only=compilation_only)
         if attrs == {}:
             return attrs
+        attrs['inputs'] = standardize_inputs(attrs['inputs'])
         if not compilation_only:
             attrs['subset'] = standardize_subset(attrs['subset'])
         return attrs
@@ -282,8 +336,17 @@ class LogsheetType():
         is_valid, err_msg = RunnableType.validate(attrs, compilation_only=compilation_only)
         if attrs == {}:
             return is_valid, err_msg
-        if not compilation_only:
-            pass
+        
+        err_msg = [err_msg]
+        
+        is_valid_output, err_msg_output = validate_outputs(attrs['outputs'])
+        is_valid_headers, err_msg_headers = validate_headers(attrs['headers'])
+        is_valid_num_header_rows, err_msg_num_header_rows = validate_num_header_rows(attrs['num_header_rows'])
+        is_valid_class_column_names, err_msg_class_column_names = validate_class_column_names(attrs['class_column_names'])
+        is_valid = is_valid and is_valid_output and is_valid_headers and is_valid_num_header_rows and is_valid_class_column_names
+        err_msg = '; '.join([msg for msg in err_msg + [err_msg_output, err_msg_headers, err_msg_num_header_rows, err_msg_class_column_names] if msg is not None])
+        if not err_msg:
+            err_msg = None
         return is_valid, err_msg
 
     @classmethod
@@ -291,6 +354,9 @@ class LogsheetType():
         attrs = RunnableType.standardize(attrs, compilation_only=compilation_only)
         if attrs == {}:
             return attrs
-        if not compilation_only:
-            pass
+        
+        attrs['outputs'] = standardize_outputs(attrs['outputs'])
+        attrs['headers'] = standardize_headers(attrs['headers'])
+        attrs['class_column_names'] = standardize_class_column_names(attrs['class_column_names'])
+        attrs['num_header_rows'] = standardize_num_header_rows(attrs['num_header_rows'])
         return attrs
