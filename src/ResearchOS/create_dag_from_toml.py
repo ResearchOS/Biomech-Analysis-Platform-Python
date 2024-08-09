@@ -5,9 +5,9 @@ import networkx as nx
 import tomli as tomllib # For reading
 import toml # For writing
 
-from ResearchOS.constants import ALLOWED_INDEX_KEYS, PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY, RUNNABLE_TYPES
+from ResearchOS.constants import ALLOWED_INDEX_KEYS, PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY, RUNNABLE_TYPES, LOGSHEET_NAME
 from ResearchOS.helper_functions import parse_variable_name
-from ResearchOS.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable, LogsheetVariable, Constant, Unspecified
+from ResearchOS.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable, LogsheetVariable, Constant, Unspecified, Logsheet
 from ResearchOS.validation_classes import RunnableFactory
 from ResearchOS.input_classifier import classify_input_type
 from ResearchOS.dag_info import check_variable_properly_specified
@@ -203,7 +203,7 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
     variable format: `package_name.runnable_name.variable_name`"""
 
     package_dag = nx.MultiDiGraph()
-    runnable_classes = {PROCESS_NAME: Process, PLOT_NAME: Plot, STATS_NAME: Stats}    
+    runnable_classes = {PROCESS_NAME: Process, PLOT_NAME: Plot, STATS_NAME: Stats, LOGSHEET_NAME: Logsheet}    
     # 1. Create a node for each runnable and input/output variable.
     # Also connect the inputs and outputs to each runnable. Still need to connect the variables between runnables after this.
     # process, plot, stats
@@ -227,7 +227,6 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
                 node = input_class(input_node_uuid, input_node_name, input_attrs)
                 package_dag.add_node(input_node_uuid, node = node)
                 package_dag.add_edge(input_node_uuid, runnable_node_uuid)
-                # is_dag = nx.is_directed_acyclic_graph(package_dag)
                 variable_nodes[runnable_type][runnable_name]['inputs'][input_var_name] = node
             for output_var_name in runnable_dict['outputs']:
                 output_node_uuid = str(uuid.uuid4())
