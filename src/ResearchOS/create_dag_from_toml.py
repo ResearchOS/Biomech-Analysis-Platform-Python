@@ -12,6 +12,8 @@ from ResearchOS.validation_classes import RunnableFactory
 from ResearchOS.input_classifier import classify_input_type
 from ResearchOS.dag_info import check_variable_properly_specified
 
+RUNNABLE_NODE_CLASSES = {PROCESS_NAME: Process, PLOT_NAME: Plot, STATS_NAME: Stats, LOGSHEET_NAME: Logsheet}    
+
 def bridge_dynamic_variables(dag: nx.MultiDiGraph, package_name: str, bridge_name: str, source: str, targets: list, package_names: list):
     """Bridge from a source (output) variable in one package to a target (input) variable in another package.
     If the target variable is Unspecified, then the 'node' attribute is converted to an InputVariable type."""
@@ -202,14 +204,13 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
     runnable name format: `package_name.runnable_name`
     variable format: `package_name.runnable_name.variable_name`"""
 
-    package_dag = nx.MultiDiGraph()
-    runnable_classes = {PROCESS_NAME: Process, PLOT_NAME: Plot, STATS_NAME: Stats, LOGSHEET_NAME: Logsheet}    
+    package_dag = nx.MultiDiGraph()    
     # 1. Create a node for each runnable and input/output variable.
     # Also connect the inputs and outputs to each runnable. Still need to connect the variables between runnables after this.
     # process, plot, stats
     variable_nodes = {}
     for runnable_type, runnables in package_runnables_dict.items():
-        runnable_class = runnable_classes[runnable_type]
+        runnable_class = RUNNABLE_NODE_CLASSES[runnable_type]
         variable_nodes[runnable_type] = {}
         # Add each node
         for runnable_name, runnable_dict in runnables.items():
