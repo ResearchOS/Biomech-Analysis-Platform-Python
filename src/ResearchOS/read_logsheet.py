@@ -10,12 +10,12 @@ import math
 import tomli as tomllib
 import networkx as nx
 
-from ResearchOS.create_dag_from_toml import get_package_index_dict
 from ResearchOS.constants import DATASET_SCHEMA_KEY, DATASET_KEY, LOGSHEET_NAME, MAT_DATA_FOLDER_KEY, DATASET_FILE_SCHEMA_KEY, PACKAGE_SETTINGS_KEY
 from ResearchOS.custom_classes import Logsheet, OutputVariable
 from ResearchOS.hash_dag import get_output_var_hash
 from ResearchOS.matlab_eng import import_matlab
-from ResearchOS.io import schema_to_file
+from ResearchOS.validation_classes import RunnableFactory
+from ResearchOS.helper_functions import get_package_setting
 
 def _read_and_clean_logsheet(logsheet_path: str, nrows: int = None) -> list:
         """Read the logsheet (CSV only) and clean it.
@@ -244,21 +244,15 @@ def _clean_value(type_str: str, raw_value: Any) -> Any:
 
 def get_logsheet_dict(project_folder: str) -> dict:
     """Return the logsheet dict from the project_settings.toml file."""
-    index_dict = get_package_index_dict(project_folder)
-    if PACKAGE_SETTINGS_KEY not in index_dict:
-        raise ValueError("The package settings file path must be specified in the index.toml! Default is 'src/project_settings.toml'.")
-    package_settings_path = index_dict[PACKAGE_SETTINGS_KEY]
-    if not package_settings_path:
-        raise ValueError("The package settings file path is empty in the index.toml! Default is 'src/project_settings.toml'.")
-    if len(package_settings_path) > 1:
-        raise ValueError("The package settings file path is not unique in the index.toml! Default is 'src/project_settings.toml'.")
-    if not os.path.isabs(package_settings_path[0]):
-        package_settings_path[0] = os.path.join(project_folder, package_settings_path[0])
-    with open(package_settings_path[0], "rb") as f:
-        package_settings_dict = tomllib.load(f)
-    if LOGSHEET_NAME not in package_settings_dict:
-        raise ValueError(f"The logsheet is not in the package settings file at: {package_settings_path[0]}")
-    logsheet_dict = package_settings_dict[LOGSHEET_NAME]
+
+    logsheet_dict = get_package_setting(project_folder, setting_name=LOGSHEET_NAME, default_value={})    
+
+    logsheet_type = RunnableFactory.create(runnable_type=LOGSHEET_NAME)
+    logsheet_dict['outputs'] = [key for key in logsheet_dict['headers'].keys()] # Outputs are needed for validation.
+    is_valid, err_msg = logsheet_type.validate(logsheet_dict, compilation_only=True) # Validate the logsheet.
+    if not is_valid:
+        raise ValueError(f"The logsheet TOML file is not valid. {err_msg}")
+    logsheet_dict = logsheet_type.standardize(logsheet_dict, compilation_only=True) # Standardize the logsheet.
     return logsheet_dict
     
 
