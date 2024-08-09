@@ -11,7 +11,7 @@ import tomli as tomllib
 import networkx as nx
 
 from ResearchOS.create_dag_from_toml import get_package_index_dict
-from ResearchOS.constants import DATASET_SCHEMA_KEY, DATASET_KEY, LOGSHEET_NAME, MAT_DATA_FOLDER_KEY, DATASET_FILE_SCHEMA_KEY
+from ResearchOS.constants import DATASET_SCHEMA_KEY, DATASET_KEY, LOGSHEET_NAME, MAT_DATA_FOLDER_KEY, DATASET_FILE_SCHEMA_KEY, PACKAGE_SETTINGS_KEY
 from ResearchOS.custom_classes import Logsheet, OutputVariable
 from ResearchOS.hash_dag import get_output_var_hash
 from ResearchOS.matlab_eng import import_matlab
@@ -245,7 +245,9 @@ def _clean_value(type_str: str, raw_value: Any) -> Any:
 def get_logsheet_dict(project_folder: str) -> dict:
     """Return the logsheet dict from the project_settings.toml file."""
     index_dict = get_package_index_dict(project_folder)
-    project_settings_path = index_dict['project_settings']
+    project_settings_path = index_dict[PACKAGE_SETTINGS_KEY]
+    if not project_settings_path:
+        raise ValueError("The package settings file path must be specified in the index.toml! Default is 'src/project_settings.toml'.")
     if isinstance(project_settings_path, list):
         assert len(project_settings_path) == 1, "Only one project settings file is allowed."
         project_settings_path = project_settings_path[0]
