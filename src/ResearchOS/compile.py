@@ -7,7 +7,7 @@ import networkx as nx
 from ResearchOS.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages, standardize_package_runnables_dict
 from ResearchOS.run import run
 from ResearchOS.furcate import get_nodes_to_furcate, polyfurcate
-from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY
+from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY, BRIDGES_KEY
 from ResearchOS.helper_functions import parse_variable_name
 from ResearchOS.custom_classes import Logsheet, OutputVariable
 from ResearchOS.read_logsheet import get_logsheet_dict
@@ -31,14 +31,19 @@ def get_package_order(dag: dict) -> list:
     return unique_packages
 
 def compile(project_folder: str, packages_parent_folders: list = []) -> nx.MultiDiGraph:
-    """Compile all packages in the project into one DAG."""    
+    """Compile all packages in the project into one DAG by reading their TOML files and creating a DAG for each package. 
+    Then, connect the packages together into one cohesive DAG by reading each package's bridges file."""    
     packages_folders = discover_packages(packages_parent_folders)
     packages_folders.append(project_folder) # The project folder is considered a package folder.
 
     dag = nx.MultiDiGraph()
     all_packages_bridges = {}
 
-    ## Read all of the packages' TOML files.
+    # Get the headers from the logsheet
+    logsheet = get_logsheet_dict(project_folder)
+    data_objects = os.environ[DATASET_SCHEMA_KEY]
+    headers_in_toml = logsheet['headers']
+
     # 1. Get all of the package names.
     package_names = []
     for package_folder in packages_folders:
@@ -63,17 +68,13 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
         package_runnables_dict = runnables_dict[package_name]
         package_index_dict = index_dict[package_name]
         all_packages_dags[package_name] = create_package_dag(package_runnables_dict, package_name=package_name)      
-        all_packages_bridges[package_name] = get_package_bridges(package_folder, package_index_dict['bridges'])
+        all_packages_bridges[package_name] = get_package_bridges(package_folder, package_index_dict[BRIDGES_KEY])
 
-    # Add the nodes and edges from each package to the overall DAG
+    # Add the nodes and edges from each package to the overall DAG.
+    # Right now, there are no edges between packages whatsoever.
     for package_name in package_names:
         dag.add_nodes_from(all_packages_dags[package_name].nodes(data=True))
-        dag.add_edges_from(all_packages_dags[package_name].edges(data=True))
-
-    # Get the headers from the logsheet
-    logsheet = get_logsheet_dict(project_folder)
-    data_objects = os.environ[DATASET_SCHEMA_KEY]
-    headers_in_toml = logsheet['headers']
+        dag.add_edges_from(all_packages_dags[package_name].edges(data=True))    
 
     # Create the logsheet Runnable node.
     logsheet_attrs = {}
