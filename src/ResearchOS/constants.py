@@ -30,7 +30,7 @@ DATA_OBJECT_FULL_NAME_STR = '__full_name__' # Returns the full name of the data 
 PROJECT_FOLDER_KEY_STR = '__project_folder__' # Returns the project folder
 # Keys in input variable dictionary.
 LOAD_CONSTANT_FROM_FILE_KEY = '__load_file__' # Load the constant from the specified file, {__load_file__: file_path}
-DATA_FILE_KEY = '__file_path__' # Use the absolute path of the current data object's data file as input (minus the file extension) {__file_path__: file_path}
+DATA_FILE_KEY = '__data_file__' # Use the absolute path of the current data object's data file as input (minus the file extension) {__file_path__: file_path}
 
 ### Custom node class names.
 INPUT_VARIABLE_NAME = 'input'
@@ -38,7 +38,7 @@ OUTPUT_VARIABLE_NAME = 'output'
 CONSTANT_VARIABLE_NAME = 'constant'
 UNSPECIFIED_VARIABLE_NAME = 'unspecified'
 LOGSHEET_NAME = 'logsheet'
-DATA_OBJECT_NAME_KEY = 'data_object_name'
+DATA_OBJECT_NAME_KEY = '__data_object_name__'
 
 ## Environment variable keys
 PROJECT_FOLDER_KEY = 'project_folder'

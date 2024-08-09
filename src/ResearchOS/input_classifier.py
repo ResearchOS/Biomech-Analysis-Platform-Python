@@ -35,6 +35,7 @@ def classify_input_type(input: Any):
             attrs['value'] = load_constant_from_file(input[key])
             return LoadConstantFromFile, attrs
         if key == DATA_FILE_KEY:
+            attrs = {'value': input[key]}
             return DataFilePath, attrs
 
     attrs['value'] = input
