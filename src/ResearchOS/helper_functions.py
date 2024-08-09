@@ -24,12 +24,15 @@ def is_dynamic_variable(var_string: str) -> bool:
     # Also check to make sure that the strings are not just numbers.
     if not isinstance(var_string, str):
         return False
-    names = var_string.split('.')
+    
+    names = var_string.split('.')    
     if len(names)==1 and names[0] == "__logsheet__":
         return False
     for name in names:
         if name.isdigit():
             return False
+    if len(names)==1:
+        return False # Not a number, but not a dynamic variable either.
     return True
 
 def is_special_dict(var_dict: dict) -> bool:
