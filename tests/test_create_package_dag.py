@@ -30,9 +30,9 @@ def test_create_package_dag(tmp_path: Path = TMP_PACKAGES_PATH):
     standardized_package_runnables_dict = {}
     for key, value in package_runnables_dict.items():
         runnable_type = RunnableFactory.create(runnable_type=key)
-        is_valid = runnable_type.validate(value)
+        is_valid = runnable_type.validate(value, compilation_only=True)
         assert is_valid
-        standardized_package_runnables_dict[key] = runnable_type.standardize(value)    
+        standardized_package_runnables_dict[key] = runnable_type.standardize(value, compilation_only=True)    
 
     package_name = "test_package"
 

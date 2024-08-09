@@ -25,14 +25,14 @@ def validate_inputs(inputs: dict):
             return False, "Input key is not a string."
     return True, None
 
-def validate_outputs(outputs: dict):
+def validate_outputs(outputs: list):
+    if type(outputs) not in [list, str]:
+        return False, "Outputs is not a list or string."
     if len(outputs)==0:
-        return False, "Outputs dictionary is empty."
-    for key, value in outputs.items():
-        if not isinstance(key, str):
-            return False, "Output key is not a string."
-        if not isinstance(value, str):
-            return False, "Output value is not a string."
+        return True, None
+    if isinstance(outputs, list):
+        if not all(isinstance(item, str) for item in outputs):
+            return False, "Each item in outputs is not a string."
     return True, None
 
 def validate_path(path: str):
@@ -82,11 +82,12 @@ def standardize_inputs(inputs: dict):
         new_inputs[str(key).lower()] = value
     return new_inputs
 
-def standardize_outputs(outputs: dict):
-    new_outputs = {}
-    for key, value in outputs.items():
-        new_outputs[str(key).lower()] = value
-    return new_outputs
+def standardize_outputs(outputs: list):
+    if len(outputs)==0:
+        return [] # Works for string or list.
+    if isinstance(outputs, str):
+        outputs = [outputs]
+    return [str(output).lower() for output in outputs]
 
 def standardize_path(path: str):
     """Standardize the path by making it absolute for clarity."""
@@ -238,7 +239,7 @@ class StatsType():
     
     @classmethod
     def validate(cls, attrs, compilation_only: bool):
-        is_valid = RunnableType.validate(attrs)
+        is_valid = RunnableType.validate(attrs, compilation_only=compilation_only)
         if attrs == {}:
             return is_valid
         if not compilation_only:
@@ -247,7 +248,7 @@ class StatsType():
 
     @classmethod
     def standardize(cls, attrs, compilation_only: bool):
-        attrs = RunnableType.standardize(attrs)
+        attrs = RunnableType.standardize(attrs, compilation_only=compilation_only)
         if attrs == {}:
             return attrs
         if not compilation_only:
@@ -258,7 +259,7 @@ class LogsheetType():
     
     @classmethod
     def validate(cls, attrs, compilation_only: bool):
-        is_valid = RunnableType.validate(attrs)
+        is_valid = RunnableType.validate(attrs, compilation_only=compilation_only)
         if attrs == {}:
             return is_valid
         if not compilation_only:
@@ -267,7 +268,7 @@ class LogsheetType():
 
     @classmethod
     def standardize(cls, attrs, compilation_only: bool):
-        attrs = RunnableType.standardize(attrs)
+        attrs = RunnableType.standardize(attrs, compilation_only=compilation_only)
         if attrs == {}:
             return attrs
         if not compilation_only:

@@ -34,7 +34,7 @@ def test_standardize_process_dict():
     with pytest.raises(ValueError):
         standardize_package_runnables_dict(runnable_dict, package_folder)
 
-    runnable_dict[PROCESS_NAME]['process1']['outputs'] = ''
+    runnable_dict[PROCESS_NAME]['process1']['outputs'] = {'output1': '?'}
 
     # Inputs and outputs are strings not dicts.
     with pytest.raises(ValueError):
@@ -44,25 +44,27 @@ def test_standardize_process_dict():
         'input1': '?'
     }  
 
-    # Now only outputs is wrong.
+    # Now only outputs is wrong (dict instead of list)
     with pytest.raises(ValueError):
         standardize_package_runnables_dict(runnable_dict, package_folder)
 
-    # Set outputs to a dictionary with a non-string key.
-    runnable_dict[PROCESS_NAME]['process1']['outputs'] = {
-        1: '?'
-    }
-
-    with pytest.raises(ValueError):
-        standardize_package_runnables_dict(runnable_dict, package_folder)
-
-    # Set outputs to a dictionary with a string key.
-    runnable_dict[PROCESS_NAME]['process1']['outputs'] = {
-        'output1': '?'
-    }
-
+    # Set outputs to an empty string.
+    runnable_dict[PROCESS_NAME]['process1']['outputs'] = ''
     standardized_runnable_dict = runnable_dict.copy()
+    standardized_runnable_dict[PROCESS_NAME]['process1']['outputs'] = []
+    assert standardize_package_runnables_dict(runnable_dict, package_folder) == standardized_runnable_dict
+
+    # Set outputs to a string
+    runnable_dict[PROCESS_NAME]['process1']['outputs'] = 'output1'    
+    standardized_runnable_dict = runnable_dict.copy()
+    standardized_runnable_dict[PROCESS_NAME]['process1']['outputs'] = ['output1']
     assert standardize_package_runnables_dict(runnable_dict, package_folder, compilation_only = True) == standardized_runnable_dict
+
+    # Run with outputs as a list.
+    runnable_dict = standardized_runnable_dict.copy()
+    assert standardize_package_runnables_dict(runnable_dict, package_folder) == standardized_runnable_dict
+
+    
 
 if __name__=="__main__":
     pytest.main(['-v', __file__])
