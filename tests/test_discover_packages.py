@@ -1,20 +1,25 @@
 import os
+import shutil
+from pathlib import Path
+
 import pytest
 
-from pathlib import Path
+
 from ResearchOS.create_dag_from_toml import discover_packages
-from ResearchOS.constants import PACKAGES_PREFIX
+from fixtures.constants import PACKAGES_PREFIX, TMP_PACKAGES_PATH
 
-def test_discover_packages(tmp_path):
-
-    tmp_path_str = str(tmp_path)    
+def test_discover_packages(tmp_path: Path = TMP_PACKAGES_PATH):    
+    tmp_path_str = str(tmp_path)
+    if os.path.exists(tmp_path):
+        shutil.rmtree(tmp_path)        
+    os.makedirs(tmp_path)      
 
     # Test case 1: Empty package folder
     assert discover_packages(tmp_path_str) == []
 
     # Test case 2: Valid package folders
     # Create a temporary directory    
-    temp_dir = tmp_path  
+    temp_dir = tmp_path
     package_folders = [
         PACKAGES_PREFIX + "package1",
         PACKAGES_PREFIX + "package2",
@@ -37,17 +42,21 @@ def test_discover_packages(tmp_path):
     package_folders = [
         'r' + PACKAGES_PREFIX + "package1"        
     ]
-    expected_result_new = expected_result.copy()
     for package_folder in package_folders:
         full_path = str(temp_dir / package_folder)
         if not os.path.exists(full_path):
             os.makedirs(full_path)
-    assert set(discover_packages(tmp_path_str)) == set(expected_result_new) # Order does not matter.
+    assert set(discover_packages(tmp_path_str)) == set(expected_result) # Order does not matter.
+
+    # Test case 4: Non-existent folders
+    nonexistent_folder = "nonexistent"
+    assert discover_packages(nonexistent_folder) == [] # Order does not matter.
+
+    shutil.rmtree(tmp_path)
     
 
-if __name__ == "__main__":
-    tmp_path = Path("~/temp")
-    test_discover_packages(tmp_path)
+if __name__ == "__main__":    
+    test_discover_packages()
 
     # # Test case 2: Empty package folders
     # package_folders = []

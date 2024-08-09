@@ -1,10 +1,12 @@
 import os
 import uuid
+import warnings
 
 import networkx as nx
-import tomli as tomllib
+import tomli as tomllib # For reading
+import toml # For writing
 
-from ResearchOS.constants import PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY
+from ResearchOS.constants import ALLOWED_INDEX_KEYS, PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY
 from ResearchOS.helper_functions import parse_variable_name
 from ResearchOS.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable, LogsheetVariable, Constant, Unspecified
 from ResearchOS.input_classifier import classify_input_type
@@ -84,26 +86,58 @@ def get_package_index_path(package_folder_path: str) -> str:
     """Get the path (relative to the project root folder, which contains pyproject.toml) to the package index.toml file from pyproject.toml, `tool.researchos.index`.
     The default path is `index.toml` because it sits next to the `pyproject.toml` file."""
     pyproject_path = os.path.join(package_folder_path, 'pyproject.toml')
+
+    if not os.path.exists(pyproject_path):
+        raise FileNotFoundError(f"pyproject.toml file not found: {pyproject_path}.")
+    
     with open(pyproject_path, 'rb') as f:
         pyproject_dict = tomllib.load(f)
+
+    if 'tool' not in pyproject_dict or 'researchos' not in pyproject_dict['tool']:
+        raise KeyError(f"Missing 'tool.researchos' section in {pyproject_path}.")
+    
+    if 'index' not in pyproject_dict['tool']['researchos']:
+        raise KeyError(f"Missing 'index' field in {pyproject_path}.")
+    
     return os.path.join(package_folder_path, pyproject_dict['tool']['researchos']['index'])
 
 def get_package_index_dict(package_folder_path: str) -> dict:
     """Get the paths for the package's processes, plots, and stats from the index.toml file.
     Dict keys are `processes`, `plots`, and `stats`. Values are lists of relative file paths (relative to package root folder)."""
+
+    if not os.path.isdir(package_folder_path):
+        raise NotADirectoryError(f"Package folder not found: {package_folder_path}.")
+    
     index_path = get_package_index_path(package_folder_path)
+    if not os.path.exists(index_path):
+        raise FileNotFoundError(f"File not found: {index_path}.")
+    
     with open(index_path, 'rb') as f:
         index_dict = tomllib.load(f)
+
+    # Check for missing keys.
+    missing_keys = [key for key in ALLOWED_INDEX_KEYS if key not in index_dict]
+    for key in missing_keys:
+        # warnings.warn(f"Adding key {key} to the {index_path} file.", UserWarning)
+        index_dict[key] = []
+    
+    # Replace forward slashes with the OS separator
     for key in index_dict:
+        # Check if valid file names.
+        paths = index_dict[key]
+        if not isinstance(index_dict[key], list):
+            paths = [index_dict[key]]
+        nonexistent_paths = [path for path in paths if not os.path.exists(path)]
+        if len(nonexistent_paths) > 0:
+            raise FileNotFoundError(f"File(s) not found in {index_path}: {nonexistent_paths}")
+        if not all([path.endswith('.toml') for path in paths]):
+            raise ValueError(f"Files listed in index.toml must all be .toml")
+        
         if not isinstance(index_dict[key], list):
             index_dict[key] = index_dict[key].replace('/', os.sep)
         else:
             index_dict[key] = [path.replace('/', os.sep) for path in index_dict[key]]
-    # Validate the keys in the index_dict
-    allowed_keys = [PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY]
-    wrong_keys = [key for key in index_dict if key not in allowed_keys] 
-    if wrong_keys:
-        raise ValueError(f"Invalid keys in the index.toml file: {wrong_keys}.")
+        
     return index_dict
 
 def get_runnables_in_package(package_folder: str = None, paths_from_index: list = None) -> dict:

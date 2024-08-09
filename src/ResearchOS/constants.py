@@ -20,8 +20,9 @@ PROCESS_NAME = 'process'
 PLOT_NAME = 'plot'
 STATS_NAME = 'stats'
 BRIDGES_KEY = 'bridges'
-PACKAGE_SETTINGS_KEY = 'project_settings'
+PACKAGE_SETTINGS_KEY = 'package_settings'
 SUBSET_KEY = 'subsets'
+ALLOWED_INDEX_KEYS = [PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY]
 
 ### In each package's runnables TOML files.
 # Special strings
@@ -42,3 +43,4 @@ DATA_OBJECT_NAME_KEY = 'data_object_name'
 
 ## Environment variable keys
 PROJECT_FOLDER_KEY = 'project_folder'
+
