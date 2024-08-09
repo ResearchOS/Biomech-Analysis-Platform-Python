@@ -6,7 +6,7 @@ import pytest
 import toml
 
 from ResearchOS.compile import get_package_index_dict
-from ResearchOS.constants import ALLOWED_INDEX_KEYS, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY
+from ResearchOS.constants import ALLOWED_INDEX_KEYS, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, LOGSHEET_NAME
 from fixtures.constants import TMP_PACKAGES_PATH
 
 
@@ -87,7 +87,8 @@ def test_get_package_index_dict(tmp_path: Path = TMP_PACKAGES_PATH):
         STATS_NAME: [str("src/" + STATS_NAME + ".toml")],
         BRIDGES_KEY: [str("src/" + BRIDGES_KEY + ".toml")],        
         PACKAGE_SETTINGS_KEY: [str("src/" + PACKAGE_SETTINGS_KEY + ".toml")],
-        SUBSET_KEY: [str("src/" + SUBSET_KEY + ".toml")]
+        SUBSET_KEY: [str("src/" + SUBSET_KEY + ".toml")],
+        LOGSHEET_NAME: [str("src/" + LOGSHEET_NAME + ".toml")]
     }   
 
     with open(package_path / "src/index.toml", "w") as f:

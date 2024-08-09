@@ -90,7 +90,6 @@ class Variable(Node):
         self.id = id
         self.name = name
 
-@ABC
 class Dynamic(Variable):
     """Abstract class for variables that are dynamic in some way."""
     pass
