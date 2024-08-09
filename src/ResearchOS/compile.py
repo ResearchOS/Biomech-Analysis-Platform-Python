@@ -40,17 +40,20 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     dag = nx.MultiDiGraph()
     all_packages_bridges = {}
 
-    # Get the headers from the logsheet
+    # Get the logsheet dict
     logsheet_dict = get_logsheet_dict(project_folder)
     logsheet_type = RunnableFactory.create(runnable_type=LOGSHEET_NAME)
-    logsheet_dict['outputs'] = logsheet_dict['headers'] # Outputs are needed for validation.
+    logsheet_dict['outputs'] = [key for key in logsheet_dict['headers'].keys()] # Outputs are needed for validation.
     is_valid, err_msg = logsheet_type.validate(logsheet_dict, compilation_only=True) # Validate the logsheet.
     if not is_valid:
-        raise ValueError(f"The logsheet is not valid. {err_msg}")
-    logsheet_dict = logsheet_type.standardize(logsheet_dict) # Standardize the logsheet.        
+        raise ValueError(f"The logsheet TOML file is not valid. {err_msg}")
+    logsheet_dict = logsheet_type.standardize(logsheet_dict, compilation_only=True) # Standardize the logsheet.
+
+    # TODO: Need to parse the rest of the package settings from package_settings.toml
+    # dataset_schema, dataset_file_schema, mat_data_folder, raw_data_folder
     
     data_objects = os.environ[DATASET_SCHEMA_KEY]
-    headers_in_toml = logsheet['headers']
+    headers_in_toml = logsheet_dict['headers']
 
     # 1. Get all of the package names.
     package_names = []

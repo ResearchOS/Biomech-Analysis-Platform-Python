@@ -245,13 +245,18 @@ def _clean_value(type_str: str, raw_value: Any) -> Any:
 def get_logsheet_dict(project_folder: str) -> dict:
     """Return the logsheet dict from the project_settings.toml file."""
     index_dict = get_package_index_dict(project_folder)
-    logsheet_path = index_dict[LOGSHEET_NAME]
-    if not logsheet_path:
+    if PACKAGE_SETTINGS_KEY not in index_dict:
         raise ValueError("The package settings file path must be specified in the index.toml! Default is 'src/project_settings.toml'.")
-    if not os.path.isabs(logsheet_path[0]):
-        logsheet_path[0] = os.path.join(project_folder, logsheet_path[0])
-    with open(logsheet_path[0], "rb") as f:
-        logsheet_dict = tomllib.load(f)
+    package_settings_path = index_dict[PACKAGE_SETTINGS_KEY]
+    if not package_settings_path:
+        raise ValueError("The package settings file path is empty in the index.toml! Default is 'src/project_settings.toml'.")
+    if len(package_settings_path) > 1:
+        raise ValueError("The package settings file path is not unique in the index.toml! Default is 'src/project_settings.toml'.")
+    if not os.path.isabs(package_settings_path[0]):
+        package_settings_path[0] = os.path.join(project_folder, package_settings_path[0])
+    with open(package_settings_path[0], "rb") as f:
+        package_settings_dict = tomllib.load(f)
+    logsheet_dict = package_settings_dict[LOGSHEET_NAME]
     return logsheet_dict
     
 
