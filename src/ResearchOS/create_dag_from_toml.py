@@ -150,9 +150,7 @@ def get_package_index_dict(package_folder_path: str) -> dict:
 def get_runnables_in_package(package_folder: str = None, package_index_dict: list = None, runnable_keys: list = RUNNABLE_TYPES) -> dict:
     """Get the package's processes, given the paths to the processes.toml files (from the index.toml).
     Call this function by indexing into the output of `get_package_index_dict` as the second argument.
-    Valid keys are `processes`, `plots`, and `stats`.
-    TODO: This is the place to validate & standardize the attributes returned by each runnable. For example, if missing 'level', fill it. 
-    Same with 'batch', 'language', and other optional attributes"""
+    No validation is done here. This function just reads the TOML files and returns the dicts."""
     if not package_folder:
         raise ValueError('No package specified.')
         
@@ -165,8 +163,7 @@ def get_runnables_in_package(package_folder: str = None, package_index_dict: lis
         return all_runnables_dict
         
     for runnable_key in runnable_keys:
-        all_runnables_dict[runnable_key] = {} # Initialize this key in the dict in case there are no paths for it in the index.
-        runnable_type = RunnableFactory.create(runnable_type=runnable_key)
+        all_runnables_dict[runnable_key] = {} # Initialize this key in the dict in case there are no paths for it in the index.        
         # Each runnable type in the index has a list of paths to the runnables' TOML files.
         for path in package_index_dict[runnable_key]:
             path = os.path.join(package_folder, path)
@@ -174,9 +171,7 @@ def get_runnables_in_package(package_folder: str = None, package_index_dict: lis
                 runnables_dict = tomllib.load(f)
             # Each runnable in one .toml file.
             for runnable in runnables_dict:
-                # Validate & standardize each runnables_dict!
-                curr_dict = runnables_dict[runnable]
-                runnable_type.validate(curr_dict)                                
+                curr_dict = runnables_dict[runnable]                             
                 runnables_dict[runnable] = curr_dict
             all_runnables_dict[runnable_key].update(runnables_dict)
     return all_runnables_dict
@@ -198,6 +193,25 @@ def get_package_bridges(package_folder: str = None, paths_from_index: list = Non
                 bridges_dict = tomllib.load(f)
             all_bridges_dict.update(bridges_dict)
         return all_bridges_dict
+
+def standardize_package_runnables_dict(package_runnables_dict: dict, package_folder: str, compilation_only: bool = True) -> dict:
+    """This is the place to validate & standardize the attributes returned by each runnable. For example, if missing 'level', fill it. 
+    Same with 'batch', 'language', and other optional attributes"""
+    if not os.path.isabs(package_folder):
+        raise ValueError(f"Package folder path must be absolute: {package_folder}.")
+    package_name = os.path.split(package_folder)[-1]
+    os.environ['PACKAGE_FOLDER'] = package_folder
+    standardized_runnables_dict = {}
+    for runnable_type_str, runnables in package_runnables_dict.items():
+        standardized_runnables_dict[runnable_type_str] = {}
+        for runnable_name, runnable_dict in runnables.items():
+            runnable_type = RunnableFactory.create(runnable_type=runnable_type_str)            
+            is_valid, err_msg = runnable_type.validate(runnable_dict, compilation_only=compilation_only)
+            if not is_valid:
+                raise ValueError(f"Invalid {runnable_type_str} in {package_name}.{runnable_name}. {err_msg}.")   
+            standardized_runnable_dict = runnable_type.standardize(runnable_dict, compilation_only=compilation_only)
+            standardized_runnables_dict[runnable_type_str][runnable_name] = standardized_runnable_dict
+    return standardized_runnables_dict
 
 def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> nx.MultiDiGraph:
     """Create a directed acyclic graph (DAG) of the package's runnables.

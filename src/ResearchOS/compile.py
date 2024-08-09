@@ -4,12 +4,12 @@ import uuid
 
 import networkx as nx
 
-from ResearchOS.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages
+from ResearchOS.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages, standardize_package_runnables_dict
 from ResearchOS.run import run
 from ResearchOS.furcate import get_nodes_to_furcate, polyfurcate
 from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY
 from ResearchOS.helper_functions import parse_variable_name
-from ResearchOS.custom_classes import Logsheet, OutputVariable, Runnable
+from ResearchOS.custom_classes import Logsheet, OutputVariable
 from ResearchOS.read_logsheet import get_logsheet_dict
 from ResearchOS.substitutions import substitute_levels_subsets
 
@@ -51,7 +51,8 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     for package_folder, package_name in zip(packages_folders, package_names):
         index_dict[package_name] = get_package_index_dict(package_folder)
         package_runnables_dict = get_runnables_in_package(package_folder=package_folder, package_index_dict=index_dict[package_name], runnable_keys = [PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME])
-        runnables_dict[package_name] = package_runnables_dict
+        standard_package_runnables_dict = standardize_package_runnables_dict(package_runnables_dict, package_folder)
+        runnables_dict[package_name] = standard_package_runnables_dict
 
     package_names_str = '.'.join(package_names)
     os.environ['PACKAGE_NAMES'] = package_names_str
