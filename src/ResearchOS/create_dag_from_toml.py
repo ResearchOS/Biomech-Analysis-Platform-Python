@@ -240,6 +240,7 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
                 input_node_name = runnable_node_name + "." + input_var_name
                 input_class, input_attrs = classify_input_type(runnable_dict['inputs'][input_var_name])
                 node = input_class(input_node_uuid, input_node_name, input_attrs)
+                # Connect the input variable to the runnable
                 package_dag.add_node(input_node_uuid, node = node)
                 package_dag.add_edge(input_node_uuid, runnable_node_uuid)
                 variable_nodes[runnable_type][runnable_name]['inputs'][input_var_name] = node
@@ -247,9 +248,9 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
                 output_node_uuid = str(uuid.uuid4())
                 output_node_name = runnable_node_name + "." + output_var_name
                 node = OutputVariable(output_node_uuid, output_node_name, {})
+                # Connect the runnable to the output variable
                 package_dag.add_node(output_node_uuid, node = node)
                 package_dag.add_edge(runnable_node_uuid, output_node_uuid)
-                # is_dag = nx.is_directed_acyclic_graph(package_dag)
 
     # 2. Create edges between runnables' variables.
     for runnable_type, runnables in package_runnables_dict.items():
@@ -261,8 +262,11 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
                 if type(target_var_node) != InputVariable:
                     continue
 
+                # Connect OutputVariable (source) to InputVariable (target)
                 source_var_name = package_name + "." + runnable_dict['inputs'][input_var_name]
-                source_var_node = [n['node'] for _, n in package_dag.nodes(data=True) if n['node'].name == source_var_name and isinstance(n['node'], OutputVariable)][0]
+                source_var_node = [n['node'] for _, n in package_dag.nodes(data=True) if n['node'].name == source_var_name and isinstance(n['node'], OutputVariable)]
+                if len(source_var_node) == 0:
+                    raise ValueError(f"OutputVariable {source_var_name} not found.")
+                source_var_node = source_var_node[0]
                 package_dag.add_edge(source_var_node.id, target_var_node.id)
-                # is_dag = nx.is_directed_acyclic_graph(package_dag)
     return package_dag

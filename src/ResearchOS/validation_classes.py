@@ -18,11 +18,15 @@ class RunnableFactory():
         return runnable    
     
 def validate_inputs(inputs: dict):
+    if not isinstance(inputs, dict):
+        return False, "Inputs is not a dictionary."
     if len(inputs)==0:
         return False, "Inputs dictionary is empty."
     for key, value in inputs.items():
         if not isinstance(key, str):
             return False, "Input key is not a string."
+        if key.count('.') != 1:
+            return False, "Input key does not contain exactly one period (process_name.variable_name)."
     return True, None
 
 def validate_outputs(outputs: list):
@@ -33,6 +37,11 @@ def validate_outputs(outputs: list):
     if isinstance(outputs, list):
         if not all(isinstance(item, str) for item in outputs):
             return False, "Each item in outputs is not a string."
+    else:
+        outputs = [outputs]
+    for output in outputs:
+        if '.' in output:
+            return False, "Output variable name cannot contain a period."
     return True, None
 
 def validate_path(path: str):
@@ -195,13 +204,14 @@ class ProcessType():
         if attrs == {}:
             return is_valid, err_msg       
 
+        err_msg = [err_msg]
         missing_minimal_attrs = [attr for attr in cls.minimum_required_manual_attrs_compilation if attr not in attrs]
         if missing_minimal_attrs != []:
             return False, "Missing minimal attributes: " + str(missing_minimal_attrs)
         
         is_valid_output, err_msg_output = validate_outputs(attrs['outputs'])
         is_valid = is_valid_output and is_valid
-        err_msg = '; '.join([msg for msg in [err_msg, err_msg_output] if msg is not None])
+        err_msg = '; '.join([msg for msg in err_msg + [err_msg_output] if msg is not None])
         return is_valid, err_msg
 
     @classmethod
@@ -219,12 +229,16 @@ class PlotType():
 
     @classmethod
     def validate(cls, attrs, compilation_only: bool):
-        is_valid = RunnableType.validate(attrs, compilation_only)
+        is_valid, err_msg = RunnableType.validate(attrs, compilation_only)
         if attrs == {}:
-            return is_valid
+            return is_valid, err_msg
+        err_msg = [err_msg]
         if not compilation_only:
-            is_valid = is_valid and validate_subset(attrs['subset'])
-        return is_valid
+            is_valid_subset, err_msg_subset = validate_subset(attrs['subset'])
+            is_valid = is_valid and is_valid_subset
+            err_msg = [msg for msg in err_msg + [err_msg_subset] if msg is not None]
+        err_msg = '; '.join([msg for msg in err_msg if msg is not None])
+        return is_valid, err_msg
 
     @classmethod
     def standardize(cls, attrs, compilation_only: bool):
@@ -239,12 +253,12 @@ class StatsType():
     
     @classmethod
     def validate(cls, attrs, compilation_only: bool):
-        is_valid = RunnableType.validate(attrs, compilation_only=compilation_only)
+        is_valid, err_msg = RunnableType.validate(attrs, compilation_only=compilation_only)
         if attrs == {}:
-            return is_valid
+            return is_valid, err_msg
         if not compilation_only:
-            is_valid = is_valid and validate_subset(attrs['subset'])
-        return is_valid
+            is_valid, err_msg = validate_subset(attrs['subset'])
+        return is_valid, err_msg
 
     @classmethod
     def standardize(cls, attrs, compilation_only: bool):
