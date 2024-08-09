@@ -6,8 +6,8 @@ from typing import Any
 import tomli as tomllib
 import networkx as nx
 
-from ResearchOS.overhaul.constants import LOAD_CONSTANT_FROM_FILE_KEY
-from ResearchOS.overhaul.helper_functions import is_specified, is_dynamic_variable
+from ResearchOS.constants import LOAD_CONSTANT_FROM_FILE_KEY
+from ResearchOS.helper_functions import is_specified, is_dynamic_variable
 
 def graph_to_tuple(graph):
     # Extract node data. Order of the edge tuples matters.

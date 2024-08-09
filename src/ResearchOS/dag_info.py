@@ -2,7 +2,7 @@ import os
 
 import networkx as nx
 
-from ResearchOS.overhaul.custom_classes import Runnable
+from ResearchOS.custom_classes import Runnable
 
 def is_package_in_packages(package_name: str) -> bool:
     """Check if a package is in the list of packages."""

@@ -4,11 +4,11 @@ import uuid
 import networkx as nx
 import tomli as tomllib
 
-from ResearchOS.overhaul.constants import PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY
-from ResearchOS.overhaul.helper_functions import parse_variable_name
-from ResearchOS.overhaul.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable, LogsheetVariable, Constant, Unspecified
-from ResearchOS.overhaul.input_classifier import classify_input_type
-from ResearchOS.overhaul.dag_info import check_variable_properly_specified
+from ResearchOS.constants import PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY
+from ResearchOS.helper_functions import parse_variable_name
+from ResearchOS.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable, LogsheetVariable, Constant, Unspecified
+from ResearchOS.input_classifier import classify_input_type
+from ResearchOS.dag_info import check_variable_properly_specified
 
 def bridge_dynamic_variables(dag: nx.MultiDiGraph, package_name: str, bridge_name: str, source: str, targets: list, package_names: list):
     """Bridge from a source (output) variable in one package to a target (input) variable in another package.
@@ -65,6 +65,9 @@ def discover_packages(packages_parent_folders: list = None) -> list:
     if not packages_parent_folders:
         raise ValueError('No package folders specified.')
     
+    if isinstance(packages_parent_folders, str):
+        packages_parent_folders = [packages_parent_folders]
+    
     packages_folders = []
     for folder in packages_parent_folders:
         folder.replace('/', os.sep)
@@ -104,7 +107,7 @@ def get_package_index_dict(package_folder_path: str) -> dict:
     return index_dict
 
 def get_runnables_in_package(package_folder: str = None, paths_from_index: list = None) -> dict:
-    """Get the package's processes, given the paths to the processes.toml files from the index.toml.
+    """Get the package's processes, given the paths to the processes.toml files (from the index.toml).
     Call this function by indexing into the output of `get_package_index_dict` as the second argument.
     Valid keys are `processes`, `plots`, and `stats`.
     TODO: This is the place to validate & standardize the attributes returned by each runnable. For example, if missing 'level', fill it. 
@@ -120,7 +123,7 @@ def get_runnables_in_package(package_folder: str = None, paths_from_index: list 
         with open(path, 'rb') as f:
             runnables_dict = tomllib.load(f)
         for runnable in runnables_dict:
-            # Validate each runnables_dict!
+            # Validate & standardize each runnables_dict!
             curr_dict = runnables_dict[runnable]
             if "level" not in curr_dict:
                 curr_dict["level"] = "Trial"

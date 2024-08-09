@@ -2,8 +2,8 @@ import os
 
 import tomli as tomllib
 
-from ResearchOS.overhaul.constants import DATASET_SCHEMA_KEY, SUBSET_KEY, PROJECT_FOLDER_KEY
-from ResearchOS.overhaul.create_dag_from_toml import get_package_index_dict
+from ResearchOS.constants import DATASET_SCHEMA_KEY, SUBSET_KEY, PROJECT_FOLDER_KEY
+from ResearchOS.create_dag_from_toml import get_package_index_dict
 
 numeric_logic_options = (">", "<", ">=", "<=", )
 any_type_logic_options = ("==", '=', "!=", "in", "not in", "is", "is not", "contains", "not contains")

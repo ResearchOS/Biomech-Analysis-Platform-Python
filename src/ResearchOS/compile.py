@@ -3,15 +3,15 @@ import os
 import uuid
 
 import networkx as nx
-import tomli as tomllib
 
-from ResearchOS.overhaul.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages
-from ResearchOS.overhaul.run import run
-from ResearchOS.overhaul.furcate import get_nodes_to_furcate, polyfurcate
-from ResearchOS.overhaul.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY
-from ResearchOS.overhaul.helper_functions import parse_variable_name
-from ResearchOS.overhaul.custom_classes import Logsheet, OutputVariable, Runnable
-from ResearchOS.overhaul.read_logsheet import get_logsheet_dict
+from ResearchOS.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages
+from ResearchOS.run import run
+from ResearchOS.furcate import get_nodes_to_furcate, polyfurcate
+from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY
+from ResearchOS.helper_functions import parse_variable_name
+from ResearchOS.custom_classes import Logsheet, OutputVariable, Runnable
+from ResearchOS.read_logsheet import get_logsheet_dict
+from ResearchOS.substitutions import substitute_levels_subsets
 
 
 def get_package_order(dag: dict) -> list:
@@ -99,26 +99,7 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     nodes_to_furcate = get_nodes_to_furcate(dag)
 
     # Substitute the levels and subsets for each package in topologically sorted order
-    for package in packages_ordered:
-        if package not in all_packages_bridges:
-            continue # No bridges to other packages, which is ok!
-        # Get the level and subset conversions for this package.
-        project_settings_path = project_folder + os.sep + index_dict[package]['project_settings'].replace("/", os.sep)
-        with open(project_settings_path, "rb") as f:
-            project_settings = tomllib.load(f)
-        level_conversions = project_settings['levels'] # Dict where keys are new levels and values are old levels.
-        subset_conversions = project_settings['subsets'] # Dict where keys are new subsets and values are old subsets.
-        # Get the nodes in this package.
-        package_nodes = [node for node in dag.nodes if node['node'].name.startswith(package + ".") and isinstance(node['node'], Runnable)]  
-        package_ancestor_nodes = []      
-        for node in package_nodes:
-            curr_ancestor_nodes = list(nx.ancestors(dag, node))
-            curr_ancestor_nodes = [node for node in curr_ancestor_nodes if node not in package_nodes] # Make sure to not change the package's nodes.
-            package_ancestor_nodes.extend(curr_ancestor_nodes)
-        # Change subset & level to the new value.
-        for node in package_ancestor_nodes:
-            dag.nodes['node'].subset = subset_conversions[dag.nodes['node'].subset]
-            dag.nodes['node'].level = level_conversions[dag.nodes['node'].level]
+    substitute_levels_subsets(packages_ordered, all_packages_bridges, project_folder, index_dict, dag)
 
     # Topologically sort the nodes to furcate by
     all_sorted_nodes = list(nx.topological_sort(dag))

@@ -3,7 +3,7 @@ import uuid
 
 import networkx as nx
 
-from ResearchOS.overhaul.custom_classes import InputVariable
+from ResearchOS.custom_classes import InputVariable
 
 def get_nodes_to_furcate(dag: nx.MultiDiGraph) -> list:
     """Get the nodes in the DAG that need to be furcated.
@@ -19,7 +19,8 @@ def get_nodes_to_furcate(dag: nx.MultiDiGraph) -> list:
     return nodes_to_furcate
 
 def polyfurcate(dag: nx.MultiDiGraph, nodes_to_furcate: list):
-    """Furcate (split) the DAG downstream from each node."""
+    """Furcate (split) the DAG downstream from each node.
+    Do this in topological order so that the furcations propagate exponentially."""
     for node_id in nodes_to_furcate:
         node = dag.nodes[node_id]['node']
         node_name = node.name # Until this point, node.name is guaranteed to be unique. After polyfurcation, it will not be unique.
