@@ -44,3 +44,6 @@ DATA_OBJECT_NAME_KEY = 'data_object_name'
 ## Environment variable keys
 PROJECT_FOLDER_KEY = 'project_folder'
 
+# Comprehensive list of runnable types
+RUNNABLE_TYPES = [STATS_NAME, LOGSHEET_NAME, PROCESS_NAME, PLOT_NAME]
+

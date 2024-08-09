@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, UNSPECIFIED_VARIABLE_NAME, CONSTANT_VARIABLE_NAME, INPUT_VARIABLE_NAME, OUTPUT_VARIABLE_NAME, LOGSHEET_NAME
 from ResearchOS.constants import DATASET_KEY, DATA_OBJECT_NAME_KEY
 
@@ -20,6 +22,7 @@ class Runnable(Node):
     def __init__(self, id: str, name: str, attrs: dict):
         self.id = id
         self.name = name
+        Runnable.validate(self, attrs)
         if 'path' not in attrs:            
             raise ValueError(f'Runnable {name} does not have a path.')
         if 'inputs' not in attrs:
@@ -37,6 +40,10 @@ class Runnable(Node):
         self.level = attrs['level']
         self.batch = attrs['batch']
 
+    @abstractmethod
+    def validate(self, attrs):
+        pass
+
 class Logsheet(Runnable):
     class_name = LOGSHEET_NAME
 
@@ -48,7 +55,10 @@ class Logsheet(Runnable):
         super().__init__(id, name, attrs)
         if 'outputs' not in attrs:
             raise ValueError(f'Logsheet {name} does not have outputs.')
-        self.outputs = attrs['outputs']        
+        self.outputs = attrs['outputs']   
+
+    def validate(self, attrs):
+        pass
     
 class Process(Runnable):
     class_name = PROCESS_NAME
@@ -57,13 +67,19 @@ class Process(Runnable):
         super().__init__(id, name, attrs)
         if 'outputs' not in attrs:
             attrs['outputs'] = None
-        self.outputs = attrs['outputs']        
+        self.outputs = attrs['outputs']  
+
+    def validate(self, attrs):
+        pass
 
 class Plot(Runnable):
     class_name = PLOT_NAME
 
     def __init__(self, id: str, name: str, attrs: str):
         super().__init__(id, name, attrs)
+
+    def validate(self, attrs):
+        pass
         
 class Stats(Runnable):
     class_name = STATS_NAME

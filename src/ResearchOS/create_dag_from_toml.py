@@ -1,14 +1,14 @@
 import os
 import uuid
-import warnings
 
 import networkx as nx
 import tomli as tomllib # For reading
 import toml # For writing
 
-from ResearchOS.constants import ALLOWED_INDEX_KEYS, PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY
+from ResearchOS.constants import ALLOWED_INDEX_KEYS, PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY, RUNNABLE_TYPES
 from ResearchOS.helper_functions import parse_variable_name
 from ResearchOS.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable, LogsheetVariable, Constant, Unspecified
+from ResearchOS.validation_classes import RunnableFactory
 from ResearchOS.input_classifier import classify_input_type
 from ResearchOS.dag_info import check_variable_properly_specified
 
@@ -103,7 +103,8 @@ def get_package_index_path(package_folder_path: str) -> str:
 
 def get_package_index_dict(package_folder_path: str) -> dict:
     """Get the paths for the package's processes, plots, and stats from the index.toml file.
-    Dict keys are `processes`, `plots`, and `stats`. Values are lists of relative file paths (relative to package root folder)."""
+    Dict keys are `processes`, `plots`, and `stats`. Values are lists of relative file paths (relative to package root folder).
+    package_folder_path is an absolute path to a package folder."""
 
     if not os.path.isdir(package_folder_path):
         raise NotADirectoryError(f"Package folder not found: {package_folder_path}.")
@@ -127,7 +128,7 @@ def get_package_index_dict(package_folder_path: str) -> dict:
         paths = index_dict[key]
         if not isinstance(index_dict[key], list):
             paths = [index_dict[key]]        
-        nonexistent_paths = [path for path in paths if not os.path.exists(path)]
+        nonexistent_paths = [os.path.join(package_folder_path, path) for path in paths if not os.path.exists(os.path.join(package_folder_path, path))]
         if len(nonexistent_paths) > 0:
             raise FileNotFoundError(f"File(s) not found in {index_path}: {nonexistent_paths}")        
         if not all([path.endswith('.toml') for path in paths]):
@@ -140,7 +141,7 @@ def get_package_index_dict(package_folder_path: str) -> dict:
         
     return index_dict
 
-def get_runnables_in_package(package_folder: str = None, paths_from_index: list = None) -> dict:
+def get_runnables_in_package(package_folder: str = None, package_index_dict: list = None, runnable_keys: list = RUNNABLE_TYPES) -> dict:
     """Get the package's processes, given the paths to the processes.toml files (from the index.toml).
     Call this function by indexing into the output of `get_package_index_dict` as the second argument.
     Valid keys are `processes`, `plots`, and `stats`.
@@ -148,32 +149,30 @@ def get_runnables_in_package(package_folder: str = None, paths_from_index: list 
     Same with 'batch', 'language', and other optional attributes"""
     if not package_folder:
         raise ValueError('No package specified.')
-    if not paths_from_index:
-        return []
+        
+    bad_runnable_keys = [key for key in runnable_keys if key not in RUNNABLE_TYPES]
+    if len(bad_runnable_keys) > 0:
+        raise ValueError(f"Invalid runnable keys: {bad_runnable_keys}.")
     
-    all_runnables_dict = {}
-    for path in paths_from_index:
-        path = os.path.join(package_folder, path)
-        with open(path, 'rb') as f:
-            runnables_dict = tomllib.load(f)
-        for runnable in runnables_dict:
-            # Validate & standardize each runnables_dict!
-            curr_dict = runnables_dict[runnable]
-            if "level" not in curr_dict:
-                curr_dict["level"] = "Trial"
-            if "batch" not in curr_dict:
-                curr_dict["batch"] = curr_dict["level"]
-            if "path" not in curr_dict:
-                raise ValueError(f"Path not found in {path}.")
-            if "subset" not in curr_dict:
-                raise ValueError(f"Subset not found in {path}.")
-            if "inputs" not in curr_dict:
-                raise ValueError(f"Inputs not found in {path}.")
-            if "outputs" not in curr_dict:
-                raise ValueError(f"Outputs not found in {path}.")
-            curr_dict["path"] = curr_dict["path"].replace('/', os.sep)
-            runnables_dict[runnable] = curr_dict
-        all_runnables_dict.update(runnables_dict)
+    all_runnables_dict = {key: {} for key in runnable_keys}
+    if not package_index_dict:
+        return all_runnables_dict
+        
+    for runnable_key in runnable_keys:
+        all_runnables_dict[runnable_key] = {} # Initialize this key in the dict in case there are no paths for it in the index.
+        runnable_type = RunnableFactory.create(runnable_type=runnable_key)
+        # Each runnable type in the index has a list of paths to the runnables' TOML files.
+        for path in package_index_dict[runnable_key]:
+            path = os.path.join(package_folder, path)
+            with open(path, 'rb') as f:
+                runnables_dict = tomllib.load(f)
+            # Each runnable in one .toml file.
+            for runnable in runnables_dict:
+                # Validate & standardize each runnables_dict!
+                curr_dict = runnables_dict[runnable]
+                runnable_type.validate(curr_dict)                                
+                runnables_dict[runnable] = curr_dict
+            all_runnables_dict[runnable_key].update(runnables_dict)
     return all_runnables_dict
 
 def get_package_bridges(package_folder: str = None, paths_from_index: list = None) -> dict:
