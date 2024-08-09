@@ -73,23 +73,40 @@ def test_get_package_index_dict(tmp_path: Path = TMP_PACKAGES_PATH):
         get_package_index_dict(package_path)
 
     # 8. The index.toml file contains everything needed.
-    expected_result = {
+    expected_result_absolute = {
         PROCESS_NAME: [str(srcPath / (PROCESS_NAME + ".toml"))],
         PLOT_NAME: [str(srcPath / (PLOT_NAME + ".toml"))],
         STATS_NAME: [str(srcPath / (STATS_NAME + ".toml"))],
         BRIDGES_KEY: [str(srcPath / (BRIDGES_KEY + ".toml"))],        
         PACKAGE_SETTINGS_KEY: [str(srcPath / (PACKAGE_SETTINGS_KEY + ".toml"))],
         SUBSET_KEY: [str(srcPath / (SUBSET_KEY + ".toml"))]
-    }    
+    }  
+    expected_result = {
+        PROCESS_NAME: [str("src/" + PROCESS_NAME + ".toml")],
+        PLOT_NAME: [str("src/" + PLOT_NAME + ".toml")],
+        STATS_NAME: [str("src/" + STATS_NAME + ".toml")],
+        BRIDGES_KEY: [str("src/" + BRIDGES_KEY + ".toml")],        
+        PACKAGE_SETTINGS_KEY: [str("src/" + PACKAGE_SETTINGS_KEY + ".toml")],
+        SUBSET_KEY: [str("src/" + SUBSET_KEY + ".toml")]
+    }   
+
+    with open(package_path / "src/index.toml", "w") as f:
+        toml.dump(expected_result_absolute, f)     
+
+    # Test if the path provided in the index.toml is an absolute path.
     for key in ALLOWED_INDEX_KEYS:
         with open(srcPath / f"{key}.toml", "w") as f:
-            f.write(f"{key}='{package_path}/src/{key}.toml'\n")
+            f.write(f"{key}='test'\n")
+    with pytest.raises(ValueError):
+        get_package_index_dict(package_path)
+    
+    # Write the correct relative paths.
     with open(package_path / "src/index.toml", "w") as f:
-        toml.dump(expected_result, f)
+        toml.dump(expected_result, f) 
     assert get_package_index_dict(package_path) == expected_result
 
     # 9. The index.toml contains strings, not lists.
-    str_inputs_dict = {key: [str(value[0])] for key, value in expected_result.items()}
+    str_inputs_dict = {key: value[0] for key, value in expected_result.items()}
     with open(package_path / "src/index.toml", "w") as f:
         toml.dump(str_inputs_dict, f)
     assert get_package_index_dict(package_path) == expected_result

@@ -138,6 +138,10 @@ def get_package_index_dict(package_folder_path: str) -> dict:
             index_dict[key] = [index_dict[key].replace('/', os.sep)]
         else:
             index_dict[key] = [path.replace('/', os.sep) for path in index_dict[key]]
+
+        is_abs_paths = [os.path.isabs(path) for path in index_dict[key]]
+        if any(is_abs_paths):
+            raise ValueError(f"Paths in {index_path} must be relative to the package folder located at: {package_folder_path}.")
         
     return index_dict
 
