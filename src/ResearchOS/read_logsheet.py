@@ -256,6 +256,8 @@ def get_logsheet_dict(project_folder: str) -> dict:
         package_settings_path[0] = os.path.join(project_folder, package_settings_path[0])
     with open(package_settings_path[0], "rb") as f:
         package_settings_dict = tomllib.load(f)
+    if LOGSHEET_NAME not in package_settings_dict:
+        raise ValueError(f"The logsheet is not in the package settings file at: {package_settings_path[0]}")
     logsheet_dict = package_settings_dict[LOGSHEET_NAME]
     return logsheet_dict
     
