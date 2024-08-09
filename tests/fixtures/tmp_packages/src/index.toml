@@ -1,3 +1,0 @@
-process     = "src/processes.toml"
-plots       = "src/plots.toml"
-stats       = "src/stats.toml"
