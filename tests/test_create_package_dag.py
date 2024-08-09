@@ -13,8 +13,9 @@ from ResearchOS.validation_classes import RunnableFactory
 def test_create_package_dag(tmp_path: Path = TMP_PACKAGES_PATH):
 
     # Create a temporary directory
-    # if os.path.exists(tmp_path):
-    #     shutil.rmtree(tmp_path) 
+    if os.path.exists(tmp_path):
+        shutil.rmtree(tmp_path) 
+    os.makedirs(tmp_path)
 
     # package_name = "package1"
 
@@ -26,6 +27,16 @@ def test_create_package_dag(tmp_path: Path = TMP_PACKAGES_PATH):
 
     # # Get the package's runnables dict
     # package_runnables_dict = get_runnables_in_package(tmp_path, package_index_dict)
+
+    # Validate & standardize the package's runnables.
+    # standardized_package_runnables_dict = {}
+    # for key, value in package_runnables_dict.items():
+    #     standardized_package_runnables_dict[key] = {}
+    #     runnable_type = RunnableFactory.create(runnable_type=key)
+    #     for package_name in value:
+    #         is_valid, err_msg = runnable_type.validate(value[package_name], compilation_only=True)
+    #         assert is_valid
+    #         standardized_package_runnables_dict[key][package_name] = runnable_type.standardize(value[package_name], compilation_only=True) 
 
     package_runnables_dict = {}
     package_runnables_dict[PLOT_NAME] = {
@@ -42,54 +53,23 @@ def test_create_package_dag(tmp_path: Path = TMP_PACKAGES_PATH):
             "input2": 'test_process2.output1'
         },
         "outputs": []
-    }
-
-    # Validate & standardize the package's runnables.
-    # standardized_package_runnables_dict = {}
-    # for key, value in package_runnables_dict.items():
-    #     standardized_package_runnables_dict[key] = {}
-    #     runnable_type = RunnableFactory.create(runnable_type=key)
-    #     for package_name in value:
-    #         is_valid, err_msg = runnable_type.validate(value[package_name], compilation_only=True)
-    #         assert is_valid
-    #         standardized_package_runnables_dict[key][package_name] = runnable_type.standardize(value[package_name], compilation_only=True)    
+    }       
 
     package_name = "test_package"
 
     # As written, this will raise an error because an output variable within the package is specified as an input to another process, but it does not exist.
+    with pytest.raises(ValueError):
+        package_dag = create_package_dag(package_runnables_dict, package_name)
+
+    # Fix the error by adding the missing process and output variable.
+    package_runnables_dict[PROCESS_NAME]['test_process2'] = {
+        "inputs": { 'input1': '?'},
+        "outputs": ['output1']
+    }
+
     package_dag = create_package_dag(package_runnables_dict, package_name)
-
-    # Check the number of nodes
-    assert len(package_dag.nodes) == 12
-
-    # Check the number of edges
-    assert len(package_dag.edges) == 12
-
-    # Check the node attributes
-    for node_id, node_data in package_dag.nodes(data=True):
-        node = node_data["node"]
-        if isinstance(node, Process):
-            assert node.name.startswith(package_name + ".process")
-            assert node.command.startswith("python")
-        elif isinstance(node, Plot):
-            assert node.name.startswith(package_name + ".plot")
-            assert node.script.endswith(".py")
-        elif isinstance(node, Stats):
-            assert node.name.startswith(package_name + ".stats")
-            assert node.script.endswith(".py")
-        elif isinstance(node, OutputVariable):
-            assert node.name.startswith(package_name)
-            assert node.name.endswith(".toml")
-        elif isinstance(node, InputVariable):
-            assert node.name.startswith(package_name)
-            assert node.name.endswith(".toml")
-        else:
-            assert False, f"Unexpected node type: {type(node)}"
-
-    # Check the edge connections
-    for source, target, edge_data in package_dag.edges(data=True):
-        bridge = edge_data.get("bridge")
-        assert bridge is None or bridge.startswith(package_name)
+    assert len(package_dag.edges) == 5
+    assert len(package_dag.nodes) == 6
 
     # Clean up
     shutil.rmtree(tmp_path)

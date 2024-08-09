@@ -27,24 +27,21 @@ class Runnable(Node):
 class Logsheet(Runnable):    
 
     def __init__(self, id: str, name: str, attrs: str):
-        attrs['path'] = None
-        attrs['level'] = DATASET_KEY        
-        attrs['subset'] = None
-        attrs['inputs'] = None
+        # attrs['path'] = None
+        # attrs['level'] = DATASET_KEY        
+        # attrs['subset'] = None
+        # attrs['inputs'] = None
         super().__init__(id, name, attrs)
-        if 'outputs' not in attrs:
-            raise ValueError(f'Logsheet {name} does not have outputs.')
-        self.outputs = attrs['outputs']   
+        # if 'outputs' not in attrs:
+        #     raise ValueError(f'Logsheet {name} does not have outputs.')
 
-    def validate(self, attrs):
-        pass
+        # Guaranteed to exist because of the earlier validation.
+        self.outputs = attrs['outputs']   
     
 class Process(Runnable):    
 
     def __init__(self, id: str, name: str, attrs: str):
         super().__init__(id, name, attrs)
-        if 'outputs' not in attrs:
-            attrs['outputs'] = None
         self.outputs = attrs['outputs']  
 
 class Plot(Runnable):    

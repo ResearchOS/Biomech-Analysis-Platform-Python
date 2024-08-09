@@ -25,8 +25,8 @@ def validate_inputs(inputs: dict):
     for key, value in inputs.items():
         if not isinstance(key, str):
             return False, "Input key is not a string."
-        if key.count('.') != 1:
-            return False, "Input key does not contain exactly one period (process_name.variable_name)."
+        if key.count('.') > 0:
+            return False, "Input key should not contain any periods."
     return True, None
 
 def validate_outputs(outputs: list):
