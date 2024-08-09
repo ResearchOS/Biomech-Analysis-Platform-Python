@@ -10,6 +10,7 @@ from ResearchOS.furcate import get_nodes_to_furcate, polyfurcate
 from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY, BRIDGES_KEY
 from ResearchOS.helper_functions import parse_variable_name
 from ResearchOS.custom_classes import Logsheet, OutputVariable
+from ResearchOS.validation_classes import RunnableFactory
 from ResearchOS.read_logsheet import get_logsheet_dict
 from ResearchOS.substitutions import substitute_levels_subsets
 
@@ -40,7 +41,14 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     all_packages_bridges = {}
 
     # Get the headers from the logsheet
-    logsheet = get_logsheet_dict(project_folder)
+    logsheet_dict = get_logsheet_dict(project_folder)
+    logsheet_type = RunnableFactory.create(runnable_type=LOGSHEET_NAME)
+    logsheet_dict['outputs'] = logsheet_dict['headers'] # Outputs are needed for validation.
+    is_valid, err_msg = logsheet_type.validate(logsheet_dict, compilation_only=True) # Validate the logsheet.
+    if not is_valid:
+        raise ValueError(f"The logsheet is not valid. {err_msg}")
+    logsheet_dict = logsheet_type.standardize(logsheet_dict) # Standardize the logsheet.        
+    
     data_objects = os.environ[DATASET_SCHEMA_KEY]
     headers_in_toml = logsheet['headers']
 
@@ -78,13 +86,14 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
 
     # Create the logsheet Runnable node.
     logsheet_attrs = {}
+    logsheet_attrs['inputs'] = {}
     logsheet_attrs['outputs'] = [header for header in headers_in_toml]
-    logsheet_node = Logsheet(id = str(uuid.uuid4()), name = LOGSHEET_NAME, attrs = logsheet_attrs)
+    logsheet_node = Logsheet(id = str(uuid.uuid4()), name = package_name + "." + LOGSHEET_NAME, attrs = logsheet_attrs)
 
     # Add the logsheet node to the DAG
     mapping = {}
     for column in headers_in_toml:
-        output_var = OutputVariable(id=str(uuid.uuid4()), name=LOGSHEET_NAME + "." + column, attrs={})
+        output_var = OutputVariable(id=str(uuid.uuid4()), name=package_name + "." + LOGSHEET_NAME + "." + column, attrs={})
         mapping[column] = output_var.id
         dag.add_node(output_var.id, node = output_var)
         dag.add_edge(logsheet_node.id, output_var.id)

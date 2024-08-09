@@ -245,22 +245,13 @@ def _clean_value(type_str: str, raw_value: Any) -> Any:
 def get_logsheet_dict(project_folder: str) -> dict:
     """Return the logsheet dict from the project_settings.toml file."""
     index_dict = get_package_index_dict(project_folder)
-    project_settings_path = index_dict[PACKAGE_SETTINGS_KEY]
-    if not project_settings_path:
+    logsheet_path = index_dict[LOGSHEET_NAME]
+    if not logsheet_path:
         raise ValueError("The package settings file path must be specified in the index.toml! Default is 'src/project_settings.toml'.")
-    if isinstance(project_settings_path, list):
-        assert len(project_settings_path) == 1, "Only one project settings file is allowed."
-        project_settings_path = project_settings_path[0]
-    project_settings_path = os.path.join(project_folder, project_settings_path)
-    with open(project_settings_path, "rb") as f:
-        project_settings = tomllib.load(f)
-    data_objects = project_settings[DATASET_SCHEMA_KEY]
-    if data_objects[0].upper() != DATASET_KEY.upper():
-        raise ValueError(f"The first data object must be the Dataset class, but got {data_objects[0]}!")
-    data_objects_str = '.'.join(data_objects)
-    os.environ[DATASET_SCHEMA_KEY] = data_objects_str
-    logsheet_dict = project_settings['logsheet']
-    os.environ[MAT_DATA_FOLDER_KEY.upper()] = project_settings[MAT_DATA_FOLDER_KEY.lower()]
+    if not os.path.isabs(logsheet_path[0]):
+        logsheet_path[0] = os.path.join(project_folder, logsheet_path[0])
+    with open(logsheet_path[0], "rb") as f:
+        logsheet_dict = tomllib.load(f)
     return logsheet_dict
     
 
