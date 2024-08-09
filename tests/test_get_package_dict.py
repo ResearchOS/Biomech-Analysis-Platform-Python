@@ -69,9 +69,8 @@ def test_get_package_index_dict(tmp_path: Path = TMP_PACKAGES_PATH):
 
     # 9. The file path exists but it is not a TOML file.
     open(package_path / "src/nonexistent.txt", "w").close()
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundError):
         get_package_index_dict(package_path)
-
 
     # 8. The index.toml file contains everything needed.
     expected_result = {
@@ -81,12 +80,18 @@ def test_get_package_index_dict(tmp_path: Path = TMP_PACKAGES_PATH):
         BRIDGES_KEY: [str(srcPath / (BRIDGES_KEY + ".toml"))],        
         PACKAGE_SETTINGS_KEY: [str(srcPath / (PACKAGE_SETTINGS_KEY + ".toml"))],
         SUBSET_KEY: [str(srcPath / (SUBSET_KEY + ".toml"))]
-    }
+    }    
     for key in ALLOWED_INDEX_KEYS:
         with open(srcPath / f"{key}.toml", "w") as f:
             f.write(f"{key}='{package_path}/src/{key}.toml'\n")
     with open(package_path / "src/index.toml", "w") as f:
         toml.dump(expected_result, f)
+    assert get_package_index_dict(package_path) == expected_result
+
+    # 9. The index.toml contains strings, not lists.
+    str_inputs_dict = {key: [str(value[0])] for key, value in expected_result.items()}
+    with open(package_path / "src/index.toml", "w") as f:
+        toml.dump(str_inputs_dict, f)
     assert get_package_index_dict(package_path) == expected_result
 
     # Clean up
