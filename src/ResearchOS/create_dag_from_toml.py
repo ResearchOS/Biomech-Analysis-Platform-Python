@@ -126,15 +126,15 @@ def get_package_index_dict(package_folder_path: str) -> dict:
         # Check if valid file names.
         paths = index_dict[key]
         if not isinstance(index_dict[key], list):
-            paths = [index_dict[key]]
+            paths = [index_dict[key]]        
         nonexistent_paths = [path for path in paths if not os.path.exists(path)]
         if len(nonexistent_paths) > 0:
-            raise FileNotFoundError(f"File(s) not found in {index_path}: {nonexistent_paths}")
+            raise FileNotFoundError(f"File(s) not found in {index_path}: {nonexistent_paths}")        
         if not all([path.endswith('.toml') for path in paths]):
-            raise ValueError(f"Files listed in index.toml must all be .toml")
+            raise FileNotFoundError(f"Files listed in index.toml must all be .toml")
         
         if not isinstance(index_dict[key], list):
-            index_dict[key] = index_dict[key].replace('/', os.sep)
+            index_dict[key] = [index_dict[key].replace('/', os.sep)]
         else:
             index_dict[key] = [path.replace('/', os.sep) for path in index_dict[key]]
         
