@@ -22,27 +22,7 @@ class Runnable(Node):
     def __init__(self, id: str, name: str, attrs: dict):
         self.id = id
         self.name = name
-        Runnable.validate(self, attrs)
-        if 'path' not in attrs:            
-            raise ValueError(f'Runnable {name} does not have a path.')
-        if 'inputs' not in attrs:
-            raise ValueError(f'Runnable {name} does not have inputs.')
-        if 'subset' not in attrs:
-            raise ValueError(f'Runnable {name} does not have a subset.')
-        if 'level' not in attrs:
-            attrs['level'] = None # Takes on the value of the lowest level data object type, e.g. "Trial"
-        if 'batch' not in attrs:
-            attrs['batch'] = [attrs['level']] # Takes on the value of attrs['level']
-
-        self.path = attrs['path']
-        self.inputs = attrs['inputs']        
-        self.subset = attrs['subset']  
-        self.level = attrs['level']
-        self.batch = attrs['batch']
-
-    @abstractmethod
-    def validate(self, attrs):
-        pass
+        self.attrs = attrs
 
 class Logsheet(Runnable):    
 
@@ -67,16 +47,10 @@ class Process(Runnable):
             attrs['outputs'] = None
         self.outputs = attrs['outputs']  
 
-    def validate(self, attrs):
-        pass
-
 class Plot(Runnable):    
 
     def __init__(self, id: str, name: str, attrs: str):
         super().__init__(id, name, attrs)
-
-    def validate(self, attrs):
-        pass
         
 class Stats(Runnable):    
 
