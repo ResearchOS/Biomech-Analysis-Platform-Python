@@ -10,7 +10,6 @@ from ResearchOS.furcate import get_nodes_to_furcate, polyfurcate
 from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY, BRIDGES_KEY
 from ResearchOS.helper_functions import parse_variable_name
 from ResearchOS.custom_classes import Logsheet, OutputVariable
-from ResearchOS.validation_classes import RunnableFactory
 from ResearchOS.read_logsheet import get_logsheet_dict
 from ResearchOS.substitutions import substitute_levels_subsets
 
@@ -41,13 +40,10 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     all_packages_bridges = {}
 
     # Get the logsheet dict
-    logsheet_dict = get_logsheet_dict(project_folder)
-    logsheet_type = RunnableFactory.create(runnable_type=LOGSHEET_NAME)
-    logsheet_dict['outputs'] = [key for key in logsheet_dict['headers'].keys()] # Outputs are needed for validation.
-    is_valid, err_msg = logsheet_type.validate(logsheet_dict, compilation_only=True) # Validate the logsheet.
-    if not is_valid:
-        raise ValueError(f"The logsheet TOML file is not valid. {err_msg}")
-    logsheet_dict = logsheet_type.standardize(logsheet_dict, compilation_only=True) # Standardize the logsheet.
+    logsheet_dict = get_logsheet_dict(project_folder) 
+    # dataset_file_schema = get_dataset_file_schema(project_folder)
+    # mat_data_folder = get_mat_data_folder(project_folder)
+    # raw_data_folder = get_raw_data_folder(project_folder)   
 
     # TODO: Need to parse the rest of the package settings from package_settings.toml
     # dataset_schema, dataset_file_schema, mat_data_folder, raw_data_folder

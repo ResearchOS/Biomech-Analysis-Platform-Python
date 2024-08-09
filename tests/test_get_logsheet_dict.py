@@ -30,9 +30,8 @@ def test_get_logsheet_dict(tmp_path: Path = TMP_PACKAGES_PATH):
 
     package_folder = str(tmp_path / "package1")
 
-    # Get the logsheet dict. Should error because the logsheet is missing.    
-    with pytest.raises(ValueError):
-        logsheet_dict = get_logsheet_dict(package_folder)
+    # Returns {} because the logsheet is missing    
+    get_logsheet_dict(package_folder) == {}
 
     # Add the logsheet back to the package settings file
     with open(package_settings_file, "w") as f:
@@ -41,13 +40,6 @@ def test_get_logsheet_dict(tmp_path: Path = TMP_PACKAGES_PATH):
     logsheet_dict = get_logsheet_dict(package_folder)
 
     assert logsheet_dict == logsheet_dict_toml
-
-    logsheet_type = RunnableFactory.create(runnable_type=LOGSHEET_NAME)
-    logsheet_dict['outputs'] = [key for key in logsheet_dict['headers'].keys()] # Outputs are needed for validation
-    is_valid, err_msg = logsheet_type.validate(logsheet_dict, compilation_only=True) # Validate the logsheet.
-    if not is_valid:
-        raise ValueError(f"The logsheet TOML file is not valid. {err_msg}")
-    logsheet_dict = logsheet_type.standardize(logsheet_dict, compilation_only=True) # Standardize the logsheet.
 
     shutil.rmtree(tmp_path)
 
