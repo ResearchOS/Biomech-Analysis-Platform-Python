@@ -49,11 +49,9 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     index_dict = {}
     runnables_dict = {}
     for package_folder, package_name in zip(packages_folders, package_names):
-        index_dict[package_name] = {}
         index_dict[package_name] = get_package_index_dict(package_folder)
-        processes_dict = get_runnables_in_package(package_folder=package_folder, paths_from_index=index_dict[package_name][PROCESS_NAME])
-        runnables_dict[package_name] = {}
-        runnables_dict[package_name][PROCESS_NAME] = processes_dict
+        package_runnables_dict = get_runnables_in_package(package_folder=package_folder, package_index_dict=index_dict[package_name], runnable_keys = [PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME])
+        runnables_dict[package_name] = package_runnables_dict
 
     package_names_str = '.'.join(package_names)
     os.environ['PACKAGE_NAMES'] = package_names_str
