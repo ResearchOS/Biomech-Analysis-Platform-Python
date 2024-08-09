@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
 from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, UNSPECIFIED_VARIABLE_NAME, CONSTANT_VARIABLE_NAME, INPUT_VARIABLE_NAME, OUTPUT_VARIABLE_NAME, LOGSHEET_NAME
 from ResearchOS.constants import DATASET_KEY, DATA_OBJECT_NAME_KEY
@@ -44,8 +44,7 @@ class Runnable(Node):
     def validate(self, attrs):
         pass
 
-class Logsheet(Runnable):
-    class_name = LOGSHEET_NAME
+class Logsheet(Runnable):    
 
     def __init__(self, id: str, name: str, attrs: str):
         attrs['path'] = None
@@ -60,8 +59,7 @@ class Logsheet(Runnable):
     def validate(self, attrs):
         pass
     
-class Process(Runnable):
-    class_name = PROCESS_NAME
+class Process(Runnable):    
 
     def __init__(self, id: str, name: str, attrs: str):
         super().__init__(id, name, attrs)
@@ -72,8 +70,7 @@ class Process(Runnable):
     def validate(self, attrs):
         pass
 
-class Plot(Runnable):
-    class_name = PLOT_NAME
+class Plot(Runnable):    
 
     def __init__(self, id: str, name: str, attrs: str):
         super().__init__(id, name, attrs)
@@ -81,8 +78,7 @@ class Plot(Runnable):
     def validate(self, attrs):
         pass
         
-class Stats(Runnable):
-    class_name = STATS_NAME
+class Stats(Runnable):    
 
     def __init__(self, id: str, name: str, attrs: str):
         super().__init__(id, name, attrs)
@@ -94,24 +90,30 @@ class Variable(Node):
         self.id = id
         self.name = name
 
+@ABC
 class Dynamic(Variable):
+    """Abstract class for variables that are dynamic in some way."""
     pass
 
 class InputVariable(Dynamic):
-    class_name = INPUT_VARIABLE_NAME
+    """A fully defined input variable in the TOML file. This is a variable that receives a value from another runnable within the same package."""
+    pass
 
 class Unspecified(InputVariable):
-    class_name = UNSPECIFIED_VARIABLE_NAME
+    """Represents a variable that needs to be bridged to an output variable in another package.
+    In TOML files, this is represented by "?".""" 
+    pass   
 
 class OutputVariable(Dynamic):
-    class_name = OUTPUT_VARIABLE_NAME
+    """A variable that is directly outputted by a runnable."""    
+    pass   
 
-class LogsheetVariable(OutputVariable):
-    class_name = "logsheet_variable"
+class LogsheetVariable(OutputVariable):   
+    """A variable that is outputted by a logsheet."""    
+    pass 
 
 class Constant(Variable):
-    """Directly hard-coded into the TOML file."""
-    class_name = CONSTANT_VARIABLE_NAME
+    """Directly hard-coded into the TOML file."""    
 
     def __init__(self, id: str, name: str, attrs: str):
         super().__init__(id, name, attrs)
@@ -121,10 +123,13 @@ class Constant(Variable):
             self.value = attrs['value']
 
 class DataFilePath(Constant):
-    class_name = "data_file_path"
+    """Data file path as an input variable to a runnable."""
+    pass   
 
 class LoadConstantFromFile(Constant):
-    class_name = "load_constant_from_file"
+    """Constant that needs to be loaded from a file."""    
+    pass   
 
 class DataObjectName(Variable):
-    class_name = DATA_OBJECT_NAME_KEY
+    """The name of a data object.""" 
+    pass   
