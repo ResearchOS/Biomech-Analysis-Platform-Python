@@ -1,4 +1,4 @@
-from ResearchOS.overhaul.constants import LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_VAR_KEY, DATA_FILE_KEY
+from ResearchOS.constants import LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_VAR_KEY, DATA_FILE_KEY
 
 def parse_variable_name(var_name: str) -> tuple:
     """Parse the variable name into its constituent parts."""    

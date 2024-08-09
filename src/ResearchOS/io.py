@@ -1,4 +1,4 @@
-from ResearchOS.overhaul.constants import DATASET_KEY
+from ResearchOS.constants import DATASET_KEY
 
 def schema_to_file(dobj: str, schema: list, file_schema: list):
     """Convert a data object from the in-memory schema to the file schema.

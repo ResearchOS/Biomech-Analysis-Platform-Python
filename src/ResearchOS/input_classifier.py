@@ -3,9 +3,9 @@ from typing import Any
 import tomli as tomllib
 import json
 
-from ResearchOS.overhaul.constants import LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_VAR_KEY, DATA_FILE_KEY, DATA_OBJECT_NAME_KEY
-from ResearchOS.overhaul.custom_classes import InputVariable, Constant, DataObjectName, Unspecified, DataFilePath, LoadConstantFromFile, LogsheetVariable
-from ResearchOS.overhaul.helper_functions import is_dynamic_variable, is_specified
+from ResearchOS.constants import LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_VAR_KEY, DATA_FILE_KEY, DATA_OBJECT_NAME_KEY
+from ResearchOS.custom_classes import InputVariable, Constant, DataObjectName, Unspecified, DataFilePath, LoadConstantFromFile, LogsheetVariable
+from ResearchOS.helper_functions import is_dynamic_variable, is_specified
 
 def classify_input_type(input: Any):
     """Takes in an input from a TOML file and returns the class of the input.
