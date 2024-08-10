@@ -245,7 +245,9 @@ def _clean_value(type_str: str, raw_value: Any) -> Any:
 def get_logsheet_dict(project_folder: str) -> dict:
     """Return the logsheet dict from the project_settings.toml file."""
 
-    logsheet_dict = get_package_setting(project_folder, setting_name=LOGSHEET_NAME, default_value={})    
+    logsheet_dict = get_package_setting(project_folder, setting_name=LOGSHEET_NAME, default_value={})
+    if not logsheet_dict:
+        return {}
 
     logsheet_type = RunnableFactory.create(runnable_type=LOGSHEET_NAME)
     logsheet_dict['outputs'] = [key for key in logsheet_dict['headers'].keys()] # Outputs are needed for validation.

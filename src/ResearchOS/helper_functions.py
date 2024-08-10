@@ -4,7 +4,6 @@ from typing import Any
 import toml
 
 from ResearchOS.constants import LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_VAR_KEY, DATA_FILE_KEY, PACKAGE_SETTINGS_KEY
-from ResearchOS.compile import get_package_index_dict
 
 def parse_variable_name(var_name: str) -> tuple:
     """Parse the variable name into its constituent parts."""    
@@ -58,6 +57,7 @@ def is_special_dict(var_dict: dict) -> bool:
     return False
 
 def get_package_setting(project_folder: str, setting_name: str, default_value: Any) -> dict:
+    from ResearchOS.compile import get_package_index_dict
     index_dict = get_package_index_dict(project_folder)
     if PACKAGE_SETTINGS_KEY not in index_dict:
         return default_value     

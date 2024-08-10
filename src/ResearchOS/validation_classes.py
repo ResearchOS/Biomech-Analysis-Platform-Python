@@ -182,7 +182,7 @@ def standardize_headers(headers: dict):
     for key, value in headers.items():
         value[0] = value[0][0].upper() + value[0][1:].lower() if len(value[0]) > 1 else value[0].upper()
         value[1] = value[1].lower()
-        key = key.lower()
+        key = key.strip() # Remove leading and trailing whitespace.
         new_headers[key] = value
     return new_headers
 
