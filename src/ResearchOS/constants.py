@@ -1,5 +1,6 @@
 PACKAGES_PREFIX = 'ros-'
 ENVIRON_VAR_DELIM = ','
+PROJECT_NAME = 'project_name'
 
 ### paths.toml
 LOGSHEET_PATH_KEY = 'logsheet_path'

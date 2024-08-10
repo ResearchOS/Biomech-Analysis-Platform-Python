@@ -5,7 +5,7 @@ import networkx as nx
 import tomli as tomllib # For reading
 import toml # For writing
 
-from ResearchOS.constants import ALLOWED_INDEX_KEYS, PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY, RUNNABLE_TYPES, LOGSHEET_NAME
+from ResearchOS.constants import ALLOWED_INDEX_KEYS, PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY, RUNNABLE_TYPES, LOGSHEET_NAME, PROJECT_NAME
 from ResearchOS.helper_functions import parse_variable_name
 from ResearchOS.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable, LogsheetVariable, Constant, Unspecified, Logsheet
 from ResearchOS.validation_classes import RunnableFactory
@@ -172,18 +172,19 @@ def get_runnables_in_package(package_folder: str = None, package_index_dict: lis
     return all_runnables_dict
 
 def standardize_package_bridges(package_bridges_dict: dict, package_folder: str) -> dict:
-    """Standardize the format of the package bridges.toml file.
+    """Validate and standardize the format of the package bridges.toml file.
     Ensures that all keys are present and that the values are lists."""
     if not package_bridges_dict:
         return {}
     
-    project_name = os.environ['project_name']
+    project_name = os.environ[PROJECT_NAME]
     standardized_bridges_dict = {}
     for bridge_name, bridge_dict in package_bridges_dict.items():
         if 'sources' not in bridge_dict:
             raise ValueError(f"Missing 'sources' key in {package_folder}.")
         if 'targets' not in bridge_dict:
             raise ValueError(f"Missing 'targets' key in {package_folder}.")
+        
         if not isinstance(bridge_dict['sources'], list):
             if not isinstance(bridge_dict['sources'], str):
                 raise ValueError(f"Invalid 'sources' type in {package_folder}.")
@@ -192,12 +193,30 @@ def standardize_package_bridges(package_bridges_dict: dict, package_folder: str)
             if not isinstance(bridge_dict['targets'], str):
                 raise ValueError(f"Invalid 'targets' type in {package_folder}.")
             bridge_dict['targets'] = [bridge_dict['targets']] if bridge_dict['targets'] else []
-        # Replace "__logsheet__"  with the package & "logsheet" name.
-        # Also make everything lowercase.
+            
+        if len(bridge_dict['sources']) == 0:
+            raise ValueError(f"Empty 'sources' list in {package_folder}.")
+        if len(bridge_dict['targets']) == 0:
+            raise ValueError(f"Empty 'targets' list in {package_folder}.")
+        
+        if len(bridge_dict['sources']) > 1 and len(bridge_dict['targets']) > 1:
+            raise ValueError(f"Multiple sources and targets not supported.")   
+                     
         for index, src in enumerate(bridge_dict['sources']):
+            # Replace "__logsheet__"  with the package & "logsheet" name. Also make it lowercase.
             src = src.replace("__logsheet__", project_name + "." + LOGSHEET_NAME).lower()
             bridge_dict['sources'][index] = src
         bridge_dict['targets'] = [tgt.lower() for tgt in bridge_dict['targets']]
+
+        # Validate that the sources and targets are valid variable names.
+        for src in bridge_dict['sources']:
+            n = len(src.split('.'))
+            if n != 3:
+                raise ValueError(f"Invalid source variable name: {src}.")
+        for tgt in bridge_dict['targets']:
+            n = len(tgt.split('.'))
+            if n != 3:
+                raise ValueError(f"Invalid target variable name: {tgt}.")
         standardized_bridges_dict[bridge_name] = bridge_dict
     return standardized_bridges_dict
 
