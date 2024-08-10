@@ -6,7 +6,7 @@ from ResearchOS.custom_classes import Runnable
 
 def is_package_in_packages(package_name: str) -> bool:
     """Check if a package is in the list of packages."""
-    return package_name in os.environ['PACKAGE_NAMES'].split('.')
+    return package_name in os.environ['package_names'].split(',')
 
 def is_runnable_in_package(dag: nx.MultiDiGraph, package_name: str, runnable_name: str) -> bool:
     """Check if a runnable is in a package."""
@@ -25,4 +25,4 @@ def check_variable_properly_specified(dag: nx.MultiDiGraph, package_name: str, r
     if not is_runnable_in_package(dag, package_name, runnable_name):
         raise ValueError(f'Runnable {runnable_name} not in package {package_name}.')
     if not is_variable_in_runnable(dag, package_name, runnable_name, variable_name):
-        raise ValueError(f'Variable {variable_name} not in runnable {runnable_name} in package {package_name}.')
+        raise ValueError(f'Variable "{variable_name}" not in runnable "{runnable_name}" in package "{package_name}".')

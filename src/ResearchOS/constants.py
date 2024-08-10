@@ -1,9 +1,10 @@
 PACKAGES_PREFIX = 'ros-'
+ENVIRON_VAR_DELIM = ','
 
 ### paths.toml
 LOGSHEET_PATH_KEY = 'logsheet_path'
-MAT_DATA_FOLDER_KEY = 'mat_data_folder'
-RAW_DATA_FOLDER_KEY = 'raw_data_folder'
+SAVE_DATA_FOLDER_KEY = 'saved_data'
+RAW_DATA_FOLDER_KEY = 'raw_data'
 
 ### project_settings.toml
 DATASET_SCHEMA_KEY = 'dataset_schema' # e.g. "Subject1.Condition1.Trial1"

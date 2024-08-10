@@ -40,22 +40,17 @@ def bridge_dynamic_variables(dag: nx.MultiDiGraph, package_name: str, bridge_nam
 
 def bridge_packages(dag: nx.MultiDiGraph, all_packages_bridges: dict = None) -> nx.MultiDiGraph:
     """Read each package's bridges.toml file and connect the nodes in the DAG accordingly."""
-    package_names_str = os.environ['PACKAGE_NAMES']
-    package_names = package_names_str.split('.')
+    package_names_str = os.environ['package_names']
+    package_names = package_names_str.split(',')
     for package_name, package_bridges in all_packages_bridges.items():
         for bridge_name, bridges_dict in package_bridges.items():
             sources = bridges_dict[SOURCES_KEY]
-            targets = bridges_dict[TARGETS_KEY]            
-            sources = [sources] if not isinstance(sources, list) else sources
-            targets = [targets] if not isinstance(targets, list) else targets
+            targets = bridges_dict[TARGETS_KEY]
 
             for source in sources:
                 source_type, attrs = classify_input_type(source)
                 if source_type == InputVariable:
                     dag = bridge_dynamic_variables(dag, package_name, bridge_name, source, targets, package_names)
-                elif source_type == LogsheetVariable:
-                    continue
-                    raise NotImplementedError("LogsheetVariable is not implemented yet.")
                 elif isinstance(source, Constant):
                     dag.nodes[source.id]['node']['value'] = attrs['value']                
     return dag
@@ -176,6 +171,36 @@ def get_runnables_in_package(package_folder: str = None, package_index_dict: lis
             all_runnables_dict[runnable_key].update(runnables_dict)
     return all_runnables_dict
 
+def standardize_package_bridges(package_bridges_dict: dict, package_folder: str) -> dict:
+    """Standardize the format of the package bridges.toml file.
+    Ensures that all keys are present and that the values are lists."""
+    if not package_bridges_dict:
+        return {}
+    
+    project_name = os.environ['project_name']
+    standardized_bridges_dict = {}
+    for bridge_name, bridge_dict in package_bridges_dict.items():
+        if 'sources' not in bridge_dict:
+            raise ValueError(f"Missing 'sources' key in {package_folder}.")
+        if 'targets' not in bridge_dict:
+            raise ValueError(f"Missing 'targets' key in {package_folder}.")
+        if not isinstance(bridge_dict['sources'], list):
+            if not isinstance(bridge_dict['sources'], str):
+                raise ValueError(f"Invalid 'sources' type in {package_folder}.")
+            bridge_dict['sources'] = [bridge_dict['sources']] if bridge_dict['sources'] else []
+        if not isinstance(bridge_dict['targets'], list):
+            if not isinstance(bridge_dict['targets'], str):
+                raise ValueError(f"Invalid 'targets' type in {package_folder}.")
+            bridge_dict['targets'] = [bridge_dict['targets']] if bridge_dict['targets'] else []
+        # Replace "__logsheet__"  with the package & "logsheet" name.
+        # Also make everything lowercase.
+        for index, src in enumerate(bridge_dict['sources']):
+            src = src.replace("__logsheet__", project_name + "." + LOGSHEET_NAME).lower()
+            bridge_dict['sources'][index] = src
+        bridge_dict['targets'] = [tgt.lower() for tgt in bridge_dict['targets']]
+        standardized_bridges_dict[bridge_name] = bridge_dict
+    return standardized_bridges_dict
+
 def get_package_bridges(package_folder: str = None, paths_from_index: list = None) -> dict:
         """Load the bridges for the package from the package's bridges.toml file."""
         if not package_folder:
@@ -184,11 +209,20 @@ def get_package_bridges(package_folder: str = None, paths_from_index: list = Non
         if not paths_from_index:
             return {}
         
+        if isinstance(paths_from_index, str):
+            paths_from_index = [paths_from_index] # Shouldn't be necessary but helps with testing.
+
+        # Aug 10, 2024: For now, only one bridges file is allowed in the index for each package.
+        if len(paths_from_index) > 1:
+            raise ValueError(f"Only one bridges file is allowed in the index for each package. Found {len(paths_from_index)} in {package_folder}.")
+        
         all_bridges_dict = {}
         for path in paths_from_index:
+            if os.path.isabs(path):
+                raise ValueError(f"Path to bridges file (in index) must be relative to the package folder: {path}.")
             path = os.path.join(package_folder, path)            
-            if not os.path.isfile(path):
-                continue
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Bridges file not found: {path}.")
             with open(path, 'rb') as f:
                 bridges_dict = tomllib.load(f)
             all_bridges_dict.update(bridges_dict)
@@ -199,8 +233,7 @@ def standardize_package_runnables_dict(package_runnables_dict: dict, package_fol
     Same with 'batch', 'language', and other optional attributes"""
     if not os.path.isabs(package_folder):
         raise ValueError(f"Package folder path must be absolute: {package_folder}.")
-    package_name = os.path.split(package_folder)[-1]
-    os.environ['PACKAGE_FOLDER'] = package_folder
+    package_name = os.path.split(package_folder)[-1]    
     standardized_runnables_dict = {}
     for runnable_type_str, runnables in package_runnables_dict.items():
         standardized_runnables_dict[runnable_type_str] = {}
