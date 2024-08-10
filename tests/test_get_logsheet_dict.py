@@ -37,6 +37,9 @@ def test_get_logsheet_dict(tmp_path: Path = TMP_PACKAGES_PATH):
     with open(package_settings_file, "w") as f:
         package_settings[LOGSHEET_NAME] = logsheet_dict_toml
         toml.dump(package_settings, f)
+    
+    # logsheet_dict_toml['headers'] = {k.lower(): v for k, v in logsheet_dict_toml['headers'].items()}
+    logsheet_dict_toml['outputs'] = [k.lower() for k in logsheet_dict_toml['headers'].keys()]
     logsheet_dict = get_logsheet_dict(package_folder)
 
     assert logsheet_dict == logsheet_dict_toml
