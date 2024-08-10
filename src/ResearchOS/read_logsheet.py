@@ -10,7 +10,7 @@ import math
 import tomli as tomllib
 import networkx as nx
 
-from ResearchOS.constants import DATASET_SCHEMA_KEY, DATASET_KEY, LOGSHEET_NAME, MAT_DATA_FOLDER_KEY, DATASET_FILE_SCHEMA_KEY, PACKAGE_SETTINGS_KEY
+from ResearchOS.constants import DATASET_SCHEMA_KEY, DATASET_KEY, LOGSHEET_NAME, SAVE_DATA_FOLDER_KEY, DATASET_FILE_SCHEMA_KEY, PACKAGE_SETTINGS_KEY
 from ResearchOS.custom_classes import Logsheet, OutputVariable
 from ResearchOS.hash_dag import get_output_var_hash
 from ResearchOS.matlab_eng import import_matlab

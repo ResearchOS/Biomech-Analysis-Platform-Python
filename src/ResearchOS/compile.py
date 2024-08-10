@@ -4,15 +4,15 @@ import uuid
 
 import networkx as nx
 
-from ResearchOS.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages, standardize_package_runnables_dict
+from ResearchOS.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages, standardize_package_runnables_dict, standardize_package_bridges
 from ResearchOS.run import run
 from ResearchOS.furcate import get_nodes_to_furcate, polyfurcate
-from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY, BRIDGES_KEY
-from ResearchOS.helper_functions import parse_variable_name
+from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY, BRIDGES_KEY, DATASET_FILE_SCHEMA_KEY, ENVIRON_VAR_DELIM
+from ResearchOS.constants import SAVE_DATA_FOLDER_KEY, RAW_DATA_FOLDER_KEY
+from ResearchOS.helper_functions import parse_variable_name, get_package_setting
 from ResearchOS.custom_classes import Logsheet, OutputVariable
 from ResearchOS.read_logsheet import get_logsheet_dict
 from ResearchOS.substitutions import substitute_levels_subsets
-
 
 def get_package_order(dag: dict) -> list:
     # Topologically sort the nodes    
@@ -36,26 +36,33 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     packages_folders = discover_packages(packages_parent_folders)
     packages_folders.append(project_folder) # The project folder is considered a package folder.
 
+    project_name = os.path.split(project_folder)[-1].lower()
+    os.environ['project_folder'] = project_folder    
+    os.environ['project_name'] = project_name
+
     dag = nx.MultiDiGraph()
     all_packages_bridges = {}
 
-    # Get the logsheet dict
-    logsheet_dict = get_logsheet_dict(project_folder) 
-    # dataset_file_schema = get_dataset_file_schema(project_folder)
-    # mat_data_folder = get_mat_data_folder(project_folder)
-    # raw_data_folder = get_raw_data_folder(project_folder)   
-
-    # TODO: Need to parse the rest of the package settings from package_settings.toml
-    # dataset_schema, dataset_file_schema, mat_data_folder, raw_data_folder
+    # Get the package settings & store them in the environment
+    logsheet_dict           = get_logsheet_dict(project_folder)
+    dataset_file_schema     = get_package_setting(project_folder, setting_name="dataset_file_schema", default_value=["Dataset"])
+    dataset_schema          = get_package_setting(project_folder, setting_name="dataset_schema", default_value=["Dataset"])
+    save_data_folder        = get_package_setting(project_folder, setting_name="mat_data_folder", default_value="saved_data")
+    raw_data_folder         = get_package_setting(project_folder, setting_name="raw_data_folder", default_value="raw_data")  
     
-    data_objects = os.environ[DATASET_SCHEMA_KEY]
-    headers_in_toml = logsheet_dict['headers']
+    os.environ[DATASET_SCHEMA_KEY] = ENVIRON_VAR_DELIM.join(dataset_schema)
+    os.environ[DATASET_FILE_SCHEMA_KEY] = ENVIRON_VAR_DELIM.join(dataset_file_schema)
+    os.environ[SAVE_DATA_FOLDER_KEY] = project_folder + os.sep + save_data_folder if not os.path.isabs(save_data_folder) else save_data_folder
+    os.environ[RAW_DATA_FOLDER_KEY] = project_folder + os.sep + raw_data_folder if not os.path.isabs(raw_data_folder) else raw_data_folder        
 
     # 1. Get all of the package names.
     package_names = []
     for package_folder in packages_folders:
-        package_name = os.path.split(package_folder)[-1]
+        package_name = os.path.split(package_folder)[-1].lower()
         package_names.append(package_name)
+
+    package_names_str = ENVIRON_VAR_DELIM.join(package_names).lower()
+    os.environ['package_names'] = package_names_str
 
     # 2. Get the index dict for each package.
     index_dict = {}
@@ -64,10 +71,7 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
         index_dict[package_name] = get_package_index_dict(package_folder)
         package_runnables_dict = get_runnables_in_package(package_folder=package_folder, package_index_dict=index_dict[package_name], runnable_keys = [PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME])
         standard_package_runnables_dict = standardize_package_runnables_dict(package_runnables_dict, package_folder)
-        runnables_dict[package_name] = standard_package_runnables_dict
-
-    package_names_str = '.'.join(package_names)
-    os.environ['PACKAGE_NAMES'] = package_names_str
+        runnables_dict[package_name] = standard_package_runnables_dict    
 
     # Create the DAG for each package
     all_packages_dags = {}
@@ -75,7 +79,8 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
         package_runnables_dict = runnables_dict[package_name]
         package_index_dict = index_dict[package_name]
         all_packages_dags[package_name] = create_package_dag(package_runnables_dict, package_name=package_name)      
-        all_packages_bridges[package_name] = get_package_bridges(package_folder, package_index_dict[BRIDGES_KEY])
+        package_bridges = get_package_bridges(package_folder, package_index_dict[BRIDGES_KEY])
+        all_packages_bridges[package_name] = standardize_package_bridges(package_bridges, package_folder)
 
     # Add the nodes and edges from each package to the overall DAG.
     # Right now, there are no edges between packages whatsoever.
@@ -85,13 +90,14 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
 
     # Create the logsheet Runnable node.
     logsheet_attrs = {}
-    logsheet_attrs['inputs'] = {}
+    headers_in_toml = logsheet_dict['headers']
     logsheet_attrs['outputs'] = [header for header in headers_in_toml]
-    logsheet_node = Logsheet(id = str(uuid.uuid4()), name = package_name + "." + LOGSHEET_NAME, attrs = logsheet_attrs)
+    logsheet_node = Logsheet(id = str(uuid.uuid4()), name = project_name + "." + LOGSHEET_NAME, attrs = logsheet_attrs)
 
     # Add the logsheet node to the DAG
     mapping = {}
-    for column in headers_in_toml:
+    dag.add_node(logsheet_node.id, node = logsheet_node)
+    for column in logsheet_dict['outputs']:
         output_var = OutputVariable(id=str(uuid.uuid4()), name=package_name + "." + LOGSHEET_NAME + "." + column, attrs={})
         mapping[column] = output_var.id
         dag.add_node(output_var.id, node = output_var)
@@ -102,6 +108,7 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
 
     # Get the order of the packages
     packages_ordered = get_package_order(dag)
+    assert packages_ordered[0] == project_name, "The first package in the order should be the project folder."
 
     # Get the nodes to furcate the DAG
     nodes_to_furcate = get_nodes_to_furcate(dag)

@@ -5,7 +5,7 @@ import networkx as nx
 
 from ResearchOS.matlab_eng import import_matlab
 from ResearchOS.create_dag_from_toml import get_package_index_dict
-from ResearchOS.constants import MAT_DATA_FOLDER_KEY, RAW_DATA_FOLDER_KEY, DATASET_SCHEMA_KEY, PROJECT_FOLDER_KEY
+from ResearchOS.constants import SAVE_DATA_FOLDER_KEY, RAW_DATA_FOLDER_KEY, DATASET_SCHEMA_KEY, PROJECT_FOLDER_KEY
 from ResearchOS.data_objects import get_data_objects_in_subset
 from ResearchOS.hash_dag import get_input_variable_hashes_or_values, get_output_var_hash
 from ResearchOS.helper_functions import parse_variable_name, is_specified

@@ -17,27 +17,6 @@ def test_create_package_dag(tmp_path: Path = TMP_PACKAGES_PATH):
         shutil.rmtree(tmp_path) 
     os.makedirs(tmp_path)
 
-    # package_name = "package1"
-
-    # # Copy from the fixtures directory
-    # shutil.copytree("tests/fixtures/packages/package1", tmp_path)
-
-    # # Read the package's index dict.
-    # package_index_dict = get_package_index_dict(tmp_path)
-
-    # # Get the package's runnables dict
-    # package_runnables_dict = get_runnables_in_package(tmp_path, package_index_dict)
-
-    # Validate & standardize the package's runnables.
-    # standardized_package_runnables_dict = {}
-    # for key, value in package_runnables_dict.items():
-    #     standardized_package_runnables_dict[key] = {}
-    #     runnable_type = RunnableFactory.create(runnable_type=key)
-    #     for package_name in value:
-    #         is_valid, err_msg = runnable_type.validate(value[package_name], compilation_only=True)
-    #         assert is_valid
-    #         standardized_package_runnables_dict[key][package_name] = runnable_type.standardize(value[package_name], compilation_only=True) 
-
     package_runnables_dict = {}
     package_runnables_dict[PLOT_NAME] = {
     }
