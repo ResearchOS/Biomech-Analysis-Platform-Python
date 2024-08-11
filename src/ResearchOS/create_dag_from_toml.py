@@ -3,18 +3,18 @@ import uuid
 
 import networkx as nx
 import tomli as tomllib # For reading
-import toml # For writing
 
 from ResearchOS.constants import ALLOWED_INDEX_KEYS, PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY, RUNNABLE_TYPES, LOGSHEET_NAME, PROJECT_NAME
+from ResearchOS.constants import ENVIRON_VAR_DELIM
 from ResearchOS.helper_functions import parse_variable_name
-from ResearchOS.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable, LogsheetVariable, Constant, Unspecified, Logsheet
+from ResearchOS.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable, Constant, Unspecified, Logsheet
 from ResearchOS.validation_classes import RunnableFactory
 from ResearchOS.input_classifier import classify_input_type
 from ResearchOS.dag_info import check_variable_properly_specified
 
 RUNNABLE_NODE_CLASSES = {PROCESS_NAME: Process, PLOT_NAME: Plot, STATS_NAME: Stats, LOGSHEET_NAME: Logsheet}    
 
-def bridge_dynamic_variables(dag: nx.MultiDiGraph, package_name: str, bridge_name: str, source: str, targets: list, package_names: list):
+def bridge_dynamic_variables(dag: nx.MultiDiGraph, package_name: str, bridge_name: str, source: str, target: str):
     """Bridge from a source (output) variable in one package to a target (input) variable in another package.
     If the target variable is Unspecified, then the 'node' attribute is converted to an InputVariable type."""
     try:
@@ -23,36 +23,40 @@ def bridge_dynamic_variables(dag: nx.MultiDiGraph, package_name: str, bridge_nam
         source_package, source_runnable, source_variable = parse_variable_name(source)
         check_variable_properly_specified(dag, source_package, source_runnable, source_variable)                    
 
-    for target in targets:
-        target_type, tmp = classify_input_type(target)  
-        assert target_type == InputVariable, f"Target type is {target_type}."        
-        target_package, target_runnable, target_variable = parse_variable_name(target)
-        try:
-            target_node = [n['node'] for _, n in dag.nodes(data=True) if n['node'].name == target and type(n['node']) in [Unspecified, InputVariable]][0]
-        except Exception as e:
-            check_variable_properly_specified(dag, target_package, target_runnable, target_variable)
-            raise e
-        if isinstance(target_node, Unspecified):
-            target_node = InputVariable(target_node.id, target_node.name, {})
-        dag.nodes[target_node.id]['node'] = target_node
-        dag.add_edge(source_node.id, target_node.id, bridge = package_name + "." + bridge_name)
+    target_type, tmp = classify_input_type(target)  
+    assert target_type == InputVariable, f"Target type is {target_type}."        
+    target_package, target_runnable, target_variable = parse_variable_name(target)
+    try:
+        target_node = [n['node'] for _, n in dag.nodes(data=True) if n['node'].name == target and type(n['node']) in [Unspecified, InputVariable]][0]
+    except Exception as e:
+        check_variable_properly_specified(dag, target_package, target_runnable, target_variable)
+        raise e
+    if isinstance(target_node, Unspecified):
+        target_node = InputVariable(target_node.id, target_node.name, {})
+    dag.nodes[target_node.id]['node'] = target_node
+    dag.add_edge(source_node.id, target_node.id, bridge = package_name + "." + bridge_name)
+
     return dag
 
 def bridge_packages(dag: nx.MultiDiGraph, all_packages_bridges: dict = None) -> nx.MultiDiGraph:
     """Read each package's bridges.toml file and connect the nodes in the DAG accordingly."""
-    package_names_str = os.environ['package_names']
-    package_names = package_names_str.split(',')
     for package_name, package_bridges in all_packages_bridges.items():
         for bridge_name, bridges_dict in package_bridges.items():
             sources = bridges_dict[SOURCES_KEY]
             targets = bridges_dict[TARGETS_KEY]
 
-            for source in sources:
+            if len(sources) > 1:
+                targets = [targets[0]] * len(sources)
+            elif len(targets) > 1:
+                sources = [sources[0]] * len(targets)
+
+            for source, target in zip(sources, targets):
                 source_type, attrs = classify_input_type(source)
+                # target_type, attrs = classify_input_type(target)
                 if source_type == InputVariable:
-                    dag = bridge_dynamic_variables(dag, package_name, bridge_name, source, targets, package_names)
+                    dag = bridge_dynamic_variables(dag, package_name, bridge_name, source, target)
                 elif isinstance(source, Constant):
-                    dag.nodes[source.id]['node']['value'] = attrs['value']                
+                    dag.nodes[source.id]['node']['value'] = attrs['value']               
     return dag
 
 def discover_packages(packages_parent_folders: list = None) -> list:
