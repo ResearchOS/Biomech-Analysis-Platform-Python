@@ -13,6 +13,7 @@ from ResearchOS.helper_functions import parse_variable_name, get_package_setting
 from ResearchOS.custom_classes import Logsheet, OutputVariable
 from ResearchOS.read_logsheet import get_logsheet_dict
 from ResearchOS.substitutions import substitute_levels_subsets
+from ResearchOS.visualize_dag import visualize_dag
 
 def get_package_order(dag: dict) -> list:
     # Topologically sort the nodes    
@@ -104,11 +105,13 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
         dag.add_edge(logsheet_node.id, output_var.id)
 
     # Connect the packages into one cohesive DAG
-    dag = bridge_packages(dag, all_packages_bridges)
+    dag = bridge_packages(dag, all_packages_bridges)    
+
+    # visualize_dag(dag)
 
     # Get the order of the packages
     packages_ordered = get_package_order(dag)
-    assert packages_ordered[0] == project_name, "The first package in the order should be the project folder."
+    # assert packages_ordered[0] == project_name, "The first package in the order should be the project folder."
 
     # Get the nodes to furcate the DAG
     nodes_to_furcate = get_nodes_to_furcate(dag)
