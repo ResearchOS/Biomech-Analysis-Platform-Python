@@ -107,7 +107,7 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     # Connect the packages into one cohesive DAG
     dag = bridge_packages(dag, all_packages_bridges)    
 
-    # visualize_dag(dag)
+    visualize_dag(dag)
 
     # Get the order of the packages
     packages_ordered = get_package_order(dag)
