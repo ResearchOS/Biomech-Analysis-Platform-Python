@@ -28,7 +28,7 @@ def get_layers(graph):
         layers_by_generation[layer].append(node)
     return layers_by_generation
 
-def visualize_dag(dag: nx.MultiDiGraph, layout: str = 'generation'):    
+def visualize_compiled_dag(dag: nx.MultiDiGraph, layout: str = 'generation'):    
     labels = {n: data['node'].name for n, data in dag.nodes(data=True)}
     labels = {k: v.replace('.', '.\n') for k, v in labels.items()}
     layers = get_layers(dag)
@@ -51,7 +51,7 @@ def visualize_dag(dag: nx.MultiDiGraph, layout: str = 'generation'):
 
     nx.draw(dag, pos, with_labels=False, labels=labels, node_color=node_colors, edge_color='grey')
     nx.draw_networkx_labels(dag, label_pos, labels, font_size=8)
-    # plt.show()
+    plt.show()
 
 def get_sorted_runnable_nodes(dag: nx.MultiDiGraph):
     # 1. Sort all of the Runnable nodes in the DAG by their topological sort.
@@ -135,3 +135,14 @@ def set_generational_layout(dag: nx.MultiDiGraph, layers: list, layer_width: flo
                 label_pos[node] = (pos[node][0], pos[node][1] + 0.1*layer_height) 
 
     return pos, label_pos
+
+def visualize_dag(project_folder: str, packages_parent_folders: list = []):
+    """Compile (without polyfurcation) and visualize the DAG."""
+    from ResearchOS.compile import compile_packages_to_dag
+    dag, project_name, all_packages_bridges, index_dict = compile_packages_to_dag(project_folder, packages_parent_folders)
+    visualize_compiled_dag(dag, 'topological')
+
+if __name__=="__main__":
+    project_folder = '/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Test_Project_Folder'
+    packages_parent_folders = ['/Users/mitchelltillman/Documents/MATLAB/Science-Code/MATLAB/Packages']
+    visualize_dag(project_folder, packages_parent_folders)
