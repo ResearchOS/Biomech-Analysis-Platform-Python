@@ -19,6 +19,7 @@ def substitute_levels_subsets(packages_ordered: list, all_packages_bridges: list
             project_settings = tomllib.load(f)
         level_conversions = project_settings['levels'] # Dict where keys are new levels and values are old levels.
         subset_conversions = project_settings['subsets'] # Dict where keys are new subsets and values are old subsets.
+        batch_conversions = project_settings['batch'] # Dict where keys are new batches and values are old batches.
         # Get the nodes in this package.
         package_nodes = [node for node in dag.nodes if node['node'].name.startswith(package + ".") and isinstance(node['node'], Runnable)]  
         package_ancestor_nodes = []      
@@ -30,3 +31,4 @@ def substitute_levels_subsets(packages_ordered: list, all_packages_bridges: list
         for node in package_ancestor_nodes:
             dag.nodes['node'].subset = subset_conversions[dag.nodes['node'].subset]
             dag.nodes['node'].level = level_conversions[dag.nodes['node'].level]
+            dag.nodes['node'].batch = batch_conversions[dag.nodes['node'].batch]
