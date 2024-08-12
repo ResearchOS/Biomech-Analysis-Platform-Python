@@ -3,7 +3,6 @@ import os
 import uuid
 
 import networkx as nx
-from networkx.algorithms.dag import transitive_closure
 
 from ResearchOS.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages, standardize_package_runnables_dict, standardize_package_bridges
 from ResearchOS.run import run
@@ -14,7 +13,7 @@ from ResearchOS.helper_functions import get_package_setting
 from ResearchOS.custom_classes import Logsheet, OutputVariable
 from ResearchOS.read_logsheet import get_logsheet_dict
 from ResearchOS.substitutions import substitute_levels_subsets
-from ResearchOS.visualize_dag import visualize_dag, get_sorted_runnable_nodes
+from ResearchOS.visualize_dag import visualize_compiled_dag, get_sorted_runnable_nodes
 
 def get_package_order(dag: dict) -> list:    
     sorted_runnable_nodes = get_sorted_runnable_nodes(dag)
@@ -37,6 +36,35 @@ def get_package_order(dag: dict) -> list:
 def compile(project_folder: str, packages_parent_folders: list = []) -> nx.MultiDiGraph:
     """Compile all packages in the project into one DAG by reading their TOML files and creating a DAG for each package. 
     Then, connect the packages together into one cohesive DAG by reading each package's bridges file."""    
+    dag, project_name, all_packages_bridges, index_dict = compile_packages_to_dag(project_folder, packages_parent_folders)
+
+    # Get the order of the packages
+    packages_ordered = get_package_order(dag)
+    assert packages_ordered[0] == project_name, "The first package in the order should be the project folder."
+
+    # Get the nodes to furcate the DAG
+    nodes_to_furcate = get_nodes_to_furcate(dag)
+
+    # Substitute the levels and subsets for each package in topologically sorted order
+    dag = substitute_levels_subsets(packages_ordered, all_packages_bridges, project_folder, index_dict, dag)
+
+    # Topologically sort the nodes to furcate by
+    all_sorted_nodes = list(nx.topological_sort(dag))
+    topo_sorted_nodes_to_furcate = [node for node in all_sorted_nodes if node in nodes_to_furcate]
+    topo_sorted_nodes_to_furcate = list(reversed(topo_sorted_nodes_to_furcate))
+
+    # Furcate (split) the DAG
+    dag = polyfurcate(dag, topo_sorted_nodes_to_furcate)
+    return dag
+
+def compile_packages_to_dag(project_folder: str, packages_parent_folders: list = []) -> tuple:
+    """Compile the DAG given the project folder. Does not perform polyfurcation."""
+    if not os.path.exists(project_folder):
+        raise FileNotFoundError(f"The project folder {project_folder} does not exist.") 
+    if not packages_parent_folders:
+        packages_parent_folders = [os.path.dirname(project_folder)]
+    if project_folder not in packages_parent_folders:
+        packages_parent_folders.append(project_folder)
     packages_folders = discover_packages(packages_parent_folders)
     packages_folders.append(project_folder) # The project folder is considered a package folder.
 
@@ -108,28 +136,9 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
         dag.add_edge(logsheet_node.id, output_var.id)
 
     # Connect the packages into one cohesive DAG
-    dag = bridge_packages(dag, all_packages_bridges)    
+    dag = bridge_packages(dag, all_packages_bridges)  
 
-    visualize_dag(dag, 'topological')
-
-    # Get the order of the packages
-    packages_ordered = get_package_order(dag)
-    assert packages_ordered[0] == project_name, "The first package in the order should be the project folder."
-
-    # Get the nodes to furcate the DAG
-    nodes_to_furcate = get_nodes_to_furcate(dag)
-
-    # Substitute the levels and subsets for each package in topologically sorted order
-    dag = substitute_levels_subsets(packages_ordered, all_packages_bridges, project_folder, index_dict, dag)
-
-    # Topologically sort the nodes to furcate by
-    all_sorted_nodes = list(nx.topological_sort(dag))
-    topo_sorted_nodes_to_furcate = [node for node in all_sorted_nodes if node in nodes_to_furcate]
-    topo_sorted_nodes_to_furcate = list(reversed(topo_sorted_nodes_to_furcate))
-
-    # Furcate (split) the DAG
-    dag = polyfurcate(dag, topo_sorted_nodes_to_furcate)
-    return dag
+    return dag, project_name, all_packages_bridges, index_dict  
 
 if __name__ == '__main__':
     project_folder = '/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Test_Project_Folder'

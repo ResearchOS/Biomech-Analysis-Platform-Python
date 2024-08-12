@@ -1,5 +1,6 @@
 import os
 import uuid
+from pathlib import Path
 
 import networkx as nx
 import tomli as tomllib # For reading
@@ -59,28 +60,18 @@ def bridge_packages(dag: nx.MultiDiGraph, all_packages_bridges: dict = None) -> 
                     dag.nodes[source.id]['node']['value'] = attrs['value']               
     return dag
 
-def discover_packages(packages_parent_folders: list = None) -> list:
+def discover_packages(parent_folders: list = []) -> list:
     """Return a list of all packages in the specified folders.
     Packages are folders within the specified folders that start with `ros-`.
     `pyproject.toml` files are expected to be in the root of each package folder.
     Returned folders are relative or absolute, depending on the input."""
 
-    if not packages_parent_folders:
-        raise ValueError('No package folders specified.')
-    
-    if isinstance(packages_parent_folders, str):
-        packages_parent_folders = [packages_parent_folders]
+    if not isinstance(parent_folders, list):
+        parent_folders = [parent_folders]
     
     packages_folders = []
-    for folder in packages_parent_folders:
-        folder.replace('/', os.sep)
-        if not os.path.isdir(folder):
-            continue  # Skip if not a directory
-        for item in os.listdir(folder):
-            if item.startswith(PACKAGES_PREFIX):                                
-                # Get the full path for this file
-                item = os.path.join(folder, item)
-                packages_folders.append(item)
+    for parent_folder in parent_folders:
+        packages_folders.extend([str(folder) for folder in Path(parent_folder).rglob('ros-*') if folder.is_dir()])
     return packages_folders
 
 def get_package_index_path(package_folder_path: str) -> str:
