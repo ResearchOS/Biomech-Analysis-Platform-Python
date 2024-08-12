@@ -10,21 +10,15 @@ from ResearchOS.run import run
 from ResearchOS.furcate import get_nodes_to_furcate, polyfurcate
 from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY, BRIDGES_KEY, DATASET_FILE_SCHEMA_KEY, ENVIRON_VAR_DELIM
 from ResearchOS.constants import SAVE_DATA_FOLDER_KEY, RAW_DATA_FOLDER_KEY
-from ResearchOS.helper_functions import parse_variable_name, get_package_setting
-from ResearchOS.custom_classes import Logsheet, OutputVariable, Runnable
+from ResearchOS.helper_functions import get_package_setting
+from ResearchOS.custom_classes import Logsheet, OutputVariable
 from ResearchOS.read_logsheet import get_logsheet_dict
 from ResearchOS.substitutions import substitute_levels_subsets
-from ResearchOS.visualize_dag import visualize_dag
+from ResearchOS.visualize_dag import visualize_dag, get_sorted_runnable_nodes
 
 def get_package_order(dag: dict) -> list:    
-    # Get all nodes in the DAG that are Runnable, and topologically sort them using the transitive closure.
-    trans_clo_dag = transitive_closure(dag)
-    remove_nodes = [node for node in dag.nodes(data=True) if not isinstance(node[1]['node'], Runnable)]
-    [trans_clo_dag.remove_node(node[0]) for node in remove_nodes]
-    nodes = [node for node in dag.nodes(data=True) if node[0] in trans_clo_dag.nodes]
-    subgraph = trans_clo_dag.subgraph([node[0] for node in nodes])
-    sorted_nodes = list(nx.topological_sort(subgraph))
-    node_names = [dag.nodes[node]['node'].name for node in sorted_nodes]
+    sorted_runnable_nodes = get_sorted_runnable_nodes(dag)
+    node_names = [dag.nodes[node]['node'].name for node in sorted_runnable_nodes]
 
     # Get the package for each node
     packages = []
@@ -120,13 +114,13 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
 
     # Get the order of the packages
     packages_ordered = get_package_order(dag)
-    # assert packages_ordered[0] == project_name, "The first package in the order should be the project folder."
+    assert packages_ordered[0] == project_name, "The first package in the order should be the project folder."
 
     # Get the nodes to furcate the DAG
     nodes_to_furcate = get_nodes_to_furcate(dag)
 
     # Substitute the levels and subsets for each package in topologically sorted order
-    substitute_levels_subsets(packages_ordered, all_packages_bridges, project_folder, index_dict, dag)
+    dag = substitute_levels_subsets(packages_ordered, all_packages_bridges, project_folder, index_dict, dag)
 
     # Topologically sort the nodes to furcate by
     all_sorted_nodes = list(nx.topological_sort(dag))
