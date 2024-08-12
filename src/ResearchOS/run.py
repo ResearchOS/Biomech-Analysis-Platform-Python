@@ -46,7 +46,7 @@ def run_batch(dag: nx.MultiDiGraph, runnable: Runnable, matlab):
 
 def run(dag: nx.MultiDiGraph, start_node_name: str = None, project_folder: str = None):
     """Run the compiled DAG."""
-    m_files_folder = 'src/ResearchOS/overhaul'
+    m_files_folder = 'src/ResearchOS'
     if not project_folder:
         project_folder = os.getcwd()
 
@@ -59,7 +59,7 @@ def run(dag: nx.MultiDiGraph, start_node_name: str = None, project_folder: str =
 
     # Get the MAT (i.e. processed) & raw data folder by reading the project's index.toml file
     index_dict = get_package_index_dict(project_folder)
-    os.environ[MAT_DATA_FOLDER_KEY] = index_dict[MAT_DATA_FOLDER_KEY.lower()]
+    os.environ[SAVE_DATA_FOLDER_KEY] = index_dict[SAVE_DATA_FOLDER_KEY.lower()]
     os.environ[RAW_DATA_FOLDER_KEY] = index_dict[RAW_DATA_FOLDER_KEY.lower()]
 
     # Get where to start the DAG. If not specified, include all nodes.
@@ -80,11 +80,6 @@ def run(dag: nx.MultiDiGraph, start_node_name: str = None, project_folder: str =
     sorted_nodes = list(nx.topological_sort(dag_to_run))
     sorted_runnable_nodes = [node for node in sorted_nodes if isinstance(dag_to_run.nodes[node]['node'], Runnable)]
 
-    logsheet_output_file_path = os.path.join(project_folder, 'logsheet_output.mat')
-    logsheet_data = matlab_eng.load(logsheet_output_file_path, nargout=1)
-    schema = logsheet_data['schema']
-    schema_str = '.'.join(schema)
-    os.environ[DATASET_SCHEMA_KEY] = schema_str
     all_data_objects = logsheet_data['data_objects']
 
 

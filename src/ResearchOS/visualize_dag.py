@@ -53,8 +53,7 @@ def visualize_dag(dag: nx.MultiDiGraph, layout: str = 'generation'):
     nx.draw_networkx_labels(dag, label_pos, labels, font_size=8)
     # plt.show()
 
-def set_topological_layout(dag: nx.MultiDiGraph, layer_width: float, layer_height: float):
-    """Left to right layout"""
+def get_sorted_runnable_nodes(dag: nx.MultiDiGraph):
     # 1. Sort all of the Runnable nodes in the DAG by their topological sort.
     runnable_nodes = [node for node in dag.nodes(data=True) if isinstance(node[1]['node'], Runnable)]
     trans_clos_dag = nx.transitive_closure(dag)
@@ -71,13 +70,6 @@ def set_topological_layout(dag: nx.MultiDiGraph, layer_width: float, layer_heigh
         descendants = list(nx.descendants(runnables_dag, node)) + [node]
         descendants_names = [dag.nodes[descendant]['node'].name for descendant in descendants]
         for d in descendants:
-            # If the descendant has any inputs that are not InputVariable, then push it as far rightward as possible.
-            # all_inputs = []
-            # predecessors = list(dag.predecessors(d))
-            # predecessor_names = [dag.nodes[predecessor]['node'].name for predecessor in predecessors]
-            # for pred in predecessors:
-            #     is_input_variable = type(dag.nodes[pred]['node']) == InputVariable
-            #     all_inputs.append(is_input_variable)
             if not all([type(dag.nodes[pred]['node']) == InputVariable for pred in list(dag.predecessors(d))]):
                 sorted_runnable_nodes.remove(node)
                 # Get the index of the first Runnable successor of this descendant.
@@ -85,7 +77,12 @@ def set_topological_layout(dag: nx.MultiDiGraph, layer_width: float, layer_heigh
                 descendants2 = list(nx.descendants(runnables_dag, d))
                 for d2 in descendants2:
                     min_successor_runnable_index = min(min_successor_runnable_index, sorted_runnable_nodes.index(d2))
-                sorted_runnable_nodes.insert(min_successor_runnable_index-1, node)        
+                sorted_runnable_nodes.insert(min_successor_runnable_index-1, node) 
+    return sorted_runnable_nodes
+
+def set_topological_layout(dag: nx.MultiDiGraph, layer_width: float, layer_height: float):
+    """Left to right layout"""
+    sorted_runnable_nodes = get_sorted_runnable_nodes(dag)       
 
     pos = {}    
     for i, node in enumerate(sorted_runnable_nodes):

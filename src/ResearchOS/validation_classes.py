@@ -73,8 +73,10 @@ def validate_batch(batch: str):
     if not type(batch) in allowable_types:
         return False, "Batch is not a string, list, or None."
     if isinstance(batch, list):
-        if not all(isinstance(item, str) for item in batch):
-            return False, "Each item in batch is not a string." # Ensure each item of the list is a str, if it's a list.
+        if len(batch) > 1 and any([item is None for item in batch]):
+            return False, "If batch is a list and contains None, then it must be of length 1"
+        if not all(isinstance(item, (str, type(None))) for item in batch):
+            return False, "Each item in batch is not a string or None." # Ensure each item of the list is a str, if it's a list.
     return True, None
 
 def validate_language(language: str):
@@ -162,13 +164,22 @@ def standardize_level(level: str):
     return level.upper()
 
 def standardize_batch(batch: str):
+    if batch is None:
+        return [None]
+    if isinstance(batch, str):
+        batch = [batch]
+    for index, b in enumerate(batch):
+        if b is None:
+            continue
+        b = b.strip() # Remove leading and trailing whitespace.
+        batch[index] = b[0].upper() + b[1:].lower() if len(b) > 1 else b.upper() # Sentence-case.
     return batch
 
 def standardize_language(language: str):
-    return str(language).lower()
+    return str(language).strip().lower()
 
 def standardize_num_header_rows(num_header_rows: int):
-    return num_header_rows
+    return int(num_header_rows)
 
 def standardize_class_column_names(class_column_names: dict):
     new_class_column_names = {}
@@ -195,7 +206,7 @@ class RunnableType():
     runnable_attrs_fillable_w_defaults_compilation = {}
 
     runnable_minimum_required_manual_attrs_running = ['path']
-    runnable_attrs_fillable_w_defaults_running = {'level': None, 'batch': None, 'language': 'matlab'}
+    runnable_attrs_fillable_w_defaults_running = {'language': 'matlab'}
 
     @classmethod
     def validate(cls, attrs, compilation_only: bool):
@@ -246,7 +257,7 @@ class RunnableType():
     
 class ProcessType():
     minimum_required_manual_attrs_compilation = ['inputs','outputs'] # Don't include the attributes from the RunnableType() class
-    attrs_fillable_w_defaults_compilation = {}
+    attrs_fillable_w_defaults_compilation = {'batch': None, 'level': None}
     
     @classmethod
     def validate(cls, attrs, compilation_only: bool):
@@ -257,12 +268,15 @@ class ProcessType():
         err_msg = [err_msg]
         missing_minimal_attrs = [attr for attr in cls.minimum_required_manual_attrs_compilation if attr not in attrs]
         if missing_minimal_attrs != []:
-            return False, "Missing minimal attributes: " + str(missing_minimal_attrs)
+            return False, "Missing minimal attributes: " + str(missing_minimal_attrs)        
         
         is_valid_input, err_msg_input = validate_inputs(attrs['inputs'])
         is_valid_output, err_msg_output = validate_outputs(attrs['outputs'])
-        is_valid = is_valid and is_valid_output and is_valid_input
-        err_msg = '; '.join([msg for msg in err_msg + [err_msg_output, err_msg_input] if msg is not None])
+        is_valid_batch = True; err_msg_batch = None
+        if 'batch' in attrs:
+            is_valid_batch, err_msg_batch = validate_batch(attrs['batch'])        
+        is_valid = is_valid and is_valid_output and is_valid_input and is_valid_batch
+        err_msg = '; '.join([msg for msg in err_msg + [err_msg_output, err_msg_input, err_msg_batch] if msg is not None])
         return is_valid, err_msg
 
     @classmethod
@@ -270,8 +284,14 @@ class ProcessType():
         attrs = RunnableType.standardize(attrs, compilation_only)
         if attrs == {}:
             return attrs
+        
+        for attr in cls.attrs_fillable_w_defaults_compilation:
+            if attr not in attrs:
+                attrs[attr] = cls.attrs_fillable_w_defaults_compilation[attr]
+
         attrs['inputs'] = standardize_inputs(attrs['inputs'])
-        attrs['outputs'] = standardize_outputs(attrs['outputs'])        
+        attrs['outputs'] = standardize_outputs(attrs['outputs'])   
+        attrs['batch'] = standardize_batch(attrs['batch'])   
 
         if not compilation_only:
             attrs['subset'] = standardize_subset(attrs['subset'])
@@ -279,7 +299,7 @@ class ProcessType():
 
 class PlotType():
     minimum_required_manual_attrs_compilation = ['inputs'] # Don't include the attributes from the RunnableType() class
-    attrs_fillable_w_defaults_compilation = {}
+    attrs_fillable_w_defaults_compilation = {'batch': None, 'level': None}
 
     @classmethod
     def validate(cls, attrs, compilation_only: bool):
@@ -299,20 +319,30 @@ class PlotType():
         attrs = RunnableType.standardize(attrs, compilation_only)
         if attrs == {}:
             return attrs
+        
+        for attr in cls.attrs_fillable_w_defaults_compilation:
+            if attr not in attrs:
+                attrs[attr] = cls.attrs_fillable_w_defaults_compilation[attr]
+
         attrs['inputs'] = standardize_inputs(attrs['inputs'])
+        attrs['batch'] = standardize_batch(attrs['batch'])
         if not compilation_only:
             attrs['subset'] = standardize_subset(attrs['subset'])
         return attrs
 
 class StatsType():
     minimum_required_manual_attrs_compilation = ['inputs'] # Don't include the attributes from the RunnableType() class
-    attrs_fillable_w_defaults_compilation = {}
+    attrs_fillable_w_defaults_compilation = {'batch': None, 'level': None}
 
     @classmethod
     def validate(cls, attrs, compilation_only: bool):
         is_valid, err_msg = RunnableType.validate(attrs, compilation_only=compilation_only)
         if attrs == {}:
             return is_valid, err_msg
+        err_msg = [err_msg]
+        is_valid_batch, err_msg_batch = validate_batch(attrs['batch'])
+        is_valid_level, err_msg_level = validate_level(attrs['level'])
+        
         if not compilation_only:
             is_valid, err_msg = validate_subset(attrs['subset'])
         return is_valid, err_msg
@@ -322,7 +352,13 @@ class StatsType():
         attrs = RunnableType.standardize(attrs, compilation_only=compilation_only)
         if attrs == {}:
             return attrs
+        
+        for attr in cls.attrs_fillable_w_defaults_compilation:
+            if attr not in attrs:
+                attrs[attr] = cls.attrs_fillable_w_defaults_compilation[attr]
+
         attrs['inputs'] = standardize_inputs(attrs['inputs'])
+        attrs['batch'] = standardize_batch(attrs['batch'])
         if not compilation_only:
             attrs['subset'] = standardize_subset(attrs['subset'])
         return attrs
