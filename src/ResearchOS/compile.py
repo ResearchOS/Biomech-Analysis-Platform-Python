@@ -3,6 +3,7 @@ import os
 import uuid
 
 import networkx as nx
+from networkx.algorithms.dag import transitive_closure
 
 from ResearchOS.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages, standardize_package_runnables_dict, standardize_package_bridges
 from ResearchOS.run import run
@@ -10,19 +11,27 @@ from ResearchOS.furcate import get_nodes_to_furcate, polyfurcate
 from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY, BRIDGES_KEY, DATASET_FILE_SCHEMA_KEY, ENVIRON_VAR_DELIM
 from ResearchOS.constants import SAVE_DATA_FOLDER_KEY, RAW_DATA_FOLDER_KEY
 from ResearchOS.helper_functions import parse_variable_name, get_package_setting
-from ResearchOS.custom_classes import Logsheet, OutputVariable
+from ResearchOS.custom_classes import Logsheet, OutputVariable, Runnable
 from ResearchOS.read_logsheet import get_logsheet_dict
 from ResearchOS.substitutions import substitute_levels_subsets
 from ResearchOS.visualize_dag import visualize_dag
 
-def get_package_order(dag: dict) -> list:
-    # Topologically sort the nodes    
-    sorted_nodes = list(nx.topological_sort(dag))
+def get_package_order(dag: dict) -> list:    
+    # Get all nodes in the DAG that are Runnable, and topologically sort them using the transitive closure.
+    trans_clo_dag = transitive_closure(dag)
+    remove_nodes = [node for node in dag.nodes(data=True) if not isinstance(node[1]['node'], Runnable)]
+    [trans_clo_dag.remove_node(node[0]) for node in remove_nodes]
+    nodes = [node for node in dag.nodes(data=True) if node[0] in trans_clo_dag.nodes]
+    subgraph = trans_clo_dag.subgraph([node[0] for node in nodes])
+    sorted_nodes = list(nx.topological_sort(subgraph))
     node_names = [dag.nodes[node]['node'].name for node in sorted_nodes]
 
     # Get the package for each node
-    info_tuple = [parse_variable_name(node_name) for node_name in node_names]
-    packages = [info[0] for info in info_tuple]
+    packages = []
+    for node in node_names:
+        # Remove everything after the first '.'
+        package_name = node.split('.')[0]
+        packages.append(package_name)
 
     # Make the list of packages unique, preserving the order
     unique_packages = []
@@ -107,7 +116,7 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     # Connect the packages into one cohesive DAG
     dag = bridge_packages(dag, all_packages_bridges)    
 
-    visualize_dag(dag)
+    visualize_dag(dag, 'topological')
 
     # Get the order of the packages
     packages_ordered = get_package_order(dag)
