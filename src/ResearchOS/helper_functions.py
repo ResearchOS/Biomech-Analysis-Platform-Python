@@ -17,6 +17,7 @@ def parse_variable_name(var_name: str) -> tuple:
         package_name, runnable_name, tmp, var_name = names
     else:
         raise ValueError('Invalid output_var format.')
+    var_name = var_name.split('[')[0]
     return package_name, runnable_name, var_name
 
 def is_specified(input: str) -> bool:

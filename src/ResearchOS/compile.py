@@ -110,7 +110,7 @@ def compile_packages_to_dag(project_folder: str, packages_parent_folders: list =
     for package_name, package_folder in zip(package_names, packages_folders):
         package_runnables_dict = runnables_dict[package_name]
         package_index_dict = index_dict[package_name]
-        all_packages_dags[package_name] = create_package_dag(package_runnables_dict, package_name=package_name)      
+        all_packages_dags[package_name] = create_package_dag(package_runnables_dict, package_folder=package_folder)      
         package_bridges = get_package_bridges(package_folder, package_index_dict[BRIDGES_KEY])
         all_packages_bridges[package_name] = standardize_package_bridges(package_bridges, package_folder)
 
@@ -136,7 +136,7 @@ def compile_packages_to_dag(project_folder: str, packages_parent_folders: list =
         dag.add_edge(logsheet_node.id, output_var.id)
 
     # Connect the packages into one cohesive DAG
-    dag = bridge_packages(dag, all_packages_bridges)  
+    dag = bridge_packages(dag, all_packages_bridges, packages_folders)  
 
     return dag, project_name, all_packages_bridges, index_dict  
 

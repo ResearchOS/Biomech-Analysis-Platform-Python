@@ -59,7 +59,12 @@ class Variable(Node):
 
     def __init__(self, id: str, name: str, attrs: str = {}):
         self.id = id
-        self.name = name
+        var_name = name.split('[')[0]
+        self.name = var_name
+        self.slices = []
+        if '[' in name:
+            indices = name.split('[')[1:]
+            self.slices = [index.replace(']', '') for index in indices] 
 
 class Dynamic(Variable):
     """Abstract class for variables that are dynamic in some way."""
