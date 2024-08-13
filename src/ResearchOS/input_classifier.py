@@ -1,4 +1,5 @@
 from typing import Any
+import os
 
 import tomli as tomllib
 import json
@@ -7,7 +8,7 @@ from ResearchOS.constants import LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_VAR_KEY, 
 from ResearchOS.custom_classes import InputVariable, Constant, DataObjectName, Unspecified, DataFilePath, LoadConstantFromFile, LogsheetVariable
 from ResearchOS.helper_functions import is_dynamic_variable, is_specified
 
-def classify_input_type(input: Any):
+def classify_input_type(input: Any, package_folder: str) -> tuple:
     """Takes in an input from a TOML file and returns the class of the input.
     Also returns the attributes as a dict, which may be empty if unneeded for that input type."""
     attrs = {}
@@ -32,7 +33,7 @@ def classify_input_type(input: Any):
             return Constant, attrs
         key = list(input.keys())[0]
         if key == LOAD_CONSTANT_FROM_FILE_KEY:
-            attrs['value'] = load_constant_from_file(input[key])
+            attrs['value'] = load_constant_from_file(input[key], package_folder)
             return LoadConstantFromFile, attrs
         if key == DATA_FILE_KEY:
             attrs = {'value': input[key]}
@@ -41,12 +42,13 @@ def classify_input_type(input: Any):
     attrs['value'] = input
     return Constant, attrs
 
-def load_constant_from_file(file_name: str) -> Any:
+def load_constant_from_file(file_name: str, package_folder: str) -> Any:
     """Load a constant from a file."""
-    if file_name.endswith('.toml'):
-        with open(file_name, 'rb') as f:
+    full_path = os.path.join(package_folder, file_name)
+    if full_path.endswith('.toml'):
+        with open(full_path, 'rb') as f:
             value = tomllib.load(f)
-    elif file_name.endswith('.json'):
-        with open(file_name, 'rb') as f:
+    elif full_path.endswith('.json'):
+        with open(full_path, 'rb') as f:
             value = json.load(f)
     return value

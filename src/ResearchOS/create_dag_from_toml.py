@@ -15,16 +15,17 @@ from ResearchOS.dag_info import check_variable_properly_specified
 
 RUNNABLE_NODE_CLASSES = {PROCESS_NAME: Process, PLOT_NAME: Plot, STATS_NAME: Stats, LOGSHEET_NAME: Logsheet}    
 
-def bridge_dynamic_variables(dag: nx.MultiDiGraph, package_name: str, bridge_name: str, source: str, target: str):
+def bridge_dynamic_variables(dag: nx.MultiDiGraph, package_folder: str, bridge_name: str, source: str, target: str):
     """Bridge from a source (output) variable in one package to a target (input) variable in another package.
     If the target variable is Unspecified, then the 'node' attribute is converted to an InputVariable type."""
+    package_name = os.path.split(package_folder)[-1].lower()
     try:
         source_node = [n['node'] for _, n in dag.nodes(data=True) if n['node'].name == source and type(n['node']) == OutputVariable][0]
     except Exception:
         source_package, source_runnable, source_variable = parse_variable_name(source)
         check_variable_properly_specified(dag, source_package, source_runnable, source_variable)                    
 
-    target_type, tmp = classify_input_type(target)  
+    target_type, tmp = classify_input_type(target, package_folder)  
     assert target_type == InputVariable, f"Target type is {target_type}."        
     target_package, target_runnable, target_variable = parse_variable_name(target)
     try:
@@ -39,9 +40,10 @@ def bridge_dynamic_variables(dag: nx.MultiDiGraph, package_name: str, bridge_nam
 
     return dag
 
-def bridge_packages(dag: nx.MultiDiGraph, all_packages_bridges: dict = None) -> nx.MultiDiGraph:
+def bridge_packages(dag: nx.MultiDiGraph, all_packages_bridges: dict = None, package_folders: list = []) -> nx.MultiDiGraph:
     """Read each package's bridges.toml file and connect the nodes in the DAG accordingly."""
     for package_name, package_bridges in all_packages_bridges.items():
+        package_folder = [folder for folder in package_folders if package_name in folder.lower()][0]
         for bridge_name, bridges_dict in package_bridges.items():
             sources = bridges_dict[SOURCES_KEY]
             targets = bridges_dict[TARGETS_KEY]
@@ -52,10 +54,13 @@ def bridge_packages(dag: nx.MultiDiGraph, all_packages_bridges: dict = None) -> 
                 sources = [sources[0]] * len(targets)
 
             for source, target in zip(sources, targets):
-                source_type, attrs = classify_input_type(source)
+                source_type, attrs = classify_input_type(source, package_folder)
                 # target_type, attrs = classify_input_type(target)
                 if source_type == InputVariable:
-                    dag = bridge_dynamic_variables(dag, package_name, bridge_name, source, target)
+                    # Remove indexing from the variable name
+                    source = source.split('[')[0]
+                    target = target.split('[')[0]
+                    dag = bridge_dynamic_variables(dag, package_folder, bridge_name, source, target)
                 elif isinstance(source, Constant):
                     dag.nodes[source.id]['node']['value'] = attrs['value']               
     return dag
@@ -260,11 +265,11 @@ def standardize_package_runnables_dict(package_runnables_dict: dict, package_fol
             standardized_runnables_dict[runnable_type_str][runnable_name] = standardized_runnable_dict
     return standardized_runnables_dict
 
-def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> nx.MultiDiGraph:
+def create_package_dag(package_runnables_dict: dict, package_folder: str) -> nx.MultiDiGraph:
     """Create a directed acyclic graph (DAG) of the package's runnables.
     runnable name format: `package_name.runnable_name`
     variable format: `package_name.runnable_name.variable_name`"""
-
+    package_name = os.path.split(package_folder)[-1].lower()
     package_dag = nx.MultiDiGraph()    
     # 1. Create a node for each runnable and input/output variable.
     # Also connect the inputs and outputs to each runnable. Still need to connect the variables between runnables after this.
@@ -285,7 +290,7 @@ def create_package_dag(package_runnables_dict: dict, package_name: str = "") -> 
             for input_var_name in runnable_dict['inputs']:
                 input_node_uuid = str(uuid.uuid4())
                 input_node_name = runnable_node_name + "." + input_var_name
-                input_class, input_attrs = classify_input_type(runnable_dict['inputs'][input_var_name])
+                input_class, input_attrs = classify_input_type(runnable_dict['inputs'][input_var_name], package_folder)
                 node = input_class(input_node_uuid, input_node_name, input_attrs)
                 # Connect the input variable to the runnable
                 package_dag.add_node(input_node_uuid, node = node)
