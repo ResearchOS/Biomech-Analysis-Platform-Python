@@ -41,6 +41,17 @@ def get_output_var_hash(dag: nx.MultiDiGraph, output_var_id: str = None) -> str:
     # Hash the DAG
     return ros_hash(ancestors_dag)
 
+def get_output_variable_hashes(dag: nx.MultiDiGraph, outputs: dict) -> list:
+    output_var_metadata = []
+    for output in runnable.outputs:
+        output_dict = {}   
+        output_dict["name"] = output         
+        output_dict["value"] = math.nan
+
+        output_edge_node_name = node + "." + output
+        output_dict["hash"] = get_output_var_hash(dag, output_edge_node_name)
+        output_var_metadata.append(output_dict)
+
 def get_input_variable_hashes_or_values(dag: nx.MultiDiGraph, inputs: dict) -> list:
     """Prep to load/save the input/output variables from the mat file.
     1. Get the hashes for each of the input variables.

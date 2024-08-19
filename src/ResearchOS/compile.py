@@ -3,19 +3,20 @@ import os
 import uuid
 
 import networkx as nx
+import toml
 
 from ResearchOS.create_dag_from_toml import create_package_dag, discover_packages, get_package_index_dict, get_runnables_in_package, get_package_bridges, bridge_packages, standardize_package_runnables_dict, standardize_package_bridges
 from ResearchOS.run import run
 from ResearchOS.furcate import get_nodes_to_furcate, polyfurcate
 from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME, DATASET_SCHEMA_KEY, BRIDGES_KEY, DATASET_FILE_SCHEMA_KEY, ENVIRON_VAR_DELIM
-from ResearchOS.constants import SAVE_DATA_FOLDER_KEY, RAW_DATA_FOLDER_KEY
+from ResearchOS.constants import SAVE_DATA_FOLDER_KEY, RAW_DATA_FOLDER_KEY, PROJECT_FOLDER_KEY, PROJECT_NAME_KEY
 from ResearchOS.helper_functions import get_package_setting
 from ResearchOS.custom_classes import Logsheet, OutputVariable
 from ResearchOS.read_logsheet import get_logsheet_dict
 from ResearchOS.substitutions import substitute_levels_subsets
-from ResearchOS.visualize_dag import visualize_compiled_dag, get_sorted_runnable_nodes
+from ResearchOS.visualize_dag import get_sorted_runnable_nodes
 
-def get_package_order(dag: dict) -> list:    
+def get_package_order(dag: nx.MultiDiGraph) -> list:    
     sorted_runnable_nodes = get_sorted_runnable_nodes(dag)
     node_names = [dag.nodes[node]['node'].name for node in sorted_runnable_nodes]
 
@@ -58,19 +59,12 @@ def compile(project_folder: str, packages_parent_folders: list = []) -> nx.Multi
     return dag
 
 def compile_packages_to_dag(project_folder: str, packages_parent_folders: list = []) -> tuple:
-    """Compile the DAG given the project folder. Does not perform polyfurcation."""
-    if not os.path.exists(project_folder):
-        raise FileNotFoundError(f"The project folder {project_folder} does not exist.") 
-    if not packages_parent_folders:
-        packages_parent_folders = [os.path.dirname(project_folder)]
-    if project_folder not in packages_parent_folders:
-        packages_parent_folders.append(project_folder)
-    packages_folders = discover_packages(packages_parent_folders)
-    packages_folders.append(project_folder) # The project folder is considered a package folder.
+    """Compile the DAG given the project folder. Does not perform polyfurcation."""    
+    packages_folders = discover_packages(project_folder, packages_parent_folders)    
 
-    project_name = os.path.split(project_folder)[-1].lower()
-    os.environ['project_folder'] = project_folder    
-    os.environ['project_name'] = project_name
+    project_name = get_project_name(project_folder)
+    os.environ[PROJECT_FOLDER_KEY] = project_folder    
+    os.environ[PROJECT_NAME_KEY] = project_name
 
     dag = nx.MultiDiGraph()
     all_packages_bridges = {}
@@ -139,6 +133,17 @@ def compile_packages_to_dag(project_folder: str, packages_parent_folders: list =
     dag = bridge_packages(dag, all_packages_bridges, packages_folders)  
 
     return dag, project_name, all_packages_bridges, index_dict  
+
+def get_project_name(project_folder: str) -> str:
+    """Get the project name from the pyproject.toml"""
+    pyproject_path = os.path.join(project_folder, "pyproject.toml")
+    if not os.path.exists(pyproject_path):
+        raise FileNotFoundError(f"Package's pyproject.toml not found at {pyproject_path}")
+    with open(pyproject_path, 'rb') as f:
+        pyproject = toml.loads(f)
+    project_name = pyproject["project"]["name"]
+    return project_name
+    # project_name = os.path.split(project_folder)[-1].lower()
 
 if __name__ == '__main__':
     project_folder = '/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Test_Project_Folder'
