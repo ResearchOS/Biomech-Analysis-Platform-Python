@@ -65,18 +65,28 @@ def bridge_packages(dag: nx.MultiDiGraph, all_packages_bridges: dict = None, pac
                     dag.nodes[source.id]['node']['value'] = attrs['value']               
     return dag
 
-def discover_packages(parent_folders: list = []) -> list:
+def discover_packages(project_folder: str = os.getcwd(), parent_folders: list = []) -> list:
     """Return a list of all packages in the specified folders.
     Packages are folders within the specified folders that start with `ros-`.
     `pyproject.toml` files are expected to be in the root of each package folder.
     Returned folders are relative or absolute, depending on the input."""
 
+    if not os.path.exists(project_folder):
+        raise FileNotFoundError(f"The project folder {project_folder} does not exist.") 
     if not isinstance(parent_folders, list):
         parent_folders = [parent_folders]
+    if not parent_folders:
+        parent_folders = [project_folder]
+    if project_folder not in parent_folders:
+        parent_folders.append(project_folder)    
     
     packages_folders = []
     for parent_folder in parent_folders:
-        packages_folders.extend([str(folder) for folder in Path(parent_folder).rglob('ros-*') if folder.is_dir()])
+        subfolders_starting_with_ros = [str(folder) for folder in Path(parent_folder).rglob('ros-*') if folder.is_dir()]
+        packages_folders.extend(subfolders_starting_with_ros)
+            
+    if project_folder not in packages_folders:
+        packages_folders.append(project_folder)
     return packages_folders
 
 def get_package_index_path(package_folder_path: str) -> str:
