@@ -1,118 +1,118 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://researchos.github.io/ResearchOS/</loc>
-         <lastmod>2024-03-28</lastmod>
+         <loc>https://researchos.github.io/ResearchOS/Developer/</loc>
+         <lastmod>2024-08-23</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://researchos.github.io/ResearchOS/DiGraph/digraph/</loc>
-         <lastmod>2024-03-28</lastmod>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Bridges/</loc>
+         <lastmod>2024-08-23</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://researchos.github.io/ResearchOS/Getting%20Started/first_project/</loc>
-         <lastmod>2024-03-28</lastmod>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Bridges/bridges_toml/</loc>
+         <lastmod>2024-08-23</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://researchos.github.io/ResearchOS/Getting%20Started/installation/</loc>
-         <lastmod>2024-03-28</lastmod>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Compilation/</loc>
+         <lastmod>2024-08-23</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://researchos.github.io/ResearchOS/Getting%20Started/usage_orig/</loc>
-         <lastmod>2024-03-28</lastmod>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Compilation/connectivity/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Compilation/running/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Runnables/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Runnables/plot/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Runnables/process/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Runnables/stats/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/output_variables/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/Input%20Variables/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/Input%20Variables/dynamic/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/Input%20Variables/hard_coded/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/Input%20Variables/unspecified/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Package_Setup/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Package_Setup/discovery/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Running/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Running/running_runnables/</loc>
+         <lastmod>2024-08-23</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Running/selecting_runnables/</loc>
+         <lastmod>2024-08-23</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Home/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Home/roadmap/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/research_object/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/variable/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Data%20Objects/data_object/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Data%20Objects/dataset/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Data%20Objects/defining_data_objects/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Pipeline%20Objects/analysis/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Pipeline%20Objects/logsheet/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Pipeline%20Objects/pipeline_object/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Pipeline%20Objects/plot/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Pipeline%20Objects/process/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Pipeline%20Objects/project/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Pipeline%20Objects/runnables/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Pipeline%20Objects/stats/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/Research%20Objects/Pipeline%20Objects/subset/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/SQL%20Database/</loc>
-         <lastmod>2024-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://researchos.github.io/ResearchOS/SQL%20Database/config/</loc>
-         <lastmod>2024-03-28</lastmod>
+         <lastmod>2024-08-23</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
