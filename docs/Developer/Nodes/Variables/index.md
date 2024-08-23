@@ -1,0 +1,1 @@
+Variable nodes represent the data that is passed between the Runnable nodes. Variables can be input or output variables, and are always connected to a Runnable node.

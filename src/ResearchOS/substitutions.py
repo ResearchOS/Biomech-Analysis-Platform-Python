@@ -10,7 +10,6 @@ def substitute_levels_subsets(packages_ordered: list, all_packages_bridges: list
     """Substitute the default levels and subsets in each package with the levels and subsets specified in the project settings.
     This should be done in topological order.
     """
-
     for package in packages_ordered:
         if package not in all_packages_bridges:
             continue # No bridges to other packages, which is ok!

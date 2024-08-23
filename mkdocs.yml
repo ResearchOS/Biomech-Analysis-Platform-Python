@@ -58,3 +58,21 @@ nav:
       - Overview: Developer/Running/index.md
       - Selecting Runnables: Developer/Running/selecting_runnables.md
       - Running a Runnable: Developer/Running/running_runnables.md
+    - Bridges:
+      - Overview: Developer/Bridges/index.md
+      - Bridges.toml: Developer/Bridges/bridges_toml.md
+    - Nodes:
+      - Overview: Developer/Nodes/index.md
+      - Runnables: 
+        - Overview: Developer/Nodes/Runnables/index.md
+        - Process: Developer/Nodes/Runnables/process.md
+        - Plot: Developer/Nodes/Runnables/plot.md
+        - Stats: Developer/Nodes/Runnables/stats.md
+      - Variables:
+        - Overview: Developer/Nodes/Variables/index.md
+        - Input Variables: 
+          - Overview: Developer/Nodes/Variables/Input Variables/index.md
+          - Unspecified: Developer/Nodes/Variables/Input Variables/unspecified.md
+          - Dynamic: Developer/Nodes/Variables/Input Variables/dynamic.md
+          - Hard-Coded: Developer/Nodes/Variables/Input Variables/hard_coded.md
+        - Output Variables: Developer/Nodes/Variables/output_variables.md

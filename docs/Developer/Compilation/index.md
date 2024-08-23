@@ -1,0 +1,3 @@
+Compilation is the process of reading each package's `pyproject.toml` file and constructing a Directed Acylic Graph (DAG) that represents the flow of data in the data processing pipeline.
+
+Compilation consist of two steps. Step one ([Connectivity](connectivity.md)) constructs the shape of the DAG, relying only on the inputs, outputs, and bridges of each package. Step two ([Running](running.md)) applies all of the metadata to the nodes of the DAG.

@@ -1,0 +1,1 @@
+A type of [Runnable](../Runnables/index.md)

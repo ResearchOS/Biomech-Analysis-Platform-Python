@@ -28,7 +28,7 @@ SUBSET_KEY = 'subsets'
 
 DATA_OBJECT_KEY = 'data_object'
 DATA_OBJECT_BATCH_KEY = 'data_object_batch'
-NODE_UUID_KEY = 'node_uuid'
+# NODE_UUID_KEY = 'node_uuid'
 
 ### In each package's runnables TOML files.
 # Special strings

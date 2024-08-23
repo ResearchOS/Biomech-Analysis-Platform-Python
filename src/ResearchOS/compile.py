@@ -70,12 +70,25 @@ def compile_packages_to_dag(project_folder: str, packages_parent_folders: list =
     all_packages_bridges = {}
 
     # Get the package settings & store them in the environment
-    logsheet_dict           = get_logsheet_dict(project_folder)
+    logsheet_dict = get_logsheet_dict(project_folder)    
+
+    # Create the logsheet Runnable node.
+    logsheet_node = Logsheet(id = str(uuid.uuid4()), name = project_name + "." + LOGSHEET_NAME, attrs = logsheet_dict)
+
+    # Add the logsheet node to the DAG
+    mapping = {}
+    dag.add_node(logsheet_node.id, node = logsheet_node)
+    for column in logsheet_dict['outputs']:
+        output_var = OutputVariable(id=str(uuid.uuid4()), name=package_name + "." + LOGSHEET_NAME + "." + column, attrs={})
+        mapping[column] = output_var.id
+        dag.add_node(output_var.id, node = output_var)
+        dag.add_edge(logsheet_node.id, output_var.id)
+    
     dataset_file_schema     = get_package_setting(project_folder, setting_name="dataset_file_schema", default_value=["Dataset"])
     dataset_schema          = get_package_setting(project_folder, setting_name="dataset_schema", default_value=["Dataset"])
     save_data_folder        = get_package_setting(project_folder, setting_name="mat_data_folder", default_value="saved_data")
     raw_data_folder         = get_package_setting(project_folder, setting_name="raw_data_folder", default_value="raw_data")  
-    
+
     os.environ[DATASET_SCHEMA_KEY] = ENVIRON_VAR_DELIM.join(dataset_schema)
     os.environ[DATASET_FILE_SCHEMA_KEY] = ENVIRON_VAR_DELIM.join(dataset_file_schema)
     os.environ[SAVE_DATA_FOLDER_KEY] = project_folder + os.sep + save_data_folder if not os.path.isabs(save_data_folder) else save_data_folder
@@ -114,21 +127,6 @@ def compile_packages_to_dag(project_folder: str, packages_parent_folders: list =
         dag.add_nodes_from(all_packages_dags[package_name].nodes(data=True))
         dag.add_edges_from(all_packages_dags[package_name].edges(data=True))    
 
-    # Create the logsheet Runnable node.
-    logsheet_attrs = {}
-    headers_in_toml = logsheet_dict['headers']
-    logsheet_attrs['outputs'] = [header for header in headers_in_toml]
-    logsheet_node = Logsheet(id = str(uuid.uuid4()), name = project_name + "." + LOGSHEET_NAME, attrs = logsheet_attrs)
-
-    # Add the logsheet node to the DAG
-    mapping = {}
-    dag.add_node(logsheet_node.id, node = logsheet_node)
-    for column in logsheet_dict['outputs']:
-        output_var = OutputVariable(id=str(uuid.uuid4()), name=package_name + "." + LOGSHEET_NAME + "." + column, attrs={})
-        mapping[column] = output_var.id
-        dag.add_node(output_var.id, node = output_var)
-        dag.add_edge(logsheet_node.id, output_var.id)
-
     # Connect the packages into one cohesive DAG
     dag = bridge_packages(dag, all_packages_bridges, packages_folders)  
 
@@ -143,7 +141,6 @@ def get_project_name(project_folder: str) -> str:
         pyproject = toml.loads(f)
     project_name = pyproject["project"]["name"]
     return project_name
-    # project_name = os.path.split(project_folder)[-1].lower()
 
 if __name__ == '__main__':
     project_folder = '/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Test_Project_Folder'

@@ -202,7 +202,7 @@ class RunnableType():
     """Specify the attributes needed for a Runnable to be properly added to the DAG during compilation.
     First is the minimum needed for compilation only "..._compilation". 
     Second is the minimum needed for running (after compilation) "..._running"."""
-    runnable_minimum_required_manual_attrs_compilation = []
+    runnable_minimum_required_manual_attrs_compilation = ['inputs']
     runnable_attrs_fillable_w_defaults_compilation = {}
 
     runnable_minimum_required_manual_attrs_running = ['path']
@@ -256,7 +256,7 @@ class RunnableType():
         return attrs
     
 class ProcessType():
-    minimum_required_manual_attrs_compilation = ['inputs','outputs'] # Don't include the attributes from the RunnableType() class
+    minimum_required_manual_attrs_compilation = ['outputs'] # Don't include the attributes from the RunnableType() class
     attrs_fillable_w_defaults_compilation = {'batch': None, 'level': None}
     
     @classmethod
@@ -298,7 +298,7 @@ class ProcessType():
         return attrs
 
 class PlotType():
-    minimum_required_manual_attrs_compilation = ['inputs'] # Don't include the attributes from the RunnableType() class
+    minimum_required_manual_attrs_compilation = [] # Don't include the attributes from the RunnableType() class
     attrs_fillable_w_defaults_compilation = {'batch': None, 'level': None}
 
     @classmethod
@@ -331,7 +331,7 @@ class PlotType():
         return attrs
 
 class StatsType():
-    minimum_required_manual_attrs_compilation = ['inputs'] # Don't include the attributes from the RunnableType() class
+    minimum_required_manual_attrs_compilation = [] # Don't include the attributes from the RunnableType() class
     attrs_fillable_w_defaults_compilation = {'batch': None, 'level': None}
 
     @classmethod
