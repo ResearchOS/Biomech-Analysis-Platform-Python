@@ -1,1 +1,3 @@
 Variable nodes represent the data that is passed between the Runnable nodes. Variables can be input or output variables, and are always connected to a Runnable node.
+
+Behind the scenes, for each data object being operated on, and for each Runnable, the input variables of type Constant need to be resolved before they can be used. For example, if an input variable is of type `LoadConstantFromFile`, then the file should be loaded and the value placed into `self.value` before the Runnable can be executed.

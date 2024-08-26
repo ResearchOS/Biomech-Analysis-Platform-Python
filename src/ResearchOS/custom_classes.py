@@ -1,7 +1,9 @@
-from abc import abstractmethod, ABC
+import os
+import json
 
-from ResearchOS.constants import PROCESS_NAME, PLOT_NAME, STATS_NAME, UNSPECIFIED_VARIABLE_NAME, CONSTANT_VARIABLE_NAME, INPUT_VARIABLE_NAME, OUTPUT_VARIABLE_NAME, LOGSHEET_NAME
-from ResearchOS.constants import DATASET_KEY, DATA_OBJECT_NAME_KEY
+import tomli as tomllib
+
+from ResearchOS.constants import RAW_DATA_FOLDER_KEY, ENVIRON_VAR_DELIM, DATASET_SCHEMA_KEY
 
 class Node():
 
@@ -27,13 +29,7 @@ class Runnable(Node):
 class Logsheet(Runnable):    
 
     def __init__(self, id: str, name: str, attrs: str):
-        # attrs['path'] = None
-        # attrs['level'] = DATASET_KEY        
-        # attrs['subset'] = None
-        # attrs['inputs'] = None
         super().__init__(id, name, attrs)
-        # if 'outputs' not in attrs:
-        #     raise ValueError(f'Logsheet {name} does not have outputs.')
 
         # Guaranteed to exist because of the earlier validation.
         self.outputs = attrs['outputs']   
@@ -87,7 +83,7 @@ class LogsheetVariable(OutputVariable):
     """A variable that is outputted by a logsheet."""    
     pass 
 
-class Constant(Variable):
+class Constant(InputVariable):
     """Directly hard-coded into the TOML file."""    
 
     def __init__(self, id: str, name: str, attrs: str):
@@ -96,15 +92,47 @@ class Constant(Variable):
             if 'value' not in attrs:
                 raise ValueError(f'Constant {name} does not have a value.')
             self.value = attrs['value']
+        elif 'value' not in attrs:
+            self.value = None
+
+    def resolve(self, data_object: list):
+        """Constants that are hard-coded into the TOML file do not need to be resolved."""
+        pass
 
 class DataFilePath(Constant):
     """Data file path as an input variable to a runnable."""
-    pass   
+
+    def resolve(self, data_object: list):
+        """Get the data file path for the current data object."""
+        ext = '.mat'
+        save_data_folder = os.environ[RAW_DATA_FOLDER_KEY]
+        relative_path = os.sep.join(data_object)
+        self.value = os.path.join(save_data_folder, relative_path + ext)
 
 class LoadConstantFromFile(Constant):
     """Constant that needs to be loaded from a file."""    
-    pass   
 
-class DataObjectName(Variable):
+    def resolve(self, data_object: list):
+        """Load the constant from the file."""
+        file_name = self.value
+        if not os.path.isabs(file_name):
+            file_name = os.path.join(os.getcwd(), file_name)
+        if file_name.endswith('.toml'):
+            with open(file_name, 'rb') as f:
+                self.value = tomllib.load(f)
+        elif file_name.endswith('.json'):
+            with open(file_name, 'rb') as f:
+                self.value = json.load(f)
+        else:
+            raise ValueError(f'File type not supported: {file_name}.')
+
+class DataObjectName(Constant):
     """The name of a data object.""" 
-    pass   
+
+    def resolve(self, data_object: list):
+        """Return the specific data object name for the level provided."""
+        # 1. Get the index of the data object name needed (e.g. "Trial" would return index 1 in the data object list ["Subject", "Trial"])
+        dataset_schema = os.environ[DATASET_SCHEMA_KEY].split(ENVIRON_VAR_DELIM)
+        index = dataset_schema.index(self.value)
+        # 2. Extract the data object name from that index of the list
+        self.value = data_object[index]  
