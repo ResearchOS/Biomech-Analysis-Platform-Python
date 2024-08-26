@@ -58,6 +58,7 @@ nav:
       - Overview: Developer/Running/index.md
       - Selecting Runnables: Developer/Running/selecting_runnables.md
       - Running a Runnable: Developer/Running/running_runnables.md
+      - Uniqely Identifying Nodes: Developer/Running/unique_identifiers.md
     - Bridges:
       - Overview: Developer/Bridges/index.md
       - Bridges.toml: Developer/Bridges/bridges_toml.md

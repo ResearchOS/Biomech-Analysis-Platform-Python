@@ -17,26 +17,4 @@ inputs.input1 = "example_process_name1.output1"
 inputs.input2 = "example_process_name2.output1"
 outputs = ["output1"]
 ```
-If there is no runnable and output variable by that name, then the string is treated as a hard-coded value.
-
-## Data Object Name
-
-## Data Object File Path
-
-# Hard-Coded Variables
-## Value
-If an input variable is a hard-coded value, a default value can be specified. For example:
-```toml
-[example_process_name]
-inputs.input1 = "hardcoded_value"
-outputs = ["output1"]
-```
-Note that frequently the user will want to change hard-coded values for "what if" analyses. This can be done by specifying the value in the `bridges.toml` file, which overwrites the value here.
-
-## Load from File
-If a hardcoded variable is complex, or there are many versions of this hard-coded variable, it may be useful to load the variable from a file. JSON and TOML are supported. This can be done by specifying the input variable as a dictionary with the key `__load_file__` and the value as the file path relative to the project's root directory. For example:
-```toml
-[example_process_name]
-inputs.input1 = {__load_file__ = "constants/input1.json"}
-outputs = ["output1"]
-```
+If there is no runnable and output variable by that name (or if the value is not a string), then the variable value is treated as a [hard-coded](hard_coded.md) value.

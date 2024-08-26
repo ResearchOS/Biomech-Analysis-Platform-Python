@@ -4,7 +4,7 @@ import json
 import networkx as nx
 
 from ResearchOS.matlab_eng import import_matlab, check_if_matlab
-from ResearchOS.constants import MATLAB_ENG_KEY, DATA_OBJECT_KEY, DATA_OBJECT_BATCH_KEY, SAVE_DATA_FOLDER_KEY
+from ResearchOS.constants import MATLAB_ENG_KEY, DATA_OBJECT_KEY, DATA_OBJECT_BATCH_KEY, SAVE_DATA_FOLDER_KEY, DATASET_SCHEMA_KEY, ENVIRON_VAR_DELIM
 from ResearchOS.data_objects import get_data_objects_in_subset
 from ResearchOS.hash_dag import get_input_variable_hashes_or_values, get_output_variable_hashes
 from ResearchOS.helper_functions import is_specified
@@ -56,7 +56,7 @@ def run(dag: nx.MultiDiGraph):
         if not result:
             raise ValueError("Result is not 0")
         
-def get_node_settings(runnable: Runnable = None):
+def get_node_settings(runnable: Runnable = None, data_object: list = []):
     # 1. Get the subset of Data Objects to operate on
     subset_name = runnable.subset    
     batch_list = runnable.batch
@@ -65,13 +65,28 @@ def get_node_settings(runnable: Runnable = None):
     # The values are a nested dict of data objects within each subset data object.
     # For example, if factor="Condition", then all of the Trials in that condition would be included as sub-dicts (with values = []).
     subset_data_object_batches = get_batches_dict(subset_of_data_objects, batch_list) 
+    if data_object:
+        # Get the batch of the current data object only, if provided.
+        schema = os.environ[DATASET_SCHEMA_KEY].split(ENVIRON_VAR_DELIM)
+        data_object_index = schema.index(data_object)
+        current_data_object = data_object[data_object_index]
+        subset_data_object_batches = {current_data_object: subset_data_object_batches[current_data_object]}
     node_settings = {}
     node_settings["language"] = runnable.language
     node_settings["subset_name"] = runnable.subset
     node_settings["subset"] = subset_of_data_objects
     node_settings["batch_name"] = runnable.batch
     node_settings["batches"] = subset_data_object_batches
+    node_settings["factor"] = runnable.factor
     return node_settings
+
+def get_node_settings_for_hash(node_settings: dict):
+    """Get the settings needed for hashing a node."""
+    node_settings_for_hash = {}
+    node_settings_for_hash["batch_name"] = node_settings["batch_name"]
+    node_settings_for_hash["factor"] = node_settings["factor"]
+    node_settings_for_hash["language"] = node_settings["language"]
+    return node_settings_for_hash
 
 def run_batch(node_settings: dict, matlab: dict = None, parallel: bool = False):
     """Run an individual Runnable node."""
