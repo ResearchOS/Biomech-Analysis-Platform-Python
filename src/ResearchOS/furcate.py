@@ -33,7 +33,7 @@ def polyfurcate(dag: nx.MultiDiGraph, nodes_to_furcate: list):
 
         # Create a new DAG for each source
         for predecessor in predecessors:
-            new_dag, node_mapping = copy_dag(descendant_graph)
+            new_dag, node_mapping = copy_dag_new_uuid(descendant_graph)
 
             # Add the new DAG to the overall DAG
             dag.add_nodes_from(new_dag.nodes(data=True))
@@ -59,7 +59,7 @@ def polyfurcate(dag: nx.MultiDiGraph, nodes_to_furcate: list):
     return dag
 
         
-def copy_dag(original_dag: nx.MultiDiGraph) -> nx.MultiDiGraph:
+def copy_dag_new_uuid(original_dag: nx.MultiDiGraph) -> nx.MultiDiGraph:
     """Copy the DAG with new node UUID's, preserving (deep copying) the node data."""
     original_edges = original_dag.edges
     

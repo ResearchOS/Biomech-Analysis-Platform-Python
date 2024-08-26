@@ -1,6 +1,7 @@
 import os
 import uuid
 from pathlib import Path
+from typing import Iterable
 
 import networkx as nx
 import tomli as tomllib # For reading
@@ -62,6 +63,11 @@ def bridge_packages(dag: nx.MultiDiGraph, all_packages_bridges: dict = None, pac
                     target = target.split('[')[0]
                     dag = bridge_dynamic_variables(dag, package_folder, bridge_name, source, target)
                 elif isinstance(source, Constant):
+                    # TODO: If it's a list, then ensure that there is one Constant node for each element of the list, signalling that there should be branching.
+                    # if not isinstance(attrs["value"], Iterable):
+                    #     attrs["value"] = [attrs["value"]]
+                    for value in attrs["value"]:
+                        pass
                     dag.nodes[source.id]['node']['value'] = attrs['value']               
     return dag
 
