@@ -4,8 +4,12 @@ import json
 import tomli as tomllib
 
 from ResearchOS.constants import RAW_DATA_FOLDER_KEY, ENVIRON_VAR_DELIM, DATASET_SCHEMA_KEY
+from ResearchOS.run import get_node_settings_for_hash, get_node_settings
 
 class Node():
+
+    def __init__(self, id: str, name: str, attrs: dict):
+        self.serialized = ""
 
     def __str__(self):
         return f'{self.name}'
@@ -22,9 +26,16 @@ class Node():
 class Runnable(Node):
 
     def __init__(self, id: str, name: str, attrs: dict):
+        super().__init__(id, name, attrs)
         self.id = id
         self.name = name
-        self.attrs = attrs
+        self.attrs = attrs  
+
+    def serialize_node(self):
+        """Get the hash value of the constant."""
+        node_settings = get_node_settings(self)
+        node_settings_for_hash = get_node_settings_for_hash(node_settings)
+        self.serialized = json.dumps(node_settings_for_hash)
 
 class Logsheet(Runnable):    
 
@@ -54,13 +65,19 @@ class Stats(Runnable):
 class Variable(Node):
 
     def __init__(self, id: str, name: str, attrs: str = {}):
+        super().__init__(id, name, attrs)
         self.id = id
         var_name = name.split('[')[0]
         self.name = var_name
         self.slices = []
+        self.value = None
         if '[' in name:
             indices = name.split('[')[1:]
             self.slices = [index.replace(']', '') for index in indices] 
+
+    def serialize_node(self):
+        """Get the hash value of the constant."""        
+        self.serialized = json.dumps(self.value) if self.value is not None else ""
 
 class Dynamic(Variable):
     """Abstract class for variables that are dynamic in some way."""
@@ -68,7 +85,15 @@ class Dynamic(Variable):
 
 class InputVariable(Dynamic):
     """A fully defined input variable in the TOML file. This is a variable that receives a value from another runnable within the same package."""
-    pass
+    
+    def serialize_node(self):
+        """Get the hash value of the constant."""
+        # TODO: Handle slices, that has to be included.
+        if not self.slices:
+            super().serialize_node()
+        else:
+            slices_str = ''.join(self.slices)
+            self.serialized = json.dumps(self.value + slices_str) if self.value is not None else ""
 
 class Unspecified(InputVariable):
     """Represents a variable that needs to be bridged to an output variable in another package.
@@ -97,7 +122,7 @@ class Constant(InputVariable):
 
     def resolve(self, data_object: list):
         """Constants that are hard-coded into the TOML file do not need to be resolved."""
-        pass
+        pass    
 
 class DataFilePath(Constant):
     """Data file path as an input variable to a runnable."""
@@ -108,6 +133,7 @@ class DataFilePath(Constant):
         save_data_folder = os.environ[RAW_DATA_FOLDER_KEY]
         relative_path = os.sep.join(data_object)
         self.value = os.path.join(save_data_folder, relative_path + ext)
+        self.str_hash_value = self.value
 
 class LoadConstantFromFile(Constant):
     """Constant that needs to be loaded from a file."""    
@@ -125,6 +151,7 @@ class LoadConstantFromFile(Constant):
                 self.value = json.load(f)
         else:
             raise ValueError(f'File type not supported: {file_name}.')
+        self.str_hash_value = json.dumps(self.value)
 
 class DataObjectName(Constant):
     """The name of a data object.""" 
@@ -136,3 +163,4 @@ class DataObjectName(Constant):
         index = dataset_schema.index(self.value)
         # 2. Extract the data object name from that index of the list
         self.value = data_object[index]  
+        self.str_hash_value = self.value
