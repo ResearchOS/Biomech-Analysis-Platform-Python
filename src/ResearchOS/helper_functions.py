@@ -57,12 +57,16 @@ def is_special_dict(var_dict: dict) -> bool:
         return True
     return False
 
-def get_package_setting(project_folder: str, setting_name: str, default_value: Any) -> dict:
+def get_package_setting(project_folder: str, setting_name: str, default_value: Any, package_settings_path: str = []) -> dict:
+    """Get the settings from a TOML file in this package."""
     from ResearchOS.compile import get_package_index_dict
-    index_dict = get_package_index_dict(project_folder)
-    if PACKAGE_SETTINGS_KEY not in index_dict:
-        return default_value     
-    package_settings_path = index_dict[PACKAGE_SETTINGS_KEY]
+    if not package_settings_path:
+        index_dict = get_package_index_dict(project_folder)
+        if PACKAGE_SETTINGS_KEY not in index_dict:
+            return default_value     
+        package_settings_path = index_dict[PACKAGE_SETTINGS_KEY]
+    elif not isinstance(package_settings_path, list):
+        package_settings_path = [package_settings_path]
     if not package_settings_path:
         return default_value      
     if len(package_settings_path) > 1:

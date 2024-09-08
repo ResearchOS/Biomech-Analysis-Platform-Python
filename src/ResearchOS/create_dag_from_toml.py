@@ -136,16 +136,20 @@ def get_package_index_dict(package_folder_path: str) -> dict:
         index_dict[key] = []
     
     # Replace forward slashes with the OS separator
+    folder_keys = ["save_path"]
     for key in index_dict:
         # Check if valid file names.
         paths = index_dict[key]
         if not isinstance(index_dict[key], list):
             paths = [index_dict[key]]        
         nonexistent_paths = [os.path.join(package_folder_path, path) for path in paths if not os.path.exists(os.path.join(package_folder_path, path))]
+        [os.mkdir(path) for path in nonexistent_paths if not os.path.exists(path) and os.path.splitext(path)[1] == ""] # Create directories if they don't exist.
+        # Remove the created directories from the list of nonexistent paths.
+        nonexistent_paths = [path for path in nonexistent_paths if not os.path.exists(path)]        
         if len(nonexistent_paths) > 0:
             raise FileNotFoundError(f"File(s) not found in {index_path}: {nonexistent_paths}")        
-        if not all([path.endswith('.toml') for path in paths]):
-            raise FileNotFoundError(f"Files listed in index.toml must all be .toml")
+        if not all([path.endswith('.toml') for path in paths]) and key not in folder_keys:
+            raise FileNotFoundError(f"Value(s) for key {key} in index.toml must all be .toml")
         
         if not isinstance(index_dict[key], list):
             index_dict[key] = [index_dict[key].replace('/', os.sep)]
@@ -153,8 +157,8 @@ def get_package_index_dict(package_folder_path: str) -> dict:
             index_dict[key] = [path.replace('/', os.sep) for path in index_dict[key]]
 
         is_abs_paths = [os.path.isabs(path) for path in index_dict[key]]
-        if any(is_abs_paths):
-            raise ValueError(f"Paths in {index_path} must be relative to the package folder located at: {package_folder_path}.")
+        if any(is_abs_paths) and key not in folder_keys:
+            raise ValueError(f"Paths in {index_path} should be relative to the package folder located at: {package_folder_path}.")
         
     return index_dict
 

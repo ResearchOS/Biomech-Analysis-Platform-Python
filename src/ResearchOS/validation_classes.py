@@ -94,30 +94,29 @@ def validate_num_header_rows(num_header_rows: int):
         return False, "num_header_rows is negative."
     return True, None
 
-def validate_class_column_names(class_column_names: dict):
-    if not isinstance(class_column_names, dict):
-        return False, "class_column_names is not a dictionary."
-    if len(class_column_names)==0:
-        return False, "class_column_names dictionary is empty."
-    for key, value in class_column_names.items():
-        if not isinstance(key, str):
-            return False, "class_column_names key is not a string."
-        if len(key) == 0:
-            return False, "class_column_names key is empty."
-        if not isinstance(value, str):
-            return False, "class_column_names value is not a string."
+def validate_dataset_factors(dataset_factors: list):
+    if not isinstance(dataset_factors, list):
+        return False, "dataset_factors is not a list."
+    if len(dataset_factors)==0:
+        return False, "dataset_factors list is empty."
+    for factor in dataset_factors:
+        if not isinstance(factor, str):
+            return False, "dataset_factor is not a string."
+        if len(factor) == 0:
+            return False, "dataset_factor is empty."
     return True, None
 
 def validate_headers(headers: dict):
-    for key, value in headers.items():
-        if not isinstance(value, list):
-            return False, "Each header value should be a list."
-        if len(value) != 2:
-            return False, "Each header value should have two elements."
-        if value[1] not in ['str','num','bool']:
+    for value in headers.values():
+        if not isinstance(value, dict):
+            return False, "Each header value should be a dictlist."
+        if set(value.keys()) != set(["column_name", "type", "level"]):
+            return False, "Each header value should have keys 'column_name' and 'type'."
+        if value["type"] not in ['str','num','bool']:
             return False, "Each header value should specify if it is a string, number, or boolean."
-        if not isinstance(value[0], str):
+        if not isinstance(value["column_name"], str):
             return False, "Each header value should be a string."
+        # TODO: Validate the "level" key.
     return True, None
 
 def standardize_inputs(inputs: dict):
@@ -181,18 +180,18 @@ def standardize_language(language: str):
 def standardize_num_header_rows(num_header_rows: int):
     return int(num_header_rows)
 
-def standardize_class_column_names(class_column_names: dict):
-    new_class_column_names = {}
-    for key, value in class_column_names.items():
-        key = key[0].upper() + key[1:].lower() if len(key) > 1 else key.upper()
-        new_class_column_names[key] = value
-    return new_class_column_names
+def standardize_dataset_factors(dataset_factors: list):
+    new_dataset_factors = []
+    for factor in dataset_factors:
+        factor = factor[0].upper() + factor[1:].lower() if len(factor) > 1 else factor.upper()
+        new_dataset_factors.append(factor)
+    return new_dataset_factors
 
 def standardize_headers(headers: dict):
     new_headers = {}
     for key, value in headers.items():
-        value[0] = value[0][0].upper() + value[0][1:].lower() if len(value[0]) > 1 else value[0].upper()
-        value[1] = value[1].lower()
+        value["column_name"] = value["column_name"][0].upper() + value["column_name"][1:].lower() if len(value["column_name"]) > 1 else value["column_name"].upper()
+        value["type"] = value["type"].lower()
         key = key.strip() # Remove leading and trailing whitespace.
         new_headers[key] = value
     return new_headers
@@ -378,7 +377,7 @@ class LogsheetType():
         is_valid_output, err_msg_output = validate_outputs(attrs['outputs'])
         is_valid_headers, err_msg_headers = validate_headers(attrs['headers'])
         is_valid_num_header_rows, err_msg_num_header_rows = validate_num_header_rows(attrs['num_header_rows'])
-        is_valid_class_column_names, err_msg_class_column_names = validate_class_column_names(attrs['class_column_names'])
+        is_valid_class_column_names, err_msg_class_column_names = validate_dataset_factors(attrs['dataset_factors'])
         is_valid = is_valid and is_valid_output and is_valid_headers and is_valid_num_header_rows and is_valid_class_column_names
         err_msg = '; '.join([msg for msg in err_msg + [err_msg_output, err_msg_headers, err_msg_num_header_rows, err_msg_class_column_names] if msg is not None])
         if not err_msg:
@@ -393,6 +392,6 @@ class LogsheetType():
         
         attrs['outputs'] = standardize_outputs(attrs['outputs'])
         attrs['headers'] = standardize_headers(attrs['headers'])
-        attrs['class_column_names'] = standardize_class_column_names(attrs['class_column_names'])
+        attrs['dataset_factors'] = standardize_dataset_factors(attrs['dataset_factors'])
         attrs['num_header_rows'] = standardize_num_header_rows(attrs['num_header_rows'])
         return attrs
