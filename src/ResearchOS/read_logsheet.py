@@ -199,9 +199,6 @@ def read_logsheet(project_folder: str = None, logsheet_toml_path: str = None) ->
     for dobj, attrs in all_attrs.items():
         count += 1
         dobj_to_save = {}
-        # TESTING
-        # if count >= 10:
-        #     break
         for attr in attrs:
             node_id = mapping[attr]
             hash = hashes[node_id]
@@ -215,9 +212,8 @@ def read_logsheet(project_folder: str = None, logsheet_toml_path: str = None) ->
         print(f"Saving Data Object {count} of {num_dobjs}: ", dobj)
         save_fcn(mat_data_folder, dobj, dobj_to_save, nargout=0)
 
-    # Save the logsheet output to "logsheet_output.mat" file in the project's "src/" folder.
-    # schema: [data_object_type1, data_object_type2, ...]
-    # data_objects: [data_object1, data_object2, ...]
+    # Save the logsheet output
+    # TODO: Save the logsheet output to a Parquet file.
     logsheet_wrapper_m_file_name = "save_logsheet_output"
     logsheet_save = getattr(matlab_eng, logsheet_wrapper_m_file_name)
     logsheet_save(mat_data_folder, schema, dobj_names, nargout=0)
