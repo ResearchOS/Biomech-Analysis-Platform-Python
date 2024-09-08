@@ -1,94 +1,43 @@
 import os
 import math
 import json
+from hashlib import sha256
 from typing import Any
 
-import tomli as tomllib
 import networkx as nx
 
-from ResearchOS.constants import LOAD_CONSTANT_FROM_FILE_KEY
-from ResearchOS.helper_functions import is_specified, is_dynamic_variable
+from ResearchOS.custom_classes import Node, Runnable, Variable
 
-def graph_to_tuple(graph):
-    # Extract node data. Order of the edge tuples matters.
-    node_mapping = {node_uuid: node_data['node'].name for node_uuid, node_data in graph.nodes(data=True)}
-    edges_tuple = tuple([(node_mapping[edge[0]], node_mapping[edge[1]]) for edge in sorted(graph.edges, key=lambda x: (x[0].lower(), x[1].lower()))])
-    print('Edges tuple: ', edges_tuple)
-    return edges_tuple
+def get_attrs_to_hash(node: Node) -> tuple:
+    if isinstance(node, Runnable):
+        attrs_to_hash_no_data_object = ['function', 'level', 'batch', 'subset']
+        attrs_to_hash_data_object = ['function', 'level', 'batch']
+    elif isinstance(node, Variable):
+        attrs_to_hash_no_data_object = ['unresolved_value','slices']
+        attrs_to_hash_data_object = ['resolved_value','slices']
+    return attrs_to_hash_no_data_object, attrs_to_hash_data_object
 
-def ros_hash(obj: Any) -> str:
-    """Hash the input string."""
-    from hashlib import sha224
-    hash_fcn = sha224
-    if isinstance(obj, nx.MultiDiGraph):
-        obj = graph_to_tuple(obj)
-    return 'ros_' + hash_fcn(str(obj).encode()).hexdigest()
-
-def get_output_var_hash(dag: nx.MultiDiGraph, output_var_id: str = None) -> str:
-    """Hash the DAG up to the node outputting the output_var, including the var itself.
-    output_var is of the form "package_name.runnable_name.var_name" OR "package_name.runnable_name.outputs.var_name"."""
-    if not output_var_id:
-        raise ValueError('No output_var specified.')
-
+def hash_node(dag: nx.MultiDiGraph, node: str, iterations: int = 10, data_object: str = None) -> str:
+    """Hash a node, given a DAG that has either:
+    1. Been resolved for a particular data object (in which case data_object input is provided)
+    2. Not been resolved for a particular data object (in which case data_object input is None)"""
     # Get the ancestors of the node
-    ancestors = list(nx.ancestors(dag, output_var_id))
-    ancestors.append(output_var_id)
-    ancestors_dag = dag.subgraph(ancestors)
+    ancestors = list(nx.ancestors(dag, node))
+    ancestors.append(node)
+    ancestors_graph = dag.subgraph(ancestors)
+    # Update and move the attribute for hashing to the DAG    
+    for node_uuid in ancestors_graph.nodes:
+        node = ancestors_graph.nodes[node_uuid]['node']
+        attrs_to_hash_no_data_object, attrs_to_hash_data_object = get_attrs_to_hash(node)
+        node.set_attr_for_hashing(attrs_to_hash_no_data_object, attrs_to_hash_data_object, node.attrs, data_object)                
+        ancestors_graph.nodes[node_uuid]['attr_for_hashing'] = node.attr_for_hashing
+    node_hashes = nx.weisfeiler_lehman_subgraph_hashes(ancestors_graph, node_attr="attr_for_hashing", iterations=iterations)
+    # Remove the attribute
+    for node in ancestors_graph.nodes:
+        del ancestors_graph.nodes[node]['attr_for_hashing']
 
-    if len(ancestors_dag.edges) == 0:
-        raise ValueError('No ancestors found for the output_var.')
+    # Sorting the hashes to ensure consistent ordering across runs
+    combined_string = ''.join(sorted([str(node_hash) for node_hash in node_hashes.values()]))
 
-    # Hash the DAG
-    return ros_hash(ancestors_dag)
-
-def get_output_variable_hashes(dag: nx.MultiDiGraph, outputs: dict) -> list:
-    output_var_metadata = []
-    for output in runnable.outputs:
-        output_dict = {}   
-        output_dict["name"] = output         
-        output_dict["value"] = math.nan
-
-        output_edge_node_name = node + "." + output
-        output_dict["hash"] = get_output_var_hash(dag, output_edge_node_name)
-        output_var_metadata.append(output_dict)
-
-def get_input_variable_hashes_or_values(dag: nx.MultiDiGraph, inputs: dict) -> list:
-    """Prep to load/save the input/output variables from the mat file.
-    1. Get the hashes for each of the input variables.
-    If the variable is a constant, then use that value.
-    Returns a list of dicts with keys `name` and `hash`."""
-    input_vars_info = []
-    for var_name_in_code, source in inputs.items():
-        input_dict = {}
-        input_dict["name"] = var_name_in_code
-        input_dict["hash"] = math.nan
-        input_dict["value"] = math.nan
-        if not is_specified(source):
-            return
-            # raise ValueError(f"Input variable {var_name_in_code} is not specified.")
-        
-        # Check if it's a dynamic variable
-        if is_dynamic_variable(source):
-            hash = get_output_var_hash(dag, source)            
-            input_dict["hash"] = hash
-            input_vars_info.append(input_dict)
-        else:
-            # Check if constant is a dict with one of the special keys
-            if isinstance(source, dict):
-                # Load the constant from a JSON or TOML file.
-                if LOAD_CONSTANT_FROM_FILE_KEY in source:
-                    file_name = source[LOAD_CONSTANT_FROM_FILE_KEY]
-                    # Check if file is .toml or .json
-                    if file_name.endswith('.toml'):
-                        with open(file_name, 'rb') as f:
-                            input_dict["value"] = tomllib.load(f)
-                    elif file_name.endswith('.json'):
-                        with open(file_name, 'rb') as f:
-                            input_dict["value"] = json.load(f)
-                # Get the data object name
-                elif DATA_OBJECT_NAME_KEY in source:
-                    continue            
-            else:
-                input_dict["value"] = source
-            input_vars_info.append(input_dict)
-    return input_vars_info
+    # Hash the combined string using SHA-256 (or any preferred hash function)
+    return sha256(combined_string.encode('utf-8')).hexdigest()

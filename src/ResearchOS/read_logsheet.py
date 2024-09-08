@@ -12,10 +12,10 @@ import networkx as nx
 
 from ResearchOS.constants import DATASET_SCHEMA_KEY, DATASET_KEY, LOGSHEET_NAME, SAVE_DATA_FOLDER_KEY, DATASET_FILE_SCHEMA_KEY, PACKAGE_SETTINGS_KEY
 from ResearchOS.custom_classes import Logsheet, OutputVariable
-from ResearchOS.hash_dag import get_output_var_hash
 from ResearchOS.matlab_eng import import_matlab
 from ResearchOS.validation_classes import RunnableFactory
 from ResearchOS.helper_functions import get_package_setting
+from ResearchOS.hash_dag import hash_node
 
 def _read_and_clean_logsheet(logsheet_path: str, nrows: int = None) -> list:
         """Read the logsheet (CSV only) and clean it.
@@ -172,14 +172,14 @@ def read_logsheet(project_folder: str = None) -> None:
     hashes = {}
     for column in mapping:
         node_id = mapping[column]
-        hashes[node_id] = get_output_var_hash(logsheet_graph, node_id)
+        hashes[node_id] = hash_node(logsheet_graph, node_id)
 
     # Write the values to the DataObjects.
     matlab_eng = matlab['matlab_eng']
     ros_m_files_folder = "/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Python/src/ResearchOS/overhaul"
     save_fcn_name = "safe_save"
     matlab_eng.addpath(ros_m_files_folder)
-    mat_data_folder = os.environ[MAT_DATA_FOLDER_KEY.upper()]
+    mat_data_folder = os.environ[SAVE_DATA_FOLDER_KEY.upper()]
     if mat_data_folder == ".":
         mat_data_folder = project_folder
     save_fcn = getattr(matlab_eng, save_fcn_name)

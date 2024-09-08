@@ -7,7 +7,7 @@ import pytest
 import tomli
 
 from ResearchOS.compile import standardize_package_bridges
-from ResearchOS.constants import PROJECT_NAME
+from ResearchOS.constants import PROJECT_NAME_KEY
 from fixtures.constants import TMP_PACKAGES_PATH
 
 def test_standardize_package_bridges(tmp_path: Path = TMP_PACKAGES_PATH):
@@ -16,9 +16,9 @@ def test_standardize_package_bridges(tmp_path: Path = TMP_PACKAGES_PATH):
         shutil.rmtree(tmp_path)
 
     shutil.copytree("tests/fixtures/packages", tmp_path)
-    os.environ[PROJECT_NAME] = "package2"
+    os.environ[PROJECT_NAME_KEY] = "package2"
     
-    project_path = os.path.join(tmp_path, os.environ[PROJECT_NAME])
+    project_path = os.path.join(tmp_path, os.environ[PROJECT_NAME_KEY])
     assert standardize_package_bridges({}, project_path) == {}
 
     with open(os.path.join(project_path, "src/bridges.toml"), "rb") as f:
@@ -74,7 +74,7 @@ def test_standardize_package_bridges(tmp_path: Path = TMP_PACKAGES_PATH):
     }
     bridges_toml_manual_standardized = {'var_a': {}}
     bridges_toml_manual_standardized['var_a'] = {
-        'sources': [os.environ[PROJECT_NAME] + ".logsheet.a"],
+        'sources': [os.environ[PROJECT_NAME_KEY] + ".logsheet.a"],
         'targets': ['package1.process2.b']
     }
 
