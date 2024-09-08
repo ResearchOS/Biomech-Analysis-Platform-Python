@@ -8,7 +8,7 @@ from ResearchOS.constants import LOAD_CONSTANT_FROM_FILE_KEY, LOGSHEET_VAR_KEY, 
 from ResearchOS.custom_classes import InputVariable, Constant, DataObjectName, Unspecified, DataFilePath, LoadConstantFromFile, LogsheetVariable
 from ResearchOS.helper_functions import is_dynamic_variable, is_specified
 
-def classify_input_type(input: Any, package_folder: str) -> tuple:
+def classify_input_type(input: Any, package_folder: str = "") -> tuple:
     """Takes in an input from a TOML file and returns the class of the input.
     Also returns the attributes as a dict, which may be empty if unneeded for that input type."""
     attrs = {}
