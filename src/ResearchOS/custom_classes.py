@@ -4,12 +4,8 @@ import json
 import tomli as tomllib
 
 from ResearchOS.constants import RAW_DATA_FOLDER_KEY, ENVIRON_VAR_DELIM, DATASET_SCHEMA_KEY
-from ResearchOS.run import get_node_settings_for_hash, get_node_settings
 
-class Node():
-
-    def __init__(self, id: str, name: str, attrs: dict):
-        self.serialized = ""
+class Node():            
 
     def __str__(self):
         return f'{self.name}'
@@ -22,22 +18,25 @@ class Node():
     
     def __hash__(self):
         return hash(self.name)
+    
+    def set_attr_for_hashing(self, attrs_to_hash_no_data_object: list, attrs_to_hash_data_object: list, attrs: dict, data_object: list = None):
+        attrs_to_hash_list = attrs_to_hash_data_object if data_object is not None else attrs_to_hash_no_data_object
+        hash_attrs_dict = {k: v for k, v in attrs.items() if k in attrs_to_hash_list}
+        self.attr_for_hashing = f"name:{self.name}::attrs:{json.dumps(hash_attrs_dict)}"
 
 class Runnable(Node):
 
-    def __init__(self, id: str, name: str, attrs: dict):
-        super().__init__(id, name, attrs)
+    def __init__(self, id: str, name: str, attrs: dict, data_object: str = None):        
         self.id = id
         self.name = name
-        self.attrs = attrs  
+        self.attrs = attrs
+        attrs_to_hash_no_data_object = ['function', 'level', 'batch', 'subset']
+        attrs_to_hash_data_object = ['function', 'level', 'batch']
+        hash_attrs_list = attrs_to_hash_data_object if data_object is not None else attrs_to_hash_no_data_object
+        hash_attrs_dict = {k: v for k, v in attrs.items() if k in hash_attrs_list}
+        self.attr_for_hashing = f"name:{self.name}::attrs:{json.dumps(hash_attrs_dict)}"
 
-    def serialize_node(self):
-        """Get the hash value of the constant."""
-        node_settings = get_node_settings(self)
-        node_settings_for_hash = get_node_settings_for_hash(node_settings)
-        self.serialized = json.dumps(node_settings_for_hash)
-
-class Logsheet(Runnable):    
+class Logsheet(Runnable):
 
     def __init__(self, id: str, name: str, attrs: str):
         super().__init__(id, name, attrs)
@@ -64,8 +63,7 @@ class Stats(Runnable):
 
 class Variable(Node):
 
-    def __init__(self, id: str, name: str, attrs: str = {}):
-        super().__init__(id, name, attrs)
+    def __init__(self, id: str, name: str, attrs: str = {}, data_object: str = None):        
         self.id = id
         var_name = name.split('[')[0]
         self.name = var_name
@@ -73,11 +71,14 @@ class Variable(Node):
         self.value = None
         if '[' in name:
             indices = name.split('[')[1:]
-            self.slices = [index.replace(']', '') for index in indices] 
+            self.slices = [index.replace(']', '') for index in indices]
 
-    def serialize_node(self):
-        """Get the hash value of the constant."""        
-        self.serialized = json.dumps(self.value) if self.value is not None else ""
+        attrs["slices"] = self.slices
+        if data_object is not None:
+            attrs["resolved_value"] = self.value
+        else:
+            attrs["unresolved_value"] = self.value
+        self.attrs = attrs
 
 class Dynamic(Variable):
     """Abstract class for variables that are dynamic in some way."""
@@ -85,15 +86,7 @@ class Dynamic(Variable):
 
 class InputVariable(Dynamic):
     """A fully defined input variable in the TOML file. This is a variable that receives a value from another runnable within the same package."""
-    
-    def serialize_node(self):
-        """Get the hash value of the constant."""
-        # TODO: Handle slices, that has to be included.
-        if not self.slices:
-            super().serialize_node()
-        else:
-            slices_str = ''.join(self.slices)
-            self.serialized = json.dumps(self.value + slices_str) if self.value is not None else ""
+    pass
 
 class Unspecified(InputVariable):
     """Represents a variable that needs to be bridged to an output variable in another package.
@@ -119,6 +112,7 @@ class Constant(InputVariable):
             self.value = attrs['value']
         elif 'value' not in attrs:
             self.value = None
+        self.str_hash_value = json.dumps(self.value)
 
     def resolve(self, data_object: list):
         """Constants that are hard-coded into the TOML file do not need to be resolved."""

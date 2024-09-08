@@ -6,7 +6,7 @@ from typing import Iterable
 import networkx as nx
 import tomli as tomllib # For reading
 
-from ResearchOS.constants import ALLOWED_INDEX_KEYS, PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY, RUNNABLE_TYPES, LOGSHEET_NAME, PROJECT_NAME
+from ResearchOS.constants import ALLOWED_INDEX_KEYS, PACKAGES_PREFIX, PROCESS_NAME, PLOT_NAME, STATS_NAME, BRIDGES_KEY, PACKAGE_SETTINGS_KEY, SUBSET_KEY, SOURCES_KEY, TARGETS_KEY, RUNNABLE_TYPES, LOGSHEET_NAME, PROJECT_NAME_KEY
 from ResearchOS.constants import ENVIRON_VAR_DELIM
 from ResearchOS.helper_functions import parse_variable_name
 from ResearchOS.custom_classes import Process, Stats, Plot, OutputVariable, InputVariable, Constant, Unspecified, Logsheet
@@ -193,7 +193,7 @@ def standardize_package_bridges(package_bridges_dict: dict, package_folder: str)
     if not package_bridges_dict:
         return {}
     
-    project_name = os.environ[PROJECT_NAME]
+    project_name = os.environ[PROJECT_NAME_KEY]
     standardized_bridges_dict = {}
     for bridge_name, bridge_dict in package_bridges_dict.items():
         if 'sources' not in bridge_dict:
