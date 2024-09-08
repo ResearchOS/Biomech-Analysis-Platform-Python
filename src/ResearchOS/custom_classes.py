@@ -22,7 +22,8 @@ class Node():
     def set_attr_for_hashing(self, attrs_to_hash_no_data_object: list, attrs_to_hash_data_object: list, attrs: dict, data_object: list = None):
         attrs_to_hash_list = attrs_to_hash_data_object if data_object is not None else attrs_to_hash_no_data_object
         hash_attrs_dict = {k: v for k, v in attrs.items() if k in attrs_to_hash_list}
-        self.attr_for_hashing = f"name:{self.name}::attrs:{json.dumps(hash_attrs_dict)}"
+        hash_attrs_dict["name"] = self.name
+        self.attr_for_hashing = json.dumps(hash_attrs_dict)
 
 class Runnable(Node):
 
@@ -32,9 +33,7 @@ class Runnable(Node):
         self.attrs = attrs
         attrs_to_hash_no_data_object = ['function', 'level', 'batch', 'subset']
         attrs_to_hash_data_object = ['function', 'level', 'batch']
-        hash_attrs_list = attrs_to_hash_data_object if data_object is not None else attrs_to_hash_no_data_object
-        hash_attrs_dict = {k: v for k, v in attrs.items() if k in hash_attrs_list}
-        self.attr_for_hashing = f"name:{self.name}::attrs:{json.dumps(hash_attrs_dict)}"
+        self.set_attr_for_hashing(attrs_to_hash_no_data_object, attrs_to_hash_data_object, attrs, data_object)
 
 class Logsheet(Runnable):
 
@@ -73,12 +72,16 @@ class Variable(Node):
             indices = name.split('[')[1:]
             self.slices = [index.replace(']', '') for index in indices]
 
+        attrs_to_hash_no_data_object = ['unresolved_value', 'slices']
+        attrs_to_hash_data_object = ['resolved_value', 'slices']
+
         attrs["slices"] = self.slices
         if data_object is not None:
             attrs["resolved_value"] = self.value
         else:
             attrs["unresolved_value"] = self.value
         self.attrs = attrs
+        self.set_attr_for_hashing(attrs_to_hash_no_data_object, attrs_to_hash_data_object, attrs, data_object)
 
 class Dynamic(Variable):
     """Abstract class for variables that are dynamic in some way."""
@@ -111,8 +114,7 @@ class Constant(InputVariable):
                 raise ValueError(f'Constant {name} does not have a value.')
             self.value = attrs['value']
         elif 'value' not in attrs:
-            self.value = None
-        self.str_hash_value = json.dumps(self.value)
+            self.value = None        
 
     def resolve(self, data_object: list):
         """Constants that are hard-coded into the TOML file do not need to be resolved."""
@@ -126,8 +128,7 @@ class DataFilePath(Constant):
         ext = '.mat'
         save_data_folder = os.environ[RAW_DATA_FOLDER_KEY]
         relative_path = os.sep.join(data_object)
-        self.value = os.path.join(save_data_folder, relative_path + ext)
-        self.str_hash_value = self.value
+        self.value = os.path.join(save_data_folder, relative_path + ext)        
 
 class LoadConstantFromFile(Constant):
     """Constant that needs to be loaded from a file."""    
@@ -144,8 +145,7 @@ class LoadConstantFromFile(Constant):
             with open(file_name, 'rb') as f:
                 self.value = json.load(f)
         else:
-            raise ValueError(f'File type not supported: {file_name}.')
-        self.str_hash_value = json.dumps(self.value)
+            raise ValueError(f'File type not supported: {file_name}.')        
 
 class DataObjectName(Constant):
     """The name of a data object.""" 
@@ -156,5 +156,4 @@ class DataObjectName(Constant):
         dataset_schema = os.environ[DATASET_SCHEMA_KEY].split(ENVIRON_VAR_DELIM)
         index = dataset_schema.index(self.value)
         # 2. Extract the data object name from that index of the list
-        self.value = data_object[index]  
-        self.str_hash_value = self.value
+        self.value = data_object[index]          

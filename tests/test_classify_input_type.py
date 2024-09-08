@@ -1,8 +1,11 @@
+import os
 
 import pytest
 
 from ResearchOS.input_classifier import classify_input_type, load_constant_from_file
 from ResearchOS.custom_classes import Constant, DataFilePath, DataObjectName, InputVariable, LoadConstantFromFile, LogsheetVariable, Unspecified
+
+root_path = os.getcwd()
 
 def test_classify_input_type():
     # Test case 1: Unspecified input
@@ -38,17 +41,17 @@ def test_classify_input_type():
     # Test case 7: LoadConstantFromFile input (TOML file)
     toml_path = 'tests/fixtures/constants.toml'
     input7 = {'__load_file__': toml_path}
-    expected_class7, expected_attrs7 = LoadConstantFromFile, {'value': load_constant_from_file(toml_path)}
+    expected_class7, expected_attrs7 = LoadConstantFromFile, {'value': load_constant_from_file(toml_path, root_path)}
     assert classify_input_type(input7) == (expected_class7, expected_attrs7)
 
     # Test case 8: LoadConstantFromFile input (JSON file)
     json_path = 'tests/fixtures/constants.json'
     input8 = {'__load_file__': json_path}
-    expected_class8, expected_attrs8 = LoadConstantFromFile, {'value': load_constant_from_file(json_path)}
+    expected_class8, expected_attrs8 = LoadConstantFromFile, {'value': load_constant_from_file(json_path, root_path)}
     assert classify_input_type(input8) == (expected_class8, expected_attrs8)
 
     # Test case 9: DataFilePath input
-    input9 = {'__data_file__': {"ext": ".c3d", "levels": ["Subject", "Trial"]}}
+    input9 = {'__file_path__': {"ext": ".c3d", "levels": ["Subject", "Trial"]}}
     expected_class9, expected_attrs9 = DataFilePath, {'value': {"ext": ".c3d", "levels": ["Subject", "Trial"]}}
     assert classify_input_type(input9) == (expected_class9, expected_attrs9)
 

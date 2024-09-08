@@ -14,8 +14,9 @@ def test_discover_packages(tmp_path: Path = TMP_PACKAGES_PATH):
         shutil.rmtree(tmp_path)        
     os.makedirs(tmp_path)      
 
-    # Test case 1: Empty package folder
-    assert discover_packages(tmp_path_str) == []
+    # Test case 1: Project folder only
+    package_folder = os.sep.join([os.getcwd(), "tests", "fixtures", "tmp_packages"])
+    assert discover_packages(tmp_path_str) == [package_folder]
 
     # Test case 2: Valid package folders
     # Create a temporary directory    
@@ -25,7 +26,7 @@ def test_discover_packages(tmp_path: Path = TMP_PACKAGES_PATH):
         PACKAGES_PREFIX + "package2",
         PACKAGES_PREFIX + "package3"
     ]
-    expected_result = []
+    expected_result = [package_folder]
     for package_folder in package_folders:
         full_path = str(temp_dir / package_folder)
         expected_result.append(full_path)
@@ -36,7 +37,7 @@ def test_discover_packages(tmp_path: Path = TMP_PACKAGES_PATH):
     assert set(discover_packages(tmp_path_str)) == set(expected_result) # Order does not matter.
 
     # Provide a list of length 1
-    assert set(discover_packages([tmp_path_str])) == set(expected_result) # Order does not matter.
+    assert set(discover_packages(tmp_path_str)) == set(expected_result) # Order does not matter.
 
     # Test case 3: A folder is present that contains the prefix but does not match it exactly
     package_folders = [
@@ -48,9 +49,14 @@ def test_discover_packages(tmp_path: Path = TMP_PACKAGES_PATH):
             os.makedirs(full_path)
     assert set(discover_packages(tmp_path_str)) == set(expected_result) # Order does not matter.
 
-    # Test case 4: Non-existent folders
+    # Test case 4: Non-existent project folder
     nonexistent_folder = "nonexistent"
-    assert discover_packages(nonexistent_folder) == [] # Order does not matter.
+    with pytest.raises(FileNotFoundError):
+        discover_packages(nonexistent_folder)
+
+    # Test case 5: Non-existent package folders
+    with pytest.raises(FileNotFoundError):
+        discover_packages(nonexistent_folder, nonexistent_folder) 
 
     shutil.rmtree(tmp_path)
     
