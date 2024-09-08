@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://researchos.github.io/ResearchOS/Developer/Bridges/">
       
       
-        <link rel="prev" href="../Running/running_runnables/">
+        <link rel="prev" href="../Running/unique_identifiers/">
       
       
         <link rel="next" href="bridges_toml/">
@@ -645,6 +645,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Running/unique_identifiers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Uniqely Identifying Nodes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -927,6 +948,27 @@
   
   <span class="md-ellipsis">
     Stats
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Nodes/Runnables/logsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logsheet
   </span>
   
 
@@ -1219,6 +1261,8 @@
 
 <p>Bridges are the mechanism by which packages that have been built independently can be connected to one another to form a cohesive data processing pipeline. They are defined in the <code>bridges.toml</code> file in each package's folder. A missing <code>bridges.toml</code> file in a package indicates that by default that package does not depend on any other packages. The value of any <a href="../Nodes/Variables/Input%20Variables/unspecified/">Unspecified</a> variables must then be listed in each project's <code>bridges.toml</code> file.</p>
 <p>For example, a simple package to compute, plot, and summarize linear momentum (p) given a velocity (v) and mass (m) (<code>p = m * v</code>) may be missing a <code>bridges.toml</code> file entirely, because the package's computations are self-contained. When this package is then used in a data analysis project, that project's <code>bridges.toml</code> file will specify which variables from the other functions in the pipeline should be used as the inputs to linear momentum computations.</p>
+<p>In the <code>bridges.toml</code> file, often there are multiple outputs that are all connected to the same input of another function. When there are multiple output variables connecting to one input variable, that indicates that the DAG must be branched into separate lineages. For example, if linear momentum and angular momentum both are inputs to a function to compute summary statistics, then the DAG will split into two separate lineages for all downstream dependencies, one for linear momentum and one for angular momentum. This can be repeated recursively for as many branches as necessary.</p>
+<p>Another case in which branching can be specified is when a Constant is provided as a list. ResearchOS will branch the DAG beginning at the input variable of interest, creating a separate lineage for each value in the list. This is useful for running multiple versions of the same analysis, for example, with different parameters.</p>
 
 
 

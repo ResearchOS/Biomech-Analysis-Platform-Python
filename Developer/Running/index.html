@@ -653,6 +653,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="unique_identifiers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Uniqely Identifying Nodes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -927,6 +948,27 @@
   
   <span class="md-ellipsis">
     Stats
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Nodes/Runnables/logsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logsheet
   </span>
   
 
@@ -1222,6 +1264,22 @@
 <p class="admonition-title">Note</p>
 <p>This page is a work in progress. The information here is incomplete and may be inaccurate.</p>
 </div>
+<p>After the DAG is compiled, the following steps are taken to run the specified pipeline:
+1. Sort the Runnable nodes in topological order. Special consideration is taken to ensure that the non-dynamic or unspecified variables do not adversely affect the node order.</p>
+<ol>
+<li>
+<p>Check whether the MATLAB engine needs to be loaded. If so, load it.</p>
+</li>
+<li>
+<p>For each Runnable node in the topologically ordered list, convert the attributes that affect the variables' hash to a data structure that can be hashed such as a frozen dict, and store it in the same index in a tuple.</p>
+</li>
+<li>
+<p>Those attributes include inputs, outputs, runnable level, batch, function name, language</p>
+</li>
+<li>
+<p>For each node in the topologically ordered list, run the node.</p>
+</li>
+</ol>
 
 
 

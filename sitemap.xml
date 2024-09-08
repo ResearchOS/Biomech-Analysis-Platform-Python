@@ -2,117 +2,127 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Bridges/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Bridges/bridges_toml/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Compilation/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Compilation/connectivity/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Compilation/running/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Runnables/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Runnables/logsheet/</loc>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Runnables/plot/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Runnables/process/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Runnables/stats/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/output_variables/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/Input%20Variables/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/Input%20Variables/dynamic/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/Input%20Variables/hard_coded/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Nodes/Variables/Input%20Variables/unspecified/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Package_Setup/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Package_Setup/discovery/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Running/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Running/running_runnables/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Developer/Running/selecting_runnables/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://researchos.github.io/ResearchOS/Developer/Running/unique_identifiers/</loc>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://researchos.github.io/ResearchOS/Home/</loc>
-         <lastmod>2024-08-23</lastmod>
+         <lastmod>2024-09-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>

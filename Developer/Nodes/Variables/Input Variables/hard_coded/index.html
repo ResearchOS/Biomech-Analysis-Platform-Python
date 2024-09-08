@@ -67,6 +67,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#hard-coded" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -645,6 +650,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../Running/unique_identifiers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Uniqely Identifying Nodes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -928,6 +954,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../Runnables/logsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logsheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1113,6 +1160,8 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
       <a href="./" class="md-nav__link md-nav__link--active">
         
@@ -1198,6 +1247,8 @@
   
   
   
+    
+  
   
 </nav>
                   </div>
@@ -1215,9 +1266,32 @@
   
 
 
-  <h1>Hard-Coded</h1>
-
-<p>Hard-coded variables specified by the user.</p>
+<p>Hard-coded variables specified by the user. If a list is provided, then the node is split into N nodes, where N is the length of the list. Each node is assigned a variable from the list. Hard-coded variables can consist of any combination of the following types:</p>
+<h1 id="hard-coded">Hard-Coded</h1>
+<p>If an input variable is a hard-coded value, a default value can be specified. For example:
+<div class="highlight"><pre><span></span><code><span class="k">[example_process_name]</span>
+<span class="n">inputs</span><span class="p">.</span><span class="n">input1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;hardcoded_value&quot;</span>
+<span class="n">outputs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;output1&quot;</span><span class="p">]</span>
+</code></pre></div>
+Note that frequently the user will want to change hard-coded values for "what if" analyses. This can be done by specifying the value in the <code>bridges.toml</code> file, which overwrites the value here.</p>
+<h1 id="load-from-file">Load From File</h1>
+<p>If a hardcoded variable is complex, or there are many versions of this hard-coded variable, it may be useful to load the variable from a file. JSON and TOML are supported. This can be done by specifying the input variable as a dictionary with the key <code>__load_file__</code> and the value as the file path relative to the project's root directory. For example:</p>
+<p>Syntax is:
+<div class="highlight"><pre><span></span><code><span class="k">[example_process]</span>
+<span class="n">inputs</span><span class="p">.</span><span class="n">hard_coded1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">__load_file__</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s1">&#39;path/to/file&#39;</span><span class="p">}</span>
+</code></pre></div></p>
+<h1 id="data-object-name">Data Object Name</h1>
+<p>The name of the data object to be used as the variable. Specify the data object factor name.</p>
+<p>Syntax is:
+<div class="highlight"><pre><span></span><code><span class="k">[example_process]</span>
+<span class="n">inputs</span><span class="p">.</span><span class="n">hard_coded1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">__data_object__</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s1">&#39;Subject&#39;</span><span class="p">}</span>
+</code></pre></div></p>
+<h1 id="raw-data-file-path">Raw Data File Path</h1>
+<p>The path to the raw data file to be used as the variable. Specify the data object factor name.</p>
+<p>Syntax is:
+<div class="highlight"><pre><span></span><code><span class="k">[example_process]</span>
+<span class="n">inputs</span><span class="p">.</span><span class="n">hard_coded1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">__data_file__</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s1">&#39;Subject&#39;</span><span class="p">}</span>
+</code></pre></div></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This page is a work in progress. The information here is incomplete and may be inaccurate.</p>
