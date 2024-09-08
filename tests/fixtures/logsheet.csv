@@ -1,0 +1,13 @@
+Temperature (deg F),Pressure (psi),Humidity,Notes
+20,1,5,note1
+20,1,10,note1
+20,1.1,5,note2
+20,1.1,10,note2
+25,1,5,note3
+25,1,10,note3
+25,1.1,5,note4
+25,1.1,10,note4
+30,1,5,note5
+30,1,10,note5
+30,1.1,5,note6
+30,1.1,10,note6

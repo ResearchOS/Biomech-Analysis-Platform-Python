@@ -6,9 +6,8 @@ import pytest
 import toml
 
 from ResearchOS.read_logsheet import get_logsheet_dict
-from ResearchOS.constants import RUNNABLE_TYPES, PROCESS_NAME, PLOT_NAME, STATS_NAME, LOGSHEET_NAME
+from ResearchOS.constants import LOGSHEET_NAME
 from fixtures.constants import TMP_PACKAGES_PATH
-from ResearchOS.validation_classes import RunnableFactory
 
 def test_get_logsheet_dict(tmp_path: Path = TMP_PACKAGES_PATH):
 

@@ -69,6 +69,7 @@ nav:
         - Process: Developer/Nodes/Runnables/process.md
         - Plot: Developer/Nodes/Runnables/plot.md
         - Stats: Developer/Nodes/Runnables/stats.md
+        - Logsheet: Developer/Nodes/Runnables/logsheet.md
       - Variables:
         - Overview: Developer/Nodes/Variables/index.md
         - Input Variables: 

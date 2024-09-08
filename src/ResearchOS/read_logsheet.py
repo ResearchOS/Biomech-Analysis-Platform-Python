@@ -16,6 +16,7 @@ from ResearchOS.matlab_eng import import_matlab
 from ResearchOS.validation_classes import RunnableFactory
 from ResearchOS.helper_functions import get_package_setting
 from ResearchOS.hash_dag import hash_node
+from ResearchOS.create_dag_from_toml import get_package_index_dict
 
 def _read_and_clean_logsheet(logsheet_path: str, nrows: int = None) -> list:
         """Read the logsheet (CSV only) and clean it.
@@ -27,10 +28,12 @@ def _read_and_clean_logsheet(logsheet_path: str, nrows: int = None) -> list:
             first_elem_prefix = '\ufeff'
         if logsheet_path.endswith(("xlsx", "xls")):
             raise ValueError("CSV files only!")
+        if not os.path.exists(logsheet_path):
+            raise ValueError(f"The logsheet file does not exist: {logsheet_path}")
         with open(logsheet_path, "r") as f:
             reader = csv.reader(f, delimiter=',', quotechar='"')            
 
-            for row_num, row in enumerate(reader):                                    
+            for row_num, row in enumerate(reader):
                 logsheet.append(row)
                 if nrows is not None and row_num == nrows-1:
                     break
@@ -40,7 +43,7 @@ def _read_and_clean_logsheet(logsheet_path: str, nrows: int = None) -> list:
             logsheet[0][0] = logsheet[0][0][len(first_elem_prefix):]
         return logsheet
 
-def read_logsheet(project_folder: str = None) -> None:
+def read_logsheet(project_folder: str = None, logsheet_toml_path: str = None) -> None:
     """Run the logsheet import process.
     
     Returns:
@@ -56,13 +59,11 @@ def read_logsheet(project_folder: str = None) -> None:
     matlab = import_matlab(is_matlab=True)
 
     # 2. Get the logsheet object
-    logsheet = get_logsheet_dict(project_folder)    
-    logsheet_path = logsheet['path']
+    logsheet = get_logsheet_dict(project_folder, logsheet_toml_path) 
+    logsheet_path = logsheet['path']  
     num_header_rows = logsheet['num_header_rows']
     headers_in_toml = logsheet['headers']
-    class_column_names = logsheet['class_column_names']
-    data_objects_str = os.environ[DATASET_SCHEMA_KEY]
-    data_objects = data_objects_str.split(".")
+    dataset_factors = logsheet['dataset_factors']
 
     # 1. Read the logsheet file (using built-in Python libraries)
     full_logsheet = _read_and_clean_logsheet(logsheet_path)    
@@ -75,44 +76,43 @@ def read_logsheet(project_folder: str = None) -> None:
         logsheet = full_logsheet[num_header_rows:]
     
     # For each row, connect instances of the appropriate DataObject subclass to all other instances of appropriate DataObject subclasses.
-    headers_in_logsheet = full_logsheet[0]
-    header_names = [h for h in headers_in_toml.keys()]
-    header_types = [value[1] for _, value in headers_in_toml.items()]
+    headers_in_logsheet = [f.lower() for f in full_logsheet[0]]
+    var_names = [h for h in headers_in_toml.keys()]
+    header_names = [h["column_name"] for h in headers_in_toml.values()]
+    header_types = [h["type"] for h in headers_in_toml.values()]
+    header_levels = [h["level"] for h in headers_in_toml.values()]
         
     # Order the class column names by precedence in the schema so that higher level objects always exist before lower level.
-    schema = data_objects
-    order = schema
-    if len(order) <= 1:
+    schema = dataset_factors
+    if len(schema) <= 1:
         raise ValueError("The schema must have at least 2 elements including the Dataset!")
-    order = order[1:] # Remove the Dataset class from the order.
-    dobj_column_names = []
-    for schema_cls in order:
-        for cls, cls_column_name in class_column_names.items():
-            if cls == schema_cls:
-                dobj_column_names.append(cls_column_name)
+    order = schema # Remove the Dataset class from the order.
+    factor_column_names = [] # The column header names for the factors in the schema, in order.
+    for factor in dataset_factors:
+        if factor not in var_names:
+            raise ValueError(f"Dataset factor {factor} not found in logsheet headers!")
+        factor_index = var_names.index(factor)
+        factor_column_names.append(header_names[factor_index].lower())
 
     # Get all of the names of the data objects, after they're cleaned for SQLite.
-    dobj_cols_idx = [headers_in_logsheet.index(header) for header in dobj_column_names] # Get the indices of the data objects columns.
+    dobj_cols_idx = [headers_in_logsheet.index(header) for header in factor_column_names] # Get the indices of the data objects columns.
     dobj_names = [] # The matrix of data object names (values in the logsheet).
     for row_num, row in enumerate(logsheet): 
-        curr_dobj_name = ""
+        curr_dobj_name = []
         for idx in dobj_cols_idx:
             raw_value = row[idx]
             type_class = header_types[idx]
-            if type_class != "str":
-                raise ValueError(f"Check TOML for Data Object Column {header_names[idx]}: Data object names must be strings!")
             value = _clean_value(type_class, raw_value)
             # Check that all of the data object names are valid variable names.
-            if not value.isidentifier():
-                raise ValueError(f"Logsheet row #{row_num+num_header_rows+1} Column {idx+1}: All data object names must be non-empty and valid variable names!")
-            curr_dobj_name += value + "."
-        curr_dobj_name = curr_dobj_name[:-1] # Remove the trailing period.
-        dobj_names.append(curr_dobj_name)        
+            if not value:
+                raise ValueError(f"Logsheet row #{row_num+num_header_rows+1} Column {idx+1}: All data object names must be non-empty!")
+            curr_dobj_name.append(str(value))
+        dobj_names.append(','.join(curr_dobj_name))        
                     
     # Get all Data Object names that are not in the lowest level.
-    for idx, type_str in enumerate(order[0:-1]):
-        # Get the index of the n'th period in the string.
-        type_names = [".".join(dobj_name.split(".")[0:idx+1]) for dobj_name in dobj_names]
+    for idx in range(len(order[0:-1])):
+        # Get the index of the n'th delimiter (comma) in the string.
+        type_names = [",".join(dobj_name.split(",")[0:idx+1]) for dobj_name in dobj_names]
         # Make this list unique.
         type_names = list(set(type_names))
         # Add the names to the dobj_names list.
@@ -126,43 +126,43 @@ def read_logsheet(project_folder: str = None) -> None:
     
     # Assign the values to the DataObject instances.
     all_attrs = {}
-    for column in headers_in_toml:
-        col_idx = headers_in_logsheet.index(column)
-        level = headers_in_toml[column][0]
-        level_idx = order.index(level)
-        level_dobjs = [dobj for dobj in dobj_names if dobj.count(".") == level_idx]
-        type_class = headers_in_toml[column][1]
+    for var_name, var_dict in headers_in_toml.items():
+        col_idx = headers_in_logsheet.index(var_dict["column_name"].lower())
+        level = var_dict["level"]
+        type_class = var_dict["type"]
+        level_idx = [o.lower() for o in order].index(level.lower())
+        level_dobjs = [dobj for dobj in dobj_names if dobj.count(",") == level_idx]        
         # Get the index of the column that corresponds to the level of the DataObjects.
         level_column_idx = dobj_cols_idx[level_idx]
-        print("{:<{width}} {:<25}".format(f"Column: {column}", f"Level: {level}", width = max_len+2))
+        print("{:<{width}} {:<25}".format(f"Column: {var_dict['column_name']}", f"Level: {level}", width=max_len+2))
         for dobj in level_dobjs:
             # Get all of the values
-            values = [_clean_value(type_class, row[col_idx]) for row in logsheet if dobj == row[level_column_idx]]
+            values = [_clean_value(type_class, row[col_idx]) for row in logsheet if dobj == str(_clean_value(type_class, row[level_column_idx]))]
             non_none_values = list(set([value for value in values if value is not None]))
             num_values_non_none = len(non_none_values)
             if num_values_non_none == 0:
                 value = None
             elif num_values_non_none > 1:
-                raise ValueError(f"Logsheet Column: {column[0]} Data Object: {dobj.name} has multiple values!")
+                raise ValueError(f"Logsheet Column: {var_dict['column_name']} Data Object: {dobj.name} has multiple values!")
             else:
                 value = non_none_values[0]
 
             # Store it to the all_attrs dict.
             if dobj not in all_attrs:
                 all_attrs[dobj] = {}
-            all_attrs[dobj][column] = value     
+            all_attrs[dobj][var_name.lower()] = value     
 
     # Create logsheet runnable node.
     print("Assigning Data Object values...")
     logsheet_attrs = {}
-    logsheet_attrs['outputs'] = [header for header in headers_in_toml]
+    logsheet_attrs['outputs'] = [header.lower() for header in headers_in_toml]
     logsheet_node = Logsheet(id = str(uuid.uuid4()), name = LOGSHEET_NAME, attrs = logsheet_attrs)
 
     logsheet_graph = nx.MultiDiGraph()
     logsheet_graph.add_node(logsheet_node.id, node = logsheet_node)  
 
     mapping = {}
-    for column in headers_in_toml:
+    for column in logsheet_attrs['outputs']:
         output_var = OutputVariable(id=str(uuid.uuid4()), name=LOGSHEET_NAME + "." + column, attrs={})
         mapping[column] = output_var.id
         logsheet_graph.add_node(output_var.id, node = output_var)
@@ -174,20 +174,28 @@ def read_logsheet(project_folder: str = None) -> None:
         node_id = mapping[column]
         hashes[node_id] = hash_node(logsheet_graph, node_id)
 
-    # Write the values to the DataObjects.
-    matlab_eng = matlab['matlab_eng']
+    # Write the values to the DataObjects.    
     ros_m_files_folder = "/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Python/src/ResearchOS/overhaul"
     save_fcn_name = "safe_save"
-    matlab_eng.addpath(ros_m_files_folder)
-    mat_data_folder = os.environ[SAVE_DATA_FOLDER_KEY.upper()]
+    try:
+        mat_data_folder = os.environ[SAVE_DATA_FOLDER_KEY]
+    except KeyError:
+        index_dict = get_package_index_dict(project_folder)
+        if "save_path" not in index_dict:
+            mat_data_folder = project_folder
+        else:
+            mat_data_folder = os.sep.join([project_folder, index_dict["save_path"][0]]) if not os.path.isabs(index_dict["save_path"][0]) else index_dict["save_path"][0]
     if mat_data_folder == ".":
         mat_data_folder = project_folder
-    save_fcn = getattr(matlab_eng, save_fcn_name)
+    
     # Sort the all_attrs dict alphabetically by key
     sorted_keys = sorted(all_attrs.keys())
     all_attrs = {key: all_attrs[key] for key in sorted_keys}
     count = 0
     num_dobjs = len(all_attrs)
+    matlab_eng = matlab['matlab_eng']
+    matlab_eng.addpath(ros_m_files_folder)
+    save_fcn = getattr(matlab_eng, save_fcn_name)
     for dobj, attrs in all_attrs.items():
         count += 1
         dobj_to_save = {}
@@ -242,10 +250,13 @@ def _clean_value(type_str: str, raw_value: Any) -> Any:
             value = float(value)
     return value
 
-def get_logsheet_dict(project_folder: str) -> dict:
+def get_logsheet_dict(project_folder: str = None, logsheet_toml_path: str = None) -> dict:
     """Return the logsheet dict from the project_settings.toml file."""
 
-    logsheet_dict = get_package_setting(project_folder, setting_name=LOGSHEET_NAME, default_value={})
+    if logsheet_toml_path is None:
+        logsheet_dict = get_package_setting(project_folder, setting_name=LOGSHEET_NAME, default_value=[])
+    else:
+        logsheet_dict = get_package_setting(project_folder, setting_name=LOGSHEET_NAME, default_value=[], package_settings_path = logsheet_toml_path)
     if not logsheet_dict:
         return {}
 
