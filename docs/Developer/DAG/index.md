@@ -15,6 +15,28 @@ Only the nodes in the DAG contain metadata needed to run the tasks and pass data
 ## Hashing
 Each node can be hashed in either a "static" or "concrete" fashion, to borrow nomenclature from the OOP world. The static hash is used to uniquely identify the node in the DAG, while the concrete hash is used to uniquely identify the node for specific data objects. The [Weisfeiler Lehman Subgraph Hash algorithm from NetworkX](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.graph_hashing.weisfeiler_lehman_subgraph_hashes.html#networkx.algorithms.graph_hashing.weisfeiler_lehman_subgraph_hashes) is used to uniquely hash each node in the DAG based on its "node" attribute. Each subclass of `Runnable` and `Variable` has implemented a `__hash__` method that returns a unique hash for that node based on its metadata for `static` and `concrete` hashing.
 
+!!! todo
+    OPEN QUESTION: How do I cache the concrete DAG? I cant very well load every Variable from every data object to hash all of them every time I want to run a task. I need to cache the concrete DAG somehow.
+
+Mirroring this concept of "static" and "concrete" hashes, the most recently ran version of the DAG itself will also be stored in two ways: a "static" version stored in the "static_dag.toml" file and a "concrete_dag.toml" file in the root of the saved data's directory. The "static" DAG is used to determine the order in which tasks should be run, while the "concrete" DAG is used to determine if a task needs to be re-run based on the data objects' hashes.
+
+### Static DAG
+A dict of dicts with three levels of nesting, where the keys to the outer dicts are the static hashes of the runnable nodes. The keys to the inner dicts are the static hashes of the runnable nodes that the outer node depends on. Finally, the keys to the innermost dicts are the variable names for the task, and the values are the static hashes of the variables for that data object.
+
+```toml
+[<runnable_static_hash>]
+<variable_name> = <variable_static_hash>
+```
+
+### Concrete DAG
+A dict of dicts with three levels of nesting, where the keys to the outer dicts are the data object full names. The keys to the inner dicts are the static hashes of the runnable nodes. Finally, the keys to the innermost dicts are variable names for the task, and the values are the concrete hashes of the variables for that data object. NOTE: The edges between nodes are not represented here, as that information is contained within the static hashes.
+
+```toml
+[<data_object_full_name>.<runnable_static_hash>]
+<runnable_name> = <runnable_full_name>
+<variable_name> = <variable_concrete_hash>
+```
+
 ## Runnable Nodes
 ### Naming Convention
 A Runnable node's full name is `package_name.task_name`. Often (but not required) the `task_name` is similar to the name of the function to be run by that task.
@@ -33,14 +55,16 @@ Each Runnable node contains metadata that is used to run the task. This metadata
 - batch: The batch of data objects to run the task on.
 
 #### Static Hash
-- Metadata included in the static hash:
+Metadata included in the static hash:
+
 - The full name of the task
 - The subset of data to run the task on
 - A dictionary of input variables, where the keys are the input names and the values are the corresponding Variable nodes' full names.
 - A dictionary of output variables, where the keys are the output names and the values are the corresponding Variable nodes' full names.
 - NOTE: A task's static hash is added to the record as having been successfully completed after the task has been successfully run over all data objects in the subset. If any of the above metadata changes after that, the task will be re-run.
 #### Concrete Hash
-- Metadata included in the concrete hash:
+Metadata included in the concrete hash:
+
 - The static hash of the task
 - A dictionary of input variables, where the keys are the input names and the values are the corresponding Variable nodes' concrete hashes.
 
