@@ -1,0 +1,12 @@
+[logsheet]
+num_header_rows = 1
+path = "/Users/mitchelltillman/Desktop/Work/Stevens_PhD/Non_Research_Projects/ResearchOS_Python/tests/fixtures/logsheet.csv"
+dataset_factors = ["Temperature", "Pressure"]
+
+[logsheet.headers]
+Temperature.column_name = "Temperature (deg F)"
+Temperature.type = "num"
+Temperature.level = "Temperature"
+Pressure.column_name = "Pressure (psi)"
+Pressure.type = "num"
+Pressure.level = "Pressure"

@@ -1,18 +1,23 @@
 This is the internal developer documentation.
 
-Every use of this software should begin with creating a new package from the template using `>ros create <name>`.
+Every project created using this software is output as a `pip install`able package by default using `>ros create <name>`.
 
-Generally, there are two main use cases in mind for this software. Often, but not always, these are performed concurrently.
+This software is intended for anyone who works with data, from researchers to developers to data scientists. It aims to facilitate sharing code with others, and utilize others' code.
 
-1. Analyzing data (as in, a research project)
+There are three main ways that this software is intended to be used:
 
-2. Creating new data analysis packages (as in, creating a new tool for others to use)
+1. As a researcher coding your own data analysis, developing new algorithms or data visualizations. Your project, which includes code and data, is organized into a package.
 
-# [Packages](../Developer/Package_Setup/index.md)
+2. As a developer creating a new package for others to use. Typically, there is little or no data associated with these packages.
+
+3. As the project matures and packages that provide common methodologies come to be commonly used, many or most users may simply be consumers of pre-existing pipelines, utilizing their own or others' data, and uniquely combining packages into new analyses, which in turn are packaged to be shared with others.
+
+# Developer Index
+## [Packages](../Developer/Package_Setup/index.md)
 Describes how the package dependencies are specified and organized.
 
-# [Compilation](../Developer/Compilation/index.md)
+## [Compilation](../Developer/Compilation/index.md)
 Describes how the Directed Acyclic Graph (DAG) is compiled from the .toml settings files across packages.
 
-# [Running](../Developer/Running/index.md)
+## [Running](../Developer/Running/index.md)
 Describes the process of running the code on the specified dataset.
