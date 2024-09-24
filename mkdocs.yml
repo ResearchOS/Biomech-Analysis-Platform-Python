@@ -50,6 +50,8 @@ nav:
     - Packages:
       - Overview: Developer/Package_Setup/index.md
       - Discovery: Developer/Package_Setup/discovery.md
+    - DAG:
+      - Overview: Developer/DAG/index.md
     - Compilation:
       - Overview: Developer/Compilation/index.md
       - Connectivity: Developer/Compilation/connectivity.md

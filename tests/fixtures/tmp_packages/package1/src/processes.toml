@@ -1,0 +1,6 @@
+[test_process1]
+path = "src/process1.py"
+inputs.input1 = '?'
+inputs.input2 = 'test_process2.output1' # Nonexistent output from nonexistent process
+outputs = '' # No outputs
+subset = ""

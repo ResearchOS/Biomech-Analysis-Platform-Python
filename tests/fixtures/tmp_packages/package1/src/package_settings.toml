@@ -1,0 +1,44 @@
+dataset_file_schema = [ "Dataset", "Subject", "Trial",]
+dataset_schema = [ "Dataset", "Subject", "Condition", "Trial",]
+mat_data_folder = "."
+
+[subsets]
+subset1 = "subset1"
+
+[levels]
+Trial = "Trial"
+
+[logsheet]
+path = "/Users/mitchelltillman/Downloads/Spr23TWW_YA_OA_AllSubjects_032323.csv"
+num_header_rows = 3
+
+[logsheet.class_column_names]
+Subject = "Subject_Codename"
+Condition = "Trial_Type_Task"
+Trial = "Trial_Name_Number"
+
+[logsheet.headers]
+Date = [ "Subject", "str",]
+Subject_Codename = [ "Subject", "str",]
+Cohort = [ "Subject", "str",]
+Height = [ "Trial", "num",]
+Body_Weight = [ "Trial", "num",]
+Age = [ "Subject", "num",]
+Gender = [ "Subject", "str",]
+FPs_Used = [ "Trial", "str",]
+Visit_Number = [ "Subject", "num",]
+Trial_Name_Number = [ "Trial", "str",]
+Trial_Type_Task = [ "Condition", "str",]
+Static_Cal_Trial_Name = [ "Trial", "str",]
+Side_Of_Interest = [ "Trial", "str",]
+Perfect_Trial = [ "Trial", "bool",]
+Collection_Phase = [ "Trial", "str",]
+Secondary_Measures = [ "Trial", "str",]
+Subject_Comments = [ "Trial", "str",]
+Researcher_Comments = [ "Trial", "str",]
+Motive_Marker_ID_Comments = [ "Trial", "str",]
+Motive_Initial_Frame = [ "Trial", "num",]
+Motive_Final_Frame = [ "Trial", "num",]
+Late_Cue_Frame = [ "Trial", "num",]
+Post_Processing_Notes = [ "Trial", "str",]
+Cleaned_Data_Checked_Data = [ "Trial", "str",]
