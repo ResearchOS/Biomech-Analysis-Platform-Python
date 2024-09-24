@@ -535,6 +535,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Hashing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static DAG
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#concrete-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concrete DAG
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1485,6 +1509,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Hashing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static DAG
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#concrete-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concrete DAG
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1634,6 +1682,22 @@
 <p>Only the nodes in the DAG contain metadata needed to run the tasks and pass data between them. The edges indicate connections between the nodes, but do not contain any metadata.</p>
 <h2 id="hashing">Hashing</h2>
 <p>Each node can be hashed in either a "static" or "concrete" fashion, to borrow nomenclature from the OOP world. The static hash is used to uniquely identify the node in the DAG, while the concrete hash is used to uniquely identify the node for specific data objects. The <a href="https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.graph_hashing.weisfeiler_lehman_subgraph_hashes.html#networkx.algorithms.graph_hashing.weisfeiler_lehman_subgraph_hashes">Weisfeiler Lehman Subgraph Hash algorithm from NetworkX</a> is used to uniquely hash each node in the DAG based on its "node" attribute. Each subclass of <code>Runnable</code> and <code>Variable</code> has implemented a <code>__hash__</code> method that returns a unique hash for that node based on its metadata for <code>static</code> and <code>concrete</code> hashing.</p>
+<div class="admonition todo">
+<p class="admonition-title">Todo</p>
+<p>OPEN QUESTION: How do I cache the concrete DAG? I cant very well load every Variable from every data object to hash all of them every time I want to run a task. I need to cache the concrete DAG somehow.</p>
+</div>
+<p>Mirroring this concept of "static" and "concrete" hashes, the most recently ran version of the DAG itself will also be stored in two ways: a "static" version stored in the "static_dag.toml" file and a "concrete_dag.toml" file in the root of the saved data's directory. The "static" DAG is used to determine the order in which tasks should be run, while the "concrete" DAG is used to determine if a task needs to be re-run based on the data objects' hashes.</p>
+<h3 id="static-dag">Static DAG</h3>
+<p>A dict of dicts with three levels of nesting, where the keys to the outer dicts are the static hashes of the runnable nodes. The keys to the inner dicts are the static hashes of the runnable nodes that the outer node depends on. Finally, the keys to the innermost dicts are the variable names for the task, and the values are the static hashes of the variables for that data object.</p>
+<div class="highlight"><pre><span></span><code><span class="k">[</span><span class="err">&lt;</span><span class="k">runnable_static_hash</span><span class="err">&gt;</span><span class="k">]</span>
+<span class="err">&lt;</span><span class="n">variable_name</span><span class="err">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">&lt;variable</span><span class="mi">_</span><span class="n">static_hash</span><span class="err">&gt;</span>
+</code></pre></div>
+<h3 id="concrete-dag">Concrete DAG</h3>
+<p>A dict of dicts with three levels of nesting, where the keys to the outer dicts are the data object full names. The keys to the inner dicts are the static hashes of the runnable nodes. Finally, the keys to the innermost dicts are variable names for the task, and the values are the concrete hashes of the variables for that data object. NOTE: The edges between nodes are not represented here, as that information is contained within the static hashes.</p>
+<div class="highlight"><pre><span></span><code><span class="k">[</span><span class="err">&lt;</span><span class="k">data_object_full_name</span><span class="err">&gt;</span><span class="k">.</span><span class="err">&lt;</span><span class="k">runnable_static_hash</span><span class="err">&gt;</span><span class="k">]</span>
+<span class="err">&lt;</span><span class="n">runnable_name</span><span class="err">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">&lt;runnable</span><span class="mi">_</span><span class="n">full_name</span><span class="err">&gt;</span>
+<span class="err">&lt;</span><span class="n">variable_name</span><span class="err">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">&lt;variable</span><span class="mi">_</span><span class="n">concrete_hash</span><span class="err">&gt;</span>
+</code></pre></div>
 <h2 id="runnable-nodes">Runnable Nodes</h2>
 <h3 id="naming-convention">Naming Convention</h3>
 <p>A Runnable node's full name is <code>package_name.task_name</code>. Often (but not required) the <code>task_name</code> is similar to the name of the function to be run by that task.</p>
@@ -1651,8 +1715,8 @@
 <li>batch: The batch of data objects to run the task on.</li>
 </ul>
 <h4 id="static-hash">Static Hash</h4>
+<p>Metadata included in the static hash:</p>
 <ul>
-<li>Metadata included in the static hash:</li>
 <li>The full name of the task</li>
 <li>The subset of data to run the task on</li>
 <li>A dictionary of input variables, where the keys are the input names and the values are the corresponding Variable nodes' full names.</li>
@@ -1660,8 +1724,8 @@
 <li>NOTE: A task's static hash is added to the record as having been successfully completed after the task has been successfully run over all data objects in the subset. If any of the above metadata changes after that, the task will be re-run.</li>
 </ul>
 <h4 id="concrete-hash">Concrete Hash</h4>
+<p>Metadata included in the concrete hash:</p>
 <ul>
-<li>Metadata included in the concrete hash:</li>
 <li>The static hash of the task</li>
 <li>A dictionary of input variables, where the keys are the input names and the values are the corresponding Variable nodes' concrete hashes.</li>
 </ul>
