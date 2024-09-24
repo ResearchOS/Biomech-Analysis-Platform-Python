@@ -10,19 +10,25 @@
         <meta name="author" content="Mitchell Tillman">
       
       
+        <link rel="canonical" href="https://researchos.github.io/ResearchOS/Developer/DAG/">
       
       
+        <link rel="prev" href="../Package_Setup/discovery/">
       
-      <link rel="icon" href="/ResearchOS/assets/images/favicon.png">
+      
+        <link rel="next" href="../Compilation/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.10">
     
     
       
-        <title>ResearchOS</title>
+        <title>Overview - ResearchOS</title>
       
     
     
-      <link rel="stylesheet" href="/ResearchOS/assets/stylesheets/main.7e359304.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e359304.min.css">
       
       
 
@@ -41,9 +47,9 @@
       
     
     
-      <link rel="stylesheet" href="/ResearchOS/assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("/ResearchOS/",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -61,6 +67,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#directional-acyclic-graph-dag" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -73,7 +84,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/ResearchOS/." title="ResearchOS" class="md-header__button md-logo" aria-label="ResearchOS" data-md-component="logo">
+    <a href="../.." title="ResearchOS" class="md-header__button md-logo" aria-label="ResearchOS" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -93,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Overview
             
           </span>
         </div>
@@ -168,7 +179,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/ResearchOS/Home/" class="md-tabs__link">
+      <a href="../../Home/" class="md-tabs__link">
         
   
     
@@ -183,11 +194,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="/ResearchOS/Developer/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   Developer
@@ -226,7 +239,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/ResearchOS/." title="ResearchOS" class="md-nav__button md-logo" aria-label="ResearchOS" data-md-component="logo">
+    <a href="../.." title="ResearchOS" class="md-nav__button md-logo" aria-label="ResearchOS" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -256,7 +269,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Home/" class="md-nav__link">
+      <a href="../../Home/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -273,25 +286,28 @@
       
   
   
+    
   
   
+  
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -302,7 +318,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Developer
@@ -316,7 +332,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -377,7 +393,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Package_Setup/" class="md-nav__link">
+      <a href="../Package_Setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -398,7 +414,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Package_Setup/discovery/" class="md-nav__link">
+      <a href="../Package_Setup/discovery/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -424,8 +440,10 @@
                 
   
   
+    
   
   
+  
     
     
     
@@ -433,13 +451,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" checked>
         
           
           <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
@@ -453,7 +469,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_3">
             <span class="md-nav__icon md-icon"></span>
             DAG
@@ -464,10 +480,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/DAG/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -476,6 +512,149 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#hashing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hashing
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runnable-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Runnable Nodes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Runnable Nodes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#naming-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      Naming Convention
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metadata
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-hash" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static Hash
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#concrete-hash" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concrete Hash
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#variable-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Variable Nodes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Variable Nodes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#naming-convention_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Naming Convention
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metadata
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-hash_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static Hash
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#concrete-hash_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concrete Hash
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -536,7 +715,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Compilation/" class="md-nav__link">
+      <a href="../Compilation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -557,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Compilation/connectivity/" class="md-nav__link">
+      <a href="../Compilation/connectivity/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -578,7 +757,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Compilation/running/" class="md-nav__link">
+      <a href="../Compilation/running/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -647,7 +826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Running/" class="md-nav__link">
+      <a href="../Running/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -668,7 +847,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Running/selecting_runnables/" class="md-nav__link">
+      <a href="../Running/selecting_runnables/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -689,7 +868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Running/running_runnables/" class="md-nav__link">
+      <a href="../Running/running_runnables/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -710,7 +889,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Running/unique_identifiers/" class="md-nav__link">
+      <a href="../Running/unique_identifiers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -779,7 +958,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Bridges/" class="md-nav__link">
+      <a href="../Bridges/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -800,7 +979,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Bridges/bridges_toml/" class="md-nav__link">
+      <a href="../Bridges/bridges_toml/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -869,7 +1048,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/" class="md-nav__link">
+      <a href="../Nodes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -930,7 +1109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/Runnables/" class="md-nav__link">
+      <a href="../Nodes/Runnables/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -951,7 +1130,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/Runnables/process/" class="md-nav__link">
+      <a href="../Nodes/Runnables/process/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -972,7 +1151,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/Runnables/plot/" class="md-nav__link">
+      <a href="../Nodes/Runnables/plot/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -993,7 +1172,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/Runnables/stats/" class="md-nav__link">
+      <a href="../Nodes/Runnables/stats/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1014,7 +1193,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/Runnables/logsheet/" class="md-nav__link">
+      <a href="../Nodes/Runnables/logsheet/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1083,7 +1262,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/Variables/" class="md-nav__link">
+      <a href="../Nodes/Variables/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1144,7 +1323,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/Variables/Input%20Variables/" class="md-nav__link">
+      <a href="../Nodes/Variables/Input%20Variables/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1165,7 +1344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/Variables/Input%20Variables/unspecified/" class="md-nav__link">
+      <a href="../Nodes/Variables/Input%20Variables/unspecified/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1186,7 +1365,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/Variables/Input%20Variables/dynamic/" class="md-nav__link">
+      <a href="../Nodes/Variables/Input%20Variables/dynamic/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1207,7 +1386,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/Variables/Input%20Variables/hard_coded/" class="md-nav__link">
+      <a href="../Nodes/Variables/Input%20Variables/hard_coded/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1236,7 +1415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/ResearchOS/Developer/Nodes/Variables/output_variables/" class="md-nav__link">
+      <a href="../Nodes/Variables/output_variables/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1290,6 +1469,139 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#hashing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hashing
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runnable-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Runnable Nodes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Runnable Nodes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#naming-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      Naming Convention
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metadata
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-hash" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static Hash
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#concrete-hash" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concrete Hash
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#variable-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Variable Nodes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Variable Nodes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#naming-convention_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Naming Convention
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metadata
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-hash_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static Hash
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#concrete-hash_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concrete Hash
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1301,8 +1613,108 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+  
+  
+
+
+<h1 id="directional-acyclic-graph-dag">Directional Acyclic Graph (DAG)</h1>
+<p>The Directed Acyclic Graph (DAG) is a <a href="https://networkx.org/documentation/stable/reference/classes/multidigraph.html">NetworkX MultiDiGraph</a> that represents the dependencies between the various tasks in a project. The DAG is created by the <code>ros compile</code> command, which reads the <code>.toml</code> files in the project and creates a graph of the tasks and their dependencies. The DAG is then used to determine the order in which the tasks should be run, and whether a task needs to be re-run based on the inputs and outputs of the tasks.</p>
+<p>The DAG is structured such that the index of each node is a UUID from Python's <code>uuid</code> module. This allows for easy identification of nodes and edges, and for easy serialization and deserialization of the DAG. Within each node is a "node" attribute containing an instance of either a <code>Runnable</code> or a <code>Variable</code> class.</p>
+<p>Each node of the DAG represents either:</p>
+<ol>
+<li>
+<p>A Runnable: A task that can be run. May be a Process, a Plot, or a Stats task.</p>
+</li>
+<li>
+<p>A Variable: A node that connects to or from a Runnable, representing an input or output variable of the Runnable. Also connects to other Variables to form the dependencies between Runnables.</p>
+</li>
+</ol>
+<p>Only the nodes in the DAG contain metadata needed to run the tasks and pass data between them. The edges indicate connections between the nodes, but do not contain any metadata.</p>
+<h2 id="hashing">Hashing</h2>
+<p>Each node can be hashed in either a "static" or "concrete" fashion, to borrow nomenclature from the OOP world. The static hash is used to uniquely identify the node in the DAG, while the concrete hash is used to uniquely identify the node for specific data objects. The <a href="https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.graph_hashing.weisfeiler_lehman_subgraph_hashes.html#networkx.algorithms.graph_hashing.weisfeiler_lehman_subgraph_hashes">Weisfeiler Lehman Subgraph Hash algorithm from NetworkX</a> is used to uniquely hash each node in the DAG based on its "node" attribute. Each subclass of <code>Runnable</code> and <code>Variable</code> has implemented a <code>__hash__</code> method that returns a unique hash for that node based on its metadata for <code>static</code> and <code>concrete</code> hashing.</p>
+<h2 id="runnable-nodes">Runnable Nodes</h2>
+<h3 id="naming-convention">Naming Convention</h3>
+<p>A Runnable node's full name is <code>package_name.task_name</code>. Often (but not required) the <code>task_name</code> is similar to the name of the function to be run by that task.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>For simplicity, a Runnable node may in certain circumstances be referred to only by its <code>task_name</code> in the <code>.toml</code> files. In that case, the <code>package_name</code> is assumed to be the package defined by the root folder's <code>package.toml</code> file.</p>
+<p>For example, if <code>root/pyproject.toml</code> defines package <code>package1</code>, then a task within that package may be referred to as simply <code>task1</code>, and we know it is referring to <code>package1.task1</code>.</p>
+</div>
+<h3 id="metadata">Metadata</h3>
+<p>Each Runnable node contains metadata that is used to run the task. This metadata is stored in the <code>.toml</code> file for the task, and also in the DAG node. The metadata includes:</p>
+<ul>
+<li>full_name: The full name of the task, as described above.</li>
+<li>subset: The subset of data to run the task on.</li>
+<li>level: The level of data object to run the task on.</li>
+<li>batch: The batch of data objects to run the task on.</li>
+</ul>
+<h4 id="static-hash">Static Hash</h4>
+<ul>
+<li>Metadata included in the static hash:</li>
+<li>The full name of the task</li>
+<li>The subset of data to run the task on</li>
+<li>A dictionary of input variables, where the keys are the input names and the values are the corresponding Variable nodes' full names.</li>
+<li>A dictionary of output variables, where the keys are the output names and the values are the corresponding Variable nodes' full names.</li>
+<li>NOTE: A task's static hash is added to the record as having been successfully completed after the task has been successfully run over all data objects in the subset. If any of the above metadata changes after that, the task will be re-run.</li>
+</ul>
+<h4 id="concrete-hash">Concrete Hash</h4>
+<ul>
+<li>Metadata included in the concrete hash:</li>
+<li>The static hash of the task</li>
+<li>A dictionary of input variables, where the keys are the input names and the values are the corresponding Variable nodes' concrete hashes.</li>
+</ul>
+<h2 id="variable-nodes">Variable Nodes</h2>
+<h3 id="naming-convention_1">Naming Convention</h3>
+<p>A Variable node's full name is <code>package_name.task_name.variable_name</code>. The <code>variable_name</code> is the name of the input or output variable of the Runnable.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This naming convention does not distinguish between input and output variables. Therefore, a particular task's .toml file can not contain an input and output variable with the same name.</p>
+<p>If "data" is an input variable, then "data" cannot be an output variable of the same task. We suggest using more specific variable names to avoid this issue.</p>
+</div>
+<h3 id="metadata_1">Metadata</h3>
+<p>Each Variable node contains metadata that is used to pass data between tasks. This metadata is stored in the <code>.toml</code> file for the task and in the <code>bridges.toml</code> file(s), and also in the DAG node. The metadata includes:</p>
+<ul>
+<li>full_name: The full name of the variable, as described above.</li>
+</ul>
+<h4 id="static-hash_1">Static Hash</h4>
+<p>Metadata included in the static hash is below. Exactly what is being hashed depends on the type of Variable (hardcoded, dynamic input, data object attribute, output, etc.):</p>
+<ul>
+<li>For <strong>hardcoded</strong> Variables: The variable value</li>
+<li>For <strong>dynamic input</strong> Variables: The Variable's full name</li>
+<li>For <strong>data object attributes</strong>: The dict defining which attribute of the data object to use</li>
+<li>For <strong>paths</strong>: The contents of the file at the path. If that file does not exist or was not found, then the hash is the hash of an empty string ""<ul>
+<li>"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"</li>
+</ul>
+</li>
+<li>For <strong>output</strong> Variables: The Variable's full name</li>
+</ul>
+<h4 id="concrete-hash_1">Concrete Hash</h4>
+<p>Metadata included in the concrete hash is below. This is the hash used to name the variable uniquely in the Parquet files, and to determine if the data has changed since the last time the task was run. Exactly what is being hashed depends on the type of Variable (hardcoded, dynamic input, data object attribute, output, etc.):</p>
+<ul>
+<li>For <strong>hardcoded</strong> Variables: The variable value</li>
+<li>For <strong>dynamic input</strong> Variables: The input data value</li>
+<li>For <strong>data object attributes</strong>: The value of the data object's attribute</li>
+<li>For <strong>paths</strong>: The contents of the file at the path. If that file does not exist or was not found, then the hash is the hash of an empty string ""<ul>
+<li>"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"</li>
+</ul>
+</li>
+<li>For <strong>output</strong> Variables: The output data value</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1342,10 +1754,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "/ResearchOS/", "features": ["navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.expand", "toc.follow", "navigation.top"], "search": "/ResearchOS/assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.expand", "toc.follow", "navigation.top"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="/ResearchOS/assets/javascripts/bundle.8fd75fb4.min.js"></script>
+      <script src="../../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
     
   </body>
