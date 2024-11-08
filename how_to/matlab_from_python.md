@@ -13,7 +13,7 @@ Be sure to add it to the PATH when installing!
 
 ## 3. Install MATLAB Engine API for Python
 In the folder for the project, create a .venv with VSCode.
-Select the Python 3.9.0 interpreter (mine was located at: "C:\Users\Mitchell\AppData\Local\Programs\Python\Python39\python.exe")
+Select the Python 3.9.0 interpreter (mine was located at: "C:\Users\Mitchell\AppData\Local\Programs\Python\Python39\python.exe") or another compatible Python version.
 Then, in the Terminal, with the venv activated, run:
 For MATLAB R2021b:
 python -m pip install matlabengine==9.11.19
@@ -21,6 +21,8 @@ For MATLAB R2023a:
 python -m pip install matlabengine==9.14.6
 For MATLAB R2023b:
 python -m pip install matlabengine==23.2.3
+For MATLAB R2024a:
+python -m pip install matlabengine==24.1.2
 
 # 4. In MATLAB, run:
 pyenv(Version="3.9")
